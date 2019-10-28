@@ -96,6 +96,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 	public boolean sortsnps = false;
 	public boolean dumpeverythingtodisk;
 	public Integer stopWithPermutation;
+	public boolean createBinaryFilesOnlyMetaAnalysis;
 
 	public Settings() {
 	}
@@ -505,6 +506,7 @@ public class Settings extends TriTyperGeneticalGenomicsDatasetSettings {
 
 		try {
 			createBinaryOutputFiles = config.getBoolean("defaults.output.binaryoutput", false);
+			createBinaryFilesOnlyMetaAnalysis = config.getBoolean("defaults.output.binaryoutonlymetaanalysis", false);
 			createTEXTOutputFiles = config.getBoolean("defaults.output.textoutput", true);
 		} catch (Exception e) {
 		}

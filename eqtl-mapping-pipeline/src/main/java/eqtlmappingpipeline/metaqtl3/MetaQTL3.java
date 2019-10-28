@@ -1232,7 +1232,7 @@ public class MetaQTL3 {
 	protected long determineSNPProbeCombinations() throws IOException {
 		String loc = m_settings.outputReportsDir + "excludedSNPsBySNPProbeCombinationFilter.txt.gz";
 		TextFile excludedSNPs = new TextFile(loc, TextFile.W);
-		long maxNrTestsToPerform = 0;
+//		long maxNrTestsToPerform = 0;
 		int[] midpoint = new int[m_probeList.length];
 		byte[] chr = new byte[m_probeList.length];
 		HashMap<Byte, ArrayList<Integer>> chrToProbe = new HashMap<Byte, ArrayList<Integer>>();
@@ -1262,7 +1262,7 @@ public class MetaQTL3 {
 
 		WorkPackage[] workPackages = new WorkPackage[m_snpList.length];
 		// improve performance by sorting here, and then breaking later..
-		int numWorkPackages = 0;
+//		int numWorkPackages = 0;
 
 		System.out.println("- Determining SNP-Probe combinations to test");
 
@@ -1299,8 +1299,8 @@ public class MetaQTL3 {
 		final ProgressBar pb = new ProgressBar(m_snpList.length);
 
 		boolean finalCisTrans = cisTrans;
-		AtomicInteger tmpNumWorkPackages = new AtomicInteger();
-		AtomicLong tmpMaxNrTestsToPerform = new AtomicLong();
+//		AtomicInteger tmpNumWorkPackages = new AtomicInteger();
+//		AtomicLong tmpMaxNrTestsToPerform = new AtomicLong();
 
 		HashMap<String, Integer> finalProbeNameToId = probeNameToId;
 		boolean finalCisOnly = cisOnly;
@@ -1350,6 +1350,7 @@ public class MetaQTL3 {
 									probeToTest.add(probeId);
 								}
 							}
+
 						}
 					} else if (finalCisTrans) {
 						output = new WorkPackage();
@@ -1357,8 +1358,7 @@ public class MetaQTL3 {
 						output.setSnps(snps);
 						output.setProbes(null);
 //						numWorkPackages++;
-						tmpNumWorkPackages.getAndIncrement();
-						tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length);
+//						tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length);
 //						maxNrTestsToPerform += m_probeList.length;
 						workPackages[s] = output;
 					} else {
@@ -1404,17 +1404,17 @@ public class MetaQTL3 {
 						output.setProbes(testprobes);
 
 						workPackages[s] = output;
-						tmpNumWorkPackages.getAndIncrement();
+//						tmpNumWorkPackages.getAndIncrement();
 //                            numWorkPackages++;
 						if (finalCisOnly || m_settings.tsSNPProbeCombinationsConfine != null) {
-							tmpMaxNrTestsToPerform.getAndAdd(testprobes.length);
+//							tmpMaxNrTestsToPerform.getAndAdd(testprobes.length);
 //                                maxNrTestsToPerform += testprobes.length;
 						} else {
 							if (testprobes.length != 0) {
-								tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length - testprobes.length);
+//								tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length - testprobes.length);
 //                                    maxNrTestsToPerform += (m_probeList.length - testprobes.length);
 							} else {
-								tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length);
+//								tmpMaxNrTestsToPerform.getAndAdd(m_probeList.length);
 //                                    maxNrTestsToPerform += (m_probeList.length);
 							}
 
@@ -1426,9 +1426,21 @@ public class MetaQTL3 {
 				}
 		);
 
+		long maxNrTestsToPerform = 0;
+		int numWorkPackages = 0;
+		for (int q = 0; q < workPackages.length; q++) {
+			if (workPackages[q] != null) {
+				if (workPackages[q].getSnps() != null) {
+					numWorkPackages++;
+					if (cisOnly || m_settings.tsSNPProbeCombinationsConfine != null) {
+						maxNrTestsToPerform += workPackages[q].getProbes().length;
+					} else {
+						maxNrTestsToPerform += (m_probeList.length - workPackages[q].getProbes().length);
+					}
 
-		maxNrTestsToPerform = tmpMaxNrTestsToPerform.get();
-		numWorkPackages = tmpNumWorkPackages.get();
+				}
+			}
+		}
 
 		pb.close();
 		System.out.println("");
@@ -1437,9 +1449,11 @@ public class MetaQTL3 {
 			int q = 0;
 			for (int i = 0; i < workPackages.length; i++) {
 				if (workPackages[i] != null) {
-					m_workPackages[q] = workPackages[i];
-					m_workPackages[q].setId(q);
-					q++;
+					if (workPackages[q].getSnps() != null) {
+						m_workPackages[q] = workPackages[i];
+						m_workPackages[q].setId(q);
+						q++;
+					}
 				}
 			}
 		} else {
