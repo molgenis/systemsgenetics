@@ -12,6 +12,9 @@ deconvolution of expression quantitative trait loci ([Decon-eQTL](Decon-eQTL)) i
 In R do
 
 ```
+install.packages('devtools')
+install.packages('matrixStats')
+install.packages('truncnorm')
 library('devtools')
 # NOTE: This can take a few minutes:
 install_github("molgenis/systemsgenetics/Decon2/DeconCell")
@@ -78,6 +81,8 @@ write.table(new_count_table,
 
 In R
 
+**NOTE: run [Simulate count data](#Simulate-count-data) to get example_data/count.table.simulated.txt**
+
 ```r
 library(DeconCell)
 # read the count data
@@ -95,6 +100,9 @@ prediction <- dCell.predict(dCell.exp, dCell.models, res.type = "median")
 The prediction object contains the predicted cellcounts and model evaluation. For more info on model information, see the DeconCell Vignette. For this example run, we will use only 6 main cell types: ```Granulocytes```, ```Monocytes```, ```CD4+```, ```CD8+```, ```NK```, and ```B cells```. For Decon-eQTL the cellcounts have to be scaled to sum to 100.
 
 In R
+
+**NOTE: run [Simulate count data](#Simulate-count-data) to get example_data/count.table.simulated.txt**
+
 
 ```r
 # select relevant cell types
