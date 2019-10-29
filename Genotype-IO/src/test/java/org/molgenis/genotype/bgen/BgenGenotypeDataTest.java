@@ -12,8 +12,11 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 import org.junit.rules.TemporaryFolder;
@@ -40,9 +43,9 @@ public class BgenGenotypeDataTest extends ResourceTest {
 //			getTestResourceFile("/bgenExamples/example.2bits.bgen"),
 //			getTestResourceFile("/bgenExamples/example.8bits.bgen"),
 //			getTestResourceFile("/bgenExamples/example.16bits.bgen"),
-			getTestResourceFile("/bgenExamples/example.16bits.zstd.bgen"),
+			getTestResourceFile("/bgenExamples/example.16bits.zstd.bgen"));
 //			getTestResourceFile("/bgenExamples/example.25bits.bgen"),
-			getTestResourceFile("/bgenExamples/example.32bits.bgen"));
+//			getTestResourceFile("/bgenExamples/example.32bits.bgen"));
 
 	public BgenGenotypeDataTest() throws URISyntaxException {
 	}
@@ -59,6 +62,17 @@ public class BgenGenotypeDataTest extends ResourceTest {
 	}
 
 	@Test
+	public void testBgenGenotypeData() throws URISyntaxException, IOException {
+		File bgenFile = getTestResourceFile("/bgenExamples/example.25bits.bgen");
+		Path target = Paths.get(folder.getRoot().toString(), bgenFile.getName());
+		Files.copy(bgenFile.toPath(), target);
+		bgenGenotypeData = new BgenGenotypeData(target.toFile());
+		for (GeneticVariant variant : bgenGenotypeData) {
+			System.out.printf("%s %s %d %s%n", variant.getPrimaryVariantId(), variant.getSequenceName(), variant.getStartPos(), variant.getVariantAlleles());
+		}
+	}
+
+	@Test
 	public void bgenGenotypeDataTest() throws URISyntaxException, IOException {
 		for (File origBgenFile : exampleFiles) {
 			Path bgenFile = Paths.get(folder.getRoot().toString(), origBgenFile.getName());
@@ -70,18 +84,54 @@ public class BgenGenotypeDataTest extends ResourceTest {
 			Path genSampleFile = exampleFiles.resolve(
 					bgenFile.getFileName().toString().replace(".bgen", ".sample"));
 			Path genFile = exampleFiles.resolve(
-					bgenFile.getFileName().toString().replace(".bgen", ".gen"));
+					bgenFile.getFileName().toString().replace(".bgen", ".a.gen"));
 
 			GenGenotypeData genGenotypeData = new GenGenotypeData(genFile.toFile(), genSampleFile.toFile());
 
-			assertEquals(bgenGenotypeData.getSamples(), genGenotypeData.getSamples());
+			assertEquals(
+					bgenGenotypeData.getSamples().stream().map(Sample::getId).collect(Collectors.toList()),
+					genGenotypeData.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
 
-//			for (GeneticVariant variant : bgenGenotypeData) {
-//				System.out.println("variant.getPrimaryVariantId() = " + variant.getPrimaryVariantId());
-//				float[][] sampleGenotypeProbilities = variant.getSampleGenotypeProbilities();
-//				System.out.println("sampleGenotypeProbilities = " + Arrays.deepToString(sampleGenotypeProbilities));
-//			}
+			Iterator<GeneticVariant> bgenIterator = bgenGenotypeData.iterator();
 
+			ArrayList<GeneticVariant> genVariants = new ArrayList<>();
+			for (GeneticVariant genVariant : genGenotypeData) {
+				if (!genVariants.contains(genVariant)) {
+					genVariants.add(genVariant);
+				} else {
+					genVariants.remove(genVariant);
+				}
+			}
+			// Loop through variants and check their similarity.
+			for (GeneticVariant genVariant : genVariants) {
+				// Check if the bgen iterator also has a next variant.
+				assertTrue(bgenIterator.hasNext(), "bgenIterator is emptied while Oxford genIterator is not.");
+				GeneticVariant bgenVariant = bgenIterator.next();
+				// Check if these are equal:
+				assertEquals(bgenVariant.getPrimaryVariantId(), genVariant.getPrimaryVariantId());
+//				assertEquals(bgenVariant.getPrimaryVariantId(), genVariant.getAllIds());
+				assertEquals(bgenVariant.getVariantAlleles(), genVariant.getVariantAlleles());
+				assertEquals(bgenVariant.getAlternativeAlleles(), genVariant.getAlternativeAlleles());
+				assertEquals(bgenVariant.getRefAllele(), genVariant.getRefAllele());
+				assertEquals(bgenVariant.getSequenceName(), genVariant.getSequenceName());
+				assertEquals(bgenVariant.getStartPos(), genVariant.getStartPos());
+				assertEquals(bgenVariant.getAlleleCount(), genVariant.getAlleleCount());
+				float[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbilities();
+				float[][] genProbabilities = genVariant.getSampleGenotypeProbilities();
+				assertProbabilityEquality(bgenProbabilities, genProbabilities);
+			}
+
+		}
+	}
+
+	private static void assertProbabilityEquality(float[][] actual, float[][] expected) {
+		assertEquals(actual.length, expected.length);
+		for(int i = 0; i < actual.length; i++){
+			assertEquals(actual[i].length, expected[i].length);
+			for(int y = 0; y < actual[i].length; y++){
+				assertEquals(actual[i][y], expected[i][y],
+						1e-4, String.format("prob %d in sample %d", y, i));
+			}
 		}
 	}
 
@@ -98,10 +148,10 @@ public class BgenGenotypeDataTest extends ResourceTest {
 					bgenFile.getFileName().toString().replace(".bgen", ".sample"));
 
 			BufferedWriter writer = new BufferedWriter(new FileWriter(genSampleFile.toFile()));
-			writer.write(String.format("ID_1 ID_2%n"));
-			writer.write(String.format("0 0%n"));
+			writer.write(String.format("ID_1 ID_2 missing%n"));
+			writer.write(String.format("0 0 0%n"));
 			for (Sample sample : bgenGenotypeData.getSamples()) {
-				writer.write(String.format("%s %s%n", sample.getId(), sample.getId()));
+				writer.write(String.format("%s %s 0%n", sample.getId(), sample.getId()));
 			}
 			writer.close();
 		}

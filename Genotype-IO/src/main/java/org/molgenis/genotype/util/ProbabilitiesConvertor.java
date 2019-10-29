@@ -214,10 +214,27 @@ public class ProbabilitiesConvertor {
 
 	}
 
+	/**
+	 * Method for converting BGEN probabilities to regular posterior probabilities.
+	 * unlike the regular posterior probabilities, probabilities in BGEN can be stored
+	 * in an array of arbitrary length corresponding to the number of ordered combinations of
+	 * alleles for a given ploidy. Any number of alleles can be represented.
+	 *
+	 * If the BGEN probabilities for a sample represent 3 possible genotypes (biallelic for dipoid samples)
+	 * This is returned.
+	 *
+	 * If the BGEN probabilities represent less than 2 or more than 3 possible genotypes
+	 * an empty array of size 3 is returned for the sample.
+	 *
+	 * If the BGEN probabilities represent 2 possible genotypes (biallelic for haploid samples)
+	 * this is expanded as if diploid with a zero probability for heterozygosity.
+	 *
+	 * @param bgenProbabilities The BGEN probabilities returned by a BgenGenotypeData sampleVariantProvider.
+	 * @return An array of arrays of size 3 with posterior probabilities.
+	 */
 	public static float[][] convertBgenProbabilitiesToProbabilities(double[][] bgenProbabilities) {
 		// Define an array consisting of an array of posterior bgenProbabilities for each genotype
 		float[][] probabilities = new float[bgenProbabilities.length][3];
-		System.out.println("bgenProbabilities = " + Arrays.deepToString(bgenProbabilities));
 
 		for (int sampleIndex = 0; sampleIndex < bgenProbabilities.length; sampleIndex++) {
 			// Get the array of doubles
@@ -235,7 +252,8 @@ public class ProbabilitiesConvertor {
 				sampleProbabilities[0] = (float) sampleProbabilitiesBgen[0];
 				sampleProbabilities[2] = (float) sampleProbabilitiesBgen[1];
 			}
-			// If probabilities array length is greater than 3, just return an empty array.
+			// If probabilities array length is less than 2 or greater than 3,
+			// just return an array of zeros. [0.0, 0.0, 0.0]
 
 			// Insert the probabilities for this sample
 			probabilities[sampleIndex] = sampleProbabilities;

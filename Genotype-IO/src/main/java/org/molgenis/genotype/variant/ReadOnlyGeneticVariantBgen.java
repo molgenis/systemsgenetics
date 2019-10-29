@@ -149,6 +149,15 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
 		return new ReadOnlyGeneticVariantBgen(GeneticVariantId.createVariantId(variantId), startPos, sequenceName,
 				sampleVariantsProvider, alleles, null, dataBlockInfo);
 	}
+
+//	public static GeneticVariant createVariant(String variantId, int pos, String sequenceName,
+//											   SampleVariantsProvider sampleVariantsProvider,
+//											   int numberOfAlleles, String allele1, String allele2,
+//											   long variantReadingPosition) {
+//		if ()
+//		return new ReadOnlyGeneticVariantBgen(GeneticVariantId.createVariantId(variantId), pos, sequenceName,
+//				sampleVariantsProvider, Alleles.createBasedOnString(allele1, allele2), null, variantReadingPosition);
+//	}
 	
 	@Override
 	public GeneticVariantMeta getVariantMeta()
