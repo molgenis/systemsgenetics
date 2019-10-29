@@ -5,6 +5,7 @@
 package org.molgenis.genotype.bgen;
 
 import com.facebook.presto.orc.zstd.ZstdDecompressor;
+import com.google.common.math.IntMath;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.*;
 import org.molgenis.genotype.annotation.Annotation;
@@ -268,7 +269,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             this.bgenFile.read(sampleName, 0, sampleIdLength);
             // Append the sample identifier to the array of sample ids.
             sampleIds[i] = new String(sampleName, CHARSET);
-//				System.out.println("\t"+sampleIds[i]);
 			samples.add(new Sample(sampleIds[i], null, null));
 		}
     }
@@ -509,8 +509,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
                 snpInfoBufferPos + filePointer);
 
         return (ReadOnlyGeneticVariantBgen) ReadOnlyGeneticVariantBgen.createVariant(
-				VariantIds, variantPosition, seqName, sampleVariantProvider, alleles, alleles.get(0),
-                variantGenotypeDataBlockInfo);
+				VariantIds, variantPosition, seqName, sampleVariantProvider, alleles,
+                variantGenotypeDataBlockInfo); // Not providing first allele as a reference allele
+				// now in order to test against gen data.
 	}
 
 	/**
@@ -581,25 +582,23 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             int blockBufferOffset = 0;
 			//must equal data before.
 			if ((int) getUInt32(variantBlockData, blockBufferOffset) != sampleCount) {
-                throw new GenotypeDataException(
-                        "BGEN file format error. Sample counts do not match.");
+                throw new GenotypeDataException(String.format(
+                		"BGEN file format error. " +
+								"The variant's sample count (%d) does not match with the header (%d).",
+						sampleCount, (int) getUInt32(variantBlockData, blockBufferOffset)));
             }
-			System.out.println("Number of individuals: " + sampleCount);
 			blockBufferOffset += 4;
 
 			//must equal data before.
 			int numberOfAlleles = getUInt16(variantBlockData, blockBufferOffset);
-			System.out.println("Number of Alleles: " + numberOfAlleles);
 			blockBufferOffset += 2;
 
 			// Read the minimum ploidy
 			int minPloidy = getUInt8(variantBlockData, blockBufferOffset);
-			System.out.println("Min ploidy: " + minPloidy);
 			blockBufferOffset += 1;
 
 			// Read the maximum ploidy
 			int maxPloidy = getUInt8(variantBlockData, blockBufferOffset);
-			System.out.println("Max ploidy: " + maxPloidy);
 			blockBufferOffset += 1;
 
 			// Loop through every individual
@@ -613,12 +612,15 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			blockBufferOffset += 1;
 
 			int probabilitiesLengthInBits = getUInt8(variantBlockData, blockBufferOffset);
-			System.out.println("Bit representation of probability: " + probabilitiesLengthInBits);
 			blockBufferOffset += 1;
 
 			byte[] probabilitiesArray = Arrays.copyOfRange(
 					variantBlockData, blockBufferOffset,
 					variantBlockData.length);
+
+			LOGGER.debug(String.format("%s | alleles: %d, ploidy: %d-%d, %s, %d bit representation",
+					variant.getPrimaryVariantId(), numberOfAlleles, minPloidy, maxPloidy,
+					phased ? "phased" : "unphased", probabilitiesLengthInBits));
 
 			if (phased) {
 				probabilities = readHaplotypeProbabilities(
@@ -745,37 +747,34 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				bitOffset += ((numberOfAlleles - 1) * probabilitiesLengthInBits);
 
 				phasedProbabilities[i] = alleleProbabilities;
-
-				// What now?
-
-				// We have per sample probabilities for A1, B1, A2, B2
-				// Which can be converted to AA, AB, BA, BB
 			}
-			probabilities[sampleIndex] = phasedProbabilitiesToGenotypeProbabilitiesBgen(
-					phasedProbabilities, ploidy, numberOfAlleles);
+			// Convert the probabilities for this particular sample
+            probabilities[sampleIndex] = phasedProbabilitiesToGenotypeProbabilitiesBgen(
+                    phasedProbabilities, ploidy, numberOfAlleles);
 		}
 		return probabilities;
 	}
 
+    /**
+     * Converts an array of arrays with probabilities per allele for particular haplotypes, to
+     * regular genotype probability values per genotype.
+     *
+     * @param phasedProbabilities An array, with its size equal to the number haplotypes, with arrays
+     *                            with a probability for every possible allele for the haplotype.
+     * @param ploidy The ploidy for this particular sample.
+     * @param numberOfAlleles The number of alleles.
+     * @return The number of probabilities for every possible genotype.
+     */
 	private double[] phasedProbabilitiesToGenotypeProbabilitiesBgen(double[][] phasedProbabilities,
 																	Integer ploidy,
 																	int numberOfAlleles) {
 		// Get all possible combinations of alleles for the haplotypes (all permutations)
 		List<List<Integer>> haplotypeCombinations = getGenotypeCombinations(
 				numberOfAlleles, ploidy, false);
-		// Get all possible combinations of alleles for the genotypes (only ordered)
-		List<List<Integer>> genotypeCombinations = getGenotypeCombinations(
-				numberOfAlleles, ploidy, true);
 
 		// Initialize an array of probabilities.
-		double[] genotypeProbabilities = new double[genotypeCombinations.size()];
-
-		// Get a map of genotype combinations
-		Map<List<Integer>, Integer> map = new HashMap<>();
-		for (int i = 0; i < genotypeCombinations.size(); i++) {
-			List<Integer> combination = genotypeCombinations.get(i);
-			map.put(combination, i);
-		}
+		double[] genotypeProbabilities = new double[numberOfOrderedCombinationsWithRepetition(ploidy,
+                numberOfAlleles - 1)]; // number of alleles is equal to n, n-1 = numberOfAlleles - 1
 
 		// Loop through the combinations of haplotypes
 		for (List<Integer> haplotypeCombination : haplotypeCombinations) {
@@ -786,12 +785,43 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			}
 			// Add the multiplied probability of this combination to the other combinations with the same genotype
 			Collections.sort(haplotypeCombination);
-			genotypeProbabilities[map.get(Collections.unmodifiableList(haplotypeCombination))] += probability;
+			genotypeProbabilities[getIndexOfOrderedCombination(
+			        Collections.unmodifiableList(haplotypeCombination))] += probability;
 		}
 		return genotypeProbabilities;
 	}
 
-	/**
+    /**
+     * Static method that returns the index of a particular genotype combination within
+     * all the possible genotypes for a particular variant and individual (ploidy).
+     *
+     * @param combination The ordered combination sequence of allele indices. (with increasing value from left to right)
+     * @return the index that corresponds to the given ordered combination.
+     */
+	private static int getIndexOfOrderedCombination(List<Integer> combination) {
+	    // Initiate the index as 0.
+		int index = 0;
+		// Loop through the values of the combinations, starting from the last value.
+		for (int r = combination.size(); r > 0; r--) {
+		    // Get n - 1 and r in order to calculate the number of possible ordered combinations, with repetition.
+			int nMinOne = combination.get(r - 1) - 1;
+			// If n minus 1 is below zero, return the current index, as other values in the combinations left of this
+            // are also zero.
+			if (nMinOne < 0) {
+				return index;
+			}
+			// Calculate the number of possible ordered combinations, with repetition, and add this to the index value.
+			index += numberOfOrderedCombinationsWithRepetition(r, nMinOne);
+		}
+		return index;
+	}
+
+    private static int numberOfOrderedCombinationsWithRepetition(int r, int nMinOne) {
+        return IntMath.factorial(r + nMinOne) /
+                (IntMath.factorial(r) * IntMath.factorial(nMinOne));
+    }
+
+    /**
 	 * Read the ploidity and missingness.
 	 * @param snpBlockData The byte buffer array to read the genotype data.
 	 * @param byteOffset the byte number to start reading ploidies from within the input byte array.
@@ -841,7 +871,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 						"Bgen file format error. Unsupported value for the phased flag observed."
 				);
 		}
-		System.out.println("phased: " + phased);
 		return phased;
 	}
 
@@ -1119,6 +1148,18 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				sampleGenotypeProbabilitiesBgen);
 	}
 
+	/**
+	 * [sample][AAA,AAB,ABB,...,ACC,BCC,CCC]
+	 *
+	 * Following <a href="https://www.well.ox.ac.uk/~gav/bgen_format/spec/latest.html">BGEN specification</a>,
+	 * the probabilities per sample are stored for every possible genotype given
+	 * the ploidy of the sample and the possible alleles. Probabilities are stored in colexicographic order of the
+	 * K-vectors of nonnegative integers (X1, X2, ..., Xk) representing the count of the i-th allele in the genotype.
+	 *
+	 * In contrast to the BGEN specification, all probabilities are stored: the sum of these is one.
+	 *
+	 * @return An array of probabilities for every sample and possible genotype for a sample and the given variant
+	 */
 	public double[][] getSampleGenotypeProbabilitiesBgen(ReadOnlyGeneticVariantBgen variant) {
 		try {
 			return readGenotypesFromVariant(variant);
