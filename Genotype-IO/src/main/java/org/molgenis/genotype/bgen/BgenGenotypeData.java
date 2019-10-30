@@ -405,13 +405,13 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			// Add the read variant to the BGENIX file so that it can quickly be retrieved.
 			bgenixWriter.addVariantToIndex(
 					variant,
-					variant.getVariantStartPosition(),
-					(int) variant.getDataBlockInfo().getBlockLength(),
-					variant.getVariantId().getPrimairyId());
+					variant.getVariantReadingPosition(),
+					variant.getVariantDataSizeInBytes(),
+					variant.getPrimaryVariantId());
 
 			// Get the position in the file to start reading the next variant.
-			variantReadingPosition = variant.getDataBlockInfo().getVariantGenotypeStartPosition() +
-                    variant.getDataBlockInfo().getBlockLengthHeaderInclusive();
+			variantReadingPosition = variant.getVariantReadingPosition() +
+					variant.getVariantDataSizeInBytes();
 		}
 	}
 
@@ -423,8 +423,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	 * @return a genetic variant.
 	 * @throws IOException if an I/O error has occurred.
 	 */
-	private ReadOnlyGeneticVariantBgen processVariantIdentifyingData(long variantStartPosition) throws IOException {
-		LOGGER.debug("variantStartPosition: " + variantStartPosition);
+	public ReadOnlyGeneticVariantBgen processVariantIdentifyingData(long variantStartPosition) throws IOException {
 		long filePointer = variantStartPosition;
 
 		// If layout is equal to 1 then the variant identifying data starts with 4 bytes describing the
@@ -454,21 +453,21 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 		// Get the ids of the variant
 		ArrayList<String> VariantIds = new ArrayList<>();
-		LOGGER.debug("SNPinfoBufferPos: " + snpInfoBufferPos);
+//		LOGGER.debug("SNPinfoBufferPos: " + snpInfoBufferPos);
 		int fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
-		LOGGER.debug("Snp ID length " + fieldLength);
+//		LOGGER.debug("Snp ID length " + fieldLength);
 		snpInfoBufferPos += 2;
 		String snpId = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, CHARSET);
-		LOGGER.debug("SNP ID: " + snpId);
+//		LOGGER.debug("SNP ID: " + snpId);
 //		System.out.println(snpId);
 		snpInfoBufferPos += fieldLength; // skip id length and snp id
 
 		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
-		LOGGER.debug("Snp RS length " + fieldLength);
+//		LOGGER.debug("Snp RS length " + fieldLength);
 
 		snpInfoBufferPos += 2;
 		String snpRsId = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, CHARSET);
-		LOGGER.debug("SNP RSID: " + snpRsId);
+//		LOGGER.debug("SNP RSID: " + snpRsId);
 
 //		System.out.println(snpRsId);
 		snpInfoBufferPos += fieldLength;
@@ -494,10 +493,13 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 //			System.out.println("SNP Alleles " + numberOfAlleles);
 		}
 
-		ArrayList<String> alleles = new ArrayList<>();
+		List<String> alleles = new ArrayList<>();
 		for (int i = 0; i < numberOfAlleles; i++) {
 			snpInfoBufferPos = readAllele(snpInfoBuffer, snpInfoBufferPos, alleles);
 		}
+
+		LOGGER.debug(String.format("reading %s, %s at %d | seq:pos = %s:%d, %d alleles",
+				snpRsId, snpId, variantStartPosition, seqName, variantPosition, numberOfAlleles));
 
 		// Seek to the end of the read data.
 		this.bgenFile.seek(snpInfoBufferPos + filePointer);
@@ -510,7 +512,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
         return (ReadOnlyGeneticVariantBgen) ReadOnlyGeneticVariantBgen.createVariant(
 				VariantIds, variantPosition, seqName, sampleVariantProvider, alleles,
-                variantGenotypeDataBlockInfo); // Not providing first allele as a reference allele
+                variantGenotypeDataBlockInfo);
+        		// Not providing first allele as a reference allele
 				// now in order to test against gen data.
 	}
 
@@ -557,15 +560,12 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	}
 
 	private double[][] readGenotypesFromVariant(ReadOnlyGeneticVariantBgen variant) throws IOException {
-        VariantGenotypeDataBlockInfo VariantDataBlockInfo = variant.getDataBlockInfo();
-        long variantGenotypeStartPosition = VariantDataBlockInfo.getVariantGenotypeStartPosition();
-        this.bgenFile.seek(variantGenotypeStartPosition);
-
 		double[][] probabilities = new double[(int) sampleCount][];
+		// Get the decompressed variant data of length D
+		byte[] variantBlockData = getDecompressedBlockData(variant);
 
 		// Read
 		if (fileLayout == Layout.layOut_1) {
-            byte[] variantBlockData = getDecompressedBlockData(variantGenotypeStartPosition, VariantDataBlockInfo);
 			for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
 				double[] sampleProbabilities = new double[3];
 
@@ -576,8 +576,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				probabilities[sampleIndex] = sampleProbabilities;
 			}
         } else if (fileLayout.equals(Layout.layOut_2)) {
-			// Get the decompressed variant data of length D
-            byte[] variantBlockData = getDecompressedBlockData(variantGenotypeStartPosition, VariantDataBlockInfo);
 
             int blockBufferOffset = 0;
 			//must equal data before.
@@ -877,19 +875,17 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	/**
 	 * Method for obtaining decompressed data for layout 2.
 	 *
-	 * @param variantDataBlockOffset The position of the variant data block in bytes.
-	 * @param blockInfo The info of the variant genotype data block.
 	 */
-    private byte[] getDecompressedBlockData(long variantDataBlockOffset, VariantGenotypeDataBlockInfo blockInfo) throws IOException {
-		int variantBlockLength = Math.toIntExact(blockInfo.getBlockLength());
-		int decompressedVariantBlockLength = Math.toIntExact(blockInfo.getDecompressedBlockLength());
+    private byte[] getDecompressedBlockData(ReadOnlyGeneticVariantBgen variant) throws IOException {
+		int variantBlockLength = variant.getVariantGenotypeDataBlockLength();
+		int decompressedVariantBlockLength = variant.getVariantGenotypeDataDecompressedBlockLength();
 
 		// Initialize byte arrays.
 		byte[] compressedBlockData = new byte[variantBlockLength];
 		byte[] decompressedBlockData = new byte[decompressedVariantBlockLength];
 
 		// Read the compressed / uncompressed data starting from the correct location.
-		this.bgenFile.seek(variantDataBlockOffset + blockInfo.getBlockOffset());
+		this.bgenFile.seek(variant.getVariantProbabilitiesStartPosition());
 		this.bgenFile.read(compressedBlockData, 0, variantBlockLength);
 
         switch (snpBlockRepresentation) {
@@ -1148,21 +1144,10 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				sampleGenotypeProbabilitiesBgen);
 	}
 
-	/**
-	 * [sample][AAA,AAB,ABB,...,ACC,BCC,CCC]
-	 *
-	 * Following <a href="https://www.well.ox.ac.uk/~gav/bgen_format/spec/latest.html">BGEN specification</a>,
-	 * the probabilities per sample are stored for every possible genotype given
-	 * the ploidy of the sample and the possible alleles. Probabilities are stored in colexicographic order of the
-	 * K-vectors of nonnegative integers (X1, X2, ..., Xk) representing the count of the i-th allele in the genotype.
-	 *
-	 * In contrast to the BGEN specification, all probabilities are stored: the sum of these is one.
-	 *
-	 * @return An array of probabilities for every sample and possible genotype for a sample and the given variant
-	 */
-	public double[][] getSampleGenotypeProbabilitiesBgen(ReadOnlyGeneticVariantBgen variant) {
+	@Override
+	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant) {
 		try {
-			return readGenotypesFromVariant(variant);
+			return readGenotypesFromVariant((ReadOnlyGeneticVariantBgen) variant);
 		} catch (IOException e) {
 			throw new GenotypeDataException("Error loading probs for variant: " + variant.getPrimaryVariantId() + " from gen file");
 		}
@@ -1174,15 +1159,17 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		while (variantQueryResult.hasNext()) {
 			BgenixVariantData variantData = variantQueryResult.next();
 			long variantDataPosition = variantData.getFile_start_position();
-			try {
-				// Create a read only genetic variant bgen.
-				ReadOnlyGeneticVariantBgen variant = processVariantIdentifyingData(variantDataPosition);
-				variantRangeFactory.addVariant(variant);
-			} catch (IOException e) {
-				throw new GenotypeDataException(String.format(
-						"Could not read variant data %s at position %d%n",
-						variantData.getRsid(), variantDataPosition));
-			}
+			// Create a read only genetic variant bgen.
+			GeneticVariant variant = ReadOnlyGeneticVariantBgen.createVariant(
+					variantData.getRsid(),
+					variantData.getPosition(),
+					variantData.getChromosome(),
+					this,
+					variantData.getNumber_of_alleles(),
+					variantData.getAllele1(), variantData.getAllele2(),
+					variantData.getFile_start_position(),
+					variantData.getSize_in_bytes());
+			variantRangeFactory.addVariant(variant);
 		}
 		return variantRangeFactory.createRange();
 	}

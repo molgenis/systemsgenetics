@@ -485,6 +485,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		return ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(variant.getSampleDosages());
 	}
 
+	@Override
+	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
+	}
+
 	byte[] readAheadBuffer = null;
 	byte[] snpbytebuffer = null;
 	long readAheadBufferStart = 0;

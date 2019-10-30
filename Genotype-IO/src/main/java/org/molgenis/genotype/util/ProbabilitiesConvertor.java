@@ -261,4 +261,14 @@ public class ProbabilitiesConvertor {
 
 		return probabilities;
 	}
+
+	public static double[][] convertProbabilitiesToBgenProbabilities(float[][] probabilities) {
+		double[][] bgenProbabilities = new double[probabilities.length][probabilities[0].length];
+		for (int i = 0; i < probabilities.length; i++) {
+			for (int j = 0; j < probabilities[0].length; j++) {
+				bgenProbabilities[i][j] = probabilities[i][j];
+			}
+		}
+		return bgenProbabilities;
+	}
 }

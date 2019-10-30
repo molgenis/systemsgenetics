@@ -5,6 +5,7 @@ import java.util.List;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.util.Cache;
 import org.molgenis.genotype.util.FixedSizeIterable;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GenotypeRecord;
 
@@ -118,6 +119,11 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 		float[][] probs = sampleVariantProvider.getSampleProbilities(variant);
 		probCache.put(variant, probs);
 		return probs;
+	}
+
+	@Override
+	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
 	}
 
 	@Override
