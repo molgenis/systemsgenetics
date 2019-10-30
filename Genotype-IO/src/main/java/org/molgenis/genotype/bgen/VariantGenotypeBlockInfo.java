@@ -4,13 +4,12 @@ package org.molgenis.genotype.bgen;
  * Represents information from a genotype data block within a BGEN file format.
  * @author Robert Warmerdam
  */
-public class VariantGenotypeDataBlockInfo {
+public class VariantGenotypeBlockInfo {
     private long variantGenotypeStartPosition;
     private final BgenGenotypeData.Layout bgenFileLayout;
     private final long blockLength;
     private long decompressedBlockLength;
     private final boolean isCompressed;
-    private long variantStartPosition;
 
     /**
      * The number of bytes that comprise the field representing total length C
@@ -26,21 +25,19 @@ public class VariantGenotypeDataBlockInfo {
     /**
      * Default complete constructor.
      *
-     * @param variantStartPosition The position of the variant data block in the BGEN file.
      * @param bgenFileLayout The layout of the BGEN file
      * @param variantGenotypeStartPosition The position of the genotype data block in the BGEN file.
      * @param blockLength The total length C of the rest of the data for the variant
      * @param decompressedBlockLength The total length of the probability data after decompression.
      * @param isCompressed Flag indicating if the probability data is compressed
      */
-    VariantGenotypeDataBlockInfo(
-            long variantStartPosition,
+    VariantGenotypeBlockInfo(
             long variantGenotypeStartPosition,
             BgenGenotypeData.Layout bgenFileLayout,
             long blockLength,
             long decompressedBlockLength,
             boolean isCompressed) {
-        this(variantStartPosition, variantGenotypeStartPosition, bgenFileLayout, blockLength, isCompressed);
+        this(variantGenotypeStartPosition, bgenFileLayout, blockLength, isCompressed);
         this.decompressedBlockLength = decompressedBlockLength;
     }
 
@@ -48,20 +45,17 @@ public class VariantGenotypeDataBlockInfo {
      * Constructor that should be used for layout 1 as a compressed state in layout 2
      * requires a decompressed length D.
      *
-     * @param variantStartPosition The position of the variant data block in the BGEN file.
      * @param variantGenotypeStartPosition The position of the genotype data block in the BGEN file.
      * @param bgenFileLayout The layout of the BGEN file
      * @param blockLength The total length C of the rest of the data for the variant
      * @param isCompressed Flag indicating if the probability data is compressed
      */
-    VariantGenotypeDataBlockInfo(
-            long variantStartPosition,
+    VariantGenotypeBlockInfo(
             long variantGenotypeStartPosition,
             BgenGenotypeData.Layout bgenFileLayout,
             long blockLength,
             boolean isCompressed) {
 
-        this.variantStartPosition = variantStartPosition;
         this.variantGenotypeStartPosition = variantGenotypeStartPosition;
         this.bgenFileLayout = bgenFileLayout;
         this.blockLength = blockLength;
@@ -138,20 +132,11 @@ public class VariantGenotypeDataBlockInfo {
         return blockOffset;
     }
 
-    /**
-     * Getter for the variant start position / index within the BGEN file.
-     *
-     * @return the offset of the probability data within the genotype data block.
-     */
-    public long getVariantReadingPosition() {
-        return variantStartPosition;
-    }
-
     public long getVariantProbabilitiesStartPosition() {
         return variantGenotypeStartPosition + getBlockOffset();
     }
 
-    public int getVariantDataSizeInBytes() {
-        return (int) (variantGenotypeStartPosition - getVariantReadingPosition() + getBlockLengthHeaderInclusive());
+    public long getVariantDataSizeInBytes(long variantReadingPosition) {
+        return variantGenotypeStartPosition - variantReadingPosition + getBlockLengthHeaderInclusive();
     }
 }
