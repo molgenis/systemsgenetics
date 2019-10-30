@@ -95,6 +95,11 @@ public class EditableGenotypeDosageSampleVariantsProvider implements EditableSam
 	}
 
 	@Override
+	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
+	}
+
+	@Override
 	public GeneticVariantMeta getGeneticVariantMeta() {
 		return this.geneticVariantMeta;
 	}

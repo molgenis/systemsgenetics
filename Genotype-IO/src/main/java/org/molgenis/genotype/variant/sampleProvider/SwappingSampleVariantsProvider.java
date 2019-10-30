@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.util.FixedSizeIterable;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GenotypeRecord;
 
@@ -67,6 +68,11 @@ public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return sampleVariantsProvider.getSampleProbilities(variant);
+	}
+
+	@Override
+	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
 	}
 
 	@Override

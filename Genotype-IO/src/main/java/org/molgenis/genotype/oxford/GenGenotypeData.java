@@ -424,6 +424,11 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	@Override
+	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
+	}
+
+	@Override
 	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
 		
 		return RecordIteratorCreators.createIteratorFromProbs(variant.getSampleGenotypeProbilities());

@@ -74,7 +74,7 @@ public class VariantGenotypeDataBlockInfo {
      *
      * @return length of the probability data in number of bytes
      */
-    long getBlockLength() {
+    public long getBlockLength() {
         long actualBlockLength = blockLength;
         // If the decompressed block length is given, subtract the length of the field representing
         // this value.
@@ -90,11 +90,11 @@ public class VariantGenotypeDataBlockInfo {
 
     /**
      * Getter for the length of the probability data in addition to the lengths of field C
-     * (representing the variants block length) is it is present.
+     * (representing the variants block length) if it is present.
      *
      * @return the total length of the genotype data block
      */
-    long getBlockLengthHeaderInclusive() {
+    private long getBlockLengthHeaderInclusive() {
         long blockLengthHeaderInclusive = blockLength;
         // Account for the 4 extra bytes that are always present
         // at the start of the genotype data block in layout 2 and present if the data in layout 1 is compressed
@@ -115,7 +115,7 @@ public class VariantGenotypeDataBlockInfo {
      *
      * @return the length of the decompressed probability data.
      */
-    long getDecompressedBlockLength() {
+    public long getDecompressedBlockLength() {
         return decompressedBlockLength != 0 ? decompressedBlockLength : blockLength;
     }
 
@@ -124,7 +124,7 @@ public class VariantGenotypeDataBlockInfo {
      *
      * @return the offset of the probability data within the genotype data block.
      */
-    int getBlockOffset() {
+    private int getBlockOffset() {
         int blockOffset = 0;
         // If the compressed block length (C) is given, take this field length into account.
         if (isCompressedBlockLengthGiven()) {
@@ -143,11 +143,15 @@ public class VariantGenotypeDataBlockInfo {
      *
      * @return the offset of the probability data within the genotype data block.
      */
-    public long getVariantStartPosition() {
+    public long getVariantReadingPosition() {
         return variantStartPosition;
     }
 
-    public long getVariantGenotypeStartPosition() {
-        return variantGenotypeStartPosition;
+    public long getVariantProbabilitiesStartPosition() {
+        return variantGenotypeStartPosition + getBlockOffset();
+    }
+
+    public int getVariantDataSizeInBytes() {
+        return (int) (variantGenotypeStartPosition - getVariantReadingPosition() + getBlockLengthHeaderInclusive());
     }
 }
