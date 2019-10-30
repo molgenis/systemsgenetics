@@ -1,83 +1,71 @@
 package org.molgenis.genotype.variant;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
-import org.molgenis.genotype.bgen.BgenGenotypeData;
-import org.molgenis.genotype.bgen.VariantGenotypeDataBlockInfo;
+import org.molgenis.genotype.bgen.VariantGenotypeBlockInfo;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.MafCalculator;
 import org.molgenis.genotype.util.MafResult;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
-import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
+import org.molgenis.genotype.variant.sampleProvider.SampleVariantProviderBgen;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
 
-	private GeneticVariantId variantId;
-	private final int startPos;
-	private final String sequenceName;
-	private final SampleVariantsProvider sampleVariantsProvider; // Change for sampleVariantsProviderBgen
-	private Alleles alleles;
-	private final Allele refAllele;
-	private MafResult mafResult = null;
-	private static final GeneticVariantMeta variantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
-	private long variantReadingPosition;
-	private int variantDataSizeInBytes;
-	private Long variantProbabilitiesStartPosition;
-	private Integer variantGenotypeDataBlockLength;
-	private Integer variantGenotypeDataDecompressedBlockLength;
-	private int alleleCount;
+    private GeneticVariantId variantId;
+    private final int startPos;
+    private final String sequenceName;
+    private final SampleVariantProviderBgen sampleVariantsProvider;
+    private Alleles alleles;
+    private final Allele refAllele;
+    private MafResult mafResult = null;
+    private static final GeneticVariantMeta variantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
+    private final long variantReadingPosition;
+    private Long variantDataSizeInBytes;
+    private final int alleleCount;
 
-	private ReadOnlyGeneticVariantBgen(GeneticVariantId variantId,
-									   int startPos, String sequenceName,
-									   SampleVariantsProvider sampleVariantsProvider, int alleleCount,
-									   Alleles alleles, Allele refAllele,
-									   long variantReadingPosition, int variantDataSizeInBytes,
-									   Long variantProbabilitiesStartPosition, Integer variantGenotypeDataBlockLength,
-									   Integer variantGenotypeDataDecompressedBlockLength) {
+    private ReadOnlyGeneticVariantBgen(GeneticVariantId variantId,
+                                       int startPos, String sequenceName,
+                                       SampleVariantProviderBgen sampleVariantsProvider, int alleleCount,
+                                       Alleles alleles, Allele refAllele,
+                                       Long variantReadingPosition, Long variantDataSizeInBytes) {
 
-		if (alleles != null) {
-			alleles = alleles.createCopyWithoutDuplicates();
-		}
+        if (alleles != null) {
+            alleles = alleles.createCopyWithoutDuplicates();
+        }
 
-		if (refAllele != null) {
-			if (alleles == null) {
-				throw new GenotypeDataException("A ref allele was supplied while alleles are equal to null");
-			}
-			if (!alleles.contains(refAllele)) {
-				throw new GenotypeDataException("Supplied ref allele (" + refAllele
-						+ ") is not a found in supplied alleles " + alleles.getAllelesAsString()
-						+ " for variant with ID: " + variantId.getPrimairyId() + " at: " + sequenceName + ":"
-						+ startPos);
-			}
-			if (alleles.get(0) != refAllele) {
-				// ref allele is not first in alleles. We need to change this
-				ArrayList<Allele> allelesWithoutRef = new ArrayList<Allele>(alleles.getAlleles());
-				allelesWithoutRef.remove(refAllele);
-				allelesWithoutRef.add(0, refAllele);
-				alleles = Alleles.createAlleles(allelesWithoutRef);
-			}
-		}
+        if (refAllele != null) {
+            if (alleles == null) {
+                throw new GenotypeDataException("A ref allele was supplied while alleles are equal to null");
+            }
+            if (!alleles.contains(refAllele)) {
+                throw new GenotypeDataException("Supplied ref allele (" + refAllele
+                        + ") is not a found in supplied alleles " + alleles.getAllelesAsString()
+                        + " for variant with ID: " + variantId.getPrimairyId() + " at: " + sequenceName + ":"
+                        + startPos);
+            }
+            if (alleles.get(0) != refAllele) {
+                // ref allele is not first in alleles. We need to change this
+                ArrayList<Allele> allelesWithoutRef = new ArrayList<Allele>(alleles.getAlleles());
+                allelesWithoutRef.remove(refAllele);
+                allelesWithoutRef.add(0, refAllele);
+                alleles = Alleles.createAlleles(allelesWithoutRef);
+            }
+        }
 
-		this.variantId = variantId;
-		this.startPos = startPos;
-		this.sequenceName = sequenceName.intern();
-		this.sampleVariantsProvider = sampleVariantsProvider;
-		this.alleles = alleles;
-		this.alleleCount = alleleCount;
-		this.refAllele = refAllele;
-		this.variantReadingPosition = variantReadingPosition;
-		this.variantDataSizeInBytes = variantDataSizeInBytes;
-		this.variantProbabilitiesStartPosition = variantProbabilitiesStartPosition;
-		this.variantGenotypeDataBlockLength = variantGenotypeDataBlockLength;
-		this.variantGenotypeDataDecompressedBlockLength = variantGenotypeDataDecompressedBlockLength;
-	}
+        this.variantId = variantId;
+        this.startPos = startPos;
+        this.sequenceName = sequenceName.intern();
+        this.sampleVariantsProvider = sampleVariantsProvider;
+        this.alleles = alleles;
+        this.alleleCount = alleleCount;
+        this.refAllele = refAllele;
+        this.variantReadingPosition = variantReadingPosition;
+        this.variantDataSizeInBytes = variantDataSizeInBytes;
+    }
 
 //	public static GeneticVariant createSnp(String snpId, int pos, String sequenceName,
 //			SampleVariantsProvider sampleVariantsProvider, char allele1, char allele2, long variantReadingPosition, int variantDataSizeInBytes) {
@@ -169,227 +157,216 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
 //				sampleVariantsProvider, alleles, null, variantReadingPosition, variantDataSizeInBytes);
 //	}
 
-	public static GeneticVariant createVariant(List<String> variantId, int pos, String sequenceName,
-											   SampleVariantsProvider sampleVariantsProvider, List<String> alleles,
-											   VariantGenotypeDataBlockInfo variantGenotypeDataBlockInfo) {
+    public static ReadOnlyGeneticVariantBgen createVariant(List<String> variantId, int pos, String sequenceName,
+                                                           SampleVariantProviderBgen sampleVariantsProvider, List<String> alleles,
+                                                           long variantReadingPosition) {
 
+        return new ReadOnlyGeneticVariantBgen(GeneticVariantId.createVariantId(variantId), pos, sequenceName,
+                sampleVariantsProvider, alleles.size(), Alleles.createBasedOnString(alleles), null,
+                variantReadingPosition, null);
+    }
 
-		return new ReadOnlyGeneticVariantBgen(GeneticVariantId.createVariantId(variantId), pos, sequenceName,
-				sampleVariantsProvider, alleles.size(), Alleles.createBasedOnString(alleles), null,
-				variantGenotypeDataBlockInfo.getVariantReadingPosition(),
-				variantGenotypeDataBlockInfo.getVariantDataSizeInBytes(),
-				variantGenotypeDataBlockInfo.getVariantProbabilitiesStartPosition(),
-				(int) variantGenotypeDataBlockInfo.getBlockLength(),
-				(int) variantGenotypeDataBlockInfo.getDecompressedBlockLength());
-	}
+    public static ReadOnlyGeneticVariantBgen createVariant(String variantId, int pos, String sequenceName,
+                                                           SampleVariantProviderBgen sampleVariantsProvider,
+                                                           int numberOfAlleles, String allele1, String allele2,
+                                                           long variantReadingPosition, long variantDataSizeInBytes) {
+        Alleles alleles;
+        if (numberOfAlleles < 2) {
+            alleles = Alleles.createAlleles(Allele.create(allele1));
+        } else {
+            alleles = Alleles.createBasedOnString(allele1, allele2);
+        }
+        return new ReadOnlyGeneticVariantBgen(GeneticVariantId.createVariantId(variantId), pos, sequenceName,
+                sampleVariantsProvider, numberOfAlleles, alleles, null,
+                variantReadingPosition, variantDataSizeInBytes);
+    }
 
-	public static GeneticVariant createVariant(String variantId, int pos, String sequenceName,
-											   SampleVariantsProvider sampleVariantsProvider,
-											   int numberOfAlleles, String allele1, String allele2,
-											   long variantReadingPosition, int variantDataSizeInBytes) {
-		Alleles alleles = Alleles.createBasedOnString(allele1, allele2);
-		if (numberOfAlleles > 2) {
-			alleles = null;
-		}
-		return new ReadOnlyGeneticVariantBgen(GeneticVariantId.createVariantId(variantId), pos, sequenceName,
-				sampleVariantsProvider, numberOfAlleles, alleles, null,
-				variantReadingPosition, variantDataSizeInBytes,
-				null, null, null);
-	}
+    private void readAdditionalVariantData() {
+        ReadOnlyGeneticVariantBgen variant = sampleVariantsProvider.extendReadOnlyGeneticVariantBgen(this);
+        updateWithAdditionalVariantData(variant);
+    }
 
-	private void readFromSource() {
-		try {
-			ReadOnlyGeneticVariantBgen variant = ((BgenGenotypeData) sampleVariantsProvider).
-					processVariantIdentifyingData(getVariantReadingPosition());
+    public void updateWithAdditionalVariantData(ReadOnlyGeneticVariantBgen variant) {
+        this.alleles = variant.alleles;
+        this.variantId = variant.variantId;
+    }
 
-			this.alleles = variant.alleles;
-			this.variantId = variant.variantId;
-			this.variantProbabilitiesStartPosition = variant.variantProbabilitiesStartPosition;
-			this.variantGenotypeDataBlockLength = variant.variantGenotypeDataBlockLength;
-			this.variantGenotypeDataDecompressedBlockLength = variant.variantGenotypeDataDecompressedBlockLength;
+    @Override
+    public GeneticVariantMeta getVariantMeta() {
+        return variantMeta;
+    }
 
-		} catch (IOException e) {
-			throw new GenotypeDataException(String.format(
-					"Could not read variant data %s at position %d%n",
-					getPrimaryVariantId(), getVariantReadingPosition()));
-		}
-	}
-	
-	@Override
-	public GeneticVariantMeta getVariantMeta()
-	{
-		return variantMeta;
-	}
+    @Override
+    public String getPrimaryVariantId() {
+        return variantId.getPrimairyId();
+    }
 
-	@Override
-	public String getPrimaryVariantId() {
-		return variantId.getPrimairyId();
-	}
+    @Override
+    public List<String> getAlternativeVariantIds() {
+        return getVariantId().getAlternativeIds();
+    }
 
-	@Override
-	public List<String> getAlternativeVariantIds() {
-		return getVariantId().getAlternativeIds();
-	}
+    @Override
+    public List<String> getAllIds() {
+        return getVariantId().getVariantIds();
+    }
 
-	@Override
-	public List<String> getAllIds() {
-		return getVariantId().getVariantIds();
-	}
+    @Override
+    public GeneticVariantId getVariantId() {
+        readAdditionalVariantData();
+        return variantId;
+    }
 
-	@Override
-	public GeneticVariantId getVariantId() {
-		readFromSource();
-		return variantId;
-	}
+    @Override
+    public int getStartPos() {
+        return startPos;
+    }
 
-	@Override
-	public int getStartPos() {
-		return startPos;
-	}
+    @Override
+    public String getSequenceName() {
+        return sequenceName;
+    }
 
-	@Override
-	public String getSequenceName() {
-		return sequenceName;
-	}
+    @Override
+    public final Alleles getVariantAlleles() {
+        if (alleles == null) {
+            this.readAdditionalVariantData();
+        }
+        return alleles;
+    }
 
-	@Override
-	public final Alleles getVariantAlleles() {
-		if (alleles == null) {
-			this.readFromSource();
-		}
-		return alleles;
-	}
+    @Override
+    public int getAlleleCount() {
+        return alleleCount;
+    }
 
-	@Override
-	public int getAlleleCount() {
-		return alleleCount;
-	}
+    @Override
+    public Allele getRefAllele() {
+        return refAllele;
+    }
 
-	@Override
-	public Allele getRefAllele() {
-		return refAllele;
-	}
+    @Override
+    public final List<Alleles> getSampleVariants() {
+        return Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
+    }
 
-	@Override
-	public final List<Alleles> getSampleVariants() {
-		return Collections.unmodifiableList(sampleVariantsProvider.getSampleVariants(this));
-	}
+    @Override
+    public List<Boolean> getSamplePhasing() {
+        return sampleVariantsProvider.getSamplePhasing(this);
+    }
 
-	@Override
-	public List<Boolean> getSamplePhasing() {
-		return sampleVariantsProvider.getSamplePhasing(this);
-	}
+    @Override
+    public float[][] getSampleGenotypeProbilities() {
+        return sampleVariantsProvider.getSampleProbilities(this);
+    }
 
-	@Override
-	public float[][] getSampleGenotypeProbilities() {
-		return sampleVariantsProvider.getSampleProbilities(this);
-	}
+    public double[][] getSampleGenotypeProbabilitiesBgen() {
+        return this.sampleVariantsProvider.getSampleGenotypeProbabilitiesBgen(this);
+    }
 
-	public double[][] getSampleGenotypeProbabilitiesBgen() {
-		return ((BgenGenotypeData) this.sampleVariantsProvider).getSampleGenotypeProbabilitiesBgen(this);
-	}
-
-	public long getVariantProbabilitiesStartPosition() {
-		if (this.variantProbabilitiesStartPosition == null) {
-			readFromSource();
-		}
-		return this.variantProbabilitiesStartPosition;
-	}
-
-	@Override
+    @Override
     public Map<String, ?> getAnnotationValues() {
         return Collections.emptyMap();
     }
 
-	@Override
-	public double getMinorAlleleFrequency() {
-		if (mafResult == null) {
-			try {
-				mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), this.getSampleVariants());
-			} catch (NullPointerException e) {
-				throw new GenotypeDataException("NullPointerException in maf caculation. " + getVariantAlleles() + " ref: "
-						+ getRefAllele(), e);
-			}
-		}
+    @Override
+    public double getMinorAlleleFrequency() {
+        if (mafResult == null) {
+            try {
+                mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), this.getSampleVariants());
+            } catch (NullPointerException e) {
+                throw new GenotypeDataException("NullPointerException in maf caculation. " + getVariantAlleles() + " ref: "
+                        + getRefAllele(), e);
+            }
+        }
 
-		return mafResult.getFreq();
+        return mafResult.getFreq();
 
-	}
+    }
 
-	@Override
-	public Allele getMinorAllele() {
-		if (mafResult == null) {
-			mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), this.getSampleVariants());
-		}
-		return mafResult.getMinorAllele();
-	}
+    @Override
+    public Allele getMinorAllele() {
+        if (mafResult == null) {
+            mafResult = MafCalculator.calculateMaf(this.getVariantAlleles(), this.getRefAllele(), this.getSampleVariants());
+        }
+        return mafResult.getMinorAllele();
+    }
 
-	@Override
-	public float[] getSampleDosages() {
-		return sampleVariantsProvider.getSampleDosage(this);
-	}
+    @Override
+    public float[] getSampleDosages() {
+        return sampleVariantsProvider.getSampleDosage(this);
+    }
 
-	@Override
-	public SampleVariantsProvider getSampleVariantsProvider() {
-		return sampleVariantsProvider;
-	}
+    @Override
+    public SampleVariantsProvider getSampleVariantsProvider() {
+        return sampleVariantsProvider;
+    }
 
-	@Override
-	public byte[] getSampleCalledDosages() {
-		return sampleVariantsProvider.getSampleCalledDosage(this);
-	}
-	
-	@Override
-	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords() {
-		return sampleVariantsProvider.getSampleGenotypeRecords(this);
-	}
-	
-	@Override
-	public Alleles getAlternativeAlleles() {
-		ArrayList<Allele> altAlleles = new ArrayList<>(this.getVariantAlleles().getAlleles());
-		altAlleles.remove(this.getRefAllele());
-		return Alleles.createAlleles(altAlleles);
-	}
+    @Override
+    public byte[] getSampleCalledDosages() {
+        return sampleVariantsProvider.getSampleCalledDosage(this);
+    }
 
-	@Override
-	public int hashCode() {
-		return (int) (this.getVariantReadingPosition() ^ (this.getVariantReadingPosition() >>> 32));
-	}
+    @Override
+    public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords() {
+        return sampleVariantsProvider.getSampleGenotypeRecords(this);
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		final ReadOnlyGeneticVariantBgen other = (ReadOnlyGeneticVariantBgen) obj;
-		return this.getVariantReadingPosition() == other.getVariantReadingPosition();
-	}
+    @Override
+    public Alleles getAlternativeAlleles() {
+        ArrayList<Allele> altAlleles = new ArrayList<>(this.getVariantAlleles().getAlleles());
+        altAlleles.remove(this.getRefAllele());
+        return Alleles.createAlleles(altAlleles);
+    }
 
-	public long getVariantReadingPosition() {
-		return variantReadingPosition;
-	}
+    public long getVariantReadingPosition() {
+        return variantReadingPosition;
+    }
 
-	public int getVariantDataSizeInBytes() {
-		return variantDataSizeInBytes;
-	}
+    public long getVariantDataSizeInBytes() {
+        if (variantDataSizeInBytes == null) {
+            throw new IllegalStateException("variantDataSizeInBytes was not set. Use .setVariantDataSizeInBytes(...)");
+        }
+        return variantDataSizeInBytes;
+    }
 
-	public int getVariantGenotypeDataBlockLength() {
-		if (this.variantGenotypeDataBlockLength == null) {
-			readFromSource();
-		}
-		return this.variantGenotypeDataBlockLength;
-	}
+//    public long getVariantProbabilitiesStartPosition() {
+//        if (this.variantProbabilitiesStartPosition == null) {
+//            readAdditionalVariantData();
+//        }
+//        return this.variantProbabilitiesStartPosition;
+//    }
+//
+//    public int getVariantGenotypeDataBlockLength() {
+//        if (this.variantGenotypeDataBlockLength == null) {
+//            readAdditionalVariantData();
+//        }
+//        return this.variantGenotypeDataBlockLength;
+//    }
+//
+//    public int getVariantGenotypeDataDecompressedBlockLength() {
+//        if (this.variantGenotypeDataDecompressedBlockLength == null) {
+//            readAdditionalVariantData();
+//        }
+//        return this.variantGenotypeDataDecompressedBlockLength;
+//    }
 
-	public int getVariantGenotypeDataDecompressedBlockLength() {
-		if (this.variantGenotypeDataDecompressedBlockLength == null) {
-			readFromSource();
-		}
-		return this.variantGenotypeDataDecompressedBlockLength;
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        ReadOnlyGeneticVariantBgen that = (ReadOnlyGeneticVariantBgen) o;
+        return variantReadingPosition == that.variantReadingPosition &&
+                sampleVariantsProvider.equals(that.sampleVariantsProvider);
+    }
+
+    @Override
+    public int hashCode() {
+        return (int)(variantReadingPosition ^ (variantReadingPosition >>> 32));
+    }
+
+    public void setVariantDataSizeInBytes(long variantDataSizeInBytes) {
+        this.variantDataSizeInBytes = variantDataSizeInBytes;
+    }
 }
