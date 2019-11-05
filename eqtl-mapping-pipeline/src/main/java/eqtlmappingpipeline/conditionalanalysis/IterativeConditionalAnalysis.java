@@ -127,6 +127,11 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 					// get the significant probes from the previous run
 					m_settings.tsProbesConfine = collectEQTLProbes(origOutputDir, iteration, fdrthreshold);
 
+					if (m_settings.tsProbesConfine == null || m_settings.tsProbesConfine.isEmpty()) {
+						System.out.println("No significant probes found.");
+						System.exit(-1);
+					}
+
 					// reset the datasets
 					reinit();
 
@@ -314,16 +319,29 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 		HashSet<Pair<String, String>> eqtls = new HashSet<Pair<String, String>>();
 		for (int iteration = 1; iteration < currentIteration; iteration++) {
 			String iterationFile = origOutputDir + "/Iteration" + iteration + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt.gz";
-			TextFile tf = new TextFile(iterationFile, TextFile.R);
-			tf.readLineElems(TextFile.tab);
-			String[] elems = tf.readLineElems(TextFile.tab);
-			int ctr = 0;
-			while (elems != null) {
-				eqtls.add(new Pair<String, String>(elems[1], elems[4]));
-				ctr++;
-				elems = tf.readLineElems(TextFile.tab);
+
+			if (m_settings.fdrType.equals(FDR.FDRMethod.FULL)) {
+				iterationFile = origOutputDir + "/Iteration" + (iteration) + "/eQTLProbesFDR" + fdr + ".txt.gz";
+			} else if (m_settings.fdrType.equals(FDR.FDRMethod.SNPLEVEL)) {
+				iterationFile = origOutputDir + "/Iteration" + (iteration) + "/eQTLProbesFDR" + fdr + "-SNPLevel.txt.gz";
+			} else if (m_settings.fdrType.equals(FDR.FDRMethod.GENELEVEL)) {
+				iterationFile = origOutputDir + "/Iteration" + (iteration) + "/eQTLProbesFDR" + fdr + "-GeneLevel.txt.gz";
 			}
-			tf.close();
+
+			int ctr = 0;
+			System.out.println("Trying to collect QTLs from " + iterationFile);
+			if (Gpio.exists(iterationFile)) {
+				TextFile tf = new TextFile(iterationFile, TextFile.R);
+				tf.readLineElems(TextFile.tab);
+				String[] elems = tf.readLineElems(TextFile.tab);
+
+				while (elems != null) {
+					eqtls.add(new Pair<String, String>(elems[1], elems[4]));
+					ctr++;
+					elems = tf.readLineElems(TextFile.tab);
+				}
+				tf.close();
+			}
 			System.out.println("Iteration " + iteration + " has " + ctr + " effects. Total sofar: " + eqtls.size());
 		}
 
@@ -336,14 +354,27 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 		THashSet<String> output = new THashSet<String>();
 		String iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt.gz";
-		TextFile tf = new TextFile(iterationFile, TextFile.R);
-		tf.readLineElems(TextFile.tab);
-		String[] elems = tf.readLineElems(TextFile.tab);
-		while (elems != null) {
-			output.add(elems[4]);
-			elems = tf.readLineElems(TextFile.tab);
+		if (m_settings.fdrType.equals(FDR.FDRMethod.FULL)) {
+			iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + ".txt.gz";
+		} else if (m_settings.fdrType.equals(FDR.FDRMethod.SNPLEVEL)) {
+			iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + "-SNPLevel.txt.gz";
+		} else if (m_settings.fdrType.equals(FDR.FDRMethod.GENELEVEL)) {
+			iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + "-GeneLevel.txt.gz";
 		}
-		System.out.println("Iteration " + (currentIteration - 1) + " has " + output.size() + " significant probes.");
+
+		System.out.println("Trying to collect genes/probes from: " + iterationFile);
+		if (Gpio.exists(iterationFile)) {
+			TextFile tf = new TextFile(iterationFile, TextFile.R);
+			tf.readLineElems(TextFile.tab);
+			String[] elems = tf.readLineElems(TextFile.tab);
+			while (elems != null) {
+				output.add(elems[4]);
+				elems = tf.readLineElems(TextFile.tab);
+			}
+			System.out.println("Iteration " + (currentIteration - 1) + " has " + output.size() + " significant probes.");
+		}
+
+
 		return output;
 	}
 

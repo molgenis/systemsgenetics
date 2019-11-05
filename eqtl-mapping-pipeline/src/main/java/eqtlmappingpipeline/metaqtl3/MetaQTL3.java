@@ -652,9 +652,7 @@ public class MetaQTL3 {
 			snpsArr[s] = new InSNP(snp, chr, pos);
 		});
 
-		if (m_settings.sortsnps) {
-			Arrays.parallelSort(snpsArr);
-		}
+		Arrays.parallelSort(snpsArr);
 
 		m_snpList = new String[m_snpList.length];
 		for (int i = 0; i < m_snpList.length; i++) {
@@ -1449,7 +1447,7 @@ public class MetaQTL3 {
 			int q = 0;
 			for (int i = 0; i < workPackages.length; i++) {
 				if (workPackages[i] != null) {
-					if (workPackages[q].getSnps() != null) {
+					if (workPackages[i].getSnps() != null) {
 						m_workPackages[q] = workPackages[i];
 						m_workPackages[q].setId(q);
 						q++;
