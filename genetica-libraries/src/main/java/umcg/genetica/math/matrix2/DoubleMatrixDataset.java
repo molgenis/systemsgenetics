@@ -1456,6 +1456,10 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public DoubleMatrix1D viewRow(R row) {
 		return matrix.viewRow(hashRows.get(row));
 	}
+	
+	public DoubleMatrix1D viewRow(int row) {
+		return matrix.viewRow(row);
+	}
 
 	public DoubleMatrix1D viewCol(C col) {
 		return matrix.viewColumn(hashCols.get(col));
