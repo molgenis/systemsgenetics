@@ -7,12 +7,7 @@ import java.util.Map;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
-import org.molgenis.genotype.util.FixedSizeIterable;
-import org.molgenis.genotype.util.Ld;
-import org.molgenis.genotype.util.LdCalculator;
-import org.molgenis.genotype.util.LdCalculatorException;
-import org.molgenis.genotype.util.MafCalculator;
-import org.molgenis.genotype.util.MafResult;
+import org.molgenis.genotype.util.*;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariantMeta;
@@ -267,6 +262,11 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 
 		}
 
+	}
+
+	@Override
+	public double[][] getSampleGenotypeProbabilitiesBgen() {
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	@Override
