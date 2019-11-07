@@ -19,5 +19,6 @@ public enum Depict2Mode {
 	FIRST1000,
 	CORRELATE_GENES,
 	TRANSPOSE,
+	CONVERT_EXP,
 	SPECIAL;
 }

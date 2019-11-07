@@ -62,7 +62,7 @@ public class Depict2Options {
 	private final int geneCorrelationWindow;
 	private final boolean excludeHla;
 	private boolean corMatrixZscores = false;
-	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN
+	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN or CONVERT_EXP
 	private final File variantFilterFile;
 	private boolean saveOuputAsExcelFiles;
 	private final File variantGeneLinkingFile;
@@ -281,7 +281,7 @@ public class Depict2Options {
 
 		OptionBuilder.withArgName("strings");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("Column names to extract when running --mode CONVERT_BIN");
+		OptionBuilder.withDescription("Column names to extract when running --mode CONVERT_BIN or CONVERT_EXP");
 		OptionBuilder.withLongOpt("columnsToExtract");
 		OPTIONS.addOption(OptionBuilder.create("cte"));
 
@@ -332,7 +332,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -416,6 +416,7 @@ public class Depict2Options {
 				geneCorrelationWindow = 0;
 				break;
 			case CONVERT_BIN:
+			case CONVERT_EXP:
 				if (commandLine.hasOption("cte")) {
 					columnsToExtract = commandLine.getOptionValues("cte");
 				}
@@ -641,6 +642,12 @@ public class Depict2Options {
 				break;
 			case CONVERT_BIN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				if (columnsToExtract != null) {
+					LOGGER.info(" * Columns to extract: " + String.join(" ", columnsToExtract));
+				}
+				break;
+			case CONVERT_EXP:
+				LOGGER.info(" * Expression matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (columnsToExtract != null) {
 					LOGGER.info(" * Columns to extract: " + String.join(" ", columnsToExtract));
 				}

@@ -42,7 +42,6 @@ import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
 import org.molgenis.genotype.variantFilter.VariantFilter;
-import org.molgenis.genotype.variantFilter.VariantFilterIsSnp;
 import org.molgenis.genotype.variantFilter.VariantFilterMaf;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -152,6 +151,9 @@ public class Depict2 {
 					break;
 				case CONVERT_GTEX:
 					ConvertGtexGct.convertGct(options.getGwasZscoreMatrixPath(), options.getOutputBasePath());
+					break;
+				case CONVERT_EXP:
+					convertExpressionMatrixToBin(options);
 					break;
 				case FIRST1000:
 					First1000qtl.printFirst1000(options);
@@ -612,6 +614,47 @@ public class Depict2 {
 		matrix.saveBinary(options.getOutputBasePath());
 
 	}
+	
+	private static void convertExpressionMatrixToBin(Depict2Options options) throws IOException, Exception {
+
+		if (options.getConversionColumnIncludeFilter() != null && !options.getConversionColumnIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+	
+		LOGGER.info("Loaded expression matrix with " + matrix.columns() + " samples and " + matrix.rows() + " genes");
+		
+		HashSet<String> phenotypesHashSet = new HashSet<>(matrix.columns());
+
+		for (String sample : matrix.getHashCols().keySet()) {
+			if (!phenotypesHashSet.add(sample)) {
+				throw new Exception("Expression matrix contains a duplicate sample columns: " + sample);
+			}
+		}
+
+		HashSet<String> variantsHashSet = new HashSet<>(matrix.rows());
+
+		for (String gene : matrix.getHashRows().keySet()) {
+			if (!variantsHashSet.add(gene)) {
+				throw new Exception("Expression matrix contains a duplicate genes: " + gene);
+			}
+		}
+
+		if (options.getConversionColumnIncludeFilter() != null) {
+			List<String> colsToSelect = readMatrixAnnotations(options.getConversionColumnIncludeFilter());
+			LOGGER.info("Number of selected columns: " + colsToSelect.size());
+			matrix = matrix.viewColSelection(colsToSelect);
+		}
+		
+		matrix.normalizeRows();
+		
+		System.out.println("Normalized genes to have mean 0 and sd 1");
+
+		matrix.saveBinary(options.getOutputBasePath());
+
+	}
+
 
 	private static void convertBinToTxt(Depict2Options options) throws IOException, Exception {
 
