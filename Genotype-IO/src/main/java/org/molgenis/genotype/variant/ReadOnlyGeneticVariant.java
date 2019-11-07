@@ -10,6 +10,7 @@ import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.MafCalculator;
 import org.molgenis.genotype.util.MafResult;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -228,6 +229,11 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 	@Override
 	public float[][] getSampleGenotypeProbilities() {
 		return sampleVariantsProvider.getSampleProbilities(this);
+	}
+
+	@Override
+	public double[][] getSampleGenotypeProbabilitiesBgen() {
+		return sampleVariantsProvider.getSampleGenotypeProbabilitiesBgen(this);
 	}
 
 	@Override
