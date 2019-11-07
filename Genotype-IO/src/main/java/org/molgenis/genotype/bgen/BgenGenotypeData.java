@@ -442,75 +442,50 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		// Go to the start of the variant to begin reading there.
 		this.bgenFile.seek(filePointer);
 
-//		//Not sure if we want to do the buffer search here. Or we might be able to take a smaller set.
-		byte[] snpInfoBuffer = new byte[8096];
         // Proposing not to do a buffer search here as the maximum number of possible bytes is very large
         // (16 + 4K + Lid + Lrsid + Lchr + the sum of the allele lengths (maximum of 2^32 for every allele))
-
-//        byte[] byteArray2 = new byte[2];
-//        byte[] byteArray4 = new byte[4];
-        this.bgenFile.read(snpInfoBuffer, 0, snpInfoBuffer.length);
-		int snpInfoBufferPos = 0;
+        byte[] byteArray2 = new byte[2];
+        byte[] byteArray4 = new byte[4];
 
 //		if (snpInfoBufferSize < 20) {
 //			throw new GenotypeDataException("Error reading bgen snp data. File is corrupt");
 //		}
 		// Need to check that it is correct with the block in front of the snp id.
 
-		// Get the ids of the variant
+		// Read the variant identifiers
 		ArrayList<String> variantIds = new ArrayList<>();
-//		LOGGER.debug("SNPinfoBufferPos: " + snpInfoBufferPos);
-		int fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
-//		LOGGER.debug("Snp ID length " + fieldLength);
-		snpInfoBufferPos += 2;
-		String snpId = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, CHARSET);
-//		LOGGER.debug("SNP ID: " + snpId);
-//		System.out.println(snpId);
-		snpInfoBufferPos += fieldLength; // skip id length and snp id
+		String snpId = readVariantInfo(byteArray2);
+		String snpRsId = readVariantInfo(byteArray2);
 
-		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
-//		LOGGER.debug("Snp RS length " + fieldLength);
-
-		snpInfoBufferPos += 2;
-		String snpRsId = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, CHARSET);
-//		LOGGER.debug("SNP RSID: " + snpRsId);
-
-//		System.out.println(snpRsId);
-		snpInfoBufferPos += fieldLength;
+		// add the variant identifiers in the variantIds list so that the RSID is the primary variantID
 		variantIds.add(snpRsId);
 		variantIds.add(snpId);
 
-		fieldLength = getUInt16(snpInfoBuffer, snpInfoBufferPos);
-		snpInfoBufferPos += 2;
-		String seqName = new String(snpInfoBuffer, snpInfoBufferPos, fieldLength, CHARSET);
+		// Read the sequence identifier
+		String seqName = readVariantInfo(byteArray2);
 		sequenceNames.add(seqName);
-//		System.out.println(seqName);
-		snpInfoBufferPos += fieldLength;
 
 		// Get the position of the variant.
-		int variantPosition = getVariantPosition(snpInfoBuffer, snpInfoBufferPos);
-		snpInfoBufferPos += 4;
-//		System.out.println("SNP pos " + variantPosition);
+		bgenFile.read(byteArray4);
+		int variantPosition = getVariantPosition(byteArray4);
 
 		// Get the alleles for this variant.
-		int numberOfAlleles = 2;
+		int numberOfAlleles = 2; // Default is two. (layout one)
 		if (fileLayout.equals(Layout.layOut_2)) {
-			numberOfAlleles = getUInt16(snpInfoBuffer, snpInfoBufferPos);
-			snpInfoBufferPos += 2;
-//			System.out.println("SNP Alleles " + numberOfAlleles);
+			bgenFile.read(byteArray2);
+			numberOfAlleles = getUInt16(byteArray2, 0);
 		}
 
+		// Read the alleles
 		List<String> alleles = new ArrayList<>();
 		for (int i = 0; i < numberOfAlleles; i++) {
-			snpInfoBufferPos = readAllele(snpInfoBuffer, snpInfoBufferPos, alleles);
+			bgenFile.read(byteArray4);
+			readAllele(byteArray4, alleles);
 		}
 
+		// Log this variant
 		LOGGER.debug(String.format("reading %s, %s at %d | seq:pos = %s:%d, %d alleles",
 				snpRsId, snpId, variantStartPosition, seqName, variantPosition, numberOfAlleles));
-
-		// Seek to the end of the read data.
-		long variantGenotypeStartPosition = snpInfoBufferPos + filePointer;
-		this.bgenFile.seek(variantGenotypeStartPosition);
 
         return ReadOnlyGeneticVariantBgen.createVariant(
         		variantIds, variantPosition, seqName, sampleVariantProvider, alleles, variantStartPosition);
@@ -518,15 +493,25 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				// now in order to test against gen data.
 	}
 
+	private String readVariantInfo(byte[] byteArray2) throws IOException {
+		int fieldLength;
+		byte[] variableByteArray;
+		bgenFile.read(byteArray2);
+		fieldLength = getUInt16(byteArray2, 0);
+
+		variableByteArray = new byte[fieldLength];
+		bgenFile.read(variableByteArray);
+		return new String(variableByteArray, CHARSET);
+	}
+
 	/**
 	 * Method for extracting the position of the current variant.
 	 *
 	 * @param snpInfoBuffer The byte array buffer starting from the start of the variant block.
-	 * @param snpInfoBufferPos The position of the variant position field in the snp info buffer.
 	 * @return the position of the variant.
 	 */
-	private int getVariantPosition(byte[] snpInfoBuffer, int snpInfoBufferPos) {
-		long variantPosLong = getUInt32(snpInfoBuffer, snpInfoBufferPos);
+	private int getVariantPosition(byte[] snpInfoBuffer) {
+		long variantPosLong = getUInt32(snpInfoBuffer, 0);
 		// Throw an exception if the variant position exceeds the maximum value of an integer.
 		if (variantPosLong > Integer.MAX_VALUE) {
 			throw new GenotypeDataException("SNP pos larger than (2^31)-1 not supported");
@@ -538,26 +523,26 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	 * Read an allele and add this to the list of alleles
 	 *
 	 * @param snpInfoBuffer A byte array buffer starting from the start of the variant block.
-	 * @param snpInfoBufferPos The position of an allele block in the snp info buffer.
 	 * @param alleles A list of alleles.
-	 * @return the end position of the allele block.
 	 */
-	private int readAllele(byte[] snpInfoBuffer, int snpInfoBufferPos, List<String> alleles) {
+	private void readAllele(byte[] snpInfoBuffer, List<String> alleles) throws IOException {
 
 		// Length of the allele
-		long fieldLengthLong = getUInt32(snpInfoBuffer, snpInfoBufferPos);
-		snpInfoBufferPos += 4;
+		long fieldLengthLong = getUInt32(snpInfoBuffer, 0);
+//		snpInfoBufferPos += 4;
 
 		// Throw an exception if the allele length is longer
 		if (fieldLengthLong > Integer.MAX_VALUE) {
 			throw new GenotypeDataException("SNP with allele longer than (2^31)-1 characters not supported");
 		}
 
+		// Create a new buffer with the correct size.
+		byte[] alleleByteArray = new byte[(int) fieldLengthLong];
+		bgenFile.read(alleleByteArray);
 		// Get the allele from the buffer.
-		String allele = new String(snpInfoBuffer, snpInfoBufferPos, (int) fieldLengthLong, CHARSET);
-		snpInfoBufferPos += ((int) fieldLengthLong);
+		String allele = new String(alleleByteArray, CHARSET);
+//		snpInfoBufferPos += ((int) fieldLengthLong);
 		alleles.add(allele);
-		return snpInfoBufferPos;
 	}
 
 	private double[][] readGenotypesFromVariant(ReadOnlyGeneticVariantBgen variant) throws IOException {
@@ -887,17 +872,29 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		variant.setVariantDataSizeInBytes(variantGenotypeBlockInfo.getVariantDataSizeInBytes(
 				variant.getVariantReadingPosition()));
 
-		int decompressedVariantBlockLength = Math.toIntExact(variantGenotypeBlockInfo.getDecompressedBlockLength());
-		int variantBlockLength = Math.toIntExact(variantGenotypeBlockInfo.getBlockLength());
+		long decompressedVariantBlockLength = variantGenotypeBlockInfo.getDecompressedBlockLength();
+		long variantBlockLength = variantGenotypeBlockInfo.getBlockLength();
 		long variantProbabilitiesStartPosition = variantGenotypeBlockInfo.getVariantProbabilitiesStartPosition();
 
+		if (decompressedVariantBlockLength > Integer.MAX_VALUE) {
+			throw new GenotypeDataException(String.format(
+					"Length of decompressed genotype data exceeds maximum supported value of %d",
+					Integer.MAX_VALUE));
+		}
+
+		if (variantBlockLength > Integer.MAX_VALUE) {
+			throw new GenotypeDataException(String.format(
+					"Length of compressed genotype data exceeds maximum supported value of %d",
+					Integer.MAX_VALUE));
+		}
+
 		// Initialize byte arrays.
-		byte[] compressedBlockData = new byte[variantBlockLength];
-		byte[] decompressedBlockData = new byte[decompressedVariantBlockLength];
+		byte[] compressedBlockData = new byte[(int) variantBlockLength];
+		byte[] decompressedBlockData = new byte[(int) decompressedVariantBlockLength];
 
 		// Read the compressed / uncompressed data starting from the correct location.
 		this.bgenFile.seek(variantProbabilitiesStartPosition);
-		this.bgenFile.read(compressedBlockData, 0, variantBlockLength);
+		this.bgenFile.read(compressedBlockData, 0, (int) variantBlockLength);
 
         switch (snpBlockRepresentation) {
 
@@ -911,10 +908,10 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
                 zstdInflater.decompress(
                 		compressedBlockData,
 						0,
-						variantBlockLength,
+						(int) variantBlockLength,
 						decompressedBlockData,
 						0,
-						decompressedVariantBlockLength);
+						(int) decompressedVariantBlockLength);
                 break;
 
             default:
