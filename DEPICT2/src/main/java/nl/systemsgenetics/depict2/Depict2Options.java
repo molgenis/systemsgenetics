@@ -67,6 +67,7 @@ public class Depict2Options {
 	private boolean saveOuputAsExcelFiles;
 	private final File variantGeneLinkingFile;
 	private final boolean saveUsedVariantsPerGene;
+	private final double mafFilter;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -272,8 +273,7 @@ public class Depict2Options {
 		OptionBuilder.withDescription("When using --mode CORRELATE_GENES first normalize the eigen vectors");
 		OptionBuilder.withLongOpt("normalizeEigenvectors");
 		OPTIONS.addOption(OptionBuilder.create("ne"));
-		
-		
+
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Save all the variants used per gene to calculate the gene p-value (Warning this will create a very large file)");
 		OptionBuilder.withLongOpt("saveUsedVariantsPerGene");
@@ -289,6 +289,12 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Save enrichement results also as excel files. Will generate 1 file per input phenotype");
 		OptionBuilder.withLongOpt("saveExcel");
 		OPTIONS.addOption(OptionBuilder.create("se"));
+
+		OptionBuilder.withArgName("double");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Minimum MAF");
+		OptionBuilder.withLongOpt("maf");
+		OPTIONS.addOption(OptionBuilder.create("maf"));
 
 	}
 
@@ -319,7 +325,7 @@ public class Depict2Options {
 		normalizeEigenvectors = commandLine.hasOption("ne");
 		saveOuputAsExcelFiles = commandLine.hasOption("se");
 		saveUsedVariantsPerGene = commandLine.hasOption("uvg");
-		
+
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
 		} catch (IllegalArgumentException e) {
@@ -433,6 +439,16 @@ public class Depict2Options {
 					variantFilterFile = null;
 				}
 
+				if (commandLine.hasOption("maf")) {
+					try {
+						mafFilter = Double.parseDouble(commandLine.getOptionValue("maf"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --maf \"" + commandLine.getOptionValue("maf") + "\" is not an double");
+					}
+				} else {
+					mafFilter = 0;
+				}
+				
 				if (!commandLine.hasOption("p")) {
 					throw new ParseException("--permutations not specified");
 				} else {
@@ -539,6 +555,7 @@ public class Depict2Options {
 				windowExtend = 0;
 				variantFilterFile = null;
 				variantGeneLinkingFile = null;
+				mafFilter = 0;
 				break;
 			default:
 				genotypeBasePath = null;
@@ -550,6 +567,7 @@ public class Depict2Options {
 				windowExtend = 0;
 				variantFilterFile = null;
 				variantGeneLinkingFile = null;
+				mafFilter = 0;
 				break;
 		}
 
@@ -649,6 +667,9 @@ public class Depict2Options {
 					}
 					LOGGER.info(" * Reference genotype data: " + genotypeBasePaths);
 					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
+				}
+				if(mafFilter != 0){
+					LOGGER.info(" * MAF filter: " + mafFilter);
 				}
 				LOGGER.info(" * Gene window extend in bases: " + (windowExtend < 0 ? "Not selecting variants in a window" : LARGE_INT_FORMAT.format(windowExtend)));
 				if (variantGeneLinkingFile != null) {
@@ -838,6 +859,10 @@ public class Depict2Options {
 
 	public boolean isSaveUsedVariantsPerGene() {
 		return saveUsedVariantsPerGene;
+	}
+
+	public double getMafFilter() {
+		return mafFilter;
 	}
 	
 }

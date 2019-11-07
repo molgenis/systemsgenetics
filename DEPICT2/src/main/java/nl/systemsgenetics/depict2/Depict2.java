@@ -40,6 +40,10 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
+import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
+import org.molgenis.genotype.variantFilter.VariantFilter;
+import org.molgenis.genotype.variantFilter.VariantFilterIsSnp;
+import org.molgenis.genotype.variantFilter.VariantFilterMaf;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
@@ -393,8 +397,15 @@ public class Depict2 {
 		} else {
 			sampleFilter = null;
 		}
-
-		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), sampleFilter, null, 0.34f);
+		
+		VariantFilter variantFilter = new VariantIdIncludeFilter(new HashSet<>(variantsToInclude));
+		
+		if(options.getMafFilter() != 0){
+			VariantFilter mafFilter = new VariantFilterMaf(options.getMafFilter());
+			variantFilter = new VariantCombinedFilter(variantFilter, mafFilter);
+		}	
+		
+		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, variantFilter, sampleFilter, null, 0.34f);
 
 		return referenceGenotypeData;
 	}
@@ -501,7 +512,7 @@ public class Depict2 {
 
 		if (variantsWithDuplicates.size() > 0) {
 
-			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariants.txt");
+			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsDuplicates.txt");
 
 			final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
 			final String[] outputLine = new String[1];
@@ -523,20 +534,73 @@ public class Depict2 {
 			matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
 		}
 
+		ArrayList<String> allVariants = matrix.getRowObjects();
+		ArrayList<String> variantsToExclude = new ArrayList<>();
+		
 		if (options.isPvalueToZscore()) {
 			DoubleMatrix2D matrixContent = matrix.getMatrix();
 
 			int rows = matrixContent.rows();
 			int cols = matrixContent.columns();
 
+			rows:
 			for (int r = 0; r < rows; ++r) {
 				for (int c = 0; c < cols; ++c) {
 
-					matrixContent.setQuick(r, c, ZScores.pToZTwoTailed(matrixContent.getQuick(r, c)));
-
+					double pvalue = matrixContent.getQuick(r, c);
+					
+					if (Double.isNaN(pvalue) || pvalue < 0 || pvalue > 1d) {
+						variantsToExclude.add(allVariants.get(c));
+						continue rows;
+					}
+					
+					matrixContent.setQuick(r, c, ZScores.pToZTwoTailed(pvalue));
+					
 				}
 			}
 
+		} else {
+			DoubleMatrix2D matrixContent = matrix.getMatrix();
+
+			int rows = matrixContent.rows();
+			int cols = matrixContent.columns();
+
+			rows:
+			for (int r = 0; r < rows; ++r) {
+				for (int c = 0; c < cols; ++c) {
+
+					double value = matrixContent.getQuick(r, c);
+					
+					if (Double.isNaN(value)) {
+						variantsToExclude.add(allVariants.get(c));
+						continue rows;
+					}
+				}
+			}
+		}
+		
+		if(variantsToExclude.size() > 0){
+			
+			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsNaN.txt");
+
+			final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+			final String[] outputLine = new String[1];
+			outputLine[0] = "ExcludedVariants";
+			excludedVariantWriter.writeNext(outputLine);
+
+			for (String dupVariant : variantsToExclude) {
+				outputLine[0] = dupVariant;
+				excludedVariantWriter.writeNext(outputLine);
+			}
+			excludedVariantWriter.close();
+
+			LOGGER.info("Encounterd " + variantsToExclude.size() + " variants with NaN values, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
+
+			HashSet<String> variantsToInclude = new HashSet<>(allVariants);
+			variantsToInclude.removeAll(variantsToExclude);
+			
+			matrix = matrix.viewRowSelection(variantsToExclude);
+			
 		}
 
 		if (options.getConversionColumnIncludeFilter() != null) {
