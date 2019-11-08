@@ -115,7 +115,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
         // Throw an exception if the number of samples exceeds the maximum value of an integer.
 		if (sampleCount > Integer.MAX_VALUE) {
-			throw new GenotypeDataException("Found more than (2^31)-1 samples in bgen file. This is not supported");
+			throw new GenotypeDataException("Found more than (2^31)-6 samples in bgen file. This is not supported");
 		}
 
 		// Magic number is in the next four bytes but skipped over.
@@ -514,7 +514,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		long variantPosLong = getUInt32(snpInfoBuffer, 0);
 		// Throw an exception if the variant position exceeds the maximum value of an integer.
 		if (variantPosLong > Integer.MAX_VALUE) {
-			throw new GenotypeDataException("SNP pos larger than (2^31)-1 not supported");
+			throw new GenotypeDataException("SNP pos larger than (2^31)-6 not supported");
 		}
 		return (int) variantPosLong;
 	}
@@ -529,11 +529,10 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 		// Length of the allele
 		long fieldLengthLong = getUInt32(snpInfoBuffer, 0);
-//		snpInfoBufferPos += 4;
 
 		// Throw an exception if the allele length is longer
-		if (fieldLengthLong > Integer.MAX_VALUE) {
-			throw new GenotypeDataException("SNP with allele longer than (2^31)-1 characters not supported");
+		if (fieldLengthLong > Integer.MAX_VALUE - 5) {
+			throw new GenotypeDataException("SNP with allele longer than (2^31)-6 characters not supported");
 		}
 
 		// Create a new buffer with the correct size.
@@ -541,7 +540,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		bgenFile.read(alleleByteArray);
 		// Get the allele from the buffer.
 		String allele = new String(alleleByteArray, CHARSET);
-//		snpInfoBufferPos += ((int) fieldLengthLong);
 		alleles.add(allele);
 	}
 
@@ -876,16 +874,15 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		long variantBlockLength = variantGenotypeBlockInfo.getBlockLength();
 		long variantProbabilitiesStartPosition = variantGenotypeBlockInfo.getVariantProbabilitiesStartPosition();
 
-		if (decompressedVariantBlockLength > Integer.MAX_VALUE) {
+		if (decompressedVariantBlockLength > Integer.MAX_VALUE - 5) {
 			throw new GenotypeDataException(String.format(
-					"Length of decompressed genotype data exceeds maximum supported value of %d",
-					Integer.MAX_VALUE));
+					"Length of decompressed genotype data exceeds maximum supported value of (2^31)-6 (%d)",
+					decompressedVariantBlockLength));
 		}
 
-		if (variantBlockLength > Integer.MAX_VALUE) {
+		if (variantBlockLength > Integer.MAX_VALUE - 5) {
 			throw new GenotypeDataException(String.format(
-					"Length of compressed genotype data exceeds maximum supported value of %d",
-					Integer.MAX_VALUE));
+					"Length of compressed genotype data exceeds maximum supported value of (2^31)-6 (%d)", variantBlockLength));
 		}
 
 		// Initialize byte arrays.
@@ -1149,11 +1146,15 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	        throw new GenotypeDataException("Variant is not of type 'ReadOnlyGeneticVariantBgen' and thus cannot" +
                     "be used within this sampleVariantProvider");
         }
-		// Make sure that probabilities for other than diploid samples
-		// and biallelic variants raise an exception.
+		// Make sure that probabilities for other than biallelic variants
+		// Return missingness
 		double[][] sampleGenotypeProbabilitiesBgen = getSampleGenotypeProbabilitiesBgen(variant);
-		return ProbabilitiesConvertor.convertBgenProbabilitiesToProbabilities(
-				sampleGenotypeProbabilitiesBgen);
+	    if (variant.isBiallelic()) {
+			return ProbabilitiesConvertor.convertBiallelicBgenProbabilitiesToProbabilities(
+					sampleGenotypeProbabilitiesBgen);
+		} else {
+	    	return new float[sampleGenotypeProbabilitiesBgen.length][3];
+		}
 	}
 
 	@Override
