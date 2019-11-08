@@ -227,12 +227,12 @@ public class ProbabilitiesConvertor {
 	 * an empty array of size 3 is returned for the sample.
 	 *
 	 * If the BGEN probabilities represent 2 possible genotypes (biallelic for haploid samples)
-	 * this is expanded as if diploid with a zero probability for heterozygosity.
+	 * this is <b>not</b> expanded as if diploid with a zero probability for heterozygosity, missingness is returned.
 	 *
 	 * @param bgenProbabilities The BGEN probabilities returned by a BgenGenotypeData sampleVariantProvider.
 	 * @return An array of arrays of size 3 with posterior probabilities.
 	 */
-	public static float[][] convertBgenProbabilitiesToProbabilities(double[][] bgenProbabilities) {
+	public static float[][] convertBiallelicBgenProbabilitiesToProbabilities(double[][] bgenProbabilities) {
 		// Define an array consisting of an array of posterior bgenProbabilities for each genotype
 		float[][] probabilities = new float[bgenProbabilities.length][3];
 
@@ -248,10 +248,13 @@ public class ProbabilitiesConvertor {
 				// Convert the array of doubles to the array of floats
 				IntStream.range(0, probabilitiesArrayLength)
 						.forEach(index -> sampleProbabilities[index] = (float) sampleProbabilitiesBgen[index]);
-			} else if (probabilitiesArrayLength == 2) {
-				sampleProbabilities[0] = (float) sampleProbabilitiesBgen[0];
-				sampleProbabilities[2] = (float) sampleProbabilitiesBgen[1];
 			}
+			// Currently returning missing probabilities when the number of probabilities is equal to 2, as .
+			// Uncomment to recode the 2 probabilities as if it represents a diploid sample.
+//			else if (probabilitiesArrayLength == 2) {
+//				sampleProbabilities[0] = (float) sampleProbabilitiesBgen[0];
+//				sampleProbabilities[2] = (float) sampleProbabilitiesBgen[1];
+//			}
 			// If probabilities array length is less than 2 or greater than 3,
 			// just return an array of zeros. [0.0, 0.0, 0.0]
 
