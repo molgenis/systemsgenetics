@@ -6,6 +6,7 @@ import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GenotypeRecord;
+import org.molgenis.genotype.variant.ReadOnlyGeneticVariantBgen;
 
 /**
  * Loads the sample variants for a variant. Is used to enable lazy loading of
@@ -81,4 +82,6 @@ public interface SampleVariantsProvider
 	 * @return An array of probabilities for every sample and possible genotype for a sample and the given variant
 	 */
 	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant);
+
+	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant);
 }

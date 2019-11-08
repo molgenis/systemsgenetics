@@ -5,7 +5,6 @@ import java.util.*;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
-import org.molgenis.genotype.bgen.VariantGenotypeBlockInfo;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.MafCalculator;
 import org.molgenis.genotype.util.MafResult;
@@ -181,12 +180,12 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
                 variantReadingPosition, variantDataSizeInBytes);
     }
 
-    private void readAdditionalVariantData() {
+    public void extendWithAdditionalVariantData() {
         ReadOnlyGeneticVariantBgen variant = sampleVariantsProvider.extendReadOnlyGeneticVariantBgen(this);
         updateWithAdditionalVariantData(variant);
     }
 
-    public void updateWithAdditionalVariantData(ReadOnlyGeneticVariantBgen variant) {
+    private void updateWithAdditionalVariantData(ReadOnlyGeneticVariantBgen variant) {
         this.alleles = variant.alleles;
         this.variantId = variant.variantId;
     }
@@ -213,7 +212,7 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
 
     @Override
     public GeneticVariantId getVariantId() {
-        readAdditionalVariantData();
+        extendWithAdditionalVariantData();
         return variantId;
     }
 
@@ -230,7 +229,7 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
     @Override
     public final Alleles getVariantAlleles() {
         if (alleles == null) {
-            this.readAdditionalVariantData();
+            this.extendWithAdditionalVariantData();
         }
         return alleles;
     }
@@ -262,6 +261,10 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
 
     public double[][] getSampleGenotypeProbabilitiesBgen() {
         return this.sampleVariantsProvider.getSampleGenotypeProbabilitiesBgen(this);
+    }
+
+    public double[][][] getSampleGenotypeProbabilitiesBgenPhased() {
+        return this.sampleVariantsProvider.getSampleGenotypeProbabilitiesBgenPhased(this);
     }
 
     @Override
