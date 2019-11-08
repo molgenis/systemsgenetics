@@ -459,7 +459,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 		// add the variant identifiers in the variantIds list so that the RSID is the primary variantID
 		variantIds.add(snpRsId);
-		variantIds.add(snpId);
+		if (!snpId.isEmpty()) {
+			variantIds.add(snpId);
+		}
 
 		// Read the sequence identifier
 		String seqName = readVariantInfo(byteArray2);
