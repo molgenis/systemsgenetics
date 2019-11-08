@@ -170,10 +170,10 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
                                                            SampleVariantProviderBgen sampleVariantsProvider,
                                                            int numberOfAlleles, String allele1, String allele2,
                                                            long variantReadingPosition, long variantDataSizeInBytes) {
-        Alleles alleles;
+        Alleles alleles = null;
         if (numberOfAlleles < 2) {
             alleles = Alleles.createAlleles(Allele.create(allele1));
-        } else {
+        } else if (numberOfAlleles == 2) {
             alleles = Alleles.createBasedOnString(allele1, allele2);
         }
         return new ReadOnlyGeneticVariantBgen(GeneticVariantId.createVariantId(variantId), pos, sequenceName,
