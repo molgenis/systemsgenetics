@@ -214,12 +214,14 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 * @return An array of probabilities for every sample and possible genotype for a sample and the given variant
 	 */
 	public double[][] getSampleGenotypeProbabilitiesBgen();
-	
+
+	public double[][][] getSampleGenotypeProbabilitiesBgenPhased();
+
 	/**
 	 * Get the records that are available for this variants from the different samples
 	 * 
 	 * @return 
 	 */
 	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords();
-	
+
 }

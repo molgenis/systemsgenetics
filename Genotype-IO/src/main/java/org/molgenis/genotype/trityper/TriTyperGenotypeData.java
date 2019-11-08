@@ -490,6 +490,11 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
 	}
 
+	@Override
+	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
 	byte[] readAheadBuffer = null;
 	byte[] snpbytebuffer = null;
 	long readAheadBufferStart = 0;

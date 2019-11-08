@@ -100,6 +100,11 @@ public class EditableGenotypeDosageSampleVariantsProvider implements EditableSam
 	}
 
 	@Override
+	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
 	public GeneticVariantMeta getGeneticVariantMeta() {
 		return this.geneticVariantMeta;
 	}

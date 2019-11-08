@@ -53,6 +53,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
 	private static final GeneticVariantMeta VARIANT_META = GeneticVariantMetaMap.getGeneticVariantMetaGp();
 
+	private final double minimumPosteriorProbabilityToCall;
 	private final RandomAccessFile bgenFile;
 	private final byte[] byteArray4 = new byte[4]; //resuable 4 byte array
 	private final byte[] byteArray2 = new byte[2]; //resuable 2 byte array
@@ -67,8 +68,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final SampleVariantProviderBgen sampleVariantProvider;
 	private final int sampleVariantProviderUniqueId;
 	private final BgenixReader bgenixReader; // Was previously a final field
-	private final long sampleCount;
-	private List<Boolean> phasing;
+	private final int sampleCount;
 
 	public BgenGenotypeData(File bgenFile) throws IOException {
 		this(bgenFile, 1000);
@@ -79,7 +79,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	}
 
 	public BgenGenotypeData(File bgenFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
-
+		this.minimumPosteriorProbabilityToCall = minimumPosteriorProbabilityToCall;
 		this.bgenFile = new RandomAccessFile(bgenFile, "r");
 
 		// Get offset of variants in the first four bytes.
@@ -109,14 +109,16 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 //		}
 
         // Get the number of samples in the file.
-        sampleCount = readFourBytesAsUInt32(
+        long sampleCountLong = readFourBytesAsUInt32(
                 "Number of samples",
                 "Error reading bgen file header. File is corrupt");
 
         // Throw an exception if the number of samples exceeds the maximum value of an integer.
-		if (sampleCount > Integer.MAX_VALUE) {
+		if (sampleCountLong > Integer.MAX_VALUE) {
 			throw new GenotypeDataException("Found more than (2^31)-6 samples in bgen file. This is not supported");
 		}
+
+		this.sampleCount = (int) sampleCountLong;
 
 		// Magic number is in the next four bytes but skipped over.
 
@@ -179,10 +181,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		} else {
 			sampleVariantProvider = this;
 		}
-
-		phasing = Collections.unmodifiableList(Collections.nCopies((int) sampleCount, false));
-		//Read the first snp to get into genotype-io.
-//		readCompleteGeneticVariant(bgenFile, pointerFirstSnp, (int) sampleCount, this.fileLayout, this.snpBlockRepresentation);
 	}
 
 	/**
@@ -545,8 +543,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		alleles.add(allele);
 	}
 
-	private double[][] readGenotypesFromVariant(ReadOnlyGeneticVariantBgen variant) throws IOException {
-		double[][] probabilities = new double[(int) sampleCount][];
+	private double[][] readGenotypeDataFromVariant(ReadOnlyGeneticVariantBgen variant) throws IOException {
+		double[][] probabilities = new double[sampleCount][];
 		// Get the decompressed variant data of length D
 		byte[] variantBlockData = getDecompressedBlockData(variant);
 
@@ -598,20 +596,21 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			int probabilitiesLengthInBits = getUInt8(variantBlockData, blockBufferOffset);
 			blockBufferOffset += 1;
 
-			byte[] probabilitiesArray = Arrays.copyOfRange(
-					variantBlockData, blockBufferOffset,
-					variantBlockData.length);
-
 			LOGGER.debug(String.format("%s | alleles: %d, ploidy: %d-%d, %s, %d bit representation",
 					variant.getPrimaryVariantId(), numberOfAlleles, minPloidy, maxPloidy,
 					phased ? "phased" : "unphased", probabilitiesLengthInBits));
 
+			byte[] probabilitiesArray = Arrays.copyOfRange(
+					variantBlockData, blockBufferOffset,
+					variantBlockData.length);
+
 			if (phased) {
-				probabilities = readHaplotypeProbabilities(
+				double[][][] haplotypeProbabilities = readHaplotypeProbabilities(
 						probabilitiesArray,
 						probabilitiesLengthInBits,
 						numberOfAlleles,
 						isMissing, ploidies);
+				probabilities = convertHaplotypeProbabilitiesToGenotypeProbabilities(numberOfAlleles, ploidies, haplotypeProbabilities);
 			} else {
 				probabilities = readGenotypeProbabilities(
 						probabilitiesArray,
@@ -619,6 +618,79 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 						numberOfAlleles,
 						isMissing, ploidies);
 			}
+		}
+		return probabilities;
+	}
+
+	private double[][][] readPhasedGenotypeDataFromVariant(ReadOnlyGeneticVariantBgen variant) throws IOException {
+		if (fileLayout != Layout.layOut_2) {
+			throw new GenotypeDataException("Phased data not available");
+		}
+		// Get the decompressed variant data of length D
+		byte[] variantBlockData = getDecompressedBlockData(variant);
+
+		int blockBufferOffset = 0;
+		//must equal data before.
+		if ((int) getUInt32(variantBlockData, blockBufferOffset) != sampleCount) {
+			throw new GenotypeDataException(String.format(
+					"BGEN file format error. " +
+							"The variant's sample count (%d) does not match with the header (%d).",
+					sampleCount, (int) getUInt32(variantBlockData, blockBufferOffset)));
+		}
+		blockBufferOffset += 4;
+
+		//must equal data before.
+		int numberOfAlleles = getUInt16(variantBlockData, blockBufferOffset);
+		blockBufferOffset += 2;
+
+		// Read the minimum ploidy
+		int minPloidy = getUInt8(variantBlockData, blockBufferOffset);
+		blockBufferOffset += 1;
+
+		// Read the maximum ploidy
+		int maxPloidy = getUInt8(variantBlockData, blockBufferOffset);
+		blockBufferOffset += 1;
+
+		// Loop through every individual
+		List<Boolean> isMissing = new ArrayList<>();
+		List<Integer> ploidies = new ArrayList<>();
+		ReadPloidiesAndMissingnessByte(variantBlockData, blockBufferOffset, isMissing, ploidies);
+		// Add the number of individuals to the buffer.
+		blockBufferOffset += sampleCount;
+
+		boolean phased = isPhased(variantBlockData, blockBufferOffset);
+		if (!phased) {
+			throw new GenotypeDataException("Phased data not available");
+		}
+		blockBufferOffset += 1;
+
+		int probabilitiesLengthInBits = getUInt8(variantBlockData, blockBufferOffset);
+		blockBufferOffset += 1;
+
+		LOGGER.debug(String.format("%s | alleles: %d, ploidy: %d-%d, %s, %d bit representation",
+				variant.getPrimaryVariantId(), numberOfAlleles, minPloidy, maxPloidy,
+				"phased", probabilitiesLengthInBits));
+
+		byte[] probabilitiesArray = Arrays.copyOfRange(
+				variantBlockData, blockBufferOffset,
+				variantBlockData.length);
+
+		return readHaplotypeProbabilities(
+				probabilitiesArray,
+				probabilitiesLengthInBits,
+				numberOfAlleles,
+				isMissing, ploidies);
+	}
+
+	private double[][] convertHaplotypeProbabilitiesToGenotypeProbabilities(int numberOfAlleles, List<Integer> ploidies, double[][][] haplotypeProbabilities) {
+		double[][] probabilities;
+		probabilities = new double[haplotypeProbabilities.length][];
+		// Calculate the probability for homozygous genotype 'AA',
+		// the probability for 'AB', and the probability for 'BB'
+		for (int sampleIndex = 0; sampleIndex < haplotypeProbabilities.length; sampleIndex++) {
+			// Convert the probabilities for this particular sample
+			probabilities[sampleIndex] = phasedProbabilitiesToGenotypeProbabilities(
+					haplotypeProbabilities[sampleIndex], ploidies.get(sampleIndex), numberOfAlleles);
 		}
 		return probabilities;
 	}
@@ -692,14 +764,14 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		return probabilities;
 	}
 
-	private double[][] readHaplotypeProbabilities(
+	private double[][][] readHaplotypeProbabilities(
 			byte[] probabilitiesArray,
 			int probabilitiesLengthInBits,
 			int numberOfAlleles, List<Boolean> isMissing,
 			List<Integer> ploidies) {
 
     	// Define an array consisting of an array of posterior probabilities for each genotype
-		double[][] probabilities = new double[getSamples().size()][];
+		double[][][] haplotypeProbabilities = new double[getSamples().size()][][];
 
 		// Get bit offset
 		int bitOffset = 0;
@@ -715,14 +787,11 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 			if (isMissing.get(sampleIndex)) {
 				// If this is missing, the probability is zero.
 				bitOffset += probabilitiesLengthInBits * (ploidy * (numberOfAlleles - 1));
-				probabilities[sampleIndex] = new double[ploidy * numberOfAlleles];
+				haplotypeProbabilities[sampleIndex] = new double[ploidy][numberOfAlleles];
 				continue;
 			}
 
-			double[][] phasedProbabilities = new double[ploidy][numberOfAlleles];
-
-			// Calculate the probability for homozygous genotype 'AA',
-			// the probability for 'AB', and the probability for 'BB'
+			double[][] phasedSampleProbabilities = new double[ploidy][numberOfAlleles];
 
 			for (int i = 0; i < ploidy; i++) {
 				// Get the probabilities for every allele in this haplotype.
@@ -730,13 +799,11 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 						probabilitiesArray, probabilitiesLengthInBits, bitOffset, numberOfAlleles);
 				bitOffset += ((numberOfAlleles - 1) * probabilitiesLengthInBits);
 
-				phasedProbabilities[i] = alleleProbabilities;
+				phasedSampleProbabilities[i] = alleleProbabilities;
 			}
-			// Convert the probabilities for this particular sample
-            probabilities[sampleIndex] = phasedProbabilitiesToGenotypeProbabilitiesBgen(
-                    phasedProbabilities, ploidy, numberOfAlleles);
+			haplotypeProbabilities[sampleIndex] = phasedSampleProbabilities;
 		}
-		return probabilities;
+		return haplotypeProbabilities;
 	}
 
     /**
@@ -749,9 +816,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
      * @param numberOfAlleles The number of alleles.
      * @return The number of probabilities for every possible genotype.
      */
-	private double[] phasedProbabilitiesToGenotypeProbabilitiesBgen(double[][] phasedProbabilities,
-																	Integer ploidy,
-																	int numberOfAlleles) {
+	private double[] phasedProbabilitiesToGenotypeProbabilities(double[][] phasedProbabilities,
+																Integer ploidy,
+																int numberOfAlleles) {
 		// Get all possible combinations of alleles for the haplotypes (all permutations)
 		List<List<Integer>> haplotypeCombinations = getGenotypeCombinations(
 				numberOfAlleles, ploidy, false);
@@ -864,7 +931,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	 */
     private byte[] getDecompressedBlockData(ReadOnlyGeneticVariantBgen variant) throws IOException {
     	// First extend the genetic variant with ids, alleles, etc.
-		variant.updateWithAdditionalVariantData(processVariantIdentifyingData(variant.getVariantReadingPosition()));
+		variant.extendWithAdditionalVariantData();
 
 		// Extract the variant genotype data block info starting from the current position of the
 		// file pointer, which should be right after all alleles for a specific variant.
@@ -1097,7 +1164,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		return ProbabilitiesConvertor.convertProbabilitiesToAlleles(
 				variant.getSampleGenotypeProbilities(),
 				variant.getVariantAlleles(),
-				DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
+				minimumPosteriorProbabilityToCall);
 	}
 
 	@Override
@@ -1108,7 +1175,22 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public List<Boolean> getSamplePhasing(GeneticVariant variant) {
-		return phasing;
+		ReadOnlyGeneticVariantBgen bgenVariant = getCastedBgenVariant(variant);
+		// Check if the file layout is equal to layout 2
+		if (fileLayout != Layout.layOut_2) {
+			// If it is not the case, return a list of booleans with a false value.
+			return Collections.unmodifiableList(Collections.nCopies(sampleCount, false));
+		}
+		try {
+			// Get the decompressed variant data of length D
+			byte[] variantBlockData = getDecompressedBlockData(bgenVariant);
+			boolean phased = isPhased(variantBlockData, 8 + sampleCount);
+			return Collections.unmodifiableList(Collections.nCopies(sampleCount, phased));
+		} catch (IOException e) {
+			throw new GenotypeDataException(String.format(
+					"Could not read variant data %s at position %d%n",
+					variant.getPrimaryVariantId(), bgenVariant.getVariantReadingPosition()));
+		}
 	}
 
 	@Override
@@ -1144,12 +1226,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
-	    if (!(variant instanceof ReadOnlyGeneticVariantBgen)) {
-	        throw new GenotypeDataException("Variant is not of type 'ReadOnlyGeneticVariantBgen' and thus cannot" +
-                    "be used within this sampleVariantProvider");
-        }
-		// Make sure that probabilities for other than biallelic variants
-		// Return missingness
+		// Make sure that probabilities for other than biallelic variants return missingness
 		double[][] sampleGenotypeProbabilitiesBgen = getSampleGenotypeProbabilitiesBgen(variant);
 	    if (variant.isBiallelic()) {
 			return ProbabilitiesConvertor.convertBiallelicBgenProbabilitiesToProbabilities(
@@ -1161,11 +1238,34 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant) {
+		ReadOnlyGeneticVariantBgen bgenVariant = getCastedBgenVariant(variant);
 		try {
-			return readGenotypesFromVariant((ReadOnlyGeneticVariantBgen) variant);
+			return readGenotypeDataFromVariant(bgenVariant);
 		} catch (IOException e) {
-			throw new GenotypeDataException("Error loading probs for variant: " + variant.getPrimaryVariantId() + " from gen file");
+			throw new GenotypeDataException(String.format(
+					"Could not read variant data %s at position %d%n",
+					variant.getPrimaryVariantId(), bgenVariant.getVariantReadingPosition()));
 		}
+	}
+
+	@Override
+	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant) {
+		ReadOnlyGeneticVariantBgen bgenVariant = getCastedBgenVariant(variant);
+		try {
+			return readPhasedGenotypeDataFromVariant(bgenVariant);
+		} catch (IOException e) {
+			throw new GenotypeDataException(String.format(
+					"Could not read variant data %s at position %d%n",
+					variant.getPrimaryVariantId(), bgenVariant.getVariantReadingPosition()));
+		}
+	}
+
+	private ReadOnlyGeneticVariantBgen getCastedBgenVariant(GeneticVariant variant) {
+		if (!(variant instanceof ReadOnlyGeneticVariantBgen)) {
+			throw new GenotypeDataException("Variant is not of type 'ReadOnlyGeneticVariantBgen' and thus cannot" +
+					"be used within this sampleVariantProvider");
+		}
+		return (ReadOnlyGeneticVariantBgen) variant;
 	}
 
 	private Iterable<GeneticVariant> getGeneticVariants(BgenixVariantQueryResult variantQueryResult) {

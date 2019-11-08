@@ -429,6 +429,11 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	}
 
 	@Override
+	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
 	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
 		
 		return RecordIteratorCreators.createIteratorFromProbs(variant.getSampleGenotypeProbilities());

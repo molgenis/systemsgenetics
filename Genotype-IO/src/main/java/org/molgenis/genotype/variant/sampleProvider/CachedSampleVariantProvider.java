@@ -127,6 +127,11 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	}
 
 	@Override
+	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
 	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant)
 	{
 		if (genotypeRecordCache.containsKey(variant))

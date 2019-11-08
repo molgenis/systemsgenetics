@@ -322,6 +322,11 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
+	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
 	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
 		
 		return RecordIteratorCreators.createIteratorFromAlleles(variant.getSampleVariants());

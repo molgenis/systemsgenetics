@@ -424,6 +424,11 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 	}
 
 	@Override
+	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
 	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
 		return RecordIteratorCreators.createIteratorFromAlleles(variant.getSampleVariants());
 	}
