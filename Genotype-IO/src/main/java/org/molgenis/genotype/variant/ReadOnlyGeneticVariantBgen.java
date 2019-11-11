@@ -21,7 +21,7 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
     private Alleles alleles;
     private final Allele refAllele;
     private MafResult mafResult = null;
-    private static final GeneticVariantMeta variantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
+    private final GeneticVariantMeta variantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
     private final long variantReadingPosition;
     private Long variantDataSizeInBytes;
     private final int alleleCount;
