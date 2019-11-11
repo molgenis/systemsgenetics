@@ -79,9 +79,19 @@ public interface SampleVariantsProvider
 	 *
 	 * In contrast to the BGEN specification, all probabilities are stored so the sum of these is one.
 	 *
+	 * @param variant The variant to request probabilities for.
 	 * @return An array of probabilities for every sample and possible genotype for a sample and the given variant
 	 */
 	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant);
 
+	/**
+	 * [sample][haplotype][A, B, C, ...]
+	 *
+	 * Get sample haplotype probabilities. For every allele per haplotype a probability is stored for a particular sample.
+	 * Make sure to ask whether phased data is available for the variant.
+	 *
+	 * @param variant The variant to request probabilities for.
+	 * @return An array of probabilities per haplotype, per sample.
+	 */
 	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant);
 }

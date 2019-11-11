@@ -215,6 +215,14 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 */
 	public double[][] getSampleGenotypeProbabilitiesBgen();
 
+	/**
+	 * [sample][haplotype][A, B, C, ...]
+	 *
+	 * Get sample haplotype probabilities. For every allele per haplotype a probability is stored for a particular sample.
+	 * Make sure to ask whether phased data is available for this variant.
+	 *
+	 * @return An array of probabilities per haplotype, per sample.
+	 */
 	public double[][][] getSampleGenotypeProbabilitiesBgenPhased();
 
 	/**
