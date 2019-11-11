@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.EnumSet;
+
+import org.molgenis.genotype.bgen.BgenGenotypeData;
 import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
@@ -27,7 +29,8 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files", EnumSet.of(BED, BIM, FAM)),
 	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt and optionally: ImputedDosageMatrix.dat", EnumSet.of(TRITYPER_GENOTYPE, TRITYPER_IND, TRITYPER_MAPPINGS, TRITYPER_MAPPINGS, TRITYPER_PHENO, TRITYPER_SNPS)),
 	GEN("Oxford GEN / SAMPLE files", "Oxford .gen and .sample", EnumSet.of(GenotypeFileType.GEN, SAMPLE)),
-	GEN_FOLDER("Oxford GEN folder", "Folder with oxford .gen and .sample files", EnumSet.of(GenotypeFileType.GEN_FOLDER));
+	GEN_FOLDER("Oxford GEN folder", "Folder with oxford .gen and .sample files", EnumSet.of(GenotypeFileType.GEN_FOLDER)),
+	BGEN("Binary Oxford GEN", "Oxford .bgen file", EnumSet.of(GenotypeFileType.BGEN));
 	private final String name;
 	private final String description;
 	private final EnumSet<GenotypeFileType> requiredFiles;
@@ -87,6 +90,14 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 			if (pathFile.exists() && pathFile.isFile() && new File(path + ".sample").exists()) {
 				return GEN;
+			}
+
+			if (new File(path + ".bgen").exists()) {
+				return BGEN;
+			}
+
+			if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.BGEN && pathFile.exists()) {
+				return BGEN;
 			}
 
 			if (pathFile.isDirectory()) {
@@ -228,6 +239,12 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				}
 				return MultiPartGenotypeData.createFromGenFolder(new File(paths[0]), cacheSize, minimumPosteriorProbabilityToCall);
 
+			case BGEN:
+				if (forcedSequence != null) {
+					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
+				}
+				return new BgenGenotypeData(new File(paths[0]), cacheSize);
+
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
 		}
@@ -282,7 +299,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	/**
 	 * Samples are filtered first then the variant filter is applied.
 	 *
-	 * @param paths
+	 * @param path
 	 * @param cacheSize
 	 * @param variantFilter
 	 * @param sampleFilter
