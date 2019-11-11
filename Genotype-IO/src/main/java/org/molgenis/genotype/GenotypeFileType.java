@@ -19,6 +19,7 @@ public enum GenotypeFileType {
 	HAPS(Pattern.compile(".*\\.haps$", Pattern.CASE_INSENSITIVE), ".haps", "Oxford haps"),
 	SAMPLE(Pattern.compile(".*\\.sample$", Pattern.CASE_INSENSITIVE), ".sample", "Oxford sample"),
 	VCF(Pattern.compile(".*\\.vcf\\.gz$", Pattern.CASE_INSENSITIVE), ".vcf.gz", "gzipped vcf"),
+	BGEN(Pattern.compile(".*\\.bgen$", Pattern.CASE_INSENSITIVE), ".bgen", "Binary Oxford gen"),
 	VCF_FOLDER(null, "", "folder with gzipped vcf"),
 	GEN_FOLDER(null, "", "folder with oxford gen files"),
 	TRITYPER_GENOTYPE(Pattern.compile(".*GenotypeMatrix.dat$", Pattern.CASE_INSENSITIVE), "GenotypeMatrix.dat", "Trityper GenotypeMatrix.dat"),//Do not change prefix, it is also used as default file name
