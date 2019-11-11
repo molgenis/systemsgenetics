@@ -4,9 +4,18 @@
  */
 package org.molgenis.genotype.bgen;
 
-import java.io.BufferedWriter;
+import org.junit.rules.TemporaryFolder;
+import org.molgenis.genotype.Allele;
+import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.GenotypeDataException;
+import org.molgenis.genotype.ResourceTest;
+import org.molgenis.genotype.oxford.GenGenotypeData;
+import org.molgenis.genotype.oxford.HapsGenotypeData;
+import org.molgenis.genotype.variant.GeneticVariant;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -15,20 +24,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-
-import org.apache.commons.io.FilenameUtils;
-import org.junit.rules.TemporaryFolder;
-import org.molgenis.genotype.*;
-import org.molgenis.genotype.oxford.GenGenotypeData;
-import org.molgenis.genotype.oxford.HapsGenotypeData;
-import org.molgenis.genotype.variant.GeneticVariant;
-import org.molgenis.genotype.variant.ReadOnlyGeneticVariantBgen;
-import org.molgenis.genotype.vcf.VcfGenotypeData;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;
 
@@ -101,7 +96,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
             // Get the bit representation.
             int bitRepresentation = matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
 
-            // Set the maximum error from the bitrepresentation as shown within the BGEN specification.
+            // Set the maximum error from the bit representation as shown within the BGEN specification.
             double maximumError = 1 / (Math.pow(2, Math.min(bitRepresentation, 2)) - 1);
             // Replace the maximum error by 1*10^4 if the original maximum error was lower, as the precision of
             // the probabilities in the .gen file is often not greater than 4 decimals.
