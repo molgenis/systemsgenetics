@@ -277,5 +277,59 @@ public class ProbabilitiesConvertorTest {
 		
 		
 	}
+
+	@Test
+	public void testBiallelicBgenProbabilitiesToProbabilities() {
+		System.out.println("convertBiallelicBgenProbabilitiesToProbabilities");
+
+		double[][] probs = new double[6][];
+
+		probs[0] = new double[]{1, 0};
+		probs[1] = new double[]{1, 0, 0};
+		probs[2] = new double[]{0, 1, 0};
+		probs[3] = new double[]{0, 1, 0};
+		probs[4] = new double[]{0, 0, 1};
+		probs[5] = new double[]{1, 0, 0, 0};
+
+		float[][] expectedProbs = new float[6][];
+
+		expectedProbs[0] = new float[]{0, 0, 0};
+		expectedProbs[1] = new float[]{1, 0, 0};
+		expectedProbs[2] = new float[]{0, 1, 0};
+		expectedProbs[3] = new float[]{0, 1, 0};
+		expectedProbs[4] = new float[]{0, 0, 1};
+		expectedProbs[5] = new float[]{0, 0, 0};
+
+		float[][] actualProbabilities = ProbabilitiesConvertor
+				.convertBiallelicBgenProbabilitiesToProbabilities(probs);
+		for (int i = 0; i < actualProbabilities.length; i++) {
+			float[] actualProbs = actualProbabilities[i];
+			assertEquals(actualProbs, expectedProbs[i]);
+		}
+	}
+
+	@Test
+	public void testProbabilitiesToBgenProbabilities() {
+		System.out.println("convertProbabilitiesToBgenProbabilities");
+
+		float[][] probs = new float[3][];
+
+		probs[0] = new float[]{0, 0, 1};
+		probs[1] = new float[]{1, 0, 0};
+		probs[2] = new float[]{0, 1, 0};
+
+		double[][] expectedProbs = new double[3][];
+
+		expectedProbs[0] = new double[]{0 ,0, 1};
+		expectedProbs[1] = new double[]{1, 0, 0};
+		expectedProbs[2] = new double[]{0, 1, 0};
+
+		double[][] actualProbabilities = ProbabilitiesConvertor
+				.convertProbabilitiesToBgenProbabilities(probs);
+		for (int i = 0; i < actualProbabilities.length; i++) {
+			double[] actualProbs = actualProbabilities[i];
+			assertEquals(actualProbs, expectedProbs[i]);
+		}
+	}
 	
  }
