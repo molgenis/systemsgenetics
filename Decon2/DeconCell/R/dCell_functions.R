@@ -189,7 +189,7 @@ dCell.run <- function(exp,
   deconCell.marker.genes <- list()
 
   for(i.cellType in 1:n.cellTypes){
-
+    cat(paste0("Calculate for celltype ",i.cellType))
     i.ct.proportions <- proportions[,i.cellType]
     names(i.ct.proportions) <- rownames(proportions)
 
