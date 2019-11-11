@@ -221,9 +221,10 @@ dCell.run.single <- function(exp, i.ct.proportions,
 
   decon.cell.models.list <- list()
   marker.gene.list <- list()
-  cat("\nINFO\t Starting eNet iterations \n")
+  cat(paste0("\nINFO\t Starting ",iterations," eNet iterations \n"))
   j <- 1
   while(j <= iterations) {
+    cat(paste0("\nINFO\t Starting eNet iteration",j, "\n"))
     ## Define samples used of iteratrion
     eNetRes <- glmnet.wrapper(y=i.ct.proportions,
                               x= t(data.matrix(exp)),
@@ -231,7 +232,7 @@ dCell.run.single <- function(exp, i.ct.proportions,
                               return.type="custom",
                               alpha.runs = c(0.01, 0.03 ,0.05, 0,075, 0.1, 0.15, 0.2))
 
-    if(!length(eNetRes$coef) >= nrow(datasets)) {
+    if(!length(eNetRes$coef) >= nrow(exp)) {
       marker.gene.list[[j]] <- names(eNetRes$coef)[-1]
       decon.cell.models.list[[j]] <- eNetRes$coef
       #cat("[INFO]\tDone iteration ", j, "\n")
