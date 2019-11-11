@@ -224,7 +224,7 @@ dCell.run.single <- function(exp, i.ct.proportions,
   cat(paste0("\nINFO\t Starting ",iterations," eNet iterations \n"))
   j <- 1
   while(j <= iterations) {
-    cat(paste0("\nINFO\t Starting eNet iteration",j, "\n"))
+    cat(paste0("\nINFO\t Starting eNet iteration ",j, "\n"))
     ## Define samples used of iteratrion
     eNetRes <- glmnet.wrapper(y=i.ct.proportions,
                               x= t(data.matrix(exp)),
