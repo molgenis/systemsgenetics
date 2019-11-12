@@ -348,6 +348,10 @@ public class PathwayEnrichments {
 		return enrichmentPvalues;
 
 	}
+	
+	public void clearZscoreCache(){
+		enrichmentPvalues = null;
+	}
 
 	private static void glsStep1(DoubleMatrixDataset<String, String> geneZscoresSubset, DoubleMatrix2D geneInvCorMatrix, DoubleMatrixDataset<String, String> genePathwayZscoresSubset, DoubleMatrixDataset<String, String> b1, DoubleMatrixDataset<String, String> b2) {
 

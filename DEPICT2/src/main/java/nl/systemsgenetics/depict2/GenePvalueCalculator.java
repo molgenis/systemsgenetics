@@ -53,7 +53,7 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class GenePvalueCalculator {
 
-	public static final int MAX_ROUND_1_RESCUE = 100000000;
+	public static final int MAX_ROUND_1_RESCUE = 10000000;
 
 	private static final Logger LOGGER = Logger.getLogger(GenePvalueCalculator.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
