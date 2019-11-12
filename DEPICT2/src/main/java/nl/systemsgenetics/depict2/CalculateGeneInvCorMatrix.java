@@ -105,7 +105,7 @@ public class CalculateGeneInvCorMatrix {
 //					}
 					throw ex;
 				}
-				final DoubleMatrixDataset genePvaluesNullGwasGeneArmCorrelationInverse = new DoubleMatrixDataset(genePvaluesNullGwasGeneArmCorrelationInverseMatrix, genePvaluesNullGwasGeneArmCorrelationPruned.getHashRows(), genePvaluesNullGwasGeneArmCorrelationPruned.getHashCols());
+				final DoubleMatrixDataset<String, String> genePvaluesNullGwasGeneArmCorrelationInverse = new DoubleMatrixDataset(genePvaluesNullGwasGeneArmCorrelationInverseMatrix, genePvaluesNullGwasGeneArmCorrelationPruned.getHashRows(), genePvaluesNullGwasGeneArmCorrelationPruned.getHashCols());
 
 				try {
 					genePvaluesNullGwasGeneArmCorrelationInverse.save(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt");

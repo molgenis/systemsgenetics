@@ -5,9 +5,13 @@
  */
 package nl.systemsgenetics.depict2.development;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleSingularValueDecomposition;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.DecimalFormat;
+import java.util.Arrays;
 
 /**
  *
@@ -18,7 +22,7 @@ public class Test {
 	/**
 	 * @param args the command line arguments
 	 */
-	public static void main(String[] args) throws IOException, FileNotFoundException {
+	public static void main(String[] args) throws IOException, FileNotFoundException, Exception {
 
 		//System.out.println(DurationFormatUtils.formatDuration(1123456789, "H:mm:ss.S"));
 //		ChiSquaredDistribution x = new ChiSquaredDistribution(1);
@@ -79,16 +83,90 @@ public class Test {
 //		System.out.println(regression.predict(10));
 //		System.out.println(b0 + (b1 * 10));
 //		System.out.println(3 - regression.predict(10));
-//		
+//
 //
 //		System.out.println(regression.predict(11));
 //		System.out.println(4 - regression.predict(11));
+		//QRDecomposition qr = new QRDecomposition(null);
+		//qr.getSolver()
+		DenseDoubleMatrix2D A = new DenseDoubleMatrix2D(6, 6);
 
-		DecimalFormat largeIntFormatter = new DecimalFormat("###,###");
+		for (int i = 0; i < A.rows(); ++i) {
+			A.setQuick(i, i, 1);
+		}
 
-		String format = largeIntFormatter.format(1000000000);
-		System.out.println(format);
+//		A.setQuick(0, 1, -1);
+//		A.setQuick(1, 0, -1);
+
+		System.out.println("Cor matrix");
+		System.out.println(A.toString());
+
+//		DoubleMatrix2D B = DoubleFactory2D.dense.identity(A.rows());
+//
+//		System.out.println("Cor identify matrix");
+//		System.out.println(B.toString());
+//
+//		DoubleMatrix2D X = B.copy();
+//		DenseDoubleQRDecomposition qr = new DenseDoubleQRDecomposition(A);
+//		System.out.println(qr.toString());
+//		qr.solve(X);
+//		DoubleMatrix2D inv = X.viewPart(0, 0, A.columns(), B.columns()).copy();
+//		System.out.println("Invers of cor matrix");
+//		System.out.println(inv.toString());
+	
+		final DenseDoubleSingularValueDecomposition svd = new DenseDoubleSingularValueDecomposition(A, true, true);
+
+		System.out.println(svd.toString());
+		
+		double[] s = svd.getSingularValues();
+		
+		
+		System.out.println(Arrays.toString(s));
+		
+		final int numberOfComponents = s.length;
+		
+		int firstNonPositive;
+		for(firstNonPositive = 0 ; firstNonPositive < numberOfComponents; ++firstNonPositive ){
+			if(s[firstNonPositive] <= 0){
+				break;
+			}
+		}
+		
+		System.out.println(firstNonPositive);
+		
+		s = Arrays.copyOfRange(s, 0, firstNonPositive);
+		
+		System.out.println(Arrays.toString(s));
+		
+		DoubleMatrix2D v = svd.getV().viewPart(0, 0, numberOfComponents, firstNonPositive);
+		DoubleMatrix2D ut = svd.getU().viewPart(0, 0, numberOfComponents, firstNonPositive).viewDice();		
+		
+		
+		System.out.println("v");
+		System.out.println(v.toString());
+		System.out.println("u transposed");
+		System.out.println(ut.toString());
+	
+		for(int r = 0 ; r < s.length ; r++){
+			final double x = 1/ s[r];
+			System.out.println(x);
+			for(int c = 0 ; c < firstNonPositive ; c++){
+				ut.setQuick(r, c, x * ut.getQuick(r, c));
+			}
+		}
+		
+		System.out.println("1/s * u transposed");
+		System.out.println(ut.toString());
+		
+		DoubleMatrix2D inv = v.zMult(ut, null);
+		
+		System.out.println(inv.toString());
+		
+		
+		System.out.println("Function");
+		
 
 	}
+	
 
 }

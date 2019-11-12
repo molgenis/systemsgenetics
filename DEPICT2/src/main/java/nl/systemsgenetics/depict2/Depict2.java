@@ -17,12 +17,12 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import nl.systemsgenetics.depict2.development.ExtractCol;
@@ -40,9 +40,13 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
+import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
+import org.molgenis.genotype.variantFilter.VariantFilter;
+import org.molgenis.genotype.variantFilter.VariantFilterMaf;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
+import umcg.genetica.math.stats.PearsonRToZscoreBinned;
 
 /**
  *
@@ -122,6 +126,7 @@ public class Depict2 {
 
 			if (options.isDebugMode()) {
 				Logger.getRootLogger().setLevel(Level.DEBUG);
+				options.getDebugFolder().mkdir();
 			} else {
 				Logger.getRootLogger().setLevel(Level.INFO);
 			}
@@ -147,6 +152,9 @@ public class Depict2 {
 				case CONVERT_GTEX:
 					ConvertGtexGct.convertGct(options.getGwasZscoreMatrixPath(), options.getOutputBasePath());
 					break;
+				case CONVERT_EXP:
+					convertExpressionMatrixToBin(options);
+					break;
 				case FIRST1000:
 					First1000qtl.printFirst1000(options);
 					break;
@@ -155,6 +163,12 @@ public class Depict2 {
 					break;
 				case RUN2:
 					run2(options, null, null, null, null);
+					break;
+				case CORRELATE_GENES:
+					correlateGenes(options);
+					break;
+				case TRANSPOSE:
+					tranposeBinMatrix(options);
 					break;
 				case SPECIAL:
 					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
@@ -213,6 +227,20 @@ public class Depict2 {
 		LOGGER.info("Number of phenotypes in GWAS matrix: " + LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
 		LOGGER.info("Number of variants in GWAS matrix: " + LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
 
+		if (options.getVariantFilterFile() != null) {
+			HashSet<String> variantsToInclude = readVariantFilterFile(options.getVariantFilterFile());
+
+			Iterator<String> variantsInZscoreMatrixIt = variantsInZscoreMatrix.iterator();
+			while (variantsInZscoreMatrixIt.hasNext()) {
+				String variant = variantsInZscoreMatrixIt.next();
+				if(!variantsToInclude.contains(variant)){
+					variantsInZscoreMatrixIt.remove();
+				}
+				
+			}
+			LOGGER.info("Number of variants after filtering on selected variants: " + LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
+		}
+
 		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
 
 		LOGGER.info("Done loading genotype data");
@@ -221,109 +249,32 @@ public class Depict2 {
 
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
-		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutations(), 500);
+		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutationsRescue(), 500);
 
 		LOGGER.info("Prepared reference null distribution with " + LARGE_INT_FORMAT.format(randomChi2.length) + " values");
 
-		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation(), options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment());
+		File usedVariantsPerGeneFile = options.isSaveUsedVariantsPerGene() ? new File(options.getOutputBasePath() + "_usedVariantsPerGene.txt") : null;
+		
+		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getNumberOfPermutationsRescue(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation(), options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getDebugFolder(), options.getVariantGeneLinkingFile(), usedVariantsPerGeneFile);
 
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
 
-		genePvalues.save(options.getOutputBasePath() + "_genePvalues.txt");
-		genePvaluesNullGwas.save(options.getOutputBasePath() + "_genePvaluesNullGwas.txt");
+		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
+		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
-		gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
-		gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
-
+		if (LOGGER.isDebugEnabled()) {
+			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
+			gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
+		}
 		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode RUN2 and exactly the same output path and genes file");
 
-		run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount);
-
-	}
-
-	/**
-	 * Part2 of depict. Matrices may be null and then they will be loaded form
-	 * output path. If matrices is null genes will be reloaded
-	 *
-	 * All matrices will have genes on the rows in the same order
-	 *
-	 * @param options
-	 * @param genePvalues
-	 * @param genePvaluesNullGwas
-	 * @param geneVariantCount
-	 * @throws IOException
-	 * @throws Exception
-	 */
-	private static void run2Old(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, List<Gene> genes) throws IOException, Exception {
-
-		if (options.getMode() == Depict2Mode.RUN2) {
-			LOGGER.info("Continuing previous analysis by loading gene p-values");
-			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
-			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
-			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
-			LOGGER.info("Gene p-values loaded");
-			genes = readGenes(options.getGeneInfoFile());
-			LOGGER.info("Loaded " + genes.size() + " genes");
-		}
-
-		//Identify genes with atleast one variant in window
-		final LinkedHashSet<String> selectedGenes = new LinkedHashSet<>();
-		final ArrayList<String> allGenes = geneVariantCount.getRowObjects();
-		final int totalGeneCount = allGenes.size();
-		for (int g = 0; g < totalGeneCount; ++g) {
-			if (geneVariantCount.getElementQuick(g, 0) > 0) {
-				selectedGenes.add(allGenes.get(g));
-			}
-		}
-		LOGGER.info("Number of genes with atleast one variant in specified window: " + LARGE_INT_FORMAT.format(selectedGenes.size()));
-
-		//Exclude genes with no variants
-		genePvalues = genePvalues.viewRowSelection(selectedGenes);
-		genePvaluesNullGwas = genePvaluesNullGwas.viewRowSelection(selectedGenes);
-		//geneVariantCount = geneVariantCount.viewRowSelection(selectedGenes);
-
-		DoubleMatrix2D matrix = genePvalues.getMatrix();
-
-		//Inplace convert gene p-values to z-scores
-		for (int r = 0; r < matrix.rows(); ++r) {
-			for (int c = 0; c < matrix.columns(); ++c) {
-				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
-			}
-		}
-		genePvalues.normalizeColumns();
-		genePvalues = genePvalues.viewDice().createRowForceNormalDuplicate().viewDice();
-//		
-
-		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
-
-		for (int r = 0; r < matrixNull.rows(); ++r) {
-			for (int c = 0; c < matrixNull.columns(); ++c) {
-				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
-			}
-		}
-
-		genePvaluesNullGwas.normalizeColumns();
-		genePvaluesNullGwas = genePvaluesNullGwas.viewDice().createRowForceNormalDuplicate().viewDice();
-
-		//Gene weight will have same order as other matrices
-		Map<String, DoubleMatrixDataset<String, String>> invCorMatrixPerChrArm = CalculateGeneInvCorMatrix.CalculateGeneInvCorMatrix(genePvaluesNullGwas, genes, options);
-
-		selectedGenes.clear();
-		for (DoubleMatrixDataset<String, String> chrArmMatrix : invCorMatrixPerChrArm.values()) {
-			selectedGenes.addAll(chrArmMatrix.getHashRows().keySet());
-		}
-
-		genePvalues = genePvalues.viewRowSelection(selectedGenes);
-
 		if (options.getPathwayDatabases().isEmpty()) {
-			LOGGER.info("Gene weights saved. The analysis will now stop since no pathway databases are provided. Use --mode RUN3 and exactly the same output path and genes file to continue");
+			LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode RUN2 and exactly the same output path and genes file to continue");
 		} else {
-			LOGGER.info("Gene weights saved. If needed the analysis can be resummed from this point using --mode RUN3 and exactly the same output path and genes file");
-			//run3(options, genePvalues, genePvaluesNullGwas, genes, invCorMatrixPerChrArm);
+			run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount);
 		}
-
 	}
 
 	/**
@@ -339,8 +290,18 @@ public class Depict2 {
 
 		if (options.getMode() == Depict2Mode.RUN2) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
-			genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
-			genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+			if (new File(options.getOutputBasePath() + "_genePvalues.dat").exists()) {
+				genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvalues");
+				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvaluesNullGwas");
+			} else if (new File(options.getOutputBasePath() + "_genePvalues.txt").exists()) {
+				//This is for some legacy results. New versions of DEPICT2 will not create these files
+				genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
+				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
+			} else {
+				LOGGER.fatal("Could not find gene pvalues at: " + options.getOutputBasePath() + "_genePvalues.dat");
+				LOGGER.fatal("First use --mode RUN to calculate gene p-values");
+				return;
+			}
 			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
 			LOGGER.info("Gene p-values loaded");
 			genes = readGenes(options.getGeneInfoFile());
@@ -357,45 +318,76 @@ public class Depict2 {
 			}
 		}
 
-		DoubleMatrix2D matrix = genePvalues.getMatrix();
+		final DoubleMatrix2D matrix = genePvalues.getMatrix();
 
 		//Inplace convert gene p-values to z-scores
-		for (int r = 0; r < matrix.rows(); ++r) {
+		IntStream.range(0, matrix.rows()).parallel().forEach(r -> {
 			for (int c = 0; c < matrix.columns(); ++c) {
 				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
 			}
-		}
+		});
 
 		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
-		for (int r = 0; r < matrixNull.rows(); ++r) {
+		IntStream.range(0, matrixNull.rows()).parallel().forEach(r -> {
 			for (int c = 0; c < matrixNull.columns(); ++c) {
 				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
 			}
-		}
+		});
 
 		LOGGER.info("Number of genes with atleast one variant in specified window: " + LARGE_INT_FORMAT.format(selectedGenes.size()));
 
+		final HashSet<String> hlaGenes;
+		if (options.isExcludeHla()) {
+			hlaGenes = new HashSet<>();
+			for (Gene gene : genes) {
+				if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
+					hlaGenes.add(gene.getGene());
+				}
+			}
+			LOGGER.info("Excluding " + hlaGenes.size() + " genes");
+		} else {
+			hlaGenes = null;
+		}
+
 		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 
-		HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, selectedGenes, pathwayDatabases, genes, options.getOutputBasePath(), null, options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getGenePruningR(), options.isIgnoreGeneCorrelations(), options.isForceNormalGenePvalues(), options.isForceNormalPathwayPvalues());
+		final int nrSampleToUseForCorrelation = options.getPermutationGeneCorrelations();
+		final int nrSamplesToUseForNullBetas = options.getPermutationPathwayEnrichment();
 
-		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), false);
+		final Set<String> nullGwasRuns = genePvaluesNullGwas.getHashCols().keySet();
+		if (nullGwasRuns.size() < (nrSampleToUseForCorrelation + nrSamplesToUseForNullBetas)) {
+			throw new Exception("Not enough null gwas runs: " + nullGwasRuns.size() + " < " + nrSampleToUseForCorrelation + " + " + nrSamplesToUseForNullBetas);
+		}
+
+		Iterator<String> nullGwasRunIterator = nullGwasRuns.iterator();
+
+		final LinkedHashSet<String> sampleToUseForCorrelation = new LinkedHashSet<>(nrSampleToUseForCorrelation);
+		for (int i = 0; i < nrSampleToUseForCorrelation; ++i) {
+			sampleToUseForCorrelation.add(nullGwasRunIterator.next());
+		}
+
+		final LinkedHashSet<String> samplesToUseForNullBetas = new LinkedHashSet<>(nrSamplesToUseForNullBetas);
+		for (int i = 0; i < nrSamplesToUseForNullBetas; ++i) {
+			samplesToUseForNullBetas.add(nullGwasRunIterator.next());
+		}
+
+		final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation = genePvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
+		final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas = genePvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
+
+		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
+		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
+			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow(), options.getDebugFolder()));
+		}
+
+		if(options.isSaveOuputAsExcelFiles()){
+			ExcelWriter.saveEnrichmentsToExcel(pathwayEnrichments, options.getOutputBasePath(), genePvalues.getColObjects(), hlaGenes != null);
+		}
+		
+		
 
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
-//		HashSet<String> hlaGenes = new HashSet<>();
-//		for (Gene gene : genes) {
-//			if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
-//				hlaGenes.add(gene.getGene());
-//			}
-//		}
-//
-//		enrichments = PathwayEnrichments.performEnrichmentAnalysis(genePvalues, genePvaluesNullGwas, invCorMatrixPerChrArm, pathwayDatabases, options.getOutputBasePath(), hlaGenes);
-//		
-//		PathwayEnrichments.saveEnrichmentsToExcel(pathwayDatabases, options.getOutputBasePath(), enrichments, genePvalues.getColObjects(), true);
-//
-//		LOGGER.info("Completed enrichment without " + hlaGenes.size() + " gene in HLA region for " + pathwayDatabases.size() + " pathway databases");
 	}
 
 	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
@@ -407,8 +399,15 @@ public class Depict2 {
 		} else {
 			sampleFilter = null;
 		}
-
-		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)), sampleFilter, null, 0.34f);
+		
+		VariantFilter variantFilter = new VariantIdIncludeFilter(new HashSet<>(variantsToInclude));
+		
+		if(options.getMafFilter() != 0){
+			VariantFilter mafFilter = new VariantFilterMaf(options.getMafFilter());
+			variantFilter = new VariantCombinedFilter(variantFilter, mafFilter);
+		}	
+		
+		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, variantFilter, sampleFilter, null, 0.34f);
 
 		return referenceGenotypeData;
 	}
@@ -467,6 +466,24 @@ public class Depict2 {
 
 	}
 
+	private static HashSet<String> readVariantFilterFile(File variantFilterFile) throws IOException {
+
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantFilterFile))).withCSVParser(parser).withSkipLines(0).build();
+
+		final HashSet<String> variants = new HashSet<>();
+
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+
+			variants.add(nextLine[0]);
+
+		}
+
+		return variants;
+
+	}
+
 	private static void convertTxtToBin(Depict2Options options) throws IOException, Exception {
 
 		if (options.getConversionColumnIncludeFilter() != null && !options.getConversionColumnIncludeFilter().exists()) {
@@ -497,7 +514,7 @@ public class Depict2 {
 
 		if (variantsWithDuplicates.size() > 0) {
 
-			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariants.txt");
+			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsDuplicates.txt");
 
 			final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
 			final String[] outputLine = new String[1];
@@ -519,20 +536,73 @@ public class Depict2 {
 			matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
 		}
 
+		ArrayList<String> allVariants = matrix.getRowObjects();
+		ArrayList<String> variantsToExclude = new ArrayList<>();
+		
 		if (options.isPvalueToZscore()) {
 			DoubleMatrix2D matrixContent = matrix.getMatrix();
 
 			int rows = matrixContent.rows();
 			int cols = matrixContent.columns();
 
+			rows:
 			for (int r = 0; r < rows; ++r) {
 				for (int c = 0; c < cols; ++c) {
 
-					matrixContent.setQuick(r, c, ZScores.pToZTwoTailed(matrixContent.getQuick(r, c)));
-
+					double pvalue = matrixContent.getQuick(r, c);
+					
+					if (Double.isNaN(pvalue) || pvalue < 0 || pvalue > 1d) {
+						variantsToExclude.add(allVariants.get(c));
+						continue rows;
+					}
+					
+					matrixContent.setQuick(r, c, ZScores.pToZTwoTailed(pvalue));
+					
 				}
 			}
 
+		} else {
+			DoubleMatrix2D matrixContent = matrix.getMatrix();
+
+			int rows = matrixContent.rows();
+			int cols = matrixContent.columns();
+
+			rows:
+			for (int r = 0; r < rows; ++r) {
+				for (int c = 0; c < cols; ++c) {
+
+					double value = matrixContent.getQuick(r, c);
+					
+					if (Double.isNaN(value)) {
+						variantsToExclude.add(allVariants.get(c));
+						continue rows;
+					}
+				}
+			}
+		}
+		
+		if(variantsToExclude.size() > 0){
+			
+			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsNaN.txt");
+
+			final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+			final String[] outputLine = new String[1];
+			outputLine[0] = "ExcludedVariants";
+			excludedVariantWriter.writeNext(outputLine);
+
+			for (String dupVariant : variantsToExclude) {
+				outputLine[0] = dupVariant;
+				excludedVariantWriter.writeNext(outputLine);
+			}
+			excludedVariantWriter.close();
+
+			LOGGER.info("Encounterd " + variantsToExclude.size() + " variants with NaN values, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
+
+			HashSet<String> variantsToInclude = new HashSet<>(allVariants);
+			variantsToInclude.removeAll(variantsToExclude);
+			
+			matrix = matrix.viewRowSelection(variantsToExclude);
+			
 		}
 
 		if (options.getConversionColumnIncludeFilter() != null) {
@@ -544,11 +614,59 @@ public class Depict2 {
 		matrix.saveBinary(options.getOutputBasePath());
 
 	}
+	
+	private static void convertExpressionMatrixToBin(Depict2Options options) throws IOException, Exception {
+
+		if (options.getConversionColumnIncludeFilter() != null && !options.getConversionColumnIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+	
+		LOGGER.info("Loaded expression matrix with " + matrix.columns() + " samples and " + matrix.rows() + " genes");
+		
+		HashSet<String> phenotypesHashSet = new HashSet<>(matrix.columns());
+
+		for (String sample : matrix.getHashCols().keySet()) {
+			if (!phenotypesHashSet.add(sample)) {
+				throw new Exception("Expression matrix contains a duplicate sample columns: " + sample);
+			}
+		}
+
+		HashSet<String> variantsHashSet = new HashSet<>(matrix.rows());
+
+		for (String gene : matrix.getHashRows().keySet()) {
+			if (!variantsHashSet.add(gene)) {
+				throw new Exception("Expression matrix contains a duplicate genes: " + gene);
+			}
+		}
+
+		if (options.getConversionColumnIncludeFilter() != null) {
+			List<String> colsToSelect = readMatrixAnnotations(options.getConversionColumnIncludeFilter());
+			LOGGER.info("Number of selected columns: " + colsToSelect.size());
+			matrix = matrix.viewColSelection(colsToSelect);
+		}
+		
+		matrix.normalizeRows();
+		
+		System.out.println("Normalized genes to have mean 0 and sd 1");
+
+		matrix.saveBinary(options.getOutputBasePath());
+
+	}
+
 
 	private static void convertBinToTxt(Depict2Options options) throws IOException, Exception {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-		matrix.save(options.getOutputBasePath());
+
+		String[] columnsToExtract = options.getColumnsToExtract();
+
+		if (columnsToExtract != null) {
+			matrix = matrix.viewColSelection(columnsToExtract);
+		}
+
+		matrix.save(options.getOutputBasePath() + ".txt");
 
 	}
 
@@ -600,6 +718,65 @@ public class Depict2 {
 
 		return randomChi2;
 
+	}
+
+	private static void correlateGenes(Depict2Options options) throws FileNotFoundException, Exception {
+
+		DoubleMatrixDataset<String, String> expressionMatrix;
+
+		if (options.getGeneInfoFile() != null) {
+
+			final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGeneInfoFile()))).withCSVParser(parser).withSkipLines(0).build();
+
+			final HashSet<String> genes = new HashSet<>();
+
+			String[] nextLine;
+			while ((nextLine = reader.readNext()) != null) {
+				genes.add(nextLine[0]);
+			}
+
+			LOGGER.info("Read " + genes.size() + " genes to load");
+
+			expressionMatrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(options.getGwasZscoreMatrixPath(), '\t', genes, null);
+
+		} else {
+			expressionMatrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+		}
+
+		if (options.isNormalizeEigenvectors()) {
+			expressionMatrix.normalizeRows();
+			expressionMatrix.normalizeColumns();
+			LOGGER.info("Data row normalized and then column normalized");
+		}
+
+		LOGGER.info("Loaded expression matrix with " + expressionMatrix.rows() + " genes and " + expressionMatrix.columns() + " observations");
+
+		DoubleMatrixDataset<String, String> corMatrix = expressionMatrix.viewDice().calculateCorrelationMatrix();
+
+		LOGGER.info("Done calculating correlations");
+
+		if (options.isCorMatrixZscores()) {
+			PearsonRToZscoreBinned r2zScore = new PearsonRToZscoreBinned(10000000, expressionMatrix.columns());
+			r2zScore.inplaceRToZ(corMatrix);
+			LOGGER.info("Converted correlations to Z-scores");
+		}
+
+		for (int i = 0; i < corMatrix.columns(); ++i) {
+			corMatrix.setElementQuick(i, i, 0);
+		}
+		LOGGER.info("Diagnonal set to zero as this might inflate coregulation towards genes in GWAS loci");
+
+		corMatrix.saveBinary(options.getOutputBasePath());
+
+		LOGGER.info("Correlation matrix saved to: " + options.getOutputBasePath() + ".dat");
+
+	}
+
+	private static void tranposeBinMatrix(Depict2Options options) throws IOException {
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		matrix = matrix.viewDice();
+		matrix.saveBinary(options.getOutputBasePath());
 	}
 
 	protected static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
