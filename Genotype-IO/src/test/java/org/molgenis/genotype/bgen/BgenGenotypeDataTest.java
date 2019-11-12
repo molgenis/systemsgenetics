@@ -4,7 +4,6 @@
  */
 package org.molgenis.genotype.bgen;
 
-import org.junit.rules.TemporaryFolder;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -12,7 +11,7 @@ import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.oxford.GenGenotypeData;
 import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -21,6 +20,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,7 +34,7 @@ import static org.testng.Assert.*;
 public class BgenGenotypeDataTest extends ResourceTest {
 
     private BgenGenotypeData bgenGenotypeData;
-    private TemporaryFolder folder;
+    private File folder;
     private File exampleSampleFile = getTestResourceFile("/bgenExamples/genFiles/example.sample");
     private File exampleGenFile = getTestResourceFile("/bgenExamples/genFiles/example.gen");
     private List<File> complexFiles = Arrays.asList(
@@ -58,10 +59,31 @@ public class BgenGenotypeDataTest extends ResourceTest {
     public BgenGenotypeDataTest() throws URISyntaxException {
     }
 
-    @BeforeClass
-    public void BeforeClass() throws IOException {
-        folder = new TemporaryFolder();
-        folder.create();
+    @BeforeTest
+    public void setUpMethod() {
+        File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+        Date date = new Date();
+
+        folder = new File(tmpDir, "BgenGenotypeDataTest_" + dateFormat.format(date));
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                System.out.println("Removing tmp dir and files");
+                for (File file : folder.listFiles()) {
+                    System.out.println(" - Deleting: " + file.getAbsolutePath());
+                    file.delete();
+                }
+                System.out.println(" - Deleting: " + folder.getAbsolutePath());
+                folder.delete();
+            }
+        });
+
+        folder.mkdir();
+
+        System.out.println("Temp folder with output of this test: " + folder.getAbsolutePath());
     }
 
 //    @Test
@@ -103,7 +125,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
             maximumError = Math.max(maximumError, 1e-4);
 
             // Load the bgen file from a temporary folder
-            Path bgenFile = Paths.get(folder.getRoot().toString(), origBgenFile.getName());
+            Path bgenFile = Paths.get(folder.toString(), origBgenFile.getName());
             Files.copy(origBgenFile.toPath(), bgenFile);
             bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile());
 
@@ -223,7 +245,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
         // Loop through the complex bgen files and load the corresponding copy from a temporary folder
         for (File origBgenFile : complexFiles) {
             // Copy the BGEN file and load this copy
-            Path bgenFile = Paths.get(folder.getRoot().toString(), origBgenFile.getName());
+            Path bgenFile = Paths.get(folder.toString(), origBgenFile.getName());
             Files.copy(origBgenFile.toPath(), bgenFile);
             bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile());
 
@@ -301,7 +323,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
         File oxfordSampleFile = getTestResourceFile("/bgenExamples/genFiles/haplotypes.sample");
 
         // Copy the input file
-        Path target = Paths.get(folder.getRoot().toString(), bgenFile.getName());
+        Path target = Paths.get(folder.toString(), bgenFile.getName());
         Files.copy(bgenFile.toPath(), target);
         // Load the haps and bgen data
         HapsGenotypeData hapsGenotypeData = new HapsGenotypeData(hapsFile, oxfordSampleFile);
