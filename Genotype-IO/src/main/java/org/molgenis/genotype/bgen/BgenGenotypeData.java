@@ -74,11 +74,24 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         this(bgenFile, 1000);
     }
 
+    public BgenGenotypeData(File bgenFile, File bgenixFile) throws IOException {
+        this(bgenFile, bgenixFile, 1000);
+    }
+
     public BgenGenotypeData(File bgenFile, int cacheSize) throws IOException {
         this(bgenFile, cacheSize, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
     }
 
+    public BgenGenotypeData(File bgenFile, File bgenixFile, int cacheSize) throws IOException {
+        this(bgenFile, bgenixFile, cacheSize, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
+    }
+
     public BgenGenotypeData(File bgenFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
+        this(bgenFile, new File(bgenFile.getAbsolutePath() + ".bgi"),
+                cacheSize, minimumPosteriorProbabilityToCall);
+    }
+
+    public BgenGenotypeData(File bgenFile, File bgenixFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
         this.minimumPosteriorProbabilityToCall = minimumPosteriorProbabilityToCall;
         this.bgenFile = new RandomAccessFile(bgenFile, "r");
 
@@ -151,8 +164,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             // Process sample identifier block.
             processSampleIdentifierBlock(snpOffset, headerSize);
         }
-
-        File bgenixFile = new File(bgenFile.getAbsolutePath() + ".bgi");
 
         // Get the start of the variant data block
         long pointerFirstSnp = snpOffset + 4;
@@ -1108,12 +1119,12 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
     @Override
     public Map<String, Annotation> getVariantAnnotationsMap() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return Collections.emptyMap();
     }
 
     @Override
     public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return new LinkedHashMap<String, SampleAnnotation>();
     }
 
     @Override
