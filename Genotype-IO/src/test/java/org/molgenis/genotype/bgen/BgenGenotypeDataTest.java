@@ -52,8 +52,8 @@ public class BgenGenotypeDataTest extends ResourceTest {
             getTestResourceFile("/bgenExamples/example.16bits.bgen"),
             getTestResourceFile("/bgenExamples/example.16bits.zstd.bgen"),
             getTestResourceFile("/bgenExamples/example.25bits.bgen"),
-            getTestResourceFile("/bgenExamples/example.32bits.bgen")
-//			getTestResourceFile("/bgenExamples/example.v11.bgen")
+            getTestResourceFile("/bgenExamples/example.32bits.bgen"),
+			getTestResourceFile("/bgenExamples/example.v11.bgen")
     );
 
     public BgenGenotypeDataTest() throws URISyntaxException {
@@ -129,8 +129,15 @@ public class BgenGenotypeDataTest extends ResourceTest {
             Files.copy(origBgenFile.toPath(), bgenFile);
             bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile());
 
-            // Test the equality of sample names and sequence names
-            assertEquals(bgenGenotypeData.getSampleNames(), genGenotypeData.getSampleNames());
+            // The version 1.1 example file does not have sample identifiers
+            if (origBgenFile.getName().equals("example.v11.bgen")) {
+                assertFalse(bgenGenotypeData.areSampleIdentifiersPresent());
+            } else {
+                assertTrue(bgenGenotypeData.areSampleIdentifiersPresent());
+                // Test the equality of sample names and sequence names
+                assertEquals(bgenGenotypeData.getSampleNames(), genGenotypeData.getSampleNames());
+            }
+
             assertEquals(bgenGenotypeData.getSeqNames(), genGenotypeData.getSeqNames());
 
             Iterator<GeneticVariant> bgenIterator = bgenGenotypeData.iterator();
