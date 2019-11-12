@@ -382,6 +382,11 @@ public class Depict2 {
 
 		if(options.isSaveOuputAsExcelFiles()){
 			ExcelWriter.saveEnrichmentsToExcel(pathwayEnrichments, options.getOutputBasePath(), genePvalues.getColObjects(), hlaGenes != null);
+		} else {
+			for (PathwayEnrichments pathwayEnrichment : pathwayEnrichments) {
+				//this will make sure z-scores are saved even if make excel is off
+				pathwayEnrichment.getEnrichmentZscores();
+			}
 		}
 		
 		
