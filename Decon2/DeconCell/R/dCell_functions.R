@@ -193,7 +193,7 @@ dCell.run <- function(exp,
     i.ct.proportions <- proportions[,i.cellType]
     names(i.ct.proportions) <- rownames(proportions)
 
-    i.dCell.run <- dCell.run.single(exp = exp, iterations = 5,
+    i.dCell.run <- dCell.run.single(exp = exp, iterations = iterations,
                      i.ct.proportions=i.ct.proportions)
 
     deconCell.models.per.CT[[i.cellType]] <- i.dCell.run$decon.cell.models
