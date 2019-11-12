@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
@@ -32,7 +34,7 @@ import java.util.zip.Inflater;
  */
 public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantProviderBgen {
 
-    public enum blockRepresentation {
+    public enum BlockRepresentation {
         compression_0, compression_1, compression_2
     }
 
@@ -41,33 +43,34 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     }
 
     /**
-     * Index is the number of last bits used from the first byte
+     * Index is the number of bits used from the last byte. (these are the rightmost bits)
      */
     private static final int[] LAST_BYTE_MASK = {255, 1, 3, 7, 15, 31, 63, 127, 255};
+
     /**
-     * Index is the number of first bits used from the last byte
+     * Index is the number of bits used from the first byte. (these are the leftmost bits)
      */
     private static final int[] FIRST_BYTE_MASK = {0, 128, 192, 224, 240, 248, 252, 254, 255};
 
     private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
-    private static final GeneticVariantMeta VARIANT_META = GeneticVariantMetaMap.getGeneticVariantMetaGp();
     private static final Logger LOGGER = Logger.getLogger(BgenGenotypeData.class);
+    private static final Charset CHARSET = Charset.forName("UTF-8");
 
-    private final double minimumPosteriorProbabilityToCall;
     private final RandomAccessFile bgenFile;
     private final byte[] byteArray4 = new byte[4]; //resuable 4 byte array
     private final byte[] byteArray2 = new byte[2]; //resuable 2 byte array
+    private final List<Sample> samples = new ArrayList<>();
     private final Inflater gzipInflater = new Inflater();
     private final ZstdDecompressor zstdInflater = new ZstdDecompressor();
-    private static final Charset CHARSET = Charset.forName("UTF-8");
-    private final blockRepresentation snpBlockRepresentation;
-    private final Layout fileLayout;
-    private final List<Sample> samples = new ArrayList<>();
     private final LinkedHashSet<String> sequenceNames = new LinkedHashSet<String>();
+    private final BlockRepresentation snpBlockRepresentation;
+    private final Layout fileLayout;
+    private boolean sampleIdentifiersPresent;
     ;
     private final SampleVariantProviderBgen sampleVariantProvider;
+    private final BgenixReader bgenixReader;
+    private final double minimumPosteriorProbabilityToCall;
     private final int sampleVariantProviderUniqueId;
-    private final BgenixReader bgenixReader; // Was previously a final field
     private final int sampleCount;
 
     public BgenGenotypeData(File bgenFile) throws IOException {
@@ -153,16 +156,21 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         fileLayout = readFileLayout(byteArray4);
 
         // Throw an exception if the SNP block representation is 2 while layout 1 is used.
-        if (snpBlockRepresentation.equals(blockRepresentation.compression_2) & fileLayout.equals(Layout.layOut_1)) {
+        if (snpBlockRepresentation == BlockRepresentation.compression_2 && fileLayout == Layout.layOut_1) {
             throw new GenotypeDataException("Invalid compression method for layout one observed. Trying to use ZSTD compression on layout one file, which is not supported.");
         }
 
         // Read the sample identifiers presence; set sampleIdentifiersPresent to true if present, false if absent.
-        boolean sampleIdentifiersPresent = readSampleIdentifiersPresence(byteArray4[3]);
+        sampleIdentifiersPresent = readSampleIdentifiersPresence(byteArray4[3]);
 
         if (sampleIdentifiersPresent) {
             // Process sample identifier block.
             processSampleIdentifierBlock(snpOffset, headerSize);
+        } else {
+            // Set dummy samples.
+            IntStream.range(0, sampleCount).boxed()
+                    .map(i -> new Sample(i.toString(), null, null))
+                    .collect(Collectors.toCollection(() -> samples));
         }
 
         // Get the start of the variant data block
@@ -333,7 +341,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
      *
      * @return the representation of the SNP probabilities block.
      */
-    private blockRepresentation readSnpBlockRepresentation() {
+    private BlockRepresentation readSnpBlockRepresentation() {
 
         // Perform bitwise operation to mask everything outside the 0, 1 bits.
         int blockRepresentationFlag = byteArray4[0] & 3; // mask with 7 (00000011) and convert to an integer.
@@ -342,13 +350,13 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         switch (blockRepresentationFlag) {
             case 0:
                 LOGGER.debug("Genotype data is not compressed.");
-                return blockRepresentation.compression_0;
+                return BlockRepresentation.compression_0;
             case 1:
                 LOGGER.debug("Genotype data is zlib compressed");
-                return blockRepresentation.compression_1;
+                return BlockRepresentation.compression_1;
             case 2:
                 LOGGER.debug("Genotype data is zstd compressed");
-                return blockRepresentation.compression_2;
+                return BlockRepresentation.compression_2;
             default:
                 throw new GenotypeDataException("Invalid compression method, observed: " + (blockRepresentationFlag));
         }
@@ -1070,7 +1078,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
         // If the probabilities block is compressed read the size of the decompressed data within
         // the next four bytes.
-        if (!snpBlockRepresentation.equals(blockRepresentation.compression_0)) {
+        if (!(snpBlockRepresentation == BlockRepresentation.compression_0)) {
             snpBlockSizeDecompressed = getUInt32(snpInfoBuffer, snpInfoBufferPos);
             return new VariantGenotypeBlockInfo(
                     variantGenotypeStartPosition,
@@ -1096,7 +1104,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     private VariantGenotypeBlockInfo getVariantGenotypeDataBlockInfoForLayoutOne(
             byte[] snpInfoBuffer, int snpInfoBufferPos, long variantGenotypeStartPosition) {
         long variantBlockSize;
-        if (snpBlockRepresentation.equals(blockRepresentation.compression_1)) {
+        if (snpBlockRepresentation == BlockRepresentation.compression_1) {
             // If the file layout is 1 and the variants are zlib compressed
             // The snp block starts in the 4 bytes after the block size field
             variantBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
@@ -1112,6 +1120,35 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         }
     }
 
+    /**
+     * Getter for the presence of sample identifiers within the BGEN file.
+     *
+     * @return true if sample identifiers are present in the BGEN file, false if otherwise.
+     */
+    public boolean areSampleIdentifiersPresent() {
+        return sampleIdentifiersPresent;
+    }
+
+    /**
+     * Getter for the compression type of the genotype data block.
+     * Equivalent to the first two bits of the set of <i>flags</i> within the header of the BGEN file.
+     *
+     * @return the compression type of the genotype data block.
+     */
+    public BlockRepresentation getGenotypeDataBlockRepresentation() {
+        return snpBlockRepresentation;
+    }
+
+    /**
+     * Getter for the layout type of the BGEN file that corresponds to this object.
+     * This is equivalent to the 2-5 bits of the set of <i>flags</i> within the header of the BGEN file.
+     *
+     * @return the layout type of the BGEN file.
+     */
+    public Layout getFileLayout() {
+        return fileLayout;
+    }
+
     @Override
     public List<Sample> getSamples() {
         return Collections.unmodifiableList(samples);
@@ -1124,7 +1161,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
     @Override
     public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
-        return new LinkedHashMap<String, SampleAnnotation>();
+        return new LinkedHashMap<>();
     }
 
     @Override

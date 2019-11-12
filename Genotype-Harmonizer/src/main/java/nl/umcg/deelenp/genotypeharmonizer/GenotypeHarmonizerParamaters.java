@@ -111,6 +111,7 @@ public class GenotypeHarmonizerParamaters {
                         + "* VCFFOLDER - matches all bgziped vcf files + tabix index in a folder\n"
                         + "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample\n"
                         + "* GEN - Oxford .gen & .sample\n"
+                        + "* BGEN - Oxford .bgen\n"
                         + "* TRITYPER - TriTyper format folder")
                 .withLongOpt("inputType")
                 .create("I");

@@ -243,7 +243,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				if (forcedSequence != null) {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
-				return new BgenGenotypeData(new File(paths[0]), cacheSize);
+				return new BgenGenotypeData(new File(paths[0] + ".bgen"), cacheSize);
 
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
