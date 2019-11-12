@@ -739,11 +739,9 @@ public class Depict2 {
 			DoubleMatrixDataset<String, String> curMatrix = summaryStatisticsMap.get(key);
 			int j = 0;
 			for (String curVariant: overlappingVariants) {
-				// Not ideal but works as this avoids having to deal with the column name and ensures the correct variant
-				// is retrieved
-				//finalMergedPvalueMatrix.setElementQuick(j, i, curMatrix.getRow(curVariant).get(0));
-				double curValue= curMatrix.viewRow(curVariant).get(0);
-				finalMergedPvalueMatrix.setElement(curVariant, key, curValue);
+				finalMergedPvalueMatrix.setElementQuick(j, i, curMatrix.viewRow(curVariant).get(0));
+				//double curValue= curMatrix.viewRow(curVariant).get(0);
+				//finalMergedPvalueMatrix.setElement(curVariant, key, curValue);
 				j++;
 			}
 			i++;
