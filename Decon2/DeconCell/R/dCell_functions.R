@@ -230,7 +230,7 @@ dCell.run.single <- function(exp, i.ct.proportions,
                               x= t(data.matrix(exp)),
                               parallel=F,
                               return.type="custom",
-                              alpha.runs = c(0.01, 0.03 ,0.05, 0,075, 0.1, 0.15, 0.2))
+                              alpha.runs = c(0.01, 0.03 ,0.05, 0.075, 0.1, 0.15, 0.2))
 
     if(!length(eNetRes$coef) >= nrow(exp)) {
       marker.gene.list[[j]] <- names(eNetRes$coef)[-1]
