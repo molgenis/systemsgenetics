@@ -223,11 +223,12 @@ public class ProbabilitiesConvertor {
 	 * If the BGEN probabilities for a sample represent 3 possible genotypes (biallelic for dipoid samples)
 	 * This is returned.
 	 *
-	 * If the BGEN probabilities represent less than 2 or more than 3 possible genotypes
+	 * If the BGEN probabilities represent less than 3 or more than 3 possible genotypes
 	 * an empty array of size 3 is returned for the sample.
 	 *
 	 * If the BGEN probabilities represent 2 possible genotypes (biallelic for haploid samples)
-	 * this is <b>not</b> expanded as if diploid with a zero probability for heterozygosity, missingness is returned.
+	 * this is <b>not</b> expanded as if diploid with a zero probability for heterozygosity.
+	 * Instead missingness is returned.
 	 *
 	 * @param bgenProbabilities The BGEN probabilities returned by a BgenGenotypeData sampleVariantProvider.
 	 * @return An array of arrays of size 3 with posterior probabilities.
