@@ -243,7 +243,33 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				if (forcedSequence != null) {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
-				return new BgenGenotypeData(new File(paths[0] + ".bgen"), cacheSize);
+				if (paths.length == 1) {
+					if (new File(paths[0] + ".bgen").exists()) {
+						return new BgenGenotypeData(new File(paths[0] + ".bgen"), new File(
+								paths[0] + ".sample"), cacheSize, minimumPosteriorProbabilityToCall);
+					} else if (new File(paths[0]).exists() && new File(paths[0] + ".sample").exists()) {
+						return new BgenGenotypeData(new File(paths[0]), new File(
+								paths[0] + ".sample"), cacheSize, minimumPosteriorProbabilityToCall);
+					} else {
+						throw new FileNotFoundException("Unable to load .bgen and .sample file at: " + paths[0]);
+					}
+				} else if (paths.length == 2) {
+					File bgenFile = null;
+					File sampleFile = null;
+					for (String path : paths) {
+						if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.SAMPLE) {
+							sampleFile = new File(path);
+						} else {
+							bgenFile = new File(path);
+						}
+					}
+					if (sampleFile == null) {
+						throw new GenotypeDataException("Path to .sample file not specified for oxford BGEN data");
+					}
+					return new BgenGenotypeData(bgenFile, sampleFile, cacheSize, minimumPosteriorProbabilityToCall);
+				} else {
+					throw new GenotypeDataException("Expected 2 files for oxford BGEN data but found: " + paths.length);
+				}
 
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");

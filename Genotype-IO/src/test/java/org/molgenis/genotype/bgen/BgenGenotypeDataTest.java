@@ -36,6 +36,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
     private BgenGenotypeData bgenGenotypeData;
     private File folder;
     private File exampleSampleFile = getTestResourceFile("/bgenExamples/genFiles/example.sample");
+    private File exampleComplexSampleFile = getTestResourceFile("/bgenExamples/genFiles/haplotypes.sample");
     private File exampleGenFile = getTestResourceFile("/bgenExamples/genFiles/example.gen");
     private List<File> complexFiles = Arrays.asList(
             getTestResourceFile("/bgenExamples/complex.3bits.bgen"),
@@ -127,7 +128,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
             // Load the bgen file from a temporary folder
             Path bgenFile = Paths.get(folder.toString(), origBgenFile.getName());
             Files.copy(origBgenFile.toPath(), bgenFile);
-            bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile());
+            bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile(), exampleSampleFile);
 
             // The version 1.1 example file does not have sample identifiers
             if (origBgenFile.getName().equals("example.v11.bgen")) {
@@ -254,7 +255,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
             // Copy the BGEN file and load this copy
             Path bgenFile = Paths.get(folder.toString(), origBgenFile.getName());
             Files.copy(origBgenFile.toPath(), bgenFile);
-            bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile());
+            bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile(), exampleComplexSampleFile);
 
             // Test the equality of sample names and sequence names
             assertEquals(bgenGenotypeData.getSampleNames(), expectedSampleNames);
@@ -334,7 +335,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
         Files.copy(bgenFile.toPath(), target);
         // Load the haps and bgen data
         HapsGenotypeData hapsGenotypeData = new HapsGenotypeData(hapsFile, oxfordSampleFile);
-        bgenGenotypeData = new BgenGenotypeData(target.toFile());
+        bgenGenotypeData = new BgenGenotypeData(target.toFile(), exampleComplexSampleFile);
 
         // Test the equality of sample names and sequence names
         assertEquals(bgenGenotypeData.getSampleNames(), hapsGenotypeData.getSampleNames());
