@@ -1,15 +1,10 @@
 package org.molgenis.genotype;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.EnumSet;
-
 import org.molgenis.genotype.bgen.BgenGenotypeData;
-import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
 import org.molgenis.genotype.oxford.GenGenotypeData;
+import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.plink.PedMapGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
@@ -18,6 +13,12 @@ import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.EnumSet;
+
 import static org.molgenis.genotype.GenotypeFileType.*;
 
 public enum RandomAccessGenotypeDataReaderFormats {
