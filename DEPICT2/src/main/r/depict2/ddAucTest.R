@@ -101,15 +101,15 @@ roc.test(gado, geneCoRegBrain)
 roc.test(geneCoRegBrain, SRR1237983_2_roc)
 roc.test(geneCoRegBrain, coexpBrain_roc)
 
-plot.roc(gado, col = "springgreen2", main = "Prediction of Mendelian genes")
+plot.roc(gado, col = "springgreen2", main = "Prediction of medelian genes associated to 'delayed speech and language development' using educational attainment GWAS")
 lines.roc(geneP, col = "goldenrod2")
 lines.roc(geneCoReg, col = "dodgerblue3")
 lines.roc(geneCoRegBrain, col = "magenta4")
 #lines.roc(SRR1237983_2_roc, col = "black")
 #lines.roc(coexp_roc, col = "black")
 #lines.roc(coexpBrain_roc, col = "grey")
-lines.roc(finemap2_roc, col = "black")
-legend("bottomright", legend=c("GADO", "GWAS gene p-values", "GWAS coregulation", "GWAS coregulation brain", "co-expression", "co-expression brain"), col=c("springgreen2", "goldenrod2", "dodgerblue3", "magenta4", "black", "grey"), lwd=2)
+#lines.roc(finemap2_roc, col = "black")
+legend("bottomright", legend=c("GADO", "GWAS gene p-values", "GWAS coregulation", "GWAS coregulation brain"), col=c("springgreen2", "goldenrod2", "dodgerblue3", "magenta4", "black", "grey"), lwd=2)
 
 
 plot(coexp2, finemap2, xlab = "Gene network coexpression enrichment", ylab = "Finemappnig with gene network data")
