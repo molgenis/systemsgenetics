@@ -707,12 +707,15 @@ public class Depict2 {
 				matrix = DoubleMatrixDataset.loadDoubleTextData(line, '\t');
 			}
 
+			LOGGER.info("Read file: " + fileName);
+
 			// Put the matrix in memory
 			summaryStatisticsMap.put(fileName, matrix);
 
 /*			LOGGER.info("Read matrix for " + fileName);
 			LOGGER.info("nSNPs: " + matrix.getRowObjects().size());
 			LOGGER.info("nCols: " + matrix.getColObjects().size());*/
+			LOGGER.info("Determining overlap for: " + overlappingVariants.size());
 
 			// Put the variant set in memory to avoid having to loop it later on
 			if (overlappingVariants.size() == 0) {
@@ -720,6 +723,8 @@ public class Depict2 {
 			} else {
 				overlappingVariants.retainAll(variantsHashSet);
 			}
+			LOGGER.info("Retained " + overlappingVariants.size() + " variants");
+
 		}
 
 		LOGGER.info("Read the following phenotypes: ");
