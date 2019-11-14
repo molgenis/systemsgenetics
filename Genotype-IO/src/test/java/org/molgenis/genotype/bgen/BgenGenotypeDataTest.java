@@ -128,15 +128,18 @@ public class BgenGenotypeDataTest extends ResourceTest {
             // Load the bgen file from a temporary folder
             Path bgenFile = Paths.get(folder.toString(), origBgenFile.getName());
             Files.copy(origBgenFile.toPath(), bgenFile);
-            bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile(), exampleSampleFile);
 
             // The version 1.1 example file does not have sample identifiers
             if (origBgenFile.getName().equals("example.v11.bgen")) {
+                bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile(), exampleSampleFile);
                 assertFalse(bgenGenotypeData.areSampleIdentifiersPresent());
+                assertEquals(bgenGenotypeData.getSampleAnnotationsMap(), genGenotypeData.getSampleAnnotationsMap());
             } else {
+                bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile());
                 assertTrue(bgenGenotypeData.areSampleIdentifiersPresent());
                 // Test the equality of sample names and sequence names
                 assertEquals(bgenGenotypeData.getSampleNames(), genGenotypeData.getSampleNames());
+                assertEquals(bgenGenotypeData.getSampleAnnotationsMap(), new LinkedHashMap<>());
             }
 
             assertEquals(bgenGenotypeData.getSeqNames(), genGenotypeData.getSeqNames());

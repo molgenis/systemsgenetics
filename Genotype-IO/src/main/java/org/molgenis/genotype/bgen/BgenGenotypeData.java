@@ -59,7 +59,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     private final RandomAccessFile bgenFile;
     private final byte[] byteArray4 = new byte[4]; //resuable 4 byte array
     private final byte[] byteArray2 = new byte[2]; //resuable 2 byte array
-    private final OxfordSampleFile oxfordSampleFile;
+    private final List<Sample> samples;
+    private final Map<String, SampleAnnotation> sampleAnnotations;
     private final Inflater gzipInflater = new Inflater();
     private final ZstdDecompressor zstdInflater = new ZstdDecompressor();
     private final LinkedHashSet<String> sequenceNames = new LinkedHashSet<String>();
@@ -73,12 +74,20 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     private final int sampleVariantProviderUniqueId;
     private final int sampleCount;
 
+    public BgenGenotypeData(File bgenFile) throws IOException {
+        this(bgenFile, null);
+    }
+
     public BgenGenotypeData(File bgenFile, File sampleFile) throws IOException {
         this(bgenFile, sampleFile, 1000);
     }
 
     public BgenGenotypeData(File bgenFile, File sampleFile, File bgenixFile) throws IOException {
-        this(bgenFile, sampleFile, bgenixFile,1000);
+        this(bgenFile, sampleFile, bgenixFile, 1000);
+    }
+
+    public BgenGenotypeData(File bgenFile, int cacheSize) throws IOException {
+        this(bgenFile, null, cacheSize, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
     }
 
     public BgenGenotypeData(File bgenFile, File sampleFile, int cacheSize) throws IOException {
@@ -87,6 +96,10 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
     public BgenGenotypeData(File bgenFile, File sampleFile, File bgenixFile, int cacheSize) throws IOException {
         this(bgenFile, sampleFile, bgenixFile, cacheSize, DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL);
+    }
+
+    public BgenGenotypeData(File bgenFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
+        this(bgenFile, null, cacheSize, minimumPosteriorProbabilityToCall);
     }
 
     public BgenGenotypeData(File bgenFile, File sampleFile, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException {
@@ -114,8 +127,19 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         // Load the BGEN file in a random access file object
         this.bgenFile = new RandomAccessFile(bgenFile, "r");
 
-        // Load the sample file
-        oxfordSampleFile = new OxfordSampleFile(sampleFile);
+        // Chose to make the sample file optional when sample identifiers are present in the BGEN file
+        // since a particular other BGEN file reader also allows this.
+        if (sampleFile == null) {
+            // Initialize empty collections;
+            samples = new ArrayList<>();
+            sampleAnnotations = new LinkedHashMap<>();
+        } else {
+            LOGGER.info(String.format("Loading sample annotations from sample file '%s'", sampleFile));
+            // Load the sample file
+            OxfordSampleFile oxfordSampleFile = new OxfordSampleFile(sampleFile);
+            samples = oxfordSampleFile.getSamples();
+            sampleAnnotations = oxfordSampleFile.getSampleAnnotations();
+        }
 
         // Get offset of variants in the first four bytes.
         long snpOffset = readFourBytesAsUInt32(
@@ -182,9 +206,17 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         // Read the sample identifiers presence; set sampleIdentifiersPresent to true if present, false if absent.
         sampleIdentifiersPresent = readSampleIdentifiersPresence(byteArray4[3]);
 
-        if (sampleIdentifiersPresent) {
+        if (sampleIdentifiersPresent && sampleFile == null) {
+            // Only read sample ids when the sample file was not provided
+            LOGGER.info("No sample file provided. Trying to read sample identifiers from .bgen file.");
             // Process sample identifier block.
             processSampleIdentifierBlock(snpOffset, headerSize);
+        } else if (sampleIdentifiersPresent) {
+            LOGGER.info("Loaded sample annotations from .sample file. skipping sample identifiers from .bgen file");
+        } else if (sampleFile == null) {
+            // Throw an exception if both a sample file was not present and sample identifiers were not present.
+            throw new GenotypeDataException(
+                    "No sample identifiers present in .bgen file and no .sample file provided.");
         }
 
         // Get the start of the variant data block
@@ -299,6 +331,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             this.bgenFile.read(sampleName, 0, sampleIdLength);
             // Append the sample identifier to the array of sample ids.
             sampleIds[i] = new String(sampleName, CHARSET);
+            samples.add(new Sample(sampleIds[i], null, null));
         }
     }
 
@@ -1164,7 +1197,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
     @Override
     public List<Sample> getSamples() {
-        return Collections.unmodifiableList(oxfordSampleFile.getSamples());
+        return Collections.unmodifiableList(samples);
     }
 
     @Override
@@ -1174,7 +1207,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
     @Override
     public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
-        return oxfordSampleFile.getSampleAnnotations();
+        return sampleAnnotations;
     }
 
     @Override

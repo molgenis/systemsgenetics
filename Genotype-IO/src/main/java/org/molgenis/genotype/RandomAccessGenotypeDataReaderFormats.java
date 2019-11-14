@@ -98,6 +98,10 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				return BGEN;
 			}
 
+			if (new File(path + ".bgen").exists()) {
+				return BGEN;
+			}
+
 			if (pathFile.exists() && pathFile.isFile() && pathFile.getName().endsWith(".bgen")
 					&& new File(path + ".sample").exists()) {
 				return BGEN;
@@ -247,9 +251,13 @@ public enum RandomAccessGenotypeDataReaderFormats {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
 				if (paths.length == 1) {
-					if (new File(paths[0] + ".bgen").exists()) {
+					if (new File(paths[0] + ".bgen").exists() &&
+							new File(paths[0] + ".sample").exists()) {
 						return new BgenGenotypeData(new File(paths[0] + ".bgen"), new File(
 								paths[0] + ".sample"), cacheSize, minimumPosteriorProbabilityToCall);
+					} else if (new File(paths[0] + ".bgen").exists()) {
+						return new BgenGenotypeData(new File(paths[0] + ".bgen"),
+								cacheSize, minimumPosteriorProbabilityToCall);
 					} else if (new File(paths[0]).exists() && new File(paths[0] + ".sample").exists()) {
 						return new BgenGenotypeData(new File(paths[0]), new File(
 								paths[0] + ".sample"), cacheSize, minimumPosteriorProbabilityToCall);
@@ -270,8 +278,29 @@ public enum RandomAccessGenotypeDataReaderFormats {
 						throw new GenotypeDataException("Path to .sample file not specified for oxford BGEN data");
 					}
 					return new BgenGenotypeData(bgenFile, sampleFile, cacheSize, minimumPosteriorProbabilityToCall);
+				} else if (paths.length == 3) {
+					File bgenFile = null;
+					File sampleFile = null;
+					File bgenixFile = null;
+					for (String path : paths) {
+						if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.SAMPLE) {
+							sampleFile = new File(path);
+						} else if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.BGENIX) {
+							bgenixFile = new File(path);
+						} else {
+							bgenFile = new File(path);
+						}
+					}
+					if (sampleFile == null) {
+						throw new GenotypeDataException("Path to .sample file not specified for oxford BGEN data");
+					}
+					if (bgenixFile == null) {
+						throw new GenotypeDataException("Path to .bgen.bgi file not specified for oxford BGEN data");
+					}
+					return new BgenGenotypeData(bgenFile, sampleFile, bgenixFile, cacheSize,
+							minimumPosteriorProbabilityToCall);
 				} else {
-					throw new GenotypeDataException("Expected 2 files for oxford BGEN data but found: " + paths.length);
+					throw new GenotypeDataException("Expected 1 - 3 paths for oxford BGEN data but found: " + paths.length);
 				}
 
 			default:
