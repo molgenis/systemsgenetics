@@ -15,19 +15,13 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import nl.systemsgenetics.depict2.development.ExtractCol;
 import nl.systemsgenetics.depict2.development.First1000qtl;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
@@ -44,6 +38,7 @@ import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterMaf;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
+import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
 import umcg.genetica.math.stats.PearsonRToZscoreBinned;
@@ -154,6 +149,9 @@ public class Depict2 {
 					break;
 				case CONVERT_EXP:
 					convertExpressionMatrixToBin(options);
+					break;
+				case CONVERT_TXT_MERGE:
+					mergeConvertTxt(options);
 					break;
 				case FIRST1000:
 					First1000qtl.printFirst1000(options);
@@ -660,6 +658,171 @@ public class Depict2 {
 
 	}
 
+	private static void mergeConvertTxt(Depict2Options options) throws IOException, Exception {
+
+		//TODO: fix duplicated code, did not want to mess with the previous code at the risk of breaking something
+		BufferedReader inputReader = new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()));
+		Map<String, DoubleMatrixDataset<String, String>> summaryStatisticsMap = new HashMap<>();
+		//Map<String, Set<String>> variantIdCache = new HashMap<>();
+		Set<String> overlappingVariants = new HashSet<>();
+
+		// First read all the files (duplicated from convertTxtToBin)
+		String line;
+		while ((line = inputReader.readLine()) != null) {
+			final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(line, '\t');
+			// TODO: Implement support for multiple phenotypes
+			//final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(line, '\t');
+
+			String fileName = FilenameUtils.getBaseName(line);
+			//LOGGER.info(variantsInZscoreMatrix.size() + " variants in file: " + fileName);
+
+			HashSet<String> variantsHashSet = new HashSet<>(variantsInZscoreMatrix.size());
+			HashSet<String> variantsWithDuplicates = new HashSet<>();
+
+			for (String variant : variantsInZscoreMatrix) {
+				if (!variantsHashSet.add(variant)) {
+					variantsWithDuplicates.add(variant);
+				}
+			}
+
+			DoubleMatrixDataset<String, String> matrix;
+
+			if (variantsWithDuplicates.size() > 0) {
+				File excludedVariantsFile = new File(options.getOutputBasePath() + "_" + fileName + "_excludedVariantsDuplicates.txt");
+				final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+				final String[] outputLine = new String[1];
+				outputLine[0] = "ExcludedVariants";
+				excludedVariantWriter.writeNext(outputLine);
+				for (String dupVariant : variantsWithDuplicates) {
+					outputLine[0] = dupVariant;
+					excludedVariantWriter.writeNext(outputLine);
+				}
+				excludedVariantWriter.close();
+				LOGGER.info("Found " + variantsWithDuplicates.size() + " duplicate variants, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
+
+				variantsHashSet.removeAll(variantsWithDuplicates);
+				matrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(line, '\t', variantsHashSet, null);
+
+			} else {
+				matrix = DoubleMatrixDataset.loadDoubleTextData(line, '\t');
+			}
+
+			LOGGER.info("Read file: " + fileName);
+
+			// Put the matrix in memory
+			summaryStatisticsMap.put(fileName, matrix);
+
+/*			LOGGER.info("Read matrix for " + fileName);
+			LOGGER.info("nSNPs: " + matrix.getRowObjects().size());
+			LOGGER.info("nCols: " + matrix.getColObjects().size());*/
+			LOGGER.info("Determining overlap for: " + overlappingVariants.size());
+
+			// Put the variant set in memory to avoid having to loop it later on
+			if (overlappingVariants.size() == 0) {
+				overlappingVariants.addAll(variantsHashSet);
+			} else {
+				overlappingVariants.retainAll(variantsHashSet);
+			}
+			LOGGER.info("Retained " + overlappingVariants.size() + " variants");
+
+		}
+
+		LOGGER.info("Read the following phenotypes: ");
+
+		for (String name: summaryStatisticsMap.keySet()) {
+			LOGGER.info(name);
+		}
+
+		LOGGER.info("Overlapped variants, retained " + overlappingVariants.size());
+		LOGGER.info("Merging over " + summaryStatisticsMap.size() + " phenotypes");
+
+		// Initialize the output matrix
+		DoubleMatrixDataset<String, String> finalMergedPvalueMatrix = new DoubleMatrixDataset<>(overlappingVariants, summaryStatisticsMap.keySet());
+
+		int i=0;
+		for (String key: summaryStatisticsMap.keySet()) {
+			DoubleMatrixDataset<String, String> curMatrix = summaryStatisticsMap.get(key);
+			int j = 0;
+			for (String curVariant: overlappingVariants) {
+				finalMergedPvalueMatrix.setElementQuick(j, i, curMatrix.viewRow(curVariant).get(0));
+				//double curValue= curMatrix.viewRow(curVariant).get(0);
+				//finalMergedPvalueMatrix.setElement(curVariant, key, curValue);
+				j++;
+			}
+			i++;
+		}
+
+		ArrayList<String> allVariants = finalMergedPvalueMatrix.getRowObjects();
+		ArrayList<String> variantsToExclude = new ArrayList<>();
+
+		if (options.isPvalueToZscore()) {
+			DoubleMatrix2D matrixContent = finalMergedPvalueMatrix.getMatrix();
+
+			int rows = matrixContent.rows();
+			int cols = matrixContent.columns();
+
+			rows:
+			for (int r = 0; r < rows; ++r) {
+				for (int c = 0; c < cols; ++c) {
+
+					double pvalue = matrixContent.getQuick(r, c);
+
+					if (Double.isNaN(pvalue) || pvalue < 0 || pvalue > 1d) {
+						variantsToExclude.add(allVariants.get(c));
+						continue rows;
+					}
+
+					matrixContent.setQuick(r, c, ZScores.pToZTwoTailed(pvalue));
+
+				}
+			}
+
+		} else {
+			DoubleMatrix2D matrixContent = finalMergedPvalueMatrix.getMatrix();
+
+			int rows = matrixContent.rows();
+			int cols = matrixContent.columns();
+
+			rows:
+			for (int r = 0; r < rows; ++r) {
+				for (int c = 0; c < cols; ++c) {
+
+					double value = matrixContent.getQuick(r, c);
+
+					if (Double.isNaN(value)) {
+						variantsToExclude.add(allVariants.get(c));
+						continue rows;
+					}
+				}
+			}
+		}
+
+		if (variantsToExclude.size() > 0) {
+
+			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsNaN.txt");
+
+			final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+			final String[] outputLine = new String[1];
+			outputLine[0] = "ExcludedVariants";
+			excludedVariantWriter.writeNext(outputLine);
+
+			for (String dupVariant : variantsToExclude) {
+				outputLine[0] = dupVariant;
+				excludedVariantWriter.writeNext(outputLine);
+			}
+			excludedVariantWriter.close();
+
+			LOGGER.info("Encounterd " + variantsToExclude.size() + " variants with NaN values, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
+
+			HashSet<String> variantsToInclude = new HashSet<>(allVariants);
+			variantsToInclude.removeAll(variantsToExclude);
+
+			finalMergedPvalueMatrix = finalMergedPvalueMatrix.viewRowSelection(variantsToExclude);
+
+		}
+
+		finalMergedPvalueMatrix.saveBinary(options.getOutputBasePath());
+	}
 
 	private static void convertBinToTxt(Depict2Options options) throws IOException, Exception {
 
