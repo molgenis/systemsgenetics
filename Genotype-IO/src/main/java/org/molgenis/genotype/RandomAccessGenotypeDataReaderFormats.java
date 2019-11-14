@@ -30,7 +30,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt and optionally: ImputedDosageMatrix.dat", EnumSet.of(TRITYPER_GENOTYPE, TRITYPER_IND, TRITYPER_MAPPINGS, TRITYPER_MAPPINGS, TRITYPER_PHENO, TRITYPER_SNPS)),
 	GEN("Oxford GEN / SAMPLE files", "Oxford .gen and .sample", EnumSet.of(GenotypeFileType.GEN, SAMPLE)),
 	GEN_FOLDER("Oxford GEN folder", "Folder with oxford .gen and .sample files", EnumSet.of(GenotypeFileType.GEN_FOLDER)),
-	BGEN("Binary Oxford GEN", "Oxford .bgen file", EnumSet.of(GenotypeFileType.BGEN));
+	BGEN("Oxford Binary GEN / SAMPLE files", "Oxford .bgen and .sample", EnumSet.of(GenotypeFileType.BGEN));
 	private final String name;
 	private final String description;
 	private final EnumSet<GenotypeFileType> requiredFiles;
@@ -88,15 +88,17 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				return GEN;
 			}
 
-			if (pathFile.exists() && pathFile.isFile() && new File(path + ".sample").exists()) {
+			if (pathFile.exists() && pathFile.isFile() && pathFile.getName().endsWith(".gen")
+					&& new File(path + ".sample").exists()) {
 				return GEN;
 			}
 
-			if (new File(path + ".bgen").exists()) {
+			if (new File(path + ".bgen").exists() && new File(path + ".sample").exists()) {
 				return BGEN;
 			}
 
-			if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.BGEN && pathFile.exists()) {
+			if (pathFile.exists() && pathFile.isFile() && pathFile.getName().endsWith(".bgen")
+					&& new File(path + ".sample").exists()) {
 				return BGEN;
 			}
 

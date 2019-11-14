@@ -311,10 +311,10 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
      */
     private boolean readSampleIdentifiersPresence(byte sampleIdentifiersField) {
         if ((sampleIdentifiersField & 128) == 128) {
-            LOGGER.debug("SampleIdentifiers present in bgen file");
+            LOGGER.debug("Sample identifiers present in bgen file");
             return true;
         } else {
-            LOGGER.debug("SampleIdentifiers not present in bgen file");
+            LOGGER.debug("Sample identifiers not present in bgen file");
             return false;
         }
     }
