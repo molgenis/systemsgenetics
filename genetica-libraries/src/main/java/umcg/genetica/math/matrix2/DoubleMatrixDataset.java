@@ -214,15 +214,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 		//Pattern splitPatern = Pattern.compile(delimiter);
-		int columnOffset = 1;
-
+		
 		TextFile in = new TextFile(fileName, TextFile.R);
 		String str = in.readLine(); // header
 		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
 
-		int tmpCols = (data.length - columnOffset);
-
-		ArrayList<String> rowNames = new ArrayList<>(tmpCols);
+		ArrayList<String> rowNames = new ArrayList<>();
 
 		while ((str = in.readLine()) != null) {
 			data = StringUtils.splitPreserveAllTokens(str, delimiter);
