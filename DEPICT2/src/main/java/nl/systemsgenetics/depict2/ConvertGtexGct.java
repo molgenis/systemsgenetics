@@ -5,8 +5,6 @@
  */
 package nl.systemsgenetics.depict2;
 
-import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -41,23 +39,25 @@ public class ConvertGtexGct {
 		}
 		
 		gtexMedianExp.setHashRows(newHashRow);
+
+		gtexMedianExp.normalizeRows();
 		
-		final DoubleMatrix2D gtexMatrix = gtexMedianExp.getMatrix();
-		final int numberOfTissues = gtexMatrix.columns();
-		
-		final double numberOfTissuesDouble = gtexMatrix.columns();
-		
-		for(int g = 0; g < gtexMatrix.rows() ; ++g){
-			
-			DoubleMatrix1D geneRow = gtexMatrix.viewRow(g);
-			
-			double geneMean = geneRow.zSum() / numberOfTissuesDouble;
-			
-			for(int t = 0 ; t < numberOfTissues ; ++t){
-				geneRow.setQuick(t, geneRow.getQuick(t) - geneMean);
-			}
-			
-		}
+//		final DoubleMatrix2D gtexMatrix = gtexMedianExp.getMatrix();
+//		final int numberOfTissues = gtexMatrix.columns();
+//		
+//		final double numberOfTissuesDouble = gtexMatrix.columns();
+//		
+//		for(int g = 0; g < gtexMatrix.rows() ; ++g){
+//			
+//			DoubleMatrix1D geneRow = gtexMatrix.viewRow(g);
+//			
+//			double geneMean = geneRow.zSum() / numberOfTissuesDouble;
+//			
+//			for(int t = 0 ; t < numberOfTissues ; ++t){
+//				geneRow.setQuick(t, geneRow.getQuick(t) - geneMean);
+//			}
+//			
+//		}
 		
 		gtexMedianExp.saveBinary(outputMatrixPath);
 		

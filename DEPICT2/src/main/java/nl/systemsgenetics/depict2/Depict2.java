@@ -650,7 +650,7 @@ public class Depict2 {
 
 		matrix.normalizeRows();
 
-		System.out.println("Normalized genes to have mean 0 and sd 1");
+		LOGGER.info("Normalized genes to have mean 0 and sd 1");
 
 		matrix.saveBinary(options.getOutputBasePath());
 
