@@ -675,7 +675,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
                         probabilitiesLengthInBits,
                         numberOfAlleles,
                         isMissing, ploidies);
-                probabilities = convertHaplotypeProbabilitiesToGenotypeProbabilities(numberOfAlleles, ploidies, haplotypeProbabilities);
+                probabilities = convertHaplotypeProbabilitiesToGenotypeProbabilities(
+                        numberOfAlleles, haplotypeProbabilities);
             } else {
                 probabilities = readGenotypeProbabilities(
                         probabilitiesArray,
@@ -723,12 +724,14 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         // Add the number of individuals to the buffer.
         blockBufferOffset += sampleCount;
 
+        // Check if the probabilities are phased
         boolean phased = isPhased(variantBlockData, blockBufferOffset);
         if (!phased) {
             throw new GenotypeDataException("Phased data not available");
         }
         blockBufferOffset += 1;
 
+        // Get the probability length in bits.
         int probabilitiesLengthInBits = getUInt8(variantBlockData, blockBufferOffset);
         blockBufferOffset += 1;
 
@@ -747,7 +750,14 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
                 isMissing, ploidies);
     }
 
-    private double[][] convertHaplotypeProbabilitiesToGenotypeProbabilities(int numberOfAlleles, List<Integer> ploidies, double[][][] haplotypeProbabilities) {
+    /**
+     * Converts haplotype probabilities to genotype probabilities.
+     *
+     * @param numberOfAlleles The number of alleles for the variant that correspond to these probabilities.
+     * @param haplotypeProbabilities The haplotypes
+     * @return The probabilities per genotype per sample.
+     */
+    private double[][] convertHaplotypeProbabilitiesToGenotypeProbabilities(int numberOfAlleles, double[][][] haplotypeProbabilities) {
         double[][] probabilities;
         probabilities = new double[haplotypeProbabilities.length][];
         // Calculate the probability for homozygous genotype 'AA',
@@ -755,11 +765,21 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         for (int sampleIndex = 0; sampleIndex < haplotypeProbabilities.length; sampleIndex++) {
             // Convert the probabilities for this particular sample
             probabilities[sampleIndex] = phasedProbabilitiesToGenotypeProbabilities(
-                    haplotypeProbabilities[sampleIndex], ploidies.get(sampleIndex), numberOfAlleles);
+                    haplotypeProbabilities[sampleIndex], numberOfAlleles);
         }
         return probabilities;
     }
 
+    /**
+     * Calculates a sequence of probabilities of length n (that sum to 1)
+     * from a byte array containing n - 1 probabilities of a specified length.
+     *
+     * @param probabilitiesArray The array to read probabilities from.
+     * @param probabilitiesLengthInBits The length of the probabilities.
+     * @param bitOffset The bit to start reading from.
+     * @param numberOfProbabilities The number of probabilities to return (n).
+     * @return an array of probabilities of length n.
+     */
     private double[] computeApproximateProbabilities(byte[] probabilitiesArray, int probabilitiesLengthInBits, int bitOffset, int numberOfProbabilities) {
         // Keep track of the probabilities
         double[] probabilities = new double[numberOfProbabilities];
@@ -790,6 +810,16 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         return probabilities;
     }
 
+    /**
+     * Reads genotype probabilities from a byte array with probabilities of a specified length (in bits).
+     *
+     * @param probabilitiesArray The byte array containing probabilities.
+     * @param probabilitiesLengthInBits The number of bits that store a probability.
+     * @param numberOfAlleles The number of alleles for the variant that the probabilities correspond to.
+     * @param isMissing A list indicating missingness for every sample.
+     * @param ploidies A list indicating the number of chromosomes (the ploidy) for a sample's probabilities.
+     * @return A nested array with probabilities for all allele combinations, for every sample.
+     */
     private double[][] readGenotypeProbabilities(
             byte[] probabilitiesArray,
             int probabilitiesLengthInBits,
@@ -829,11 +859,21 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         return probabilities;
     }
 
+    /**
+     * Reads haplotype probabilities from a byte array with phased probabilities of a specified length (in bits).
+     *
+     * @param probabilitiesArray The byte array containing probabilities.
+     * @param probabilitiesLengthInBits The number of bits that store a probability.
+     * @param numberOfAlleles The number of alleles for the variant that the probabilities correspond to.
+     * @param isMissing A list indicating missingness for every sample.
+     * @param haplotypeCounts A list indicating the number of haplotypes for every sample.
+     * @return A nested array with probabilities per allele, per haplotype, for every sample.
+     */
     private double[][][] readHaplotypeProbabilities(
             byte[] probabilitiesArray,
             int probabilitiesLengthInBits,
             int numberOfAlleles, List<Boolean> isMissing,
-            List<Integer> ploidies) {
+            List<Integer> haplotypeCounts) {
 
         // Define an array consisting of an array of posterior probabilities for each genotype
         double[][][] haplotypeProbabilities = new double[getSamples().size()][][];
@@ -846,19 +886,19 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         // value b corresponds to probability b / ((2^B)-1).
 
         for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
-            Integer ploidy = ploidies.get(sampleIndex);
+            Integer haplotypeCount = haplotypeCounts.get(sampleIndex);
             // If the probabilities are missing for this sample, read zero and continue with the
             // next sample.
             if (isMissing.get(sampleIndex)) {
                 // If this is missing, the probability is zero.
-                bitOffset += probabilitiesLengthInBits * (ploidy * (numberOfAlleles - 1));
-                haplotypeProbabilities[sampleIndex] = new double[ploidy][numberOfAlleles];
+                bitOffset += probabilitiesLengthInBits * (haplotypeCount * (numberOfAlleles - 1));
+                haplotypeProbabilities[sampleIndex] = new double[haplotypeCount][numberOfAlleles];
                 continue;
             }
 
-            double[][] phasedSampleProbabilities = new double[ploidy][numberOfAlleles];
+            double[][] phasedSampleProbabilities = new double[haplotypeCount][numberOfAlleles];
 
-            for (int i = 0; i < ploidy; i++) {
+            for (int i = 0; i < haplotypeCount; i++) {
                 // Get the probabilities for every allele in this haplotype.
                 double[] alleleProbabilities = computeApproximateProbabilities(
                         probabilitiesArray, probabilitiesLengthInBits, bitOffset, numberOfAlleles);
@@ -877,19 +917,18 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
      *
      * @param phasedProbabilities An array, with its size equal to the number haplotypes, with arrays
      *                            with a probability for every possible allele for the haplotype.
-     * @param ploidy              The ploidy for this particular sample.
      * @param numberOfAlleles     The number of alleles.
      * @return The number of probabilities for every possible genotype.
      */
     private double[] phasedProbabilitiesToGenotypeProbabilities(double[][] phasedProbabilities,
-                                                                Integer ploidy,
                                                                 int numberOfAlleles) {
         // Get all possible combinations of alleles for the haplotypes (all permutations)
         List<List<Integer>> haplotypeCombinations = getGenotypeCombinations(
-                numberOfAlleles, ploidy, false);
+                numberOfAlleles, phasedProbabilities.length, false);
 
         // Initialize an array of probabilities.
-        double[] genotypeProbabilities = new double[numberOfOrderedCombinationsWithRepetition(ploidy,
+        double[] genotypeProbabilities = new double[numberOfOrderedCombinationsWithRepetition(
+                phasedProbabilities.length,
                 numberOfAlleles - 1)]; // number of alleles is equal to n, n-1 = numberOfAlleles - 1
 
         // Loop through the combinations of haplotypes
@@ -996,6 +1035,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
      */
     private byte[] getDecompressedBlockData(ReadOnlyGeneticVariantBgen variant) throws IOException {
         // First extend the genetic variant with ids, alleles, etc.
+        // This makes sure the file pointer is in the correct location for the next step.
         variant.extendWithAdditionalVariantData();
 
         // Extract the variant genotype data block info starting from the current position of the
