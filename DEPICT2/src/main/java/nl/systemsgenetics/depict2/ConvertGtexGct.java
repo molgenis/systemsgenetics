@@ -85,11 +85,11 @@ public class ConvertGtexGct {
 		for(int r = 0; r < gtexMedianExp.rows() ; ++r){
 			for(int c = 0 ; c < gtexMedianExp.columns() ; ++c){
 				if(Double.isNaN(gtexMedianExp.getElementQuick(r, c))){
+					LOGGER.debug("Excluding NaN: " + rowNames.get(r));
 					continue rows;
 				}
 			}
 			nonNanRowNames.add(rowNames.get(r));
-			
 		}
 		
 		if(nonNanRowNames.size() < rowNames.size()){
