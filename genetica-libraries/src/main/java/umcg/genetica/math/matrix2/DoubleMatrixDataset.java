@@ -214,7 +214,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 		//Pattern splitPatern = Pattern.compile(delimiter);
-		
 		TextFile in = new TextFile(fileName, TextFile.R);
 		String str = in.readLine(); // header
 		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
@@ -818,6 +817,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		for (R row : hashRows.keySet()) {
 			out.append(row.toString());
 			out.append('\t');
+			//This is a very slow implementation. 
 			matrix.viewRow(r).toArray(data);
 			out.append(Strings.concat(data, Strings.tab));
 			out.append('\n');
@@ -905,6 +905,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public void setHashRows(LinkedHashMap<R, Integer> hashRows) {
+
+		if (hashRows.size() != rows()) {
+			throw new RuntimeException("Unable to update hashRows, size mismatch");
+		}
+
 		this.hashRows = hashRows;
 	}
 
@@ -913,6 +918,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public void setHashCols(LinkedHashMap<C, Integer> hashCols) {
+
+		if (hashCols.size() != columns()) {
+			throw new RuntimeException("Unable to update hashCols, size mismatch");
+		}
+
 		this.hashCols = hashCols;
 	}
 
@@ -1453,7 +1463,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public DoubleMatrix1D viewRow(R row) {
 		return matrix.viewRow(hashRows.get(row));
 	}
-	
+
 	public DoubleMatrix1D viewRow(int row) {
 		return matrix.viewRow(row);
 	}
@@ -1798,15 +1808,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		DoubleMatrix2D m = DoubleFactory2D.dense.appendColumns(m1, m2);
 
 		LinkedHashMap<String, Integer> mergedHashCols = new LinkedHashMap();
-		
+
 		int i = 0;
-		for(String c : d1.getHashCols().keySet()){
+		for (String c : d1.getHashCols().keySet()) {
 			mergedHashCols.put(c, i++);
 		}
-		for(String c : d2.getHashCols().keySet()){
+		for (String c : d2.getHashCols().keySet()) {
 			mergedHashCols.put(c, i++);
 		}
-		
+
 		return new DoubleMatrixDataset<>(m, d1.getHashRowsCopy(), mergedHashCols);
 	}
 

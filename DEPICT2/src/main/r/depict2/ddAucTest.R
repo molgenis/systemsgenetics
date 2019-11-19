@@ -75,7 +75,7 @@ all(row.names(hpoPredictions2) ==names(heightCoregulation2))
 all(row.names(hpoPredictions2) ==names(coregulationBrain2))
 all(row.names(hpoPredictions2) ==names(SRR1237983_2))
 
-hpoTerm = "HP:0000750"
+hpoTerm = "HP:0001249"
 
 layout(matrix(1:3, nrow = 1))
 boxplot(hpoPredictions2[,hpoTerm] ~ as.factor(hpoMatrix2[,hpoTerm]), main = "GADO Tall stature")
@@ -101,7 +101,7 @@ roc.test(gado, geneCoRegBrain)
 roc.test(geneCoRegBrain, SRR1237983_2_roc)
 roc.test(geneCoRegBrain, coexpBrain_roc)
 
-plot.roc(gado, col = "springgreen2", main = "Prediction of medelian genes associated to 'delayed speech and language development' using educational attainment GWAS")
+plot.roc(gado, col = "springgreen2", main = "Prediction of medelian genes associated to 'Intellectual disability' using educational attainment GWAS")
 lines.roc(geneP, col = "goldenrod2")
 lines.roc(geneCoReg, col = "dodgerblue3")
 lines.roc(geneCoRegBrain, col = "magenta4")

@@ -286,6 +286,8 @@ public class Depict2 {
 	 */
 	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount) throws IOException, Exception {
 
+		options.getIntermediateFolder().mkdir();
+		
 		if (options.getMode() == Depict2Mode.RUN2) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
 			if (new File(options.getOutputBasePath() + "_genePvalues.dat").exists()) {
@@ -375,7 +377,7 @@ public class Depict2 {
 
 		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow(), options.getDebugFolder()));
+			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow(), options.getDebugFolder(), options.getIntermediateFolder()));
 		}
 
 		if (options.isSaveOuputAsExcelFiles()) {
@@ -651,7 +653,26 @@ public class Depict2 {
 		matrix.normalizeRows();
 
 		LOGGER.info("Normalized genes to have mean 0 and sd 1");
-
+		
+		ArrayList<String> rowNames = matrix.getRowObjects();
+		ArrayList<String> nonNanRowNames = new ArrayList<>(matrix.rows());
+		
+		rows:
+		for(int r = 0; r < matrix.rows() ; ++r){
+			for(int c = 0 ; c < matrix.columns() ; ++c){
+				if(Double.isNaN(matrix.getElementQuick(r, c))){
+					continue rows;
+				}
+			}
+			nonNanRowNames.add(rowNames.get(r));
+			
+		}
+		
+		if(nonNanRowNames.size() < rowNames.size()){
+			matrix = matrix.viewRowSelection(nonNanRowNames);
+			LOGGER.info("Removing " + (rowNames.size() - nonNanRowNames.size()) + " rows with NaN after normalizing");
+		}
+		
 		matrix.saveBinary(options.getOutputBasePath());
 
 	}

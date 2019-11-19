@@ -47,14 +47,15 @@ public class PathwayEnrichments {
 	private final DoubleMatrixDataset<String, String> betasNull;
 	private DoubleMatrixDataset<String, String> enrichmentPvalues = null;
 	private final int numberOfPathways;
+	private final File intermediateFolder;
 
-	public PathwayEnrichments(final PathwayDatabase pathwayDatabase, final HashSet<String> genesWithPvalue, final List<Gene> genes, final boolean forceNormalPathwayPvalues, final boolean forceNormalGenePvalues, final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation, final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final boolean ignoreGeneCorrelations, final double genePruningR, final int geneCorrelationWindow, final File debugFolder) throws IOException {
+	public PathwayEnrichments(final PathwayDatabase pathwayDatabase, final HashSet<String> genesWithPvalue, final List<Gene> genes, final boolean forceNormalPathwayPvalues, final boolean forceNormalGenePvalues, final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation, final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final boolean ignoreGeneCorrelations, final double genePruningR, final int geneCorrelationWindow, final File debugFolder, final File intermediateFolder) throws IOException {
 		this.pathwayDatabase = pathwayDatabase;
 		this.genes = genes;
 		this.outputBasePath = outputBasePath;
 		this.hlaGenesToExclude = hlaGenesToExclude;
 		this.ignoreGeneCorrelations = ignoreGeneCorrelations;
-
+		this.intermediateFolder = intermediateFolder;
 		final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase.getLocation());
 		final LinkedHashSet<String> sharedGenes;
 
@@ -287,14 +288,19 @@ public class PathwayEnrichments {
 				}
 			}
 
-			betas.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
-			betasNull.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+			betas.saveBinary(intermediateFolder.getAbsolutePath() + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+			betasNull.saveBinary(intermediateFolder.getAbsolutePath() + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+			
+			this.getEnrichmentZscores();
+			this.clearZscoreCache();
+			
+			
 			
 			pb.step();
 		}
 	}
 
-	public DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
+	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
 
 		if (enrichmentPvalues == null) {
 
@@ -342,14 +348,14 @@ public class PathwayEnrichments {
 				}
 			}
 
-			enrichmentPvalues.saveBinary(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla"));
+			enrichmentPvalues.saveBinary(intermediateFolder.getAbsolutePath() + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla"));
 		}
 
 		return enrichmentPvalues;
 
 	}
 	
-	public void clearZscoreCache(){
+	public final void clearZscoreCache(){
 		enrichmentPvalues = null;
 	}
 
