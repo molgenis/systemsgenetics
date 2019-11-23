@@ -288,8 +288,8 @@ public class PathwayEnrichments {
 				}
 			}
 
-			betas.saveBinary(intermediateFolder.getAbsolutePath() + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
-			betasNull.saveBinary(intermediateFolder.getAbsolutePath() + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+			betas.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+			betasNull.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
 			
 			this.getEnrichmentZscores();
 			this.clearZscoreCache();
@@ -348,7 +348,7 @@ public class PathwayEnrichments {
 				}
 			}
 
-			enrichmentPvalues.saveBinary(intermediateFolder.getAbsolutePath() + "_" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla"));
+			enrichmentPvalues.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla"));
 		}
 
 		return enrichmentPvalues;
