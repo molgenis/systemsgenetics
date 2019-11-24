@@ -1,6 +1,9 @@
 package nl.systemsgenetics.depict2;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.DoubleStatistic;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -38,8 +41,8 @@ import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterMaf;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
-import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
+import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
 import umcg.genetica.math.stats.PearsonRToZscoreBinned;
 
@@ -153,6 +156,9 @@ public class Depict2 {
 				case CONVERT_TXT_MERGE:
 					mergeConvertTxt(options);
 					break;
+				case MERGE_BIN:
+					mergeBinMatrix(options);
+					break;
 				case FIRST1000:
 					First1000qtl.printFirst1000(options);
 					break;
@@ -167,6 +173,9 @@ public class Depict2 {
 					break;
 				case TRANSPOSE:
 					tranposeBinMatrix(options);
+					break;
+				case PCA:
+					doPcaOnBinMatrix(options);
 					break;
 				case SPECIAL:
 					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
@@ -287,7 +296,7 @@ public class Depict2 {
 	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount) throws IOException, Exception {
 
 		options.getIntermediateFolder().mkdir();
-		
+
 		if (options.getMode() == Depict2Mode.RUN2) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
 			if (new File(options.getOutputBasePath() + "_genePvalues.dat").exists()) {
@@ -653,28 +662,82 @@ public class Depict2 {
 		matrix.normalizeRows();
 
 		LOGGER.info("Normalized genes to have mean 0 and sd 1");
-		
+
 		ArrayList<String> rowNames = matrix.getRowObjects();
 		ArrayList<String> nonNanRowNames = new ArrayList<>(matrix.rows());
-		
+
 		rows:
-		for(int r = 0; r < matrix.rows() ; ++r){
-			for(int c = 0 ; c < matrix.columns() ; ++c){
-				if(Double.isNaN(matrix.getElementQuick(r, c))){
+		for (int r = 0; r < matrix.rows(); ++r) {
+			for (int c = 0; c < matrix.columns(); ++c) {
+				if (Double.isNaN(matrix.getElementQuick(r, c))) {
 					continue rows;
 				}
 			}
 			nonNanRowNames.add(rowNames.get(r));
-			
+
 		}
-		
-		if(nonNanRowNames.size() < rowNames.size()){
+
+		if (nonNanRowNames.size() < rowNames.size()) {
 			matrix = matrix.viewRowSelection(nonNanRowNames);
 			LOGGER.info("Removing " + (rowNames.size() - nonNanRowNames.size()) + " rows with NaN after normalizing");
 		}
-		
+
 		matrix.saveBinary(options.getOutputBasePath());
 
+	}
+
+	private static void mergeBinMatrix(Depict2Options options) throws IOException, Exception {
+
+		BufferedReader inputReader = new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()));
+		LinkedHashSet<DoubleMatrixDatasetFastSubsetLoader> binMatrices = new LinkedHashSet();
+		String line;
+		while ((line = inputReader.readLine()) != null) {
+			if(line.endsWith(".dat")){
+				line = line.substring(0,line.length()-4);
+			}
+			binMatrices.add(new DoubleMatrixDatasetFastSubsetLoader(line));
+		}
+
+		LinkedHashSet<String> mergedColNames = new LinkedHashSet(binMatrices.size());
+		LinkedHashSet<String> rowNameIntersection = new LinkedHashSet();
+
+		for (DoubleMatrixDatasetFastSubsetLoader datasetLoader : binMatrices) {
+			// Put the variant set in memory to avoid having to loop it later on
+			if (rowNameIntersection.isEmpty()) {
+				rowNameIntersection.addAll(datasetLoader.getOriginalRowMap().keySet());
+			} else {
+				rowNameIntersection.retainAll(datasetLoader.getOriginalRowMap().keySet());
+			}
+
+			for (String newCol : datasetLoader.getOriginalColMap().keySet()) {
+				int i = 1;
+				while(mergedColNames.contains(newCol)){
+					newCol = newCol + "_" + i++;
+				}
+				mergedColNames.add(newCol);
+			}
+
+		}
+
+		DoubleMatrixDataset<String, String> mergedData = new DoubleMatrixDataset(rowNameIntersection, mergedColNames);
+
+		int mergedCol = 0;
+		for (DoubleMatrixDatasetFastSubsetLoader datasetLoader : binMatrices) {
+			DoubleMatrixDataset<String, String> dataset = datasetLoader.loadSubsetOfRowsBinaryDoubleData(rowNameIntersection);
+
+			for (int c = 0; c < dataset.columns(); ++c) {
+
+				mergedData.getCol(mergedCol++).assign(dataset.getCol(c));
+
+			}
+
+		}
+
+		LOGGER.info("Merged data contains: " + mergedData.rows() + " rows and " + mergedData.columns() + " columns");
+
+		mergedData.saveBinary(options.getOutputBasePath());
+		
+		
 	}
 
 	private static void mergeConvertTxt(Depict2Options options) throws IOException, Exception {
@@ -698,7 +761,7 @@ public class Depict2 {
 				final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(file, '\t');
 				// TODO: Implement support for multiple phenotypes
 				//final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(line, '\t');
-				
+
 				String fileName = FilenameUtils.getBaseName(file);
 				//LOGGER.info(variantsInZscoreMatrix.size() + " variants in file: " + fileName);
 
@@ -732,10 +795,10 @@ public class Depict2 {
 				} else {
 					matrix = DoubleMatrixDataset.loadDoubleTextData(file, '\t');
 				}
-				
+
 				LOGGER.info("Read file: " + fileName);
-				
-				if (matrix.columns() > 1){
+
+				if (matrix.columns() > 1) {
 					throw new Exception("Multi column matrix not supported in merge");
 				}
 
@@ -978,6 +1041,16 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 		matrix = matrix.viewDice();
 		matrix.saveBinary(options.getOutputBasePath());
+	}
+
+	private static void doPcaOnBinMatrix(Depict2Options options) throws IOException {
+		
+		final DoubleMatrixDataset<String, String> dataset = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		
+
+		.save(options.getOutputBasePath() + "_eigenVectors.txt");
+		
+		
 	}
 
 	protected static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {

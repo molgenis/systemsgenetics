@@ -338,7 +338,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -647,8 +647,14 @@ public class Depict2Options {
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
 				break;
 			case CONVERT_TXT_MERGE:
-				LOGGER.info(" * Gwas Z-score matrix paths: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
+				break;
+			case MERGE_BIN:
+				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());
+				break;
+				case PCA:
+				LOGGER.info(" * Matrix to do PCA on: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
 			case CONVERT_BIN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());

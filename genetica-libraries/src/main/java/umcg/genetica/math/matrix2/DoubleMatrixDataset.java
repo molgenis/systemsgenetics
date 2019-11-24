@@ -84,6 +84,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public DoubleMatrixDataset(DoubleMatrix2D matrix, LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
+		
+		if(hashRows.size() != matrix.rows()){
+			throw new IllegalArgumentException("Matrix contains " + matrix.rows() + " rows but rowmap contains " + hashRows.size());
+		}
+		
+		if(hashCols.size() != matrix.columns()){
+			throw new IllegalArgumentException("Matrix contains " + matrix.columns()+ " cols but colmap contains " + hashCols.size());
+		}
+		
 		this.hashRows = hashRows;
 		this.hashCols = hashCols;
 		this.matrix = matrix;

@@ -26,12 +26,17 @@ heightCoregulation <- as.matrix(table_tmp[,-1])
 rownames(heightCoregulation) <- table_tmp[,1][[1]]
 rm(table_tmp)
 
+table_tmp <- read_delim("./heightLudeMagic.txt", delim = "\t", quote = "")
+heightLude <- as.matrix(table_tmp[,-1])
+rownames(heightLude) <- table_tmp[,1][[1]]
+rm(table_tmp)
+
 
 
 all(rownames(hpoMatrix) ==rownames(hpoPredictions))
 
 
-genes <- intersect(rownames(heightGeneP)[!is.na(heightGeneP)], rownames(heightCoregulation))
+genes <- intersect(intersect(rownames(heightGeneP)[!is.na(heightGeneP)], rownames(heightCoregulation)), rownames(heightLude))
 str(genes)
 
 all(genes %in% rownames(heightCoregulation))
@@ -40,9 +45,11 @@ hpoMatrix2 <- hpoMatrix[match(genes, rownames(hpoMatrix)),]
 hpoPredictions2 <- hpoPredictions[match(genes, rownames(hpoPredictions)),]
 heightGeneP2 <- heightGeneP[match(genes, rownames(heightGeneP)),]
 heightCoregulation2 <- heightCoregulation[match(genes, rownames(heightCoregulation)),]
+heightLude2 <- heightLude[match(genes, rownames(heightLude)),1]
 
 all(rownames(hpoMatrix2) ==names(heightCoregulation2))
 all(row.names(hpoPredictions2) ==names(heightCoregulation2))
+all(row.names(hpoPredictions2) ==names(heightLude2))
 
 hpoTerm = "HP:0000098"
 
@@ -56,6 +63,7 @@ library(pROC)
 gado <- roc(as.factor(hpoMatrix2[,hpoTerm]), hpoPredictions2[,hpoTerm])
 geneP <- roc(as.factor(hpoMatrix2[,hpoTerm]), -log10(heightGeneP2))
 geneCoReg <- roc(as.factor(hpoMatrix2[,hpoTerm]), heightCoregulation2)
+LudeRoc <- roc(as.factor(hpoMatrix2[,hpoTerm]), heightLude2)
 #geneGadoAndCoReg <- roc(as.factor(hpoMatrix2[,hpoTerm]), (heightCoregulation2 + hpoPredictions2[,hpoTerm]))
 
 roc.test(gado, geneP)
@@ -65,8 +73,8 @@ roc.test(gado, geneCoReg)
 plot.roc(gado, col = "springgreen2", main = "Prediction of Mendelian genes")
 lines.roc(geneP, col = "goldenrod2")
 lines.roc(geneCoReg, col = "dodgerblue3")
-#lines.roc(geneReconstruction, col = "magenta4")
-legend("bottomright", legend=c("GADO", "GWAS gene p-values", "GWAS DEPICT2 gene prioritization"), col=c("springgreen2", "goldenrod2", "dodgerblue3"), lwd=2)
+lines.roc(LudeRoc, col = "magenta4")
+legend("bottomright", legend=c("GADO", "GWAS gene p-values", "GWAS DEPICT2 gene prioritization", "Lude magic"), col=c("springgreen2", "goldenrod2", "dodgerblue3", "magenta4"), lwd=2)
 
 
 

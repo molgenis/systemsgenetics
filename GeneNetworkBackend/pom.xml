@@ -28,7 +28,7 @@
 					</descriptorRefs>
 					<archive>
 						<manifest>
-							<mainClass>nl.systemsgenetics.genenetworkbackend.legacy.PredictGenesetMemberBasedOnTCs</mainClass>
+							<mainClass>nl.systemsgenetics.genenetworkbackend.predictions.PredictGenesetMemberBasedOnTCs</mainClass>
 							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
 						</manifest>
