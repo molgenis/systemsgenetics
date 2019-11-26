@@ -1,9 +1,6 @@
 package nl.systemsgenetics.depict2;
 
-import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import cern.colt.matrix.tdouble.algo.DoubleStatistic;
-import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -41,6 +38,7 @@ import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterMaf;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
+import umcg.genetica.math.PcaColt;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
@@ -710,9 +708,11 @@ public class Depict2 {
 			}
 
 			for (String newCol : datasetLoader.getOriginalColMap().keySet()) {
-				int i = 1;
-				while(mergedColNames.contains(newCol)){
-					newCol = newCol + "_" + i++;
+				
+				if(mergedColNames.contains(newCol)){
+					int i = 1;
+					while(mergedColNames.contains(newCol + "_" + i++));
+					newCol = newCol + "_" + i;
 				}
 				mergedColNames.add(newCol);
 			}
@@ -742,27 +742,34 @@ public class Depict2 {
 
 	private static void mergeConvertTxt(Depict2Options options) throws IOException, Exception {
 
-		//TODO: fix duplicated code, did not want to mess with the previous code at the risk of breaking something
-		BufferedReader inputReader = new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()));
-		Map<String, DoubleMatrixDataset<String, String>> summaryStatisticsMap = Collections.synchronizedMap(new HashMap<>());
-		//Map<String, Set<String>> variantIdCache = new HashMap<>();
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()))).withCSVParser(parser).build();
 
-		HashSet<String> files = new HashSet();
+		ArrayList<GwasSummStats> gwasSummStats = new ArrayList<>();
 
-		// First read all the files (duplicated from convertTxtToBin)
-		String line;
-		while ((line = inputReader.readLine()) != null) {
-			files.add(line);
+		String[] nextLine = reader.readNext();
+		
+		if(!"trait".equals(nextLine[0]) || !"file".equals(nextLine[1]) || !"pvalueColumn".equals(nextLine[2])){
+			throw new Exception("Header of file with GWAS summary statistics to use must be: trait<tab>file<tab>pvalueColumn");
+		}
+		
+		HashSet<String> traits = new HashSet<>();
+		while ((nextLine = reader.readNext()) != null) {
+			gwasSummStats.add(new GwasSummStats(nextLine[0], nextLine[1], nextLine[2]));
+			if(!traits.add(nextLine[0])){
+				throw new Exception("Duplicate trait name: " + nextLine[0]);
+			}
 		}
 
-		files.parallelStream().forEach(file -> {
+		Map<String, DoubleMatrixDataset<String, String>> summaryStatisticsMap = Collections.synchronizedMap(new HashMap<>());
+
+		gwasSummStats.parallelStream().forEach(summStat -> {
 
 			try {
-				final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(file, '\t');
+				final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(summStat.getSummStatsFile().getAbsolutePath(), '\t');
 				// TODO: Implement support for multiple phenotypes
 				//final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(line, '\t');
 
-				String fileName = FilenameUtils.getBaseName(file);
 				//LOGGER.info(variantsInZscoreMatrix.size() + " variants in file: " + fileName);
 
 				HashSet<String> variantsHashSet = new HashSet<>(variantsInZscoreMatrix.size());
@@ -777,7 +784,7 @@ public class Depict2 {
 				DoubleMatrixDataset<String, String> matrix;
 
 				if (variantsWithDuplicates.size() > 0) {
-					File excludedVariantsFile = new File(options.getOutputBasePath() + "_" + fileName + "_excludedVariantsDuplicates.txt");
+					File excludedVariantsFile = new File(options.getOutputBasePath() + "_" + summStat.getTrait() + "_excludedVariantsDuplicates.txt");
 					final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
 					final String[] outputLine = new String[1];
 					outputLine[0] = "ExcludedVariants";
@@ -790,20 +797,18 @@ public class Depict2 {
 					LOGGER.info("Found " + variantsWithDuplicates.size() + " duplicate variants, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
 
 					variantsHashSet.removeAll(variantsWithDuplicates);
-					matrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(file, '\t', variantsHashSet, null);
+					matrix = summStat.loadSubsetSummStats(variantsHashSet);
 
 				} else {
-					matrix = DoubleMatrixDataset.loadDoubleTextData(file, '\t');
+					matrix = summStat.loadSummStats();
 				}
-
-				LOGGER.info("Read file: " + fileName);
 
 				if (matrix.columns() > 1) {
 					throw new Exception("Multi column matrix not supported in merge");
 				}
 
 				// Put the matrix in memory
-				summaryStatisticsMap.put(fileName, matrix);
+				summaryStatisticsMap.put(summStat.getTrait(), matrix);
 
 				/*			LOGGER.info("Read matrix for " + fileName);
 			LOGGER.info("nSNPs: " + matrix.getRowObjects().size());
@@ -893,7 +898,7 @@ public class Depict2 {
 			}
 		}
 
-		if (variantsToExclude.size() > 0) {
+			if (variantsToExclude.size() > 0) {
 
 			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsNaN.txt");
 
@@ -1047,9 +1052,11 @@ public class Depict2 {
 		
 		final DoubleMatrixDataset<String, String> dataset = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 		
+		PcaColt pcaRes = new PcaColt(dataset, true);
 
-		.save(options.getOutputBasePath() + "_eigenVectors.txt");
-		
+		pcaRes.getEigenvectors().save(options.getOutputBasePath() + "_eigenVectors.txt");
+		pcaRes.getEigenValues().save(options.getOutputBasePath() + "_eigenValues.txt");
+		pcaRes.getPcs().save(options.getOutputBasePath() + "_pcs.txt");
 		
 	}
 

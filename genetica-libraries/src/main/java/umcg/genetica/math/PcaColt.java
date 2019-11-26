@@ -47,11 +47,11 @@ public class PcaColt {
 		this.eigenValues = new DoubleMatrixDataset<>(pcNames, eigenValueColName);
 		this.eigenValues.getCol(0).assign(eigenValuesVector.viewFlip());
 
-		this.eigenvectors = new DoubleMatrixDataset<>(eigenVectorsMatrix, dataset.getHashCols(), pcNames);
+		this.eigenvectors = new DoubleMatrixDataset<>(eigenVectorsMatrix.viewColumnFlip(), dataset.getHashCols(), pcNames);
 		
 		DoubleMatrix2D pcsMatrix = eigenVectorsMatrix.viewDice().zMult(dataset.getMatrix().viewDice(), null);
 		
-		this.pcs = new DoubleMatrixDataset<>(pcsMatrix.viewDice(), dataset.getHashRows(), pcNames);
+		this.pcs = new DoubleMatrixDataset<>(pcsMatrix.viewDice().viewColumnFlip(), dataset.getHashRows(), pcNames);
 		
 	}
 

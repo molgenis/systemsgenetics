@@ -45,9 +45,9 @@ public class ConvertHpoToMatrix {
 //		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_matrix.txt.gz");
 //		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_genesInPathways.txt");
 
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\testPredictions\\mergedGeneNetworkCoreg.rows.txt");
-		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\testPredictions\\" + hpoFile.getName() + "_matrix.txt.gz");
-		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\testPredictions\\" + hpoFile.getName() + "_genesInPathways.txt");
+		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\testPredictions\\mergedGeneNetworkCoregBoth.rows.txt");
+		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\testPredictions\\" + hpoFile.getName() + "_CoregBoth_matrix.txt.gz");
+		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\testPredictions\\" + hpoFile.getName() + "_CoregBoth_genesInPathways.txt");
 
 
 //		final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\bavWithoutWilliams.txt");
