@@ -15,7 +15,10 @@ public class DoubleMatrixDatasetAppendableWriter {
 	private int rowctr = 0;
 
 	public DoubleMatrixDatasetAppendableWriter(List<String> colids, String loc) throws IOException {
+		this(colids, loc, null);
+	}
 
+	public DoubleMatrixDatasetAppendableWriter(List<String> colids, String loc, Integer buffersize) throws IOException {
 		this.loc = loc;
 		TextFile tf = new TextFile(loc + ".cols.txt", TextFile.W);
 		for (String s : colids) {
@@ -23,7 +26,10 @@ public class DoubleMatrixDatasetAppendableWriter {
 		}
 		tf.close();
 
-		bf = new BinaryFile(loc + ".dat", BinaryFile.W);
+		if (buffersize == null) {
+			buffersize = colids.size() * 8;
+		}
+		bf = new BinaryFile(loc + ".dat", BinaryFile.W, buffersize);
 
 		bf.writeInt(0);
 		bf.writeInt(colids.size());
@@ -41,13 +47,14 @@ public class DoubleMatrixDatasetAppendableWriter {
 	public void close() throws IOException {
 
 		bf.close();
+		rowIds.close();
 
 		RandomAccessFile rf = new RandomAccessFile(loc + ".dat", "rw");
 		rf.seek(0);
 		rf.writeInt(rowctr);
 		rf.close();
+		System.out.println("Final matrix has: " + rowctr + " rows.");
 
-		rowIds.close();
 
 	}
 

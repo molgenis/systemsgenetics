@@ -83,6 +83,8 @@
             <covariates></covariates> <!-- path: path to covariate matrix (same format as expression matrix) -->
             <quantilenormalize>false</quantilenormalize> <!-- legacy: true/false: quantile normalize data prior to analysis -->
             <logtranform>false</logtranform> <!-- legacy: true/false: log2 transform data prior to analysis -->
+            <snps></snps> <!-- location of custom SNPs.txt.gz -->
+            <snpmappings></snpmappings> <!-- location of custom SNPMappings.txt.gz -->
         </dataset>
 		<dataset>
             <name>Dataset2</name>
@@ -94,6 +96,8 @@
             <covariates></covariates>
             <quantilenormalize>false</quantilenormalize>
             <logtranform>false</logtranform>
+            <snps></snps> <!-- location of custom SNPs.txt.gz -->
+            <snpmappings></snpmappings> <!-- location of custom SNPMappings.txt.gz -->
         </dataset>
 
     </datasets>

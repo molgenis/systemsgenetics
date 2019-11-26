@@ -21,6 +21,8 @@ import umcg.genetica.math.stats.*;
 import umcg.genetica.math.stats.concurrent.ConcurrentCorrelation;
 import umcg.genetica.methylation.ConvertBetaAndMvalues;
 import umcg.genetica.text.Strings;
+import umcg.genetica.util.RankArray;
+import umcg.genetica.util.RankDoubleArray;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,6 +72,29 @@ public class Normalizer {
 
 	public boolean saveBinary;
 	private boolean loadBinary;
+
+
+	public void rank(String input, String output) throws IOException {
+		System.out.println("Ranking data.");
+		System.out.println("Input: " + input);
+		System.out.println("Output: " + output);
+		TextFile tf = new TextFile(input, TextFile.R);
+		TextFile outf = new TextFile(output, TextFile.W);
+		outf.writeln(tf.readLine());
+		String[] elems = tf.readLineElems(TextFile.tab);
+		while (elems != null) {
+			RankArray ra = new RankArray();
+			double[] data = new double[elems.length - 1];
+			for (int i = 1; i < elems.length; i++) {
+				data[i - 1] = Double.parseDouble(elems[i]);
+			}
+			data = ra.rank(data, true);
+			outf.writeln(elems[0] + "\t" + Strings.concat(data, Strings.tab));
+			elems = tf.readLineElems(TextFile.tab);
+		}
+		outf.close();
+		tf.close();
+	}
 
 	//nrIntermediatePCAsOverSamplesToRemoveToOutput = 5
 	//nrPCAsOverSamplesToRemove = 100
@@ -722,7 +747,6 @@ public class Normalizer {
 		System.out.println("Calculating PCA over file: " + fileNamePrefix);
 		System.out.println("- Performing PCA over correlation matrix of size: " + correlationMatrix.rows() + "x" + correlationMatrix.rows());
 		PCAojAlgo pcaObj = new PCAojAlgo();
-		double[][] cormat = correlationMatrix.getMatrix().toArray();
 		pcaObj.eigenValueDecomposition(correlationMatrix.getMatrix().toArray());
 
 		if (nrOfPCsToCalculate == null || nrOfPCsToCalculate > dataset.columns()) {
@@ -797,7 +821,7 @@ public class Normalizer {
 		// multithread
 		ProgressBar pb = new ProgressBar(dataset.rows(), "Calculating the PCA scores per probe: ");
 		Integer finalNrOfPCsToCalculate = nrOfPCsToCalculate;
-		DoubleMatrixDataset<String, String> finalDatasetEV = datasetEV;
+//		DoubleMatrixDataset<String, String> finalDatasetEV = datasetEV;
 
 		double[][] evrawdata = datasetEV.getMatrix().toArray();
 

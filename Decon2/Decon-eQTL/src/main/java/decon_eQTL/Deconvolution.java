@@ -132,7 +132,7 @@ public class Deconvolution {
 		//header += "\tgenotypeConfiguration";
 		//for(String celltype : cellCounts.getAllCelltypes()){
 		//	header += "\tgenotypeConfiguration_"+celltype;
-		//}\
+		//}
 
 		if(commandLineOptions.getWholeBloodQTL()){
 			header += "\tSpearman correlation expression~GT\tSpearman correlation p-value";

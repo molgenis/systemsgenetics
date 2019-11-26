@@ -91,7 +91,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 			if (pathFile.isDirectory()) {
 				for (File file : pathFile.listFiles()) {
-					if (file.getName().endsWith(".vcg.gz")) {
+					if (file.getName().endsWith(".vcf.gz")) {
 						return VCF_FOLDER;
 					}
 				}
