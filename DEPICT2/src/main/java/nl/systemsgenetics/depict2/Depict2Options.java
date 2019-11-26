@@ -568,7 +568,8 @@ public class Depict2Options {
 
 				if (!commandLine.hasOption('r')) {
 
-					throw new ParseException("--referenceGenotypes not specified");
+					genotypeBasePath = null;
+					genotypeType = null;
 
 				} else {
 

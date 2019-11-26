@@ -901,7 +901,7 @@ public class Depict2 {
 					double value = matrixContent.getQuick(r, c);
 
 					if (Double.isNaN(value)) {
-						variantsToExclude.add(allVariants.get(c));
+						variantsToExclude.add(allVariants.get(r));
 						continue rows;
 					}
 				}
@@ -917,8 +917,8 @@ public class Depict2 {
 			outputLine[0] = "ExcludedVariants";
 			excludedVariantWriter.writeNext(outputLine);
 
-			for (String dupVariant : variantsToExclude) {
-				outputLine[0] = dupVariant;
+			for (String excludedVariant : variantsToExclude) {
+				outputLine[0] = excludedVariant;
 				excludedVariantWriter.writeNext(outputLine);
 			}
 			excludedVariantWriter.close();
@@ -928,7 +928,7 @@ public class Depict2 {
 			HashSet<String> variantsToInclude = new HashSet<>(allVariants);
 			variantsToInclude.removeAll(variantsToExclude);
 
-			finalMergedPvalueMatrix = finalMergedPvalueMatrix.viewRowSelection(variantsToExclude);
+			finalMergedPvalueMatrix = finalMergedPvalueMatrix.viewRowSelection(variantsToInclude);
 
 		}
 
@@ -981,6 +981,9 @@ public class Depict2 {
 								updatedRowHash.put(original.getKey(), original.getValue());
 							}
 
+						} else {
+							//No variant at pos
+							updatedRowHash.put(original.getKey(), original.getValue());
 						}
 
 					} else {
@@ -992,6 +995,7 @@ public class Depict2 {
 						for (GeneticVariant variant : variantsByPos) {
 							if (variant.getVariantAlleles().sameAlleles(genotypeGwas) || (genotypeGwas.isSnp() && variant.getVariantAlleles().sameAlleles(genotypeGwas.getComplement()))) {
 								updatedRowHash.put(variant.getPrimaryVariantId(), original.getValue());
+								
 								outputLine[0] = originalVariantId;
 								outputLine[1] = variant.getPrimaryVariantId();
 								updatedVariantWriter.writeNext(outputLine);
@@ -1013,10 +1017,8 @@ public class Depict2 {
 			}
 
 			updatedVariantWriter.close();
-			
+
 		}
-		
-		
 
 		finalMergedPvalueMatrix.saveBinary(options.getOutputBasePath());
 	}

@@ -44,11 +44,11 @@ public class GwasSummStats {
 		HashSet<String> pvalueColumnSet = new HashSet<>();
 		pvalueColumnSet.add(pvalueColumn);
 
-		DoubleMatrixDataset<String, String> summStats = DoubleMatrixDataset.loadSubsetOfTextDoubleData(trait, '\t', variantsToLoad, pvalueColumnSet);
+		DoubleMatrixDataset<String, String> summStats = DoubleMatrixDataset.loadSubsetOfTextDoubleData(summStatsFile.getAbsolutePath(), '\t', variantsToLoad, pvalueColumnSet);
 
 		LOGGER.debug("Loaded summ stats for " + trait + " from: " + summStatsFile.getAbsolutePath() + ". Variants: " + summStats.rows());
 
-		if (summStats.columns() > 1) {
+		if (summStats.columns() != 1) {
 			throw new RuntimeException("Summary statistics files read here should only contain on p-value column");
 		}
 
