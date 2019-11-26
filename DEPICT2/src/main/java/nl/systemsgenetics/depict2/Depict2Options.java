@@ -564,6 +564,45 @@ public class Depict2Options {
 				variantGeneLinkingFile = null;
 				mafFilter = 0;
 				break;
+			case CONVERT_TXT_MERGE:
+
+				if (!commandLine.hasOption('r')) {
+
+					throw new ParseException("--referenceGenotypes not specified");
+
+				} else {
+
+					genotypeBasePath = commandLine.getOptionValues('r');
+
+					try {
+						if (commandLine.hasOption('R')) {
+							genotypeType = RandomAccessGenotypeDataReaderFormats.valueOfSmart(commandLine.getOptionValue('R').toUpperCase());
+						} else {
+							if (genotypeBasePath[0].endsWith(".vcf")) {
+								throw new ParseException("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
+							}
+							try {
+								genotypeType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(genotypeBasePath);
+							} catch (GenotypeDataException e) {
+								throw new ParseException("Unable to determine reference type based on specified path. Please specify --refType");
+							}
+						}
+
+					} catch (IllegalArgumentException e) {
+						throw new ParseException("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
+					}
+
+				}
+
+				genotypeSamplesFile = null;
+				maxRBetweenVariants = 0d;
+				numberOfPermutations = 0;
+				numberOfPermutationsRescue = 0;
+				windowExtend = 0;
+				variantFilterFile = null;
+				variantGeneLinkingFile = null;
+				mafFilter = 0;
+				break;
 			default:
 				genotypeBasePath = null;
 				genotypeType = null;
@@ -649,11 +688,20 @@ public class Depict2Options {
 			case CONVERT_TXT_MERGE:
 				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
+				if (genotypeBasePath != null) {
+					StringBuilder genotypeBasePaths = new StringBuilder();
+					for (String path : genotypeBasePath) {
+						genotypeBasePaths.append(new File(path).getAbsolutePath());
+						genotypeBasePaths.append(' ');
+					}
+					LOGGER.info(" * Reference genotype data: " + genotypeBasePaths);
+					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
+				}
 				break;
 			case MERGE_BIN:
 				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
-				case PCA:
+			case PCA:
 				LOGGER.info(" * Matrix to do PCA on: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
 			case CONVERT_BIN:

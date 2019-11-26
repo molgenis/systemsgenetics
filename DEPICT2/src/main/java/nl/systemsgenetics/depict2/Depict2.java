@@ -22,18 +22,21 @@ import nl.systemsgenetics.depict2.development.ExtractCol;
 import nl.systemsgenetics.depict2.development.First1000qtl;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
+import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
+import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterMaf;
@@ -410,11 +413,20 @@ public class Depict2 {
 			sampleFilter = null;
 		}
 
-		VariantFilter variantFilter = new VariantIdIncludeFilter(new HashSet<>(variantsToInclude));
+		VariantFilter variantFilter;
+		if (variantsToInclude == null) {
+			variantFilter = null;
+		} else {
+			variantFilter = new VariantIdIncludeFilter(new HashSet<>(variantsToInclude));
+		}
 
 		if (options.getMafFilter() != 0) {
 			VariantFilter mafFilter = new VariantFilterMaf(options.getMafFilter());
-			variantFilter = new VariantCombinedFilter(variantFilter, mafFilter);
+			if (variantFilter == null) {
+				variantFilter = mafFilter;
+			} else {
+				variantFilter = new VariantCombinedFilter(variantFilter, mafFilter);
+			}
 		}
 
 		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, variantFilter, sampleFilter, null, 0.34f);
@@ -690,8 +702,8 @@ public class Depict2 {
 		LinkedHashSet<DoubleMatrixDatasetFastSubsetLoader> binMatrices = new LinkedHashSet();
 		String line;
 		while ((line = inputReader.readLine()) != null) {
-			if(line.endsWith(".dat")){
-				line = line.substring(0,line.length()-4);
+			if (line.endsWith(".dat")) {
+				line = line.substring(0, line.length() - 4);
 			}
 			binMatrices.add(new DoubleMatrixDatasetFastSubsetLoader(line));
 		}
@@ -708,10 +720,10 @@ public class Depict2 {
 			}
 
 			for (String newCol : datasetLoader.getOriginalColMap().keySet()) {
-				
-				if(mergedColNames.contains(newCol)){
+
+				if (mergedColNames.contains(newCol)) {
 					int i = 1;
-					while(mergedColNames.contains(newCol + "_" + i++));
+					while (mergedColNames.contains(newCol + "_" + i++));
 					newCol = newCol + "_" + i;
 				}
 				mergedColNames.add(newCol);
@@ -736,8 +748,7 @@ public class Depict2 {
 		LOGGER.info("Merged data contains: " + mergedData.rows() + " rows and " + mergedData.columns() + " columns");
 
 		mergedData.saveBinary(options.getOutputBasePath());
-		
-		
+
 	}
 
 	private static void mergeConvertTxt(Depict2Options options) throws IOException, Exception {
@@ -748,15 +759,15 @@ public class Depict2 {
 		ArrayList<GwasSummStats> gwasSummStats = new ArrayList<>();
 
 		String[] nextLine = reader.readNext();
-		
-		if(!"trait".equals(nextLine[0]) || !"file".equals(nextLine[1]) || !"pvalueColumn".equals(nextLine[2])){
+
+		if (!"trait".equals(nextLine[0]) || !"file".equals(nextLine[1]) || !"pvalueColumn".equals(nextLine[2])) {
 			throw new Exception("Header of file with GWAS summary statistics to use must be: trait<tab>file<tab>pvalueColumn");
 		}
-		
+
 		HashSet<String> traits = new HashSet<>();
 		while ((nextLine = reader.readNext()) != null) {
 			gwasSummStats.add(new GwasSummStats(nextLine[0], nextLine[1], nextLine[2]));
-			if(!traits.add(nextLine[0])){
+			if (!traits.add(nextLine[0])) {
 				throw new Exception("Duplicate trait name: " + nextLine[0]);
 			}
 		}
@@ -771,7 +782,6 @@ public class Depict2 {
 				//final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(line, '\t');
 
 				//LOGGER.info(variantsInZscoreMatrix.size() + " variants in file: " + fileName);
-
 				HashSet<String> variantsHashSet = new HashSet<>(variantsInZscoreMatrix.size());
 				HashSet<String> variantsWithDuplicates = new HashSet<>();
 
@@ -898,7 +908,7 @@ public class Depict2 {
 			}
 		}
 
-			if (variantsToExclude.size() > 0) {
+		if (variantsToExclude.size() > 0) {
 
 			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsNaN.txt");
 
@@ -921,6 +931,92 @@ public class Depict2 {
 			finalMergedPvalueMatrix = finalMergedPvalueMatrix.viewRowSelection(variantsToExclude);
 
 		}
+
+		if (options.getGenotypeBasePath() != null) {
+			LOGGER.info("Loading genotype information to convert position  summary statistics to variant IDs");
+
+			File excludedVariantsFile = new File(options.getOutputBasePath() + "_updatedVariantIds.txt");
+
+			final CSVWriter updatedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+			final String[] outputLine = new String[2];
+			outputLine[0] = "Orginal";
+			outputLine[1] = "Updated";
+			updatedVariantWriter.writeNext(outputLine);
+
+			RandomAccessGenotypeData genotoypes = loadGenotypes(options, null);
+
+			LinkedHashMap<String, Integer> originalRowHash = finalMergedPvalueMatrix.getHashRows();
+			LinkedHashMap<String, Integer> updatedRowHash = new LinkedHashMap(originalRowHash.size());
+
+			for (Map.Entry<String, Integer> original : originalRowHash.entrySet()) {
+
+				String originalVariantId = original.getKey();
+
+				String[] splitted = StringUtils.splitPreserveAllTokens(originalVariantId, ':');
+
+				if (splitted.length == 2 || splitted.length == 4) {
+					//assuming chr:pos or chr:pos:a1:a2
+
+					String chr = splitted[0];
+					int pos = Integer.parseInt(splitted[1]);
+
+					Iterable<GeneticVariant> variantsByPos = genotoypes.getVariantsByPos(chr, pos);
+
+					if (splitted.length == 2) {
+						Iterator<GeneticVariant> itt = variantsByPos.iterator();
+
+						if (itt.hasNext()) {
+							GeneticVariant variant = itt.next();
+
+							if (itt.hasNext()) {
+								//this variant is only variant at position;
+								updatedRowHash.put(variant.getPrimaryVariantId(), original.getValue());
+
+								outputLine[0] = originalVariantId;
+								outputLine[1] = variant.getPrimaryVariantId();
+								updatedVariantWriter.writeNext(outputLine);
+
+							} else {
+								//multiple variants, can't match keep original ID
+								updatedRowHash.put(original.getKey(), original.getValue());
+							}
+
+						}
+
+					} else {
+						//splitted.length == 4
+						Alleles genotypeGwas = Alleles.createBasedOnString(splitted[2], splitted[3]);
+
+						boolean updated = false;
+						variants:
+						for (GeneticVariant variant : variantsByPos) {
+							if (variant.getVariantAlleles().sameAlleles(genotypeGwas) || (genotypeGwas.isSnp() && variant.getVariantAlleles().sameAlleles(genotypeGwas.getComplement()))) {
+								updatedRowHash.put(variant.getPrimaryVariantId(), original.getValue());
+								outputLine[0] = originalVariantId;
+								outputLine[1] = variant.getPrimaryVariantId();
+								updatedVariantWriter.writeNext(outputLine);
+
+								updated = true;
+								break variants;
+							}
+						}
+						if (!updated) {
+							updatedRowHash.put(original.getKey(), original.getValue());
+						}
+
+					}
+
+				} else {
+					updatedRowHash.put(original.getKey(), original.getValue());
+				}
+
+			}
+
+			updatedVariantWriter.close();
+			
+		}
+		
+		
 
 		finalMergedPvalueMatrix.saveBinary(options.getOutputBasePath());
 	}
@@ -1049,15 +1145,15 @@ public class Depict2 {
 	}
 
 	private static void doPcaOnBinMatrix(Depict2Options options) throws IOException {
-		
+
 		final DoubleMatrixDataset<String, String> dataset = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-		
+
 		PcaColt pcaRes = new PcaColt(dataset, true);
 
 		pcaRes.getEigenvectors().save(options.getOutputBasePath() + "_eigenVectors.txt");
 		pcaRes.getEigenValues().save(options.getOutputBasePath() + "_eigenValues.txt");
 		pcaRes.getPcs().save(options.getOutputBasePath() + "_pcs.txt");
-		
+
 	}
 
 	protected static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
