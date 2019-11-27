@@ -41,7 +41,7 @@ public class VariantQcChecker implements VariantFilter {
             return false;
         }
 
-        if (Double.isNaN(variant.getCallRate()) ||variant.getMinorAlleleFrequency() < maf) {
+        if (Double.isNaN(variant.getMinorAlleleFrequency()) ||variant.getMinorAlleleFrequency() < maf) {
             return false;
         }
 

@@ -86,6 +86,8 @@ public class ExcelWriter {
 				final PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayDatabase.getLocation() + ".colAnnotations.txt"));
 				final int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 				final DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
+				//pathwayEnrichment object will does not need to keep a copy of the zscore matrix
+				pathwayEnrichment.clearZscoreCache();
 				final ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
 				//final int currentTraitCol = databaseEnrichment.getColIndex(trait);
 				
@@ -222,8 +224,8 @@ public class ExcelWriter {
 
 			enrichmentWorkbook.write(new FileOutputStream(excelFile));
 
-			System.err.println("WARNING ONLY SAVING FIRST TRAIT TO EXCEL FOR DEBUGING");
-			break;
+//			System.err.println("WARNING ONLY SAVING FIRST TRAIT TO EXCEL FOR DEBUGING");
+//			break;
 
 		}
 	}

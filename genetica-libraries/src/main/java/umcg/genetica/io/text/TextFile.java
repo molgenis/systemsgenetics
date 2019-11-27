@@ -61,7 +61,7 @@ public class TextFile implements Iterable<String> {
 		
 		if (loc.endsWith(".lz4")) {
 			uselz4 = true;
-		} else if (loc.endsWith(".gz")) {
+		} else if (loc.endsWith(".gz") || loc.endsWith(".bgz")) {
 			gzipped = true;
 		}
 		open();
