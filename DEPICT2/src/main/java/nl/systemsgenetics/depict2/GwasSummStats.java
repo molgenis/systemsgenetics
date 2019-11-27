@@ -7,6 +7,7 @@ package nl.systemsgenetics.depict2;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.Set;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -40,7 +41,7 @@ public class GwasSummStats {
 		return pvalueColumn;
 	}
 
-	public DoubleMatrixDataset<String, String> loadSubsetSummStats(HashSet<String> variantsToLoad) throws Exception {
+	public DoubleMatrixDataset<String, String> loadSubsetSummStats(Set<String> variantsToLoad) throws Exception {
 		HashSet<String> pvalueColumnSet = new HashSet<>();
 		pvalueColumnSet.add(pvalueColumn);
 

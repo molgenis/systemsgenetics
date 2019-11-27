@@ -8,16 +8,21 @@ import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+import java.util.zip.GZIPInputStream;
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.depict2.development.ExtractCol;
 import nl.systemsgenetics.depict2.development.First1000qtl;
 import org.apache.commons.cli.ParseException;
@@ -772,95 +777,94 @@ public class Depict2 {
 			}
 		}
 
-		Map<String, DoubleMatrixDataset<String, String>> summaryStatisticsMap = Collections.synchronizedMap(new HashMap<>());
-
-		gwasSummStats.parallelStream().forEach(summStat -> {
-
-			try {
-				final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(summStat.getSummStatsFile().getAbsolutePath(), '\t');
-				// TODO: Implement support for multiple phenotypes
-				//final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(line, '\t');
-
-				//LOGGER.info(variantsInZscoreMatrix.size() + " variants in file: " + fileName);
-				HashSet<String> variantsHashSet = new HashSet<>(variantsInZscoreMatrix.size());
-				HashSet<String> variantsWithDuplicates = new HashSet<>();
-
-				for (String variant : variantsInZscoreMatrix) {
-					if (!variantsHashSet.add(variant)) {
-						variantsWithDuplicates.add(variant);
-					}
-				}
-
-				DoubleMatrixDataset<String, String> matrix;
-
-				if (variantsWithDuplicates.size() > 0) {
-					File excludedVariantsFile = new File(options.getOutputBasePath() + "_" + summStat.getTrait() + "_excludedVariantsDuplicates.txt");
-					final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
-					final String[] outputLine = new String[1];
-					outputLine[0] = "ExcludedVariants";
-					excludedVariantWriter.writeNext(outputLine);
-					for (String dupVariant : variantsWithDuplicates) {
-						outputLine[0] = dupVariant;
-						excludedVariantWriter.writeNext(outputLine);
-					}
-					excludedVariantWriter.close();
-					LOGGER.info("Found " + variantsWithDuplicates.size() + " duplicate variants, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
-
-					variantsHashSet.removeAll(variantsWithDuplicates);
-					matrix = summStat.loadSubsetSummStats(variantsHashSet);
-
-				} else {
-					matrix = summStat.loadSummStats();
-				}
-
-				if (matrix.columns() > 1) {
-					throw new Exception("Multi column matrix not supported in merge");
-				}
-
-				// Put the matrix in memory
-				summaryStatisticsMap.put(summStat.getTrait(), matrix);
-
-				/*			LOGGER.info("Read matrix for " + fileName);
-			LOGGER.info("nSNPs: " + matrix.getRowObjects().size());
-			LOGGER.info("nCols: " + matrix.getColObjects().size());*/
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		});
-
 		Set<String> overlappingVariants = new HashSet<>();
-		for (DoubleMatrixDataset<String, String> dataset : summaryStatisticsMap.values()) {
-			// Put the variant set in memory to avoid having to loop it later on
-			if (overlappingVariants.isEmpty()) {
-				overlappingVariants.addAll(dataset.getHashRows().keySet());
-			} else {
-				overlappingVariants.retainAll(dataset.getHashRows().keySet());
-			}
-		}
 
-		LOGGER.info("Read the following phenotypes: ");
+		try (ProgressBar pb = new ProgressBar("Determining overlapping variants", gwasSummStats.size(), ProgressBarStyle.ASCII)) {
+			gwasSummStats.parallelStream().forEach(summStat -> {
 
-		for (String name : summaryStatisticsMap.keySet()) {
-			LOGGER.info(name);
+				final CSVParser parser2 = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+				try {
+
+					File summStatFile = summStat.getSummStatsFile();
+
+					InputStreamReader isr;
+					if (summStatFile.getName().endsWith("gz") || summStatFile.getName().endsWith("bgz")) {
+						isr = new InputStreamReader(new GZIPInputStream(new FileInputStream(summStatFile)));
+					} else {
+						isr = new InputStreamReader(new FileInputStream(summStatFile));
+					}
+
+					final CSVReader summStatReader = new CSVReaderBuilder(isr).withSkipLines(1).withCSVParser(parser).build();
+
+					HashSet<String> variantsHashSet = new HashSet<>();
+					HashSet<String> variantsWithDuplicates = new HashSet<>();
+
+					String[] summStatNextLine;
+					while ((summStatNextLine = summStatReader.readNext()) != null) {
+						String variant = summStatNextLine[0];
+						if (!variantsHashSet.add(variant)) {
+							variantsWithDuplicates.add(variant);
+						}
+					}
+
+					if (variantsWithDuplicates.size() > 0) {
+						File excludedVariantsFile = new File(options.getOutputBasePath() + "_" + summStat.getTrait() + "_excludedVariantsDuplicates.txt");
+						final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+						final String[] outputLine = new String[1];
+						outputLine[0] = "ExcludedVariants";
+						excludedVariantWriter.writeNext(outputLine);
+						for (String dupVariant : variantsWithDuplicates) {
+							outputLine[0] = dupVariant;
+							excludedVariantWriter.writeNext(outputLine);
+						}
+						excludedVariantWriter.close();
+						LOGGER.info("Found " + variantsWithDuplicates.size() + " duplicate variants, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
+
+						variantsHashSet.removeAll(variantsWithDuplicates);
+					}
+
+					synchronized (overlappingVariants) {
+						if (overlappingVariants.isEmpty()) {
+							overlappingVariants.addAll(variantsHashSet);
+						} else {
+							overlappingVariants.retainAll(variantsHashSet);
+						}
+					}
+
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
+
+				pb.step();
+
+			});
 		}
 
 		LOGGER.info("Overlapped variants, retained " + overlappingVariants.size());
-		LOGGER.info("Merging over " + summaryStatisticsMap.size() + " phenotypes");
+
+		ArrayList<String> phenotypes = new ArrayList(gwasSummStats.size());
+		for (GwasSummStats summStat : gwasSummStats) {
+			//not in parralel to keep the order
+			phenotypes.add(summStat.getTrait());
+		}
+
+		LOGGER.info("Merging over " + phenotypes.size() + " phenotypes");
 
 		// Initialize the output matrix
-		DoubleMatrixDataset<String, String> finalMergedPvalueMatrix = new DoubleMatrixDataset<>(overlappingVariants, summaryStatisticsMap.keySet());
+		DoubleMatrixDataset<String, String> finalMergedPvalueMatrix = new DoubleMatrixDataset<>(overlappingVariants, phenotypes);
 
-		int i = 0;
-		for (String key : summaryStatisticsMap.keySet()) {
-			DoubleMatrixDataset<String, String> curMatrix = summaryStatisticsMap.get(key);
-			int j = 0;
-			for (String curVariant : overlappingVariants) {
-				finalMergedPvalueMatrix.setElementQuick(j, i, curMatrix.viewRow(curVariant).get(0));
-				//double curValue= curMatrix.viewRow(curVariant).get(0);
-				//finalMergedPvalueMatrix.setElement(curVariant, key, curValue);
-				j++;
+		try (ProgressBar pb = new ProgressBar("Meging input data", gwasSummStats.size(), ProgressBarStyle.ASCII)) {
+
+			int i = 0;
+			for (GwasSummStats summStat : gwasSummStats) {
+				DoubleMatrixDataset<String, String> phenotypeMatrix = summStat.loadSubsetSummStats(overlappingVariants);
+
+				//this is will make sure all variants are in the same order
+				phenotypeMatrix = phenotypeMatrix.viewRowSelection(overlappingVariants);
+
+				finalMergedPvalueMatrix.getCol(i++).assign(phenotypeMatrix.getCol(0));
+				pb.step();
 			}
-			i++;
 		}
 
 		ArrayList<String> allVariants = finalMergedPvalueMatrix.getRowObjects();
@@ -948,74 +952,77 @@ public class Depict2 {
 			LinkedHashMap<String, Integer> originalRowHash = finalMergedPvalueMatrix.getHashRows();
 			LinkedHashMap<String, Integer> updatedRowHash = new LinkedHashMap(originalRowHash.size());
 
-			for (Map.Entry<String, Integer> original : originalRowHash.entrySet()) {
+			try (ProgressBar pb = new ProgressBar("Converting variant IDs", originalRowHash.size(), ProgressBarStyle.ASCII)) {
+				for (Map.Entry<String, Integer> original : originalRowHash.entrySet()) {
 
-				String originalVariantId = original.getKey();
+					String originalVariantId = original.getKey();
 
-				String[] splitted = StringUtils.splitPreserveAllTokens(originalVariantId, ':');
+					String[] splitted = StringUtils.splitPreserveAllTokens(originalVariantId, ':');
 
-				if (splitted.length == 2 || splitted.length == 4) {
-					//assuming chr:pos or chr:pos:a1:a2
+					if (splitted.length == 2 || splitted.length == 4) {
+						//assuming chr:pos or chr:pos:a1:a2
 
-					String chr = splitted[0];
-					int pos = Integer.parseInt(splitted[1]);
+						String chr = splitted[0];
+						int pos = Integer.parseInt(splitted[1]);
 
-					Iterable<GeneticVariant> variantsByPos = genotoypes.getVariantsByPos(chr, pos);
+						Iterable<GeneticVariant> variantsByPos = genotoypes.getVariantsByPos(chr, pos);
 
-					if (splitted.length == 2) {
-						Iterator<GeneticVariant> itt = variantsByPos.iterator();
-
-						if (itt.hasNext()) {
-							GeneticVariant variant = itt.next();
+						if (splitted.length == 2) {
+							Iterator<GeneticVariant> itt = variantsByPos.iterator();
 
 							if (itt.hasNext()) {
-								//this variant is only variant at position;
-								updatedRowHash.put(variant.getPrimaryVariantId(), original.getValue());
+								GeneticVariant variant = itt.next();
 
-								outputLine[0] = originalVariantId;
-								outputLine[1] = variant.getPrimaryVariantId();
-								updatedVariantWriter.writeNext(outputLine);
+								if (itt.hasNext()) {
+									//this variant is only variant at position;
+									updatedRowHash.put(variant.getPrimaryVariantId(), original.getValue());
+
+									outputLine[0] = originalVariantId;
+									outputLine[1] = variant.getPrimaryVariantId();
+									updatedVariantWriter.writeNext(outputLine);
+
+								} else {
+									//multiple variants, can't match keep original ID
+									updatedRowHash.put(original.getKey(), original.getValue());
+								}
 
 							} else {
-								//multiple variants, can't match keep original ID
+								//No variant at pos
 								updatedRowHash.put(original.getKey(), original.getValue());
 							}
 
 						} else {
-							//No variant at pos
-							updatedRowHash.put(original.getKey(), original.getValue());
+							//splitted.length == 4
+							Alleles genotypeGwas = Alleles.createBasedOnString(splitted[2], splitted[3]);
+
+							boolean updated = false;
+							variants:
+							for (GeneticVariant variant : variantsByPos) {
+								if (variant.getVariantAlleles().sameAlleles(genotypeGwas) || (genotypeGwas.isSnp() && variant.getVariantAlleles().sameAlleles(genotypeGwas.getComplement()))) {
+									updatedRowHash.put(variant.getPrimaryVariantId(), original.getValue());
+
+									outputLine[0] = originalVariantId;
+									outputLine[1] = variant.getPrimaryVariantId();
+									updatedVariantWriter.writeNext(outputLine);
+
+									updated = true;
+									break variants;
+								}
+							}
+							if (!updated) {
+								updatedRowHash.put(original.getKey(), original.getValue());
+							}
+
 						}
 
 					} else {
-						//splitted.length == 4
-						Alleles genotypeGwas = Alleles.createBasedOnString(splitted[2], splitted[3]);
-
-						boolean updated = false;
-						variants:
-						for (GeneticVariant variant : variantsByPos) {
-							if (variant.getVariantAlleles().sameAlleles(genotypeGwas) || (genotypeGwas.isSnp() && variant.getVariantAlleles().sameAlleles(genotypeGwas.getComplement()))) {
-								updatedRowHash.put(variant.getPrimaryVariantId(), original.getValue());
-								
-								outputLine[0] = originalVariantId;
-								outputLine[1] = variant.getPrimaryVariantId();
-								updatedVariantWriter.writeNext(outputLine);
-
-								updated = true;
-								break variants;
-							}
-						}
-						if (!updated) {
-							updatedRowHash.put(original.getKey(), original.getValue());
-						}
-
+						updatedRowHash.put(original.getKey(), original.getValue());
 					}
-
-				} else {
-					updatedRowHash.put(original.getKey(), original.getValue());
+					pb.step();
 				}
-
 			}
 
+			finalMergedPvalueMatrix.setHashRows(updatedRowHash);
 			updatedVariantWriter.close();
 
 		}
