@@ -33,6 +33,8 @@ public class ScatterplotPanel extends Panel {
 	private float alpha = 1.0f;
 	private boolean clip = true;
 	private double[][] colorValues;
+	private double nrTicksMarksX = 2;
+	private double nrTicksMarksY = 2;
 
 	public void disableClipping() {
 		clip = false;
@@ -352,7 +354,7 @@ public class ScatterplotPanel extends Panel {
 	private void plotAxes(Graphics2D g2d, Range plotRange, int nrPixelsMaxX, int nrPixelsMaxY) {
 
 		g2d.setColor(theme.getDarkGrey());
-		double tickUnitY = plotRange.getRangeY() / 10;
+		double tickUnitY = plotRange.getRangeY() / nrTicksMarksY;
 		String pattern = "###,###,###.###";
 		DecimalFormat decimalFormat = new DecimalFormat(pattern);
 		g2d.setFont(theme.getMediumFont());
@@ -368,7 +370,7 @@ public class ScatterplotPanel extends Panel {
 		int xPosXAxis = x0 + marginX;
 		g2d.setStroke(theme.getStroke());
 		g2d.drawLine(xPosXAxis, yPosXAxis, xPosXAxis + nrPixelsMaxX, yPosXAxis);
-		double tickUnitX = plotRange.getRangeX() / 10;
+		double tickUnitX = plotRange.getRangeX() / nrTicksMarksX;
 
 		// X axis
 		// plot x-axis

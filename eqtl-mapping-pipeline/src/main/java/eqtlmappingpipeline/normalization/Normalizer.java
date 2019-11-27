@@ -183,6 +183,7 @@ public class Normalizer {
 				}
 				if (!missingNames.isEmpty()) {
 					System.err.println("\nMatrix does not contains desired columns, please check filtering list.");
+					System.err.println(missingNames.size() + " IDs not found.");
 					System.err.println("Writing them here: " + sampleIncludeList + "-notfound.txt\n");
 					TextFile outf = new TextFile(sampleIncludeList + "-notfound.txt", TextFile.W);
 					for (String f : missingNames) {
@@ -262,7 +263,7 @@ public class Normalizer {
 		}
 
 		if (adjustCovariates && covariatesToRemove != null) {
-			outputFileNamePrefix = adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, useOLSforCovariates, 1E-10);
+			outputFileNamePrefix = adjustCovariates(dataset, outputFileNamePrefix, covariatesToRemove, true, 1E-10);
 		}
 
 		if (runPCA) {
@@ -494,7 +495,7 @@ public class Normalizer {
 								   String fileNamePrefix,
 								   String covariatesToRemove,
 								   double varianceExplainedCutoff) throws IOException, Exception {
-		return adjustCovariates(traitData, fileNamePrefix, covariatesToRemove, false, varianceExplainedCutoff);
+		return adjustCovariates(traitData, fileNamePrefix, covariatesToRemove, true, varianceExplainedCutoff);
 	}
 
 	public String adjustCovariates(DoubleMatrixDataset<String, String> traitData,
@@ -538,6 +539,7 @@ public class Normalizer {
 				OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
 				ols.newSampleData(y, covariateDataMatrix);
 				double[] yout = ols.estimateResiduals();
+
 
 				for (int c = 0; c < yout.length; c++) {
 					outputmat.setElementQuick(row, c, yout[c]);
@@ -1030,7 +1032,8 @@ public class Normalizer {
 	}
 
 	// NOTE: this new code switches around columns and rows for the covariate matrix
-	private Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> loadCovariateValues(String covariatesToRemove, DoubleMatrixDataset<String, String> dataset) throws Exception {
+	private Pair<DoubleMatrixDataset<String, String>, DoubleMatrixDataset<String, String>> loadCovariateValues(String covariatesToRemove,
+																											   DoubleMatrixDataset<String, String> dataset) throws Exception {
 		System.out.println("- Removing covariates as defined in: " + covariatesToRemove);
 		TextFile covariates = new TextFile(covariatesToRemove, TextFile.R);
 		int numRows = covariates.countLines() - 1; // minus the header :)
@@ -1105,7 +1108,7 @@ public class Normalizer {
 //            System.out.println("Please note that missing samples will be removed from your eventual corrected --in file.");
 //        }
 		if (!isTransposed && ctr <= numRows + 2 || isTransposed && ctr <= numCols + 2) {
-			System.err.println("Less samples present than minimaly required for the normalization, (minimaly covariats+3 samples needed).");
+			System.err.println("Fewer samples present than minimally required for the normalization, (>covariates+3 samples needed).");
 			System.exit(0);
 		}
 		if (ctr < dataset.columns()) {
@@ -1309,53 +1312,58 @@ public class Normalizer {
 			System.exit(-1);
 		}
 
-		// determine variance inflation factor
-		System.out.println("Checking variance inflation factor...");
-		while (inflated) {
-			skipRow = new HashSet<>();
-			for (int row = 0; row < finalCovariates.rows(); row++) {
-				OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
-				double[] y = finalCovariates.getRow(row).toArray(); //[row];
+//		// determine variance inflation factor
+//		System.out.println("Checking variance inflation factor...");
+//		while (inflated) {
+//			skipRow = new HashSet<>();
+//			for (int row = 0; row < finalCovariates.rows(); row++) {
+//				OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
+//				double[] y = finalCovariates.getRow(row).toArray(); //[row];
+//
+//				// check if variance is >0
+//				double[][] otherCovariates = new double[finalCovariates.columns()][finalCovariates.rows() - 1];
+//				int rowctr = 0;
+//
+//				for (int row2 = 0; row2 < finalCovariates.rows(); row2++) {
+//					if (row != row2) {
+//						for (int s = 0; s < finalCovariates.columns(); s++) {
+//							otherCovariates[s][rowctr] = finalCovariates.getElementQuick(row2, s);
+//						}
+//						rowctr++;
+//					}
+//				}
+//
+//				ols.newSampleData(y, otherCovariates);
+//
+//				double rsq = ols.calculateRSquared();
+//				double vif = 1 / (1 - rsq);
+//				boolean alias = false;
+//
+//				if (rsq > 0.99) {
+//					alias = true;
+//					skipRow.add(row);
+//					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
+//					break;
+//				} else {
+//					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
+//				}
+//			}
+//
+//			if (skipRow.isEmpty()) {
+//				System.out.println("There are no more collinear covariates.");
+//				inflated = false;
+//			} else {
+//				finalCovariates = excludeRows(finalCovariates, skipRow);
+//				inflated = true;
+//			}
+//			iter++;
+//		}
 
-				// check if variance is >0
-				double[][] otherCovariates = new double[finalCovariates.columns()][finalCovariates.rows() - 1];
-				int rowctr = 0;
+		// correct for variance inflation...
+		VIF vif = new VIF();
+		finalCovariates = vif.vifCorrect(finalCovariates.viewDice(), (1 - 1E-4)); // code here has covariates on the rows; move them to the columns instead.
 
-				for (int row2 = 0; row2 < finalCovariates.rows(); row2++) {
-					if (row != row2) {
-						for (int s = 0; s < finalCovariates.columns(); s++) {
-							otherCovariates[s][rowctr] = finalCovariates.getElementQuick(row2, s);
-						}
-						rowctr++;
-					}
-				}
-
-				ols.newSampleData(y, otherCovariates);
-
-				double rsq = ols.calculateRSquared();
-				double vif = 1 / (1 - rsq);
-				boolean alias = false;
-
-				if (rsq > 0.99) {
-					alias = true;
-					skipRow.add(row);
-					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
-					break;
-				} else {
-					System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getRowObjects().get(row) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
-				}
-			}
-
-			if (skipRow.isEmpty()) {
-				System.out.println("There are no more collinear covariates.");
-				inflated = false;
-			} else {
-				finalCovariates = excludeRows(finalCovariates, skipRow);
-				inflated = true;
-			}
-			iter++;
-		}
-
+		finalCovariates = finalCovariates.viewDice();
 		System.out.println("");
 		System.out.println("Remaining covariates: ");
 		System.out.println(Strings.concat(finalCovariates.getRowObjects(), Strings.semicolon));

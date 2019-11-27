@@ -39,7 +39,6 @@ public class MixupMapper extends MetaQTL3 {
 	public void run(String settingsFile, String inputeQTLs, boolean allCombos) {
 
 
-
 	}
 
 	public void run(String xmlSettingsFile, String texttoreplace, String texttoreplacewith,
@@ -96,7 +95,9 @@ public class MixupMapper extends MetaQTL3 {
 		}
 
 		if (!Gpio.exists(inputeQTLs)) {
-			System.err.println("Something went wrong during eQTL mapping: most probably the FDR calculations failed.\nCheck the files in: " + m_settings.outputReportsDir);
+			System.err.println("Could not find: " + inputeQTLs);
+			System.err.println("This means something went wrong during eQTL mapping: most probably the FDR calculations failed.\n" +
+					"Check the files in: " + m_settings.outputReportsDir);
 			System.exit(-1);
 		}
 
