@@ -10,12 +10,22 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
 import ch.unil.genescore.vegas.Farebrother;
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,6 +40,7 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
+import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetRowIterable;
@@ -42,8 +53,8 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class GenePvalueCalculator {
 
-	public static final int MAX_ROUND_1_RESCUE = 100000000;
-	
+	public static final int MAX_ROUND_1_RESCUE = 10000000;
+
 	private static final Logger LOGGER = Logger.getLogger(GenePvalueCalculator.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
 	private static final int PERMUTATION_STEP = 1000;
@@ -100,6 +111,11 @@ public class GenePvalueCalculator {
 //	private final double minPvaluePermutations2;
 	private final boolean correctForLambdaInflation;
 	private final double[] lambdaInflations;
+	private final File debugFolder;
+	private final HashMap<String, GeneticVariant> variantIdMap;
+	private final HashMap<String, HashSet<String>> variantGeneMapping;
+	private final CSVWriter variantPerGeneWriter;
+	private final String[] variantPerGeneOutputLine;
 
 	/**
 	 *
@@ -120,7 +136,7 @@ public class GenePvalueCalculator {
 	 * @throws java.io.IOException
 	 */
 	@SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, long nrRescuePermutation, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas) throws IOException, Exception {
+	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, long nrRescuePermutation, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas, final File debugFolder, final File variantGeneMappingFile, final File usedVariantsPerGeneFile) throws IOException, Exception {
 
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
@@ -129,6 +145,7 @@ public class GenePvalueCalculator {
 		this.maxNrPermutations = nrPermutations;
 		this.maxNrPermutationsRescue1 = nrRescuePermutation < MAX_ROUND_1_RESCUE ? (int) nrRescuePermutation : MAX_ROUND_1_RESCUE;
 		this.maxNrPermutationsRescue2 = nrRescuePermutation;
+		this.debugFolder = debugFolder;
 
 //		this.minPvaluePermutations = 0.5 / (this.maxNrPermutations2 + 1);
 //		this.minPvaluePermutations2 = 0.5 / (this.maxNrPermutations2 + 1);
@@ -137,6 +154,32 @@ public class GenePvalueCalculator {
 		this.randomChi2 = randomChi2;
 		this.correctForLambdaInflation = correctForLambdaInflation;
 		this.numberRandomPhenotypes = nrSampleToUseForCorrelation + nrSamplesToUseForNullBetas;
+
+		if (usedVariantsPerGeneFile != null) {
+			variantPerGeneWriter = new CSVWriter(new FileWriter(usedVariantsPerGeneFile), '\t', '\0', '\0', "\n");
+			variantPerGeneOutputLine = new String[2];
+			int c = 0;
+			variantPerGeneOutputLine[c++] = "Variant";
+			variantPerGeneOutputLine[c++] = "Gene";
+			variantPerGeneWriter.writeNext(variantPerGeneOutputLine);
+		} else {
+			variantPerGeneWriter = null;
+			variantPerGeneOutputLine = null;
+		}
+
+		if (variantGeneMappingFile != null) {
+			this.variantGeneMapping = loadVariantGeneMapping(variantGeneMappingFile);
+
+			HashSet<String> variantInGeneMapping = new HashSet<>();
+			for (HashSet<String> variants : variantGeneMapping.values()) {
+				variantInGeneMapping.addAll(variants);
+			}
+			this.variantIdMap = this.referenceGenotypes.getVariantIdMap(new VariantIdIncludeFilter(variantInGeneMapping));
+
+		} else {
+			this.variantGeneMapping = null;
+			this.variantIdMap = null;
+		}
 
 		if (nrPermutations % PERMUTATION_STEP != 0) {
 			throw new Exception("Number of permutaitons must be dividable by: " + PERMUTATION_STEP);
@@ -255,6 +298,9 @@ public class GenePvalueCalculator {
 		totalTimeInThread += (endThread - startThread);
 
 		pb.close();
+		if (variantPerGeneWriter != null) {
+			variantPerGeneWriter.close();
+		}
 
 		LOGGER.info("countRanPermutationsForGene: " + countRanPermutationsForGene);
 		LOGGER.info("countBasedPvalueOnPermutations: " + countBasedPvalueOnPermutations);
@@ -325,13 +371,68 @@ public class GenePvalueCalculator {
 		Gene gene = genes.get(geneI);
 
 		//Rows: samples, cols: variants
+		final DoubleMatrixDataset<String, String> variantScaledDosages;
 		final DoubleMatrixDataset<String, String> variantScaledDosagesPruned;
 		final DoubleMatrixDataset<String, String> variantCorrelationsPruned;
 		final int variantCorrelationsPrunedRows;
 
 		{
 
-			DoubleMatrixDataset<String, String> variantScaledDosages = loadVariantScaledDosageMatrix(gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend);
+			final DoubleMatrixDataset<String, String> variantScaledDosagesRange;
+			if (windowExtend >= 0) {
+				DoubleMatrixDataset<String, String> tmp = loadVariantScaledDosageMatrix(gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend);
+
+				if (tmp.columns() == 0) {
+					//no variants in range
+					variantScaledDosagesRange = null;
+				} else {
+					variantScaledDosagesRange = tmp;
+				}
+
+			} else {
+				variantScaledDosagesRange = null;
+			}
+
+			final DoubleMatrixDataset<String, String> variantScaledDosagesIds;
+			if (variantGeneMapping != null && variantGeneMapping.containsKey(gene.getGene())) {
+				DoubleMatrixDataset<String, String> tmp = loadVariantScaledDosageMatrix(variantGeneMapping.get(gene.getGene()));
+				if (tmp.columns() == 0) {
+					//no variants in range
+					variantScaledDosagesIds = null;
+				} else {
+					variantScaledDosagesIds = tmp;
+				}
+			} else {
+				variantScaledDosagesIds = null;
+			}
+
+			if (variantScaledDosagesRange == null && variantScaledDosagesIds == null) {
+				variantScaledDosages = new DoubleMatrixDataset<>(0, 0);
+			} else if (variantScaledDosagesRange == null) {
+				variantScaledDosages = variantScaledDosagesIds;
+			} else if (variantScaledDosagesIds == null) {
+				variantScaledDosages = variantScaledDosagesRange;
+			} else {
+				//Both are not null so they need to be merged
+
+				//First identify variants in de ID matrix that are not in the range matrix
+				ArrayList<String> variantsFoundBasedOnId = variantScaledDosagesIds.getColObjects();
+				Iterator<String> variantsFoundBasedOnIdIt = variantsFoundBasedOnId.iterator();
+				while (variantsFoundBasedOnIdIt.hasNext()) {
+					String variantId = variantsFoundBasedOnIdIt.next();
+					if (variantScaledDosagesRange.containsCol(variantId)) {
+						variantsFoundBasedOnIdIt.remove();
+					}
+				}
+
+				//variantsFoundBasedOnId now only contains variants not yet in variantScaledDosagesRange
+				if (variantsFoundBasedOnId.isEmpty()) {
+					variantScaledDosages = variantScaledDosagesRange;
+				} else {
+					variantScaledDosages = DoubleMatrixDataset.concatColumns(variantScaledDosagesRange, variantScaledDosagesIds.viewColSelection(variantsFoundBasedOnId));
+				}
+
+			}
 
 			timeStart = System.currentTimeMillis();
 			final DoubleMatrixDataset<String, String> variantCorrelations = variantScaledDosages.calculateCorrelationMatrixOnNormalizedColumns();
@@ -340,7 +441,22 @@ public class GenePvalueCalculator {
 
 			if (LOGGER.isDebugEnabled() & variantCorrelations.rows() > 1) {
 
-				variantCorrelations.save(new File(outputBasePath + "_" + gene.getGene() + "_variantCorMatrix.txt"));
+				variantCorrelations.save(new File(debugFolder, gene.getGene() + "_variantCorMatrix.txt"));
+
+			}
+
+			if (variantPerGeneWriter != null) {
+				int c;
+
+				synchronized (variantPerGeneWriter) {
+					for (String variant : variantScaledDosages.getHashCols().keySet()) {
+						c = 0;
+						variantPerGeneOutputLine[c++] = variant;
+						variantPerGeneOutputLine[c++] = gene.getGene();
+						variantPerGeneWriter.writeNext(variantPerGeneOutputLine);
+					}
+					variantPerGeneWriter.flush();
+				}
 
 			}
 
@@ -365,7 +481,7 @@ public class GenePvalueCalculator {
 
 		if (LOGGER.isDebugEnabled() & variantCorrelationsPrunedRows > 1) {
 
-			variantCorrelationsPruned.save(new File(outputBasePath + "_" + gene.getGene() + "_variantCorMatrixPruned.txt"));
+			variantCorrelationsPruned.save(new File(debugFolder, gene.getGene() + "_variantCorMatrixPruned.txt"));
 
 		}
 
@@ -414,7 +530,7 @@ public class GenePvalueCalculator {
 
 			if (LOGGER.isDebugEnabled()) {
 
-				saveEigenValues(lambdas, new File(outputBasePath + "_" + gene.getGene() + "_eigenValues.txt"));
+				saveEigenValues(lambdas, new File(debugFolder, gene.getGene() + "_eigenValues.txt"));
 
 			}
 
@@ -446,7 +562,7 @@ public class GenePvalueCalculator {
 		}
 
 		if (LOGGER.isDebugEnabled()) {
-			geneVariantPhenotypeMatrix.save(new File(outputBasePath + "_" + gene.getGene() + "_variantPvalues.txt"));
+			geneVariantPhenotypeMatrix.save(new File(debugFolder, gene.getGene() + "_variantPvalues.txt"));
 		}
 
 		if (correctForLambdaInflation) {
@@ -457,7 +573,7 @@ public class GenePvalueCalculator {
 				}
 			}
 			if (LOGGER.isDebugEnabled()) {
-				geneVariantPhenotypeMatrix.save(new File(outputBasePath + "_" + gene.getGene() + "_variantPvaluesLambdaCorrected.txt"));
+				geneVariantPhenotypeMatrix.save(new File(debugFolder, gene.getGene() + "_variantPvaluesLambdaCorrected.txt"));
 			}
 		}
 
@@ -493,8 +609,8 @@ public class GenePvalueCalculator {
 					}
 					currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-					while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
-						if (geneChi2Sum < geneChi2SumNull[perm]) {
+					while (perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+						if (geneChi2Sum < geneChi2SumNull[perm++]) {
 							countNullLargerChi2ThanReal++;
 						}
 					}
@@ -518,7 +634,10 @@ public class GenePvalueCalculator {
 
 				final double p;
 
+				LOGGER.debug("Done initial permutation for:\t" + gene.getGene() + "\tphenoI:\t" + phenoI + "\tcountNullLargerChi2ThanReal:\t" + countNullLargerChi2ThanReal + "\tused permutations:\t" + currentNumberPermutationsForThisPhenoGeneCombo);
+
 				if (countNullLargerChi2ThanReal < 20) {
+
 					//permutations not able to estimate p-value
 					if (farebrother == null) {
 						farebrother = new Farebrother(lambdas);
@@ -537,13 +656,15 @@ public class GenePvalueCalculator {
 							}
 							currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-							while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
-								if (geneChi2Sum < geneChi2SumNull[perm]) {
+							while (perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+								if (geneChi2Sum < geneChi2SumNull[perm++]) {
 									countNullLargerChi2ThanReal++;
 								}
 							}
 
 						} while (countNullLargerChi2ThanReal < 20 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
+
+						LOGGER.debug("Done first rescue permutation for:\t" + gene.getGene() + "\tphenoI:\t" + phenoI + "\tcountNullLargerChi2ThanReal:\t" + countNullLargerChi2ThanReal + "\tused permutations:\t" + currentNumberPermutationsForThisPhenoGeneCombo);
 
 						//Fall back to slower purmtations that are not saved
 						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
@@ -582,6 +703,7 @@ public class GenePvalueCalculator {
 					} else {
 						//We noticed farebrother p-values below 1e-12 followed a very strange distribution
 						p = farebrotherP <= 1e-12 ? 1e-12 : farebrotherP;
+						LOGGER.debug("Using farebrother pvalue for:\t" + gene.getGene() + "\tphenoI:\t" + phenoI + "\tfarebrotherP:\t" + p);
 						countBasedPvalueOnFarebrother++;
 					}
 				} else {
@@ -589,8 +711,6 @@ public class GenePvalueCalculator {
 					p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
 					LOGGER.debug(gene.getGene() + " permutation: " + currentNumberPermutationsForThisPhenoGeneCombo + " count null larger than real: " + countNullLargerChi2ThanReal + " pvalue:" + p);
 				}
-
-				
 
 				genePValueDistributionPermuations[(int) (20d * p)]++;
 				genePvalues.setElementQuick(geneI, phenoI, p);
@@ -623,10 +743,14 @@ public class GenePvalueCalculator {
 
 		}
 
+		geneMaxPermutationCount.setElementQuick(geneI, 0, currentNumberPermutationsCalculated);
+
+		int nullUsingFarebrother = 0;
+		int nullUsingRescue1 = 0;
+		int nullUsingRescue2 = 0;
+
 		// Do exactly the same thing but now for the null GWAS
-		for (int nullPhenoI = 0;
-				nullPhenoI < numberRandomPhenotypes;
-				++nullPhenoI) {
+		for (int nullPhenoI = 0; nullPhenoI < numberRandomPhenotypes; ++nullPhenoI) {
 
 			if (variantCorrelationsPrunedRows > 1) {
 
@@ -652,8 +776,8 @@ public class GenePvalueCalculator {
 					}
 					currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-					while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
-						if (geneChi2Sum < geneChi2SumNull[perm]) {
+					while (perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+						if (geneChi2Sum < geneChi2SumNull[perm++]) {
 							countNullLargerChi2ThanReal++;
 						}
 					}
@@ -667,15 +791,21 @@ public class GenePvalueCalculator {
 
 				final double p;
 
-				if (countNullLargerChi2ThanReal < 20) {
+				//For permutation phenotypes use threshold of 5 not 20
+				if (countNullLargerChi2ThanReal < 5) {
 					//permutations not able to estimate p-value
 					if (farebrother == null) {
 						farebrother = new Farebrother(lambdas);
 					}
+
+					++nullUsingFarebrother;
+
 					double farebrotherP = farebrother.probQsupx(geneChi2Sum);
 
 					if (farebrother.getIfault() != 0) {
 						//farebrother failed best we can do is some more permutation p-value
+
+						nullUsingRescue1++;
 
 						//First fast permutations that can be used for other phenotypes / permutations
 						do {
@@ -686,13 +816,17 @@ public class GenePvalueCalculator {
 							}
 							currentNumberPermutationsForThisPhenoGeneCombo += PERMUTATION_STEP;
 
-							while (++perm < currentNumberPermutationsForThisPhenoGeneCombo) {
-								if (geneChi2Sum < geneChi2SumNull[perm]) {
+							while (perm < currentNumberPermutationsForThisPhenoGeneCombo) {
+								if (geneChi2Sum < geneChi2SumNull[perm++]) {
 									countNullLargerChi2ThanReal++;
 								}
 							}
 
-						} while (countNullLargerChi2ThanReal < 20 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
+						} while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue1);
+
+						if (countNullLargerChi2ThanReal < 5) {
+							++nullUsingRescue2;
+						}
 
 						//Fall back to slower purmtations that are not saved
 						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
@@ -726,7 +860,6 @@ public class GenePvalueCalculator {
 						}
 						p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
 						//countBasedPvalueOnPermutationsAfterFailedFarebrother++;
-				
 
 					} else {
 						//We noticed farebrother p-values below 1e-12 followed a very strange distribution
@@ -736,9 +869,9 @@ public class GenePvalueCalculator {
 				} else {
 					//countBasedPvalueOnPermutations++;
 					p = (countNullLargerChi2ThanReal + 0.5) / (double) (currentNumberPermutationsForThisPhenoGeneCombo + 1);
-				
+
 				}
-				
+
 				genePvaluesNullGwas.setElementQuick(geneI, nullPhenoI, p);
 
 				timeStop = System.currentTimeMillis();
@@ -765,8 +898,8 @@ public class GenePvalueCalculator {
 
 		}
 
-		geneMaxPermutationCount.setElementQuick(geneI,
-				0, currentNumberPermutationsCalculated);
+		LOGGER.debug("Random phenotype permutations\t" + gene.getGene() + "\tnullUsingFarebrother\t" + nullUsingFarebrother + "\tnullUsingRescue1\t" + nullUsingRescue1 + "\tnullUsingRescue2\t" + nullUsingRescue2);
+
 		geneRuntime.setElementQuick(geneI,
 				0, (System.currentTimeMillis() - geneTimeStart));
 
@@ -817,11 +950,71 @@ public class GenePvalueCalculator {
 		long timeStop = System.currentTimeMillis();
 		timeInLoadingGenotypeDosages += (timeStop - timeStart);
 
+		LOGGER.debug(" * Variants found based on IDs: " + variantsDosages.size());
+
+		timeStart = System.currentTimeMillis();
+
+		//Inplace normalize per variants to mean of 0 and sd of 1 too 
+		dosageDataset.normalizeColumns();
+
+		timeStop = System.currentTimeMillis();
+		timeInNormalizingGenotypeDosages += (timeStop - timeStart);
+
+		return dosageDataset;
+
+	}
+
+	/**
+	 * The dosages for each variants will be scaled to have mean of 0 and sd of
+	 * 1. This will allow fast correlation calculations
+	 *
+	 * @param chr
+	 * @param start
+	 * @param stop
+	 * @return
+	 */
+	private DoubleMatrixDataset<String, String> loadVariantScaledDosageMatrix(HashSet<String> variantsToLoad) {
+
+		LOGGER.debug("Loading " + variantsToLoad.size() + "  variants based on IDs");
+
+		//ArrayList<GeneticVariant> variants = new ArrayList<>(64);
+		ArrayList<float[]> variantsDosages = new ArrayList<>(64);
+		LinkedHashMap<String, Integer> variantHash = new LinkedHashMap<>(64);
+
+		long timeStart = System.currentTimeMillis();
+
+		int v = 0;
+		synchronized (this) {
+			for (String variantToLoad : variantsToLoad) {
+				//variants.add(variant);
+				GeneticVariant variant = variantIdMap.get(variantToLoad);
+				if (variant != null) {
+					variantsDosages.add(variant.getSampleDosages());
+					variantHash.put(variant.getPrimaryVariantId(), v++);
+				}
+			}
+		}
+
+		DoubleMatrixDataset<String, String> dosageDataset = new DoubleMatrixDataset<>(sampleHash, variantHash);
+
+		DoubleMatrix2D dosageMatrix = dosageDataset.getMatrix();
+
+		v = 0;
+		for (float[] variantDosages : variantsDosages) {
+			for (int s = 0; s < variantDosages.length; ++s) {
+				dosageMatrix.setQuick(s, v, variantDosages[s]);
+			}
+			v++;
+		}
+
+		long timeStop = System.currentTimeMillis();
+		timeInLoadingGenotypeDosages += (timeStop - timeStart);
+
 		LOGGER.debug(" * Variants found in region: " + variantsDosages.size());
 
 		timeStart = System.currentTimeMillis();
 
-		//Inplace normalize rows to mean of 0 and sd of 1 too 
+		//Inplace normalize per variants to mean of 0 and sd of 1 too 
 		dosageDataset.normalizeColumns();
 
 		timeStop = System.currentTimeMillis();
@@ -950,6 +1143,29 @@ public class GenePvalueCalculator {
 		phenoData.normalizeColumns();
 
 		return phenoData;
+
+	}
+
+	private static HashMap<String, HashSet<String>> loadVariantGeneMapping(File variantGeneMappingFile) throws FileNotFoundException, IOException {
+
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantGeneMappingFile))).withCSVParser(parser).build();
+
+		HashMap<String, HashSet<String>> geneVariantMapping = new HashMap<>();
+
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+
+			HashSet<String> geneVariant = geneVariantMapping.get(nextLine[1]);
+			if (geneVariant == null) {
+				geneVariant = new HashSet<>();
+				geneVariantMapping.put(nextLine[1], geneVariant);
+			}
+			geneVariant.add(nextLine[0]);
+
+		}
+
+		return geneVariantMapping;
 
 	}
 

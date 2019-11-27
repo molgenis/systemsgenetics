@@ -6,12 +6,15 @@
 package nl.systemsgenetics.depict2;
 
 import edu.emory.mathcs.utils.ConcurrencyUtils;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+
 import static nl.systemsgenetics.depict2.Depict2.LARGE_INT_FORMAT;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -24,7 +27,6 @@ import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 
 /**
- *
  * @author patri
  */
 public class Depict2Options {
@@ -47,6 +49,8 @@ public class Depict2Options {
 	private final double maxRBetweenVariants;
 	private final File logFile;
 	private final boolean debugMode;
+	private final File debugFolder;
+	private final File intermediateFolder;
 	private final boolean pvalueToZscore;
 	private final List<PathwayDatabase> pathwayDatabases;
 	private final File conversionColumnIncludeFilter;
@@ -57,8 +61,16 @@ public class Depict2Options {
 	private final double genePruningR;
 	private final boolean forceNormalGenePvalues;
 	private final boolean forceNormalPathwayPvalues;
+	private final boolean normalizeEigenvectors;
 	private final int geneCorrelationWindow;
 	private final boolean excludeHla;
+	private boolean corMatrixZscores = false;
+	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN or CONVERT_EXP
+	private final File variantFilterFile;
+	private boolean saveOuputAsExcelFiles;
+	private final File variantGeneLinkingFile;
+	private final boolean saveUsedVariantsPerGene;
+	private final double mafFilter;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -74,17 +86,20 @@ public class Depict2Options {
 				+ "* RUN - Run the DEPICT2 prioritization.\n"
 				+ "* RUN2 - Run the DEPICT2 prioritization starting at stage 2.\n"
 				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
-				+ "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output\n"
+				+ "* CONVERT_TXT_MERGE - Merge multiple txt pvalue files into one matrix containing only overlapping snps"
+				+ "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output optionally --columnsToExtract\n"
+				+ "* CONVERT_EXP - Convert a tab seperated expression matrix and normalize genes. Use --gwas (for exp data) and --output optionally --columnsToExtract\n"
+				+ "* TRANSPOSE_BIN - Transposes a binary matrix. Use --gwas and --output\n"
 				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
 				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output"
-				+ "* CORRELATE_GENES - Create gene correlation matrix Use --gwas as input matrix (genes on row, tab sepperated), --output and --genes"
+				+ "* CORRELATE_GENES - Create gene correlation matrix with 0 on diagnonal. Use --gwas as input matrix (genes on row, tab sepperated), --output and --genes. Optionally use --corZscore to create Z-score matrix"
 		);
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("m"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("GWAS Z-sccore binary matrix. Rows variants, Cols phenotypes. Without .dat");
 		OptionBuilder.withLongOpt("gwas");
 		OPTIONS.addOption(OptionBuilder.create("g"));
@@ -95,11 +110,17 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("referenceGenotypes");
 		OPTIONS.addOption(OptionBuilder.create("r"));
 
-		OptionBuilder.withArgName("basePath");
-		OptionBuilder.hasArgs();
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Samples to include from reference genotypes");
 		OptionBuilder.withLongOpt("referenceSamples");
 		OPTIONS.addOption(OptionBuilder.create("rs"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with variants to include in gene p-value calculation (optional)");
+		OptionBuilder.withLongOpt("variantFilter");
+		OPTIONS.addOption(OptionBuilder.create("vf"));
 
 		OptionBuilder.withArgName("type");
 		OptionBuilder.hasArg();
@@ -115,50 +136,56 @@ public class Depict2Options {
 		OPTIONS.addOption(OptionBuilder.create("R"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("The output path");
 		OptionBuilder.withLongOpt("output");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("o"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Maximum number of calculation threads");
 		OptionBuilder.withLongOpt("threads");
 		OPTIONS.addOption(OptionBuilder.create("t"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of initial permutations before using Farebrother's RUBEN algorithm to determine gene p-values. Recommended: 100,000; min: 10,000; max: " + LARGE_INT_FORMAT.format(GenePvalueCalculator.MAX_ROUND_1_RESCUE));
 		OptionBuilder.withLongOpt("permutations");
 		OPTIONS.addOption(OptionBuilder.create("p"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of permutations to use as fallback incase Farebrother's RUBEN algorithm failed. Optional but recommende to do atleast: 100,000,000. ");
 		OptionBuilder.withLongOpt("permutationsRescue");
 		OPTIONS.addOption(OptionBuilder.create("pr"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of initial permutations before using Farebrother's RUBEN algorithm to determine gene p-values ");
 		OptionBuilder.withLongOpt("permutations");
 		OPTIONS.addOption(OptionBuilder.create("p"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("Number of bases to add left and right of gene window");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Number of bases to add left and right of gene window, use -1 to not have any variants in window");
 		OptionBuilder.withLongOpt("window");
 		OPTIONS.addOption(OptionBuilder.create("w"));
 
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Variant gene mapping. col 1: variant ID col 2: ENSG ID. (optional)");
+		OptionBuilder.withLongOpt("variantGene");
+		OPTIONS.addOption(OptionBuilder.create("vg"));
+
 		OptionBuilder.withArgName("double");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Max correlation between variants to use (recommend = 0.95)");
 		OptionBuilder.withLongOpt("variantCorrelation");
 		OPTIONS.addOption(OptionBuilder.create("v"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm");
 		OptionBuilder.withLongOpt("genes");
 		OPTIONS.addOption(OptionBuilder.create("ge"));
@@ -181,7 +208,7 @@ public class Depict2Options {
 		OPTIONS.addOption(OptionBuilder.create("pd"));
 
 		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Optional file with columns to select during conversion");
 		OptionBuilder.withLongOpt("cols");
 		OPTIONS.addOption(OptionBuilder.create("co"));
@@ -203,19 +230,19 @@ public class Depict2Options {
 		OPTIONS.addOption(OptionBuilder.create("gcw"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of random phenotypes to use to determine gene correlations");
 		OptionBuilder.withLongOpt("permutationGeneCorrelations");
 		OPTIONS.addOption(OptionBuilder.create("pgc"));
 
 		OptionBuilder.withArgName("int");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of random phenotypes to use to determine null distribution pathway enrichment");
 		OptionBuilder.withLongOpt("permutationPathwayEnrichment");
 		OPTIONS.addOption(OptionBuilder.create("ppe"));
 
 		OptionBuilder.withArgName("double");
-		OptionBuilder.hasArgs();
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Exclude correlated genes in pathway enrichments");
 		OptionBuilder.withLongOpt("genePruningR");
 		OPTIONS.addOption(OptionBuilder.create("gpr"));
@@ -242,6 +269,38 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("pca");
 		OPTIONS.addOption(OptionBuilder.create("pca"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("When using --mode CORRELATE_GENES to correlate genes save results as Z-scores instead of r's.");
+		OptionBuilder.withLongOpt("corZscore");
+		OPTIONS.addOption(OptionBuilder.create("cz"));
+
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("When using --mode CORRELATE_GENES first normalize the eigen vectors");
+		OptionBuilder.withLongOpt("normalizeEigenvectors");
+		OPTIONS.addOption(OptionBuilder.create("ne"));
+
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Save all the variants used per gene to calculate the gene p-value (Warning this will create a very large file)");
+		OptionBuilder.withLongOpt("saveUsedVariantsPerGene");
+		OPTIONS.addOption(OptionBuilder.create("uvg"));
+
+		OptionBuilder.withArgName("strings");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("Column names to extract when running --mode CONVERT_BIN or CONVERT_EXP");
+		OptionBuilder.withLongOpt("columnsToExtract");
+		OPTIONS.addOption(OptionBuilder.create("cte"));
+
+		OptionBuilder.withArgName("strings");
+		OptionBuilder.withDescription("Save enrichement results also as excel files. Will generate 1 file per input phenotype");
+		OptionBuilder.withLongOpt("saveExcel");
+		OPTIONS.addOption(OptionBuilder.create("se"));
+
+		OptionBuilder.withArgName("double");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Minimum MAF");
+		OptionBuilder.withLongOpt("maf");
+		OPTIONS.addOption(OptionBuilder.create("maf"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -262,11 +321,16 @@ public class Depict2Options {
 		outputBasePath = new File(commandLine.getOptionValue('o'));
 		logFile = new File(outputBasePath + ".log");
 		debugMode = commandLine.hasOption('d');
+		debugFolder = new File(outputBasePath + "_debugFiles");
+		intermediateFolder = new File(outputBasePath + "_intermediates");
 		ignoreGeneCorrelations = commandLine.hasOption("igc");
 		correctForLambdaInflation = commandLine.hasOption("cl");
 		forceNormalGenePvalues = commandLine.hasOption("fngp");
 		forceNormalPathwayPvalues = commandLine.hasOption("fnpp");
 		excludeHla = commandLine.hasOption("eh");
+		normalizeEigenvectors = commandLine.hasOption("ne");
+		saveOuputAsExcelFiles = commandLine.hasOption("se");
+		saveUsedVariantsPerGene = commandLine.hasOption("uvg");
 
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
@@ -274,7 +338,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -285,7 +349,7 @@ public class Depict2Options {
 			gwasZscoreMatrixPath = null;
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE) {
 			pvalueToZscore = commandLine.hasOption("p2z");
 			if (commandLine.hasOption("co")) {
 				conversionColumnIncludeFilter = new File(commandLine.getOptionValue("co"));
@@ -345,17 +409,23 @@ public class Depict2Options {
 				pathwayDatabases = parsePd(commandLine);
 				break;
 			case CORRELATE_GENES:
-				if (!commandLine.hasOption("ge")) {
-					throw new ParseException("--genes not specified");
-				} else {
+				if (commandLine.hasOption("ge")) {
 					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				} else {
+					geneInfoFile = null;
 				}
+				corMatrixZscores = commandLine.hasOption("cz");
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				break;
+			case CONVERT_BIN:
+			case CONVERT_EXP:
+				if (commandLine.hasOption("cte")) {
+					columnsToExtract = commandLine.getOptionValues("cte");
+				}
 			default:
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
@@ -368,6 +438,24 @@ public class Depict2Options {
 
 		switch (mode) {
 			case RUN:
+
+				//variantFilter
+				if (commandLine.hasOption("vf")) {
+					variantFilterFile = new File(commandLine.getOptionValue("vf"));
+				} else {
+					variantFilterFile = null;
+				}
+
+				if (commandLine.hasOption("maf")) {
+					try {
+						mafFilter = Double.parseDouble(commandLine.getOptionValue("maf"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --maf \"" + commandLine.getOptionValue("maf") + "\" is not an double");
+					}
+				} else {
+					mafFilter = 0;
+				}
+
 				if (!commandLine.hasOption("p")) {
 					throw new ParseException("--permutations not specified");
 				} else {
@@ -407,6 +495,17 @@ public class Depict2Options {
 						throw new ParseException("Error parsing --window \"" + commandLine.getOptionValue('w') + "\" is not an int");
 					}
 				}
+
+				if (commandLine.hasOption("vg")) {
+					variantGeneLinkingFile = new File(commandLine.getOptionValue("vg"));
+				} else {
+					variantGeneLinkingFile = null;
+				}
+
+				if (windowExtend < 0 && variantGeneLinkingFile == null) {
+					throw new ParseException("No window specified but also no variant gene linking.");
+				}
+
 				if (!commandLine.hasOption("v")) {
 					throw new ParseException("--variantCorrelation not specified");
 				} else {
@@ -461,6 +560,49 @@ public class Depict2Options {
 				numberOfPermutations = 0;
 				numberOfPermutationsRescue = 0;
 				windowExtend = 0;
+				variantFilterFile = null;
+				variantGeneLinkingFile = null;
+				mafFilter = 0;
+				break;
+			case CONVERT_TXT_MERGE:
+
+				if (!commandLine.hasOption('r')) {
+
+					genotypeBasePath = null;
+					genotypeType = null;
+
+				} else {
+
+					genotypeBasePath = commandLine.getOptionValues('r');
+
+					try {
+						if (commandLine.hasOption('R')) {
+							genotypeType = RandomAccessGenotypeDataReaderFormats.valueOfSmart(commandLine.getOptionValue('R').toUpperCase());
+						} else {
+							if (genotypeBasePath[0].endsWith(".vcf")) {
+								throw new ParseException("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
+							}
+							try {
+								genotypeType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(genotypeBasePath);
+							} catch (GenotypeDataException e) {
+								throw new ParseException("Unable to determine reference type based on specified path. Please specify --refType");
+							}
+						}
+
+					} catch (IllegalArgumentException e) {
+						throw new ParseException("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
+					}
+
+				}
+
+				genotypeSamplesFile = null;
+				maxRBetweenVariants = 0d;
+				numberOfPermutations = 0;
+				numberOfPermutationsRescue = 0;
+				windowExtend = 0;
+				variantFilterFile = null;
+				variantGeneLinkingFile = null;
+				mafFilter = 0;
 				break;
 			default:
 				genotypeBasePath = null;
@@ -470,6 +612,9 @@ public class Depict2Options {
 				numberOfPermutations = 0;
 				numberOfPermutationsRescue = 0;
 				windowExtend = 0;
+				variantFilterFile = null;
+				variantGeneLinkingFile = null;
+				mafFilter = 0;
 				break;
 		}
 
@@ -541,12 +686,47 @@ public class Depict2Options {
 				}
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
 				break;
+			case CONVERT_TXT_MERGE:
+				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
+				if (genotypeBasePath != null) {
+					StringBuilder genotypeBasePaths = new StringBuilder();
+					for (String path : genotypeBasePath) {
+						genotypeBasePaths.append(new File(path).getAbsolutePath());
+						genotypeBasePaths.append(' ');
+					}
+					LOGGER.info(" * Reference genotype data: " + genotypeBasePaths);
+					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
+				}
+				break;
+			case MERGE_BIN:
+				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());
+				break;
+			case PCA:
+				LOGGER.info(" * Matrix to do PCA on: " + gwasZscoreMatrixPath.getAbsolutePath());
+				break;
 			case CONVERT_BIN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				if (columnsToExtract != null) {
+					LOGGER.info(" * Columns to extract: " + String.join(" ", columnsToExtract));
+				}
+				break;
+			case CONVERT_EXP:
+				LOGGER.info(" * Expression matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				if (columnsToExtract != null) {
+					LOGGER.info(" * Columns to extract: " + String.join(" ", columnsToExtract));
+				}
+				break;
+			case TRANSPOSE:
+				LOGGER.info(" * Matrix to transpose: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
 			case CORRELATE_GENES:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
-				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
+				LOGGER.info(" * First normalize eigen vectors: " + (normalizeEigenvectors ? "on" : "off"));
+				LOGGER.info(" * Convert r to Z-score: " + (corMatrixZscores ? "on" : "off"));
+				if (geneInfoFile != null) {
+					LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
+				}
 				break;
 			case RUN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -560,12 +740,21 @@ public class Depict2Options {
 					LOGGER.info(" * Reference genotype data: " + genotypeBasePaths);
 					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
 				}
-				LOGGER.info(" * Gene window extend in bases: " + LARGE_INT_FORMAT.format(windowExtend));
+				if (mafFilter != 0) {
+					LOGGER.info(" * MAF filter: " + mafFilter);
+				}
+				LOGGER.info(" * Gene window extend in bases: " + (windowExtend < 0 ? "Not selecting variants in a window" : LARGE_INT_FORMAT.format(windowExtend)));
+				if (variantGeneLinkingFile != null) {
+					LOGGER.info(" * Variant to gene linking file: " + variantGeneLinkingFile);
+				}
 				LOGGER.info(" * Initial number of permutations to calculate gene p-values: " + LARGE_INT_FORMAT.format(numberOfPermutations));
 				LOGGER.info(" * Max number of rescue permutations to calculate gene p-values if RUBEN has failed: " + LARGE_INT_FORMAT.format(numberOfPermutationsRescue));
 				LOGGER.info(" * Max correlation between variants: " + maxRBetweenVariants);
-
 				LOGGER.info(" * Correcting for lambda inflation: " + (correctForLambdaInflation ? "on" : "off"));
+				LOGGER.info(" * Save which variants that are used per gene to calculate the gene p-value: " + (saveUsedVariantsPerGene ? "on" : "off"));
+				if (variantFilterFile != null) {
+					LOGGER.info(" * Confining analysis to variants in this file: " + variantFilterFile.getAbsolutePath());
+				}
 				logSharedRun1Run2();
 
 				break;
@@ -596,6 +785,7 @@ public class Depict2Options {
 		LOGGER.info(" * Force normal gene p-values: " + (forceNormalGenePvalues ? "on" : "off"));
 		LOGGER.info(" * Force normal pathway p-values: " + (forceNormalPathwayPvalues ? "on" : "off"));
 		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
+		LOGGER.info(" * Save output as excel files: " + (saveOuputAsExcelFiles ? "on" : "off"));
 		logPathwayDatabases();
 
 	}
@@ -702,13 +892,53 @@ public class Depict2Options {
 	public int getGeneCorrelationWindow() {
 		return geneCorrelationWindow;
 	}
-	
+
 	public boolean isExcludeHla() {
 		return excludeHla;
 	}
 
 	public long getNumberOfPermutationsRescue() {
 		return numberOfPermutationsRescue;
+	}
+
+	public boolean isCorMatrixZscores() {
+		return corMatrixZscores;
+	}
+
+	public String[] getColumnsToExtract() {
+		return columnsToExtract;
+	}
+
+	public File getDebugFolder() {
+		return debugFolder;
+	}
+
+	public File getIntermediateFolder() {
+		return intermediateFolder;
+	}
+
+	public boolean isNormalizeEigenvectors() {
+		return normalizeEigenvectors;
+	}
+
+	public File getVariantFilterFile() {
+		return variantFilterFile;
+	}
+
+	public boolean isSaveOuputAsExcelFiles() {
+		return saveOuputAsExcelFiles;
+	}
+
+	public File getVariantGeneLinkingFile() {
+		return variantGeneLinkingFile;
+	}
+
+	public boolean isSaveUsedVariantsPerGene() {
+		return saveUsedVariantsPerGene;
+	}
+
+	public double getMafFilter() {
+		return mafFilter;
 	}
 
 }
