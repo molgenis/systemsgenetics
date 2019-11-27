@@ -79,6 +79,7 @@ public class ResultProcessorThread extends Thread {
 	private boolean usemd5 = true;
 	private boolean m_dumpEverythingToDisk;
 	private int minNrOfDatasetsPerEQTL;
+	private boolean omitDatasetSummaryStats = false;
 
 	public ResultProcessorThread(int nrThreads, LinkedBlockingQueue<WorkPackage> queue, boolean chargeOutput,
 								 TriTyperGeneticalGenomicsDataset[] gg, Settings settings, IntMatrix2D pprobeTranslation,
@@ -99,7 +100,7 @@ public class ResultProcessorThread extends Thread {
 		m_minNrOfDatasetsPerEQTL = settings.requireAtLeastNumberOfDatasets;
 		m_probeList = probelist;
 		m_maxResults = settings.maxNrMostSignificantEQTLs;
-
+		omitDatasetSummaryStats = settings.omitDatasetSummaryStats;
 
 		usemd5 = settings.usemd5hash;
 		int tmpbuffersize = (m_maxResults / 10);
@@ -302,7 +303,7 @@ public class ResultProcessorThread extends Thread {
 										if (m_permuting) {
 											desc = q.getPermutationDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist);
 										} else {
-											desc = q.getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist);
+											desc = q.getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist, omitDatasetSummaryStats);
 										}
 										etdump.writeln(desc);
 									}
@@ -640,7 +641,7 @@ public class ResultProcessorThread extends Thread {
 		} else {
 			QTLTextFile et = new QTLTextFile((m_outputdir + "eQTLs.txt.gz"), QTLTextFile.W);
 			for (int i = 0; i < nrOfEntriesToWrite; i++) {
-				et.writeln(finalEQTLs[i].getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist));
+				et.writeln(finalEQTLs[i].getDescription(m_availableWorkPackages, m_probeTranslation, m_gg, m_midpointprobedist, omitDatasetSummaryStats));
 			}
 			et.close();
 		}

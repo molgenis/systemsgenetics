@@ -183,6 +183,7 @@ public class Normalizer {
 				}
 				if (!missingNames.isEmpty()) {
 					System.err.println("\nMatrix does not contains desired columns, please check filtering list.");
+					System.err.println(missingNames.size() + " IDs not found.");
 					System.err.println("Writing them here: " + sampleIncludeList + "-notfound.txt\n");
 					TextFile outf = new TextFile(sampleIncludeList + "-notfound.txt", TextFile.W);
 					for (String f : missingNames) {
