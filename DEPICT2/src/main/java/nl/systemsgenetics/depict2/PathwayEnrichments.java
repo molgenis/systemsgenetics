@@ -647,7 +647,7 @@ public class PathwayEnrichments {
 		}
 
 		final int cols = dataset.columns();
-		final DoubleMatrixDataset datasetCollapsed = new DoubleMatrixDataset(metaGenesRows, dataset.getHashCols());
+		final DoubleMatrixDataset datasetCollapsed = new DoubleMatrixDataset<>(metaGenesRows, dataset.getHashCols());
 
 		for (HashSet<MetaGene> metaGenesPerArm : metaGenes) {
 			for (MetaGene metaGene : metaGenesPerArm) {

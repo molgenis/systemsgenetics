@@ -23,5 +23,6 @@ public enum Depict2Mode {
 	TRANSPOSE,
 	CONVERT_EXP,
 	MERGE_BIN,
+	CORE_GENE_AUC,
 	SPECIAL;
 }

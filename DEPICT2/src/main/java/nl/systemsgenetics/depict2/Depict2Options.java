@@ -338,7 +338,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -419,6 +419,14 @@ public class Depict2Options {
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
 				genePruningR = 0;
+				geneCorrelationWindow = 0;
+				break;
+			case CORE_GENE_AUC:
+				pathwayDatabases = parsePd(commandLine);
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				genePruningR = 0;
+				geneInfoFile = null;
 				geneCorrelationWindow = 0;
 				break;
 			case CONVERT_BIN:
@@ -704,6 +712,10 @@ public class Depict2Options {
 				break;
 			case PCA:
 				LOGGER.info(" * Matrix to do PCA on: " + gwasZscoreMatrixPath.getAbsolutePath());
+				break;
+			case CORE_GENE_AUC:
+				LOGGER.info(" * GWAS core gene prediction matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				logPathwayDatabases();
 				break;
 			case CONVERT_BIN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());

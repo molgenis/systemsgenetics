@@ -183,6 +183,9 @@ public class Depict2 {
 				case PCA:
 					doPcaOnBinMatrix(options);
 					break;
+				case CORE_GENE_AUC:
+					testCoregulationPerformance.testCoreGenePredictionPerformance(options);
+					break;	
 				case SPECIAL:
 					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
 			}
@@ -713,8 +716,8 @@ public class Depict2 {
 			binMatrices.add(new DoubleMatrixDatasetFastSubsetLoader(line));
 		}
 
-		LinkedHashSet<String> mergedColNames = new LinkedHashSet(binMatrices.size());
-		LinkedHashSet<String> rowNameIntersection = new LinkedHashSet();
+		LinkedHashSet<String> mergedColNames = new LinkedHashSet<>(binMatrices.size());
+		LinkedHashSet<String> rowNameIntersection = new LinkedHashSet<>();
 
 		for (DoubleMatrixDatasetFastSubsetLoader datasetLoader : binMatrices) {
 			// Put the variant set in memory to avoid having to loop it later on
@@ -736,7 +739,7 @@ public class Depict2 {
 
 		}
 
-		DoubleMatrixDataset<String, String> mergedData = new DoubleMatrixDataset(rowNameIntersection, mergedColNames);
+		DoubleMatrixDataset<String, String> mergedData = new DoubleMatrixDataset<>(rowNameIntersection, mergedColNames);
 
 		int mergedCol = 0;
 		for (DoubleMatrixDatasetFastSubsetLoader datasetLoader : binMatrices) {
@@ -842,7 +845,7 @@ public class Depict2 {
 
 		LOGGER.info("Overlapped variants, retained " + overlappingVariants.size());
 
-		ArrayList<String> phenotypes = new ArrayList(gwasSummStats.size());
+		ArrayList<String> phenotypes = new ArrayList<>(gwasSummStats.size());
 		for (GwasSummStats summStat : gwasSummStats) {
 			//not in parralel to keep the order
 			phenotypes.add(summStat.getTrait());
@@ -950,7 +953,7 @@ public class Depict2 {
 			RandomAccessGenotypeData genotoypes = loadGenotypes(options, null);
 
 			LinkedHashMap<String, Integer> originalRowHash = finalMergedPvalueMatrix.getHashRows();
-			LinkedHashMap<String, Integer> updatedRowHash = new LinkedHashMap(originalRowHash.size());
+			LinkedHashMap<String, Integer> updatedRowHash = new LinkedHashMap<>(originalRowHash.size());
 
 			try (ProgressBar pb = new ProgressBar("Converting variant IDs", originalRowHash.size(), ProgressBarStyle.ASCII)) {
 				for (Map.Entry<String, Integer> original : originalRowHash.entrySet()) {
