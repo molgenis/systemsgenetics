@@ -43,6 +43,8 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	private final GenotypeData genotypeData;
 	private final double maxValue;
 	private final int probabilitiesLengthInBits;
+    private final double maxValue32Bits = Math.pow(2, 32) - 1;
+	private final double maxValue16Bits = Math.pow(2, 16) - 1;
 	private Zstd zstd = new Zstd();
 
 	public BgenGenotypeWriter(GenotypeData genotypeData) {
@@ -67,26 +69,44 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		OxfordSampleFileWriter.writeSampleFile(sampleFile, genotypeData, sampleMissingness);
 	}
 
+	/**
+	 * Method for writing genotype data to a BGEN file.
+	 *
+	 * @param bgenFile the File to write to.
+	 * @return missingness of genotype data per individual
+	 * @throws IOException if an I/O error has occurred.
+	 */
 	private HashMap<Sample, Float> writeBgenFile(File bgenFile) throws IOException {
-
+        // Initialize an output stream for the .bgen file.
 		OutputStream bgenOutputStream = new BufferedOutputStream(new FileOutputStream(bgenFile));
+
+		// A ByteBuffer object holds bytes, and has methods to 'put' Integers, Shorts etc.
+        // The ByteBuffer can be set to put these values in little endian byte order or big endian byte order
+
+		// Because we would like to write ByteBuffer objects to the outputfile,
+        // we create a new channel to which these byte buffers can be written.
 		WritableByteChannel bgenOutputByteChannel = Channels.newChannel(bgenOutputStream);
-		// Number of samples
+
+		// Start writing the file.
+        // We do not now the offset values, so we first gather data...
+
+		// Get the number of samples and the number of variants.
 		int sampleCount = genotypeData.getSamples().size();
 		int variantCount = genotypeData.getVariantAnnotations().size();
 
 		// Calculate the offset, relative to the fifth byte of the file,
 		// of the first byte of the first variant data block
-		long freeDataAreaLength = 0;
+		int freeDataAreaLength = 0;
 		int minimumHeaderLength = 20;
-		long headerBlockLength = minimumHeaderLength + freeDataAreaLength;
+		int headerBlockLength = minimumHeaderLength + freeDataAreaLength;
 
-		ByteBuffer headerBytesBuffer = ByteBuffer.allocate(20);
-		headerBytesBuffer.order(ByteOrder.LITTLE_ENDIAN);
+		// Initialize a first bytebuffer for the entire header block.
+		ByteBuffer headerBytesBuffer = ByteBuffer.allocate(headerBlockLength)
+                .order(ByteOrder.LITTLE_ENDIAN);
 
 		// Write the header block.
 		// 4 bytes with length of the header block.
-		headerBytesBuffer.putInt((int) headerBlockLength);
+		headerBytesBuffer.putInt(headerBlockLength);
 		// 4 bytes with the number of variant data blocks stored in the file.
 		headerBytesBuffer.putInt(variantCount);
 		// 4 bytes indicating the number of samples represented in the variant data blocks in the file.
@@ -94,29 +114,31 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		// Free data area, leave empty or store with description from genotype data
 		// Write flags in 4 bytes
 
+        // Generate the first byte containing compression value (2, in bits 0-1)
+        // and the layout (2, in bits 2-5)
 		// Always writing BGEN files with layout version 2
 		byte byte_temp = (byte) 8; // 2 << 2 & 28 = 00001000 = 8
 		// Use compression type 2
 		byte_temp = (byte) (byte_temp | 2);
 
-		// Put bytes
+		// Put this temporary byte in the buffer, and add 2 empty ones
 		headerBytesBuffer.put(byte_temp);
 		headerBytesBuffer.put((byte) 0);
 		headerBytesBuffer.put((byte) 0);
 
-		// Set sample identifier flag
+        // Write sample identifier block always; this is recommended
+
+        // Set sample identifier flag (1, on bit 31, last one (zero based index))
 		byte byte_temp_two = (byte) 128; // 1 << 7 & 128 = 10000000 = 128
 		headerBytesBuffer.put(byte_temp_two);
 
-		// Write sample identifier block (always; this is recommended)
-		ByteBuffer sampleIdentifierBlockHeader = ByteBuffer.allocate(8)
-				.order(ByteOrder.LITTLE_ENDIAN);
+		// Start with the sample identifier block.
 
-		// 4 bytes with the length of the sample identifier block
-		long sampleIdentifierBlockLength = 8;
+        // 4 bytes with the length of the sample identifier block
+        // Initialize as a long, as this stores up to 32^2-1
+		long sampleIdentifierBlockLength = 8; // The length is at least 8 bytes.
 
 		// 4 bytes with the number of samples represented in the file.
-
 		ByteArrayOutputStream sampleBlockOutputStream = new ByteArrayOutputStream();
 		WritableByteChannel sampleBlockByteChannel = Channels.newChannel(sampleBlockOutputStream);
 
@@ -129,13 +151,33 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			sampleIdentifierBlockLength += sampleBlockByteChannel.write(sampleBuffer);
 		}
 
-		long offset = headerBlockLength + sampleIdentifierBlockLength;
-		ByteBuffer firstFourBytesBuffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
-		firstFourBytesBuffer.putInt((int) offset);
+		// Get the total offset
+        long offset = headerBlockLength + sampleIdentifierBlockLength;
 
+        // Check if the offset from the start of the file is greater than the max that fits in 32 bits.
+        // If the offset fits within the 32 bits, the sample identifier block length will also fit within its
+        // respective field.
+        if (offset > maxValue32Bits) {
+            throw new GenotypeDataException("The length of the sample identifier block " +
+                    "is too large for the BGEN file format");
+        }
+        // We check for the 32bits instead of the maximum value that the signed integer
+        // supports because casting it will not change the individual bits (still 32 bits are used.).
+
+
+		// Create a byte buffer for the first 8 bytes within the sample identifier block.
+        ByteBuffer sampleIdentifierBlockHeader = ByteBuffer.allocate(8)
+                .order(ByteOrder.LITTLE_ENDIAN);
+        // Fill it.
 		sampleIdentifierBlockHeader.putInt((int) sampleIdentifierBlockLength);
 		sampleIdentifierBlockHeader.putInt(sampleCount);
 
+        // Create a byte buffer for the first four bytes of the entire file and fill it
+        ByteBuffer firstFourBytesBuffer = ByteBuffer.allocate(4)
+				.order(ByteOrder.LITTLE_ENDIAN);
+        firstFourBytesBuffer.putInt((int) offset);
+
+        // Write the first sections of the Bgen file up to the variant sections.
 		// Write the first four bytes to the output channel.
 		bgenOutputByteChannel.write(firstFourBytesBuffer);
 
@@ -145,9 +187,9 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		// Write sample block output stream to the bgen output stream
 		sampleBlockOutputStream.writeTo(bgenOutputStream);
 
-		// Initialize missingness map.
-//		Map<Sample, Float> sampleMissingCount = genotypeData.getSamples().stream()
-//				.collect(Collectors.toMap(Function.identity(), s -> 0f));
+		// Start writing the variants sections.
+
+		// Initialize missingness array. Implementation mimics that of the gen genotype writer.
 		float[] sampleMissingCount = new float[sampleCount];
 
 		// Loop through variants
@@ -169,10 +211,13 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			// Write the variant position and the number of alleles
 			ByteBuffer variantBuffer = ByteBuffer.allocate(6).order(ByteOrder.LITTLE_ENDIAN);
 			variantBuffer.putInt(variant.getStartPos());
+
+			// Write the number of alleles in 16 bits.
 			int alleleCount = variant.getAlleleCount();
-			if (alleleCount > Short.MAX_VALUE) {
-				throw new GenotypeDataException(String.format("Error, number of alleles for variant %s", variant));
+			if (alleleCount > maxValue16Bits) {
+				throw new GenotypeDataException(String.format("Error, number of alleles for variant %s too large", variant));
 			}
+			// Can now safely cast to short.
 			variantBuffer.putShort((short) alleleCount);
 			bgenOutputByteChannel.write(variantBuffer);
 			// Write alleles
@@ -182,18 +227,12 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 						allele.getAlleleAsString(), 4, "allele"));
 			}
 
-			// Genotype data block
-			ByteBuffer genotypeDataBlockByteBuffer = null;
+			// Get the genotype data
+            ByteBuffer genotypeDataBlockByteBuffer = getGenotypeDataBlock(sampleCount,
+                    sampleMissingCount, variant, alleleCount);
 
-			if (variant.getSamplePhasing().contains(false)) {
-				genotypeDataBlockByteBuffer = getPhasedGenotypeDataBlockByteBuffer(
-						sampleCount, sampleMissingCount, variant, alleleCount);
-			} else {
-				genotypeDataBlockByteBuffer = getUnphasedGenotypeDataBlockByteBuffer(
-						sampleCount, sampleMissingCount, variant, alleleCount);
-			}
-
-			writeBgenGenotypeDataBlock(bgenOutputByteChannel, genotypeDataBlockByteBuffer);
+            // Write the compressed genotype data to the output channel.
+			writeCompressedBgenGenotypeDataBlock(bgenOutputByteChannel, genotypeDataBlockByteBuffer);
 		}
 
 		// Return the missingness of the samples.
@@ -204,7 +243,24 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		return sampleMissingness;
 	}
 
-	private ByteBuffer getUnphasedGenotypeDataBlockByteBuffer(int sampleCount,
+    private ByteBuffer getGenotypeDataBlock(int sampleCount, float[] sampleMissingCount, GeneticVariant variant, int alleleCount) throws IOException {
+        // First declare an empty ByteBuffer.
+        ByteBuffer genotypeDataBlockByteBuffer;
+
+        // Check if phased data is available for all samples
+        if (variant.getSamplePhasing().contains(false)) {
+            // Get the phased genotype data block byte buffer if phased data is available.
+            genotypeDataBlockByteBuffer = getPhasedGenotypeDataBlockByteBuffer(
+                    sampleCount, sampleMissingCount, variant, alleleCount);
+        } else {
+            // Get the unphased genotype data block byte buffer if phased data is available.
+            genotypeDataBlockByteBuffer = getUnphasedGenotypeDataBlockByteBuffer(
+                    sampleCount, sampleMissingCount, variant, alleleCount);
+        }
+        return genotypeDataBlockByteBuffer;
+    }
+
+    private ByteBuffer getUnphasedGenotypeDataBlockByteBuffer(int sampleCount,
 															  float[] sampleMissingCount,
 															  GeneticVariant variant,
 															  int alleleCount) throws IOException {
@@ -283,7 +339,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		return genotypeDataBlockBuffer;
 	}
 
-	private void writeBgenGenotypeDataBlock(WritableByteChannel bgenOutputByteChannel, ByteBuffer genotypeDataBlockBuffer) throws IOException {
+	private void writeCompressedBgenGenotypeDataBlock(WritableByteChannel bgenOutputByteChannel, ByteBuffer genotypeDataBlockBuffer) throws IOException {
 
 		ByteBuffer compressedGenotypeDataBuffer = Zstd.compress(genotypeDataBlockBuffer, 3);
 
