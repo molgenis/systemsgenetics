@@ -397,7 +397,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	}
 
 	/**
-	 * Method that gets the <i>unphased</i> genotype data for a given variant and writes it to a byte buffer.
+	 * Method that gets the <i>phased</i> genotype data for a given variant and writes it to a byte buffer.
 	 * The sample missing count is updated with +1 when a sample misses data for this variant.
 	 *
 	 * @param sampleCount The number of samples in the genotype data.
