@@ -54,8 +54,13 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	}
 
 	@Override
-	public void write(String path) throws IOException, NotASnpException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	public void write(String basePath) throws IOException, NotASnpException {
+
+		if (!genotypeData.isOnlyContaingSaveProbabilityGenotypes()) {
+			LOGGER.warn("WARNING!!! writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
+		}
+
+		write(new File(basePath + ".gen"), new File(basePath + ".sample"));
 	}
 
 	public void write(File bgenFile, File sampleFile) throws IOException {
@@ -257,7 +262,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
         ByteBuffer genotypeDataBlockByteBuffer;
 
         // Check if phased data is available for all samples
-        if (variant.getSamplePhasing().contains(false)) {
+        if (!variant.getSamplePhasing().contains(false)) {
             // Get the phased genotype data block byte buffer if phased data is available.
             genotypeDataBlockByteBuffer = getPhasedGenotypeDataBlockByteBuffer(
                     sampleCount, sampleMissingCount, variant);
@@ -535,8 +540,8 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		long lengthOfFieldInBytes = fieldValueAsBytes.length;
 
 		// Get the maximum number of bytes that the field can have given the maximum the length field can hold.
-		int maxLengthOfFieldInBytes = (int) Math.min(Math.pow(2, maxLengthFieldSizeInBytes) - 1, Integer.MAX_VALUE);
-		if (lengthOfFieldInBytes > maxLengthFieldSizeInBytes) {
+		int maxLengthOfFieldInBytes = (int) Math.min(Math.pow(2, maxLengthFieldSizeInBytes * 8) - 1, Integer.MAX_VALUE);
+		if (lengthOfFieldInBytes > maxLengthOfFieldInBytes) {
 			// The length of the field value exceeds the max number of bytes. Give a warning and truncate.
 			LOGGER.warn(String.format(
 					"Length of %s %.16s... exceeds the maximum number of bytes. (%d vs %d bytes respectively) " +
