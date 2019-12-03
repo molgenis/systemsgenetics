@@ -21,6 +21,7 @@ import org.molgenis.genotype.oxford.OxfordSampleFileWriter;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.NotASnpException;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  *
@@ -146,9 +147,8 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		for (Sample sample : genotypeData.getSamples()) {
 			// Get the identifier and its length
 			String id = sample.getId();
-			ByteBuffer sampleBuffer = getFieldLengthFieldBuffer(id, 2, "sample identifier");
-			// Write the buffer to the channel
-			sampleIdentifierBlockLength += sampleBlockByteChannel.write(sampleBuffer);
+			sampleIdentifierBlockLength += writeFieldWithFieldLength(sampleBlockByteChannel,
+					id, 2, "sample identifier");
 		}
 
 		// Get the total offset
@@ -199,14 +199,14 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			List<String> allIds = variant.getAllIds();
 			String alternativeId = allIds.size() > 1 ? allIds.get(1) : "";
 			// Write variant identifier
-			bgenOutputByteChannel.write(getFieldLengthFieldBuffer(
-					alternativeId, 2, "variant identifier"));
+			writeFieldWithFieldLength(
+					bgenOutputByteChannel, alternativeId, 2, "variant identifier");
 			// Write the RSID
-			bgenOutputByteChannel.write(getFieldLengthFieldBuffer(
-					variant.getPrimaryVariantId(), 2, "rs identifier"));
+			writeFieldWithFieldLength(
+					bgenOutputByteChannel, variant.getPrimaryVariantId(), 2, "rs identifier");
 			// Write the chromosome
-			bgenOutputByteChannel.write(getFieldLengthFieldBuffer(
-					variant.getSequenceName(), 2, "chromosome"));
+			writeFieldWithFieldLength(
+					bgenOutputByteChannel, variant.getSequenceName(), 2, "chromosome");
 
 			// Write the variant position and the number of alleles
 			ByteBuffer variantBuffer = ByteBuffer.allocate(6).order(ByteOrder.LITTLE_ENDIAN);
@@ -223,13 +223,13 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			// Write alleles
 			for (Allele allele : variant.getVariantAlleles()) {
 				// Write the allele
-				bgenOutputByteChannel.write(getFieldLengthFieldBuffer(
-						allele.getAlleleAsString(), 4, "allele"));
+				writeFieldWithFieldLength(bgenOutputByteChannel,
+						allele.getAlleleAsString(), 4, "allele");
 			}
 
 			// Get the genotype data
             ByteBuffer genotypeDataBlockByteBuffer = getGenotypeDataBlock(sampleCount,
-                    sampleMissingCount, variant, alleleCount);
+                    sampleMissingCount, variant);
 
             // Write the compressed genotype data to the output channel.
 			writeCompressedBgenGenotypeDataBlock(bgenOutputByteChannel, genotypeDataBlockByteBuffer);
@@ -243,7 +243,17 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		return sampleMissingness;
 	}
 
-    private ByteBuffer getGenotypeDataBlock(int sampleCount, float[] sampleMissingCount, GeneticVariant variant, int alleleCount) throws IOException {
+	/**
+	 * Method that gets the genotype data for a given variant and writes it to a byte buffer.
+	 * The sample missing count is updated with +1 when a sample misses data for this variant.
+	 *
+	 * @param sampleCount The number of samples in the genotype data.
+	 * @param sampleMissingCount An array of floats representing the missingness for every sample.
+	 * @param variant The variant to get the probabilities from.
+	 * @return A ByteBuffer containing the entire probability data storage for the given variant.
+	 * @throws IOException if an I/O error has occurred.
+	 */
+    private ByteBuffer getGenotypeDataBlock(int sampleCount, float[] sampleMissingCount, GeneticVariant variant) throws IOException {
         // First declare an empty ByteBuffer.
         ByteBuffer genotypeDataBlockByteBuffer;
 
@@ -251,74 +261,117 @@ public class BgenGenotypeWriter implements GenotypeWriter {
         if (variant.getSamplePhasing().contains(false)) {
             // Get the phased genotype data block byte buffer if phased data is available.
             genotypeDataBlockByteBuffer = getPhasedGenotypeDataBlockByteBuffer(
-                    sampleCount, sampleMissingCount, variant, alleleCount);
+                    sampleCount, sampleMissingCount, variant);
         } else {
             // Get the unphased genotype data block byte buffer if phased data is available.
             genotypeDataBlockByteBuffer = getUnphasedGenotypeDataBlockByteBuffer(
-                    sampleCount, sampleMissingCount, variant, alleleCount);
+                    sampleCount, sampleMissingCount, variant);
         }
         return genotypeDataBlockByteBuffer;
     }
 
+	/**
+	 * Method that gets the <i>unphased</i> genotype data for a given variant and writes it to a byte buffer.
+	 * The sample missing count is updated with +1 when a sample misses data for this variant.
+	 *
+	 * @param sampleCount The number of samples in the genotype data.
+	 * @param sampleMissingCount An array of floats representing the missingness for every sample.
+	 * @param variant The variant to get the probabilities from.
+	 * @return A ByteBuffer containing the entire probability data storage for the given variant.
+	 */
     private ByteBuffer getUnphasedGenotypeDataBlockByteBuffer(int sampleCount,
 															  float[] sampleMissingCount,
-															  GeneticVariant variant,
-															  int alleleCount) throws IOException {
+															  GeneticVariant variant) {
+    	// Get the unphased bgen probabilities (this can represent polyploidity and multiallelic variants)
 		double[][] sampleGenotypeProbabilitiesBgen = variant.getSampleGenotypeProbabilitiesBgen();
+
+		// Get the allele count for the variant.
+		int alleleCount = variant.getAlleleCount();
 
 		// Init the minimum ploidy with the max possible value, can only get lower.
 		int minimumPloidy = 63;
 		// Init the maximum ploidy with the min possible value, can only get higher.
 		int maximumPloidy = 0;
 		int totalNumberOfProbabilities = 0;
+
+		// Build the combined bytes for ploidy and missingness
 		byte[] ploidyMissingnessBytes = new byte[sampleCount];
 
 		for (int i = 0; i < sampleCount; i++) {
 			double[] sampleProbabilities = sampleGenotypeProbabilitiesBgen[i];
-			int ploidy = sampleProbabilities.length;
+			int numberOfProbabilities = sampleProbabilities.length;
+
+			int ploidy = getPloidy(numberOfProbabilities, alleleCount);
+			// Ploidy is stored in the least significant 6 bits and thus hase a max of 63,
+			// Check this.
 			if (0 >= ploidy || ploidy > 63) {
 				throw new GenotypeDataException("Ploidy is not between 0 and 63.");
 			}
+			// Update minimum and maximum if conditions apply
 			if (ploidy < minimumPloidy) {
 				minimumPloidy = ploidy;
 			}
 			if (ploidy > maximumPloidy) {
 				maximumPloidy = ploidy;
 			}
+			// Get the missingness and update the missingness count.
 			boolean missingness = Arrays.stream(sampleProbabilities).sum() == 0;
 			sampleMissingCount[i]++;
 
 			// Put the ploidy missingness byte within the buffer.
 			ploidyMissingnessBytes[i] = getPloidyMissingnessByte(ploidy, missingness);
-			// Add the number of possible probabilities.
-			totalNumberOfProbabilities += ploidy * (alleleCount - 1);
+			// Add the number of expected probabilities.
+			totalNumberOfProbabilities += numberOfProbabilities - 1;
 		}
 
-		int probabilitiesBytesCount = totalNumberOfProbabilities * (probabilitiesLengthInBits / 8);
+		// Convert the total number of probabilities to the number of bytes
+		int probabilitiesBytesCount = totalNumberOfProbabilities * probabilitiesLengthInBits / 8 + 1;
 
+		// Generate a bytebuffer with samplecount, allelecount etc allready entered, with
+		// room for the sample probabilities
 		ByteBuffer genotypeDataBlockBuffer = initializeGenotypeDataBlockByteBuffer(
 				sampleCount, alleleCount,
 				minimumPloidy, maximumPloidy,
 				ploidyMissingnessBytes, probabilitiesBytesCount, false);
 
-		int bitOffset = 0;
-		byte[] probabilitiesByteArray = new byte[probabilitiesBytesCount];
+		// Now start writing the sample probabilities to a byte array.
+		int bitOffset = 0; // Initialize at 0
+		byte[] probabilitiesByteArray = new byte[probabilitiesBytesCount]; // Initialize the byte array
 		for (double[] sampleProbabilities : sampleGenotypeProbabilitiesBgen) {
-			writeProbabilitiesSummingToOne(probabilitiesByteArray, bitOffset, sampleProbabilities);
-			bitOffset += probabilitiesLengthInBits * (alleleCount - 1);
+			// These probabilities should sum to one, add this to the byte buffer.
+			// Also add the number of bits appended to the bit offset.
+			bitOffset = addProbabilitiesSummingToOne(
+					probabilitiesByteArray, bitOffset, sampleProbabilities);
 		}
 
 		genotypeDataBlockBuffer.put(probabilitiesByteArray);
 		return genotypeDataBlockBuffer;
 	}
 
+	/**
+	 * Method that initializes a genotype data block with the given values appended
+	 * in the order and manner that corresponds to the BGEN specs
+	 *
+	 * @param sampleCount The number of samples that the BGEN file represents.
+	 * @param alleleCount The number of alleles that the variant has.
+	 * @param minimumPloidy The minimum ploidy of all samples for this variant.
+	 * @param maximumPloidy The maximum ploidy of all samples for this variant.
+	 * @param ploidyMissingnessBytes A byte Array of bytes holding missingness
+	 *                                  and ploidy information for every sample.
+	 * @param probabilitiesBytesCount The number of probabilities that is to be written for this variant
+	 * @param isPhased True if the probabilities represent phased data.
+	 * @return A byte buffer with the given values and with room for the probabilities.
+	 */
 	private ByteBuffer initializeGenotypeDataBlockByteBuffer(int sampleCount, int alleleCount,
 															 int minimumPloidy, int maximumPloidy,
 															 byte[] ploidyMissingnessBytes, int probabilitiesBytesCount,
 															 boolean isPhased) {
 
+    	// Initialize a genotype data block buffer so that all probability data for a variant fits.
 		ByteBuffer genotypeDataBlockBuffer = ByteBuffer
-				.allocate(10 + sampleCount + probabilitiesBytesCount)
+				.allocate(10 // Fixed value for every genotype block.
+						+ sampleCount // Every sample has a single byte containing missingness and ploidy.
+						+ probabilitiesBytesCount) // The number of probabilities in bytes.
 				.order(ByteOrder.LITTLE_ENDIAN);
 
 		// The number of individuals
@@ -339,29 +392,22 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		return genotypeDataBlockBuffer;
 	}
 
-	private void writeCompressedBgenGenotypeDataBlock(WritableByteChannel bgenOutputByteChannel, ByteBuffer genotypeDataBlockBuffer) throws IOException {
-
-		ByteBuffer compressedGenotypeDataBuffer = Zstd.compress(genotypeDataBlockBuffer, 3);
-
-		int lengthOfVariantProbabilityData =
-				compressedGenotypeDataBuffer.capacity() + 4; // Add 4 since the D field takes 4 bytes
-		int decompressedLengthOfVariantProbabilityData = genotypeDataBlockBuffer.capacity();
-
-		ByteBuffer genotypeBlockLengths = ByteBuffer.allocate(8)
-				.order(ByteOrder.LITTLE_ENDIAN);
-
-		genotypeBlockLengths.putInt(lengthOfVariantProbabilityData);
-		genotypeBlockLengths.putInt(decompressedLengthOfVariantProbabilityData);
-
-		bgenOutputByteChannel.write(genotypeBlockLengths);
-		bgenOutputByteChannel.write(compressedGenotypeDataBuffer);
-	}
-
+	/**
+	 * Method that gets the <i>unphased</i> genotype data for a given variant and writes it to a byte buffer.
+	 * The sample missing count is updated with +1 when a sample misses data for this variant.
+	 *
+	 * @param sampleCount The number of samples in the genotype data.
+	 * @param sampleMissingCount An array of floats representing the missingness for every sample.
+	 * @param variant The variant to get the probabilities from.
+	 * @return A ByteBuffer containing the entire probability data storage for the given variant.
+	 */
 	private ByteBuffer getPhasedGenotypeDataBlockByteBuffer(int sampleCount,
 															float[] sampleMissingCount,
-															GeneticVariant variant,
-															int alleleCount) {
+															GeneticVariant variant) {
 		double[][][] sampleGenotypeProbabilitiesBgenPhased = variant.getSampleGenotypeProbabilitiesBgenPhased();
+
+		// Get the allele count
+		int alleleCount = variant.getAlleleCount();
 
 		// Init the minimum ploidy with the max possible value, can only get lower.
 		int minimumPloidy = 63;
@@ -373,15 +419,19 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		for (int i = 0; i < sampleCount; i++) {
 			double[][] sampleProbabilities = sampleGenotypeProbabilitiesBgenPhased[i];
 			int ploidy = sampleProbabilities.length;
+			// Ploidy is stored in the least significant 6 bits and thus hase a max of 63,
+			// Check this.
 			if (0 >= ploidy || ploidy > 63) {
 				throw new GenotypeDataException("Ploidy is not between 0 and 63.");
 			}
+			// Update minimum and maximum if conditions apply
 			if (ploidy < minimumPloidy) {
 				minimumPloidy = ploidy;
 			}
 			if (ploidy > maximumPloidy) {
 				maximumPloidy = ploidy;
 			}
+			// Get the missingness and update the missingness count.
 			boolean missingness = Arrays.stream(sampleProbabilities)
 					.flatMapToDouble(Arrays::stream).sum() == 0;
 			sampleMissingCount[i]++;
@@ -392,58 +442,154 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			totalNumberOfProbabilities += ploidy * (alleleCount - 1);
 		}
 
-		int probabilitiesBytesCount = totalNumberOfProbabilities * (probabilitiesLengthInBits / 8);
+		// Convert the total number of probabilities to the number of bytes
+		int probabilitiesBytesCount = totalNumberOfProbabilities * probabilitiesLengthInBits / 8 + 1;
 
+		// Generate a bytebuffer with samplecount, allelecount etc allready entered, with
+		// room for the sample probabilities
 		ByteBuffer genotypeDataBlockBuffer = initializeGenotypeDataBlockByteBuffer(
 				sampleCount, alleleCount,
 				minimumPloidy, maximumPloidy,
 				ploidyMissingnessBytes, probabilitiesBytesCount, true); // data is phased, so true here.
 
+		// Now start writing the sample probabilities to a byte array.
 		int bitOffset = 0; // Start with an offset of zero.
 		byte[] probabilitiesByteArray = new byte[totalNumberOfProbabilities * (probabilitiesLengthInBits / 8)];
 		for (double[][] sampleProbabilities : sampleGenotypeProbabilitiesBgenPhased) {
 			for (double[] alleleProbabilities : sampleProbabilities){
-				writeProbabilitiesSummingToOne(probabilitiesByteArray, bitOffset, alleleProbabilities);
-				bitOffset += probabilitiesLengthInBits * (alleleCount - 1);
+				// These probabilities should sum to one, add this to the byte buffer.
+				// Also add the number of bits appended to the bit offset.
+				bitOffset = addProbabilitiesSummingToOne(
+						probabilitiesByteArray, bitOffset, alleleProbabilities);
 			}
 		}
 
+		// Put the probabilities byte array into the genotype block byte buffer and return this.
 		genotypeDataBlockBuffer.put(probabilitiesByteArray);
 		return genotypeDataBlockBuffer;
 	}
 
+	/**
+	 * Method that generates a single byte for a sample containing its missigness for a variant
+	 * in the most significant bit, and the its ploidy in the 6 least significant bits.
+	 *
+	 * The ploidy should be a maximum of 63.
+	 *
+	 * @param ploidy The ploidy of the sample.
+	 * @param missingness If genotype data is missing for the sample.
+	 * @return The byte with missingness and ploidy.
+	 */
 	private byte getPloidyMissingnessByte(int ploidy, boolean missingness) {
 		return (byte) ((byte) (ploidy & 63) | (missingness ? 128 : 0));
 
 	}
 
-	private ByteBuffer getFieldLengthFieldBuffer(String fieldValue, int maxFieldBytes, String fieldName) {
-		int fieldLength = fieldValue.length();
-		byte[] idAsBytes = fieldValue.getBytes(CHARSET);
+	/**
+	 * Write the genotype probability data from the byte buffer in compressed form to the output channel.
+	 *
+	 * @param bgenOutputByteChannel The channel that is able to pass byte buffers to the output stream.
+	 * @param genotypeDataBlockBuffer The byte buffer that holds the genotype probability data.
+	 * @throws IOException If an I/O exception has occurred.
+	 */
+	private void writeCompressedBgenGenotypeDataBlock(WritableByteChannel bgenOutputByteChannel, ByteBuffer genotypeDataBlockBuffer) throws IOException {
 
-		// 2 bytes with the length of identifier of sample 1
-		if (idAsBytes.length > maxFieldBytes) {
-			// The length of the sample identifier exceeds two bytes. Give a warning and truncate.
-			LOGGER.warn(String.format(
-					"Length of %s %.16s... exceeds the maximum length of 2 bytes. (%d vs %d respectively) " +
-							"%nField will be truncated.",
-					fieldName, fieldValue, fieldLength, Short.MAX_VALUE));
-			// ...truncate...
-			fieldLength = Short.MAX_VALUE;
-			idAsBytes = Arrays.copyOfRange(idAsBytes, 0, maxFieldBytes + 1);
-		}
-		// Initialize a byte buffer with the correct size.
-		ByteBuffer sampleBuffer = ByteBuffer.allocate(maxFieldBytes + idAsBytes.length)
+		// Compress the genotype data using the Zstandard compression method.
+		// Compression level 3 is used since this was the defualt when writing this.
+		// (The byte buffer compression method does not have have an overloaded method with default compression level)
+		ByteBuffer compressedGenotypeDataBuffer = Zstd.compress(genotypeDataBlockBuffer, 3);
+
+		// Get the length of the variant probability data.
+		int lengthOfVariantProbabilityData =
+				compressedGenotypeDataBuffer.capacity() + 4; // Add 4 since the D field takes 4 bytes
+		// Get the decompressed length of variant probability data.
+		int decompressedLengthOfVariantProbabilityData = genotypeDataBlockBuffer.capacity();
+
+		// Write the (decompressed) length to a bytebuffer.
+		ByteBuffer genotypeBlockLengths = ByteBuffer.allocate(8)
 				.order(ByteOrder.LITTLE_ENDIAN);
-		// Put both the length of the sample identifier as a short
-		// and the identifier itself int the byte array
-		sampleBuffer.putShort((short) fieldLength);
-		sampleBuffer.put(idAsBytes);
-		return sampleBuffer;
+
+		genotypeBlockLengths.putInt(lengthOfVariantProbabilityData);
+		genotypeBlockLengths.putInt(decompressedLengthOfVariantProbabilityData);
+
+		// First write the lengths.
+		bgenOutputByteChannel.write(genotypeBlockLengths);
+		// Now write the actual data.
+		bgenOutputByteChannel.write(compressedGenotypeDataBuffer);
 	}
 
-	private static double fractionalPart(double v) {
-		return v - Math.floor(v);
+	/**
+	 * Method that writes a field with the length of the next field and this next field with the given value.
+	 * The size of the this value
+	 * is at maximum the largest possible value that fits within the given maximum size of the length field.
+	 *
+	 * The max length of the length field should be 2 or 4 bytes.
+	 *
+	 * @param outputByteChannel The output channel to write the fields to
+	 * @param fieldValue The value of the field to write.
+	 * @param maxLengthFieldSizeInBytes The maximum number of bytes of the length field.
+	 * @param fieldName The name of the field, for message formatting.
+	 * @return The number of bytes written to the output byte channel
+	 */
+	private int writeFieldWithFieldLength(WritableByteChannel outputByteChannel, String fieldValue, int maxLengthFieldSizeInBytes, String fieldName) throws IOException {
+		assert(maxLengthFieldSizeInBytes == 2 || maxLengthFieldSizeInBytes == 4);
+		byte[] fieldValueAsBytes = fieldValue.getBytes(CHARSET);
+		long lengthOfFieldInBytes = fieldValueAsBytes.length;
+
+		// Get the maximum number of bytes that the field can have given the maximum the length field can hold.
+		int maxLengthOfFieldInBytes = (int) Math.min(Math.pow(maxLengthFieldSizeInBytes, 2) - 1, Integer.MAX_VALUE);
+		if (lengthOfFieldInBytes > maxLengthFieldSizeInBytes) {
+			// The length of the field value exceeds the max number of bytes. Give a warning and truncate.
+			LOGGER.warn(String.format(
+					"Length of %s %.16s... exceeds the maximum number of bytes. (%d vs %d bytes respectively) " +
+							"%nField will be truncated.",
+					fieldName, fieldValue, fieldValueAsBytes.length, maxLengthOfFieldInBytes));
+			// ...truncate...
+			lengthOfFieldInBytes = maxLengthOfFieldInBytes;
+			fieldValueAsBytes = Arrays.copyOfRange(fieldValueAsBytes, 0,
+					maxLengthOfFieldInBytes + 1);
+		}
+
+		// Initialize a byte buffer with the correct size.
+		ByteBuffer buffer = ByteBuffer.allocate((int) lengthOfFieldInBytes)
+				.order(ByteOrder.LITTLE_ENDIAN);
+		buffer.put(fieldValueAsBytes);
+		ByteBuffer fieldLengthBuffer = ByteBuffer.allocate(maxLengthFieldSizeInBytes)
+				.order(ByteOrder.LITTLE_ENDIAN);
+		switch (maxLengthFieldSizeInBytes) {
+			case 2:
+				fieldLengthBuffer.putShort((short) lengthOfFieldInBytes);
+				break;
+			case 4:
+				fieldLengthBuffer.putInt((int) lengthOfFieldInBytes);
+				break;
+		}
+
+		// Write the buffer to the channel
+		int writtenBytes = outputByteChannel.write(fieldLengthBuffer);
+		return writtenBytes + outputByteChannel.write(buffer);
+	}
+
+	/**
+	 * Method returning the fractional part of a given value.
+	 *
+	 * @param value The value to use.
+	 * @return The fracional part.
+	 */
+	private static double fractionalPart(double value) {
+		return value - Math.floor(value);
+	}
+
+	/**
+	 * Method that should return the a number of times an object is chosen (ploidy),
+	 * given a number of ordered combination generated
+	 * using a given number of objects (alleles) that are repetitively chosen.
+	 *
+	 * @param numberOfProbabilities the number of combinations.
+	 * @param alleleCount The number of alleles that are counted.
+	 * @return the ploidy.
+	 */
+	private static int getPloidy(int numberOfProbabilities, int alleleCount) {
+		throw new NotImplementedException();
 	}
 
 	/**
@@ -452,12 +598,12 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	 *
 	 * The implementation is based on the following c++ reference implementation retrieved on 19-12-02.
 	 * https://bitbucket.org/gavinband/bgen/src/default/src/bgen.cpp
-	 *
-	 * @param bytes A byte array to write the probabilities to.
+	 *  @param bytes A byte array to write the probabilities to.
 	 * @param bitOffset The offset within the byte array to write the probabilities from.
 	 * @param probabilities The array of probabilities to write.
+	 * @return the given bit offset + the number of written bits.
 	 */
-	private void writeProbabilitiesSummingToOne(byte[] bytes, int bitOffset, double[] probabilities) {
+	private int addProbabilitiesSummingToOne(byte[] bytes, int bitOffset, double[] probabilities) {
 
 		// Find sum to renormalize to 1
 		double sum = Arrays.stream(probabilities).sum();
@@ -480,9 +626,10 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		// Make sure things do not proceed if the rounded sum of fractional part is greater than the maximum of an int.
 		assert(roundedSumOfFractionalPart < Integer.MAX_VALUE);
 
-		//
+		// Sort the indices according to the fractional part of their corresponding value.
 		indices.sort(Comparator.comparingDouble(a -> fractionalPart(probabilities[a])));
 
+		// Loop through the integers and use ceil and floor to make the sum of these integers 1.
 		for (int i = 0; i < roundedSumOfFractionalPart; i++) {
 			probabilities[indices.get(i)] = Math.ceil(probabilities[indices.get(i)]);
 		}
@@ -491,10 +638,12 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			probabilities[indices.get(i)] = Math.floor(probabilities[indices.get(i)]);
 		}
 
+		// Write the probabilities in the byte array.
 		for (int i = 0; i < (probabilities.length - 1); i++) {
 			probabilityValueToByteArray((long) probabilities[i], bytes, bitOffset, probabilitiesLengthInBits);
 			bitOffset += probabilitiesLengthInBits;
 		}
+		return bitOffset;
 	}
 
 	/**
@@ -511,23 +660,24 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		int firstByteIndex = bitOffset / 8;
 		// Get the bit within the byte to start reading from.
 		int remainingBitOffset = bitOffset % 8;
-
+		// Get the total bytes min
 		int totalBytesMin1 = (remainingBitOffset + numberOfBitsToWrite - 1) / 8;
-
+		// Find how much bits to shift after the first byte (most significant)
 		int bitShiftAfterFirstByte = 8 - remainingBitOffset;
-
+		// Jump into the switch at the correct point and fall-through to fill the remaining bytes.
 		switch (totalBytesMin1) {
-			case 4:
+			case 4: // Bitshift the value at least 3 bytes
 				bytes[firstByteIndex + 4] |= (value >>> (24 + bitShiftAfterFirstByte));
-			case 3:
+			case 3: // Bitshift the value at least 2 bytes
 				bytes[firstByteIndex + 3] |= (value >>> (16 + bitShiftAfterFirstByte));
-			case 2:
+			case 2: // Bitshift the value at least 1 byte
 				bytes[firstByteIndex + 2] |= (value >>> (8 + bitShiftAfterFirstByte));
 			case 1:
 				bytes[firstByteIndex + 1] |= (value >>> bitShiftAfterFirstByte);
 			case 0:
 				bytes[firstByteIndex] |= (value << remainingBitOffset);
 		}
+		// >>> and << is used since these both only pad with 0s at the right / left side.
 	}
 
 }
