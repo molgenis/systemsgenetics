@@ -21,7 +21,6 @@ import org.molgenis.genotype.oxford.OxfordSampleFileWriter;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.NotASnpException;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  *
@@ -536,7 +535,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		long lengthOfFieldInBytes = fieldValueAsBytes.length;
 
 		// Get the maximum number of bytes that the field can have given the maximum the length field can hold.
-		int maxLengthOfFieldInBytes = (int) Math.min(Math.pow(maxLengthFieldSizeInBytes, 2) - 1, Integer.MAX_VALUE);
+		int maxLengthOfFieldInBytes = (int) Math.min(Math.pow(2, maxLengthFieldSizeInBytes) - 1, Integer.MAX_VALUE);
 		if (lengthOfFieldInBytes > maxLengthFieldSizeInBytes) {
 			// The length of the field value exceeds the max number of bytes. Give a warning and truncate.
 			LOGGER.warn(String.format(
@@ -589,7 +588,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	 * @return the ploidy.
 	 */
 	private static int getPloidy(int numberOfProbabilities, int alleleCount) {
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException("Not yet implemented!");
 	}
 
 	/**
