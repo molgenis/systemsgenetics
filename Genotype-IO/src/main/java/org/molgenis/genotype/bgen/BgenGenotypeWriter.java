@@ -13,8 +13,11 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.github.luben.zstd.Zstd;
+import com.google.common.collect.Iterators;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.*;
 import org.molgenis.genotype.oxford.OxfordSampleFileWriter;
@@ -27,16 +30,6 @@ import org.molgenis.genotype.variant.NotASnpException;
  * @author patri
  */
 public class BgenGenotypeWriter implements GenotypeWriter {
-
-	/**
-	 * Index is the number of bits used from the last byte. (these are the rightmost bits)
-	 */
-	private static final int[] LAST_BYTE_MASK = {255, 1, 3, 7, 15, 31, 63, 127, 255};
-
-	/**
-	 * Index is the number of bits used from the first byte. (these are the leftmost bits)
-	 */
-	private static final int[] FIRST_BYTE_MASK = {0, 128, 192, 224, 240, 248, 252, 254, 255};
 
 	private static final Logger LOGGER = Logger.getLogger(BgenGenotypeWriter.class);
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
@@ -60,14 +53,14 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			LOGGER.warn("WARNING!!! writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
 		}
 
-		write(new File(basePath + ".gen"), new File(basePath + ".sample"));
+		write(new File(basePath + ".bgen"), new File(basePath + ".sample"));
 	}
 
 	public void write(File bgenFile, File sampleFile) throws IOException {
 		LOGGER.info("Writing BGEN file " + bgenFile.getAbsolutePath() + " and sample file "
 				+ sampleFile.getAbsolutePath());
 
-		Utils.createEmptyFile(bgenFile, "gen");
+		Utils.createEmptyFile(bgenFile, "bgen");
 		Utils.createEmptyFile(sampleFile, "sample");
 
 		HashMap<Sample, Float> sampleMissingness = writeBgenFile(bgenFile);
@@ -84,6 +77,10 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	private HashMap<Sample, Float> writeBgenFile(File bgenFile) throws IOException {
         // Initialize an output stream for the .bgen file.
 		OutputStream bgenOutputStream = new BufferedOutputStream(new FileOutputStream(bgenFile));
+		// Initialize a bgenix writer.
+		File bgenixFile = new File(bgenFile.getAbsolutePath() + ".bgi");
+		BgenixWriter bgenixWriter = new BgenixWriter(bgenixFile);
+
 
 		// A ByteBuffer object holds bytes, and has methods to 'put' Integers, Shorts etc.
         // The ByteBuffer can be set to put these values in little endian byte order or big endian byte order
@@ -97,7 +94,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 
 		// Get the number of samples and the number of variants.
 		int sampleCount = genotypeData.getSamples().size();
-		int variantCount = genotypeData.getVariantAnnotations().size();
+		int variantCount = Iterators.size(genotypeData.iterator());
 
 		// Calculate the offset, relative to the fifth byte of the file,
 		// of the first byte of the first variant data block
@@ -126,6 +123,11 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		// Use compression type 2
 		byte_temp = (byte) (byte_temp | 2);
 
+		// Put magic bytes
+		headerBytesBuffer.put("b".getBytes(CHARSET));
+		headerBytesBuffer.put("g".getBytes(CHARSET));
+		headerBytesBuffer.put("e".getBytes(CHARSET));
+		headerBytesBuffer.put("n".getBytes(CHARSET));
 		// Put this temporary byte in the buffer, and add 2 empty ones
 		headerBytesBuffer.put(byte_temp);
 		headerBytesBuffer.put((byte) 0);
@@ -136,6 +138,8 @@ public class BgenGenotypeWriter implements GenotypeWriter {
         // Set sample identifier flag (1, on bit 31, last one (zero based index))
 		byte byte_temp_two = (byte) 128; // 1 << 7 & 128 = 10000000 = 128
 		headerBytesBuffer.put(byte_temp_two);
+
+		headerBytesBuffer.flip(); // reset pointer
 
 		// Start with the sample identifier block.
 
@@ -176,10 +180,13 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		sampleIdentifierBlockHeader.putInt((int) sampleIdentifierBlockLength);
 		sampleIdentifierBlockHeader.putInt(sampleCount);
 
+		sampleIdentifierBlockHeader.flip(); // reset pointer
+
         // Create a byte buffer for the first four bytes of the entire file and fill it
         ByteBuffer firstFourBytesBuffer = ByteBuffer.allocate(4)
 				.order(ByteOrder.LITTLE_ENDIAN);
         firstFourBytesBuffer.putInt((int) offset);
+        firstFourBytesBuffer.flip(); // reset pointer
 
         // Write the first sections of the Bgen file up to the variant sections.
 		// Write the first four bytes to the output channel.
@@ -187,6 +194,9 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 
 		// Write header to bgenOutputByteChannel
 		bgenOutputByteChannel.write(headerBytesBuffer);
+
+		// Write the sample identifier block header
+		bgenOutputByteChannel.write(sampleIdentifierBlockHeader);
 
 		// Write sample block output stream to the bgen output stream
 		sampleBlockOutputStream.writeTo(bgenOutputStream);
@@ -196,20 +206,25 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		// Initialize missingness array. Implementation mimics that of the gen genotype writer.
 		float[] sampleMissingCount = new float[sampleCount];
 
+		long variantStartPositionInFile = offset + firstFourBytesBuffer.limit();
+
 		// Loop through variants
 		for (GeneticVariant variant : genotypeData) {
 			// Write variant data block
+			// Initialize counter for the size of the variant data.
+			long variantDataSizeInBytes = 0;
+
 			// Start with the length of the variant identifier
 			List<String> allIds = variant.getAllIds();
 			String alternativeId = allIds.size() > 1 ? allIds.get(1) : "";
 			// Write variant identifier
-			writeFieldWithFieldLength(
+			variantDataSizeInBytes += writeFieldWithFieldLength(
 					bgenOutputByteChannel, alternativeId, 2, "variant identifier");
 			// Write the RSID
-			writeFieldWithFieldLength(
+			variantDataSizeInBytes += writeFieldWithFieldLength(
 					bgenOutputByteChannel, variant.getPrimaryVariantId(), 2, "rs identifier");
 			// Write the chromosome
-			writeFieldWithFieldLength(
+			variantDataSizeInBytes += writeFieldWithFieldLength(
 					bgenOutputByteChannel, variant.getSequenceName(), 2, "chromosome");
 
 			// Write the variant position and the number of alleles
@@ -223,11 +238,12 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			}
 			// Can now safely cast to short.
 			variantBuffer.putShort((short) alleleCount);
-			bgenOutputByteChannel.write(variantBuffer);
+			variantBuffer.flip(); // reset pointer
+			variantDataSizeInBytes += bgenOutputByteChannel.write(variantBuffer);
 			// Write alleles
 			for (Allele allele : variant.getVariantAlleles()) {
 				// Write the allele
-				writeFieldWithFieldLength(bgenOutputByteChannel,
+				variantDataSizeInBytes += writeFieldWithFieldLength(bgenOutputByteChannel,
 						allele.getAlleleAsString(), 4, "allele");
 			}
 
@@ -236,8 +252,30 @@ public class BgenGenotypeWriter implements GenotypeWriter {
                     sampleMissingCount, variant);
 
             // Write the compressed genotype data to the output channel.
-			writeCompressedBgenGenotypeDataBlock(bgenOutputByteChannel, genotypeDataBlockByteBuffer);
+			variantDataSizeInBytes += writeCompressedBgenGenotypeDataBlock(
+					bgenOutputByteChannel, genotypeDataBlockByteBuffer);
+
+			LOGGER.debug(String.format("Written %s, %s at %d, of size %d | seq:pos = %s:%d, %d alleles",
+					variant.getPrimaryVariantId(),
+					!variant.getAlternativeVariantIds().isEmpty() ? variant.getAlternativeVariantIds().get(0) : "-",
+					variantStartPositionInFile, variantDataSizeInBytes,
+					variant.getSequenceName(), variant.getStartPos(), alleleCount));
+
+			// Add the read variant to the BGENIX file so that it can quickly be retrieved.
+			bgenixWriter.addVariantToIndex(
+					variant,
+					variantStartPositionInFile,
+					variantDataSizeInBytes,
+					variant.getPrimaryVariantId());
+
+			variantStartPositionInFile += variantDataSizeInBytes;
 		}
+
+		bgenOutputStream.close();
+
+		// Finalize bgenix file
+		addMetaData(bgenFile, bgenixWriter);
+		bgenixWriter.finalizeIndex();
 
 		// Return the missingness of the samples.
 		HashMap<Sample, Float> sampleMissingness = new HashMap<>();
@@ -245,6 +283,27 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			sampleMissingness.put(genotypeData.getSamples().get(i), sampleMissingCount[i] / (float) variantCount);
 		}
 		return sampleMissingness;
+	}
+
+	private void addMetaData(File bgenFile, BgenixWriter bgenixWriter) throws IOException {
+		// Go to the first byte...
+		RandomAccessFile randomAccessBgenFile = new RandomAccessFile(bgenFile, "r");
+		randomAccessBgenFile.seek(0);
+
+		// Read the first 1000 bytes of the bgen file.
+		byte[] firstBytes = new byte[1000];
+		randomAccessBgenFile.read(firstBytes, 0, 1000);
+
+		//Add current time in int.
+		System.out.println((System.currentTimeMillis() / 1000L));
+		// Create and write new metadata.
+		BgenixMetadata m = new BgenixMetadata(
+				bgenFile.getName(),
+				(int) bgenFile.length(),
+				(int) (bgenFile.lastModified() / 1000L),
+				firstBytes,
+				(System.currentTimeMillis() / 1000L));
+		bgenixWriter.writeMetadata(m);
 	}
 
 	/**
@@ -271,6 +330,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
             genotypeDataBlockByteBuffer = getUnphasedGenotypeDataBlockByteBuffer(
                     sampleCount, sampleMissingCount, variant);
         }
+        genotypeDataBlockByteBuffer.flip(); // reset pointer
         return genotypeDataBlockByteBuffer;
     }
 
@@ -329,7 +389,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		}
 
 		// Convert the total number of probabilities to the number of bytes
-		int probabilitiesBytesCount = totalNumberOfProbabilities * probabilitiesLengthInBits / 8 + 1;
+		int probabilitiesBytesCount = (totalNumberOfProbabilities * probabilitiesLengthInBits + 7) / 8;
 
 		// Generate a bytebuffer with samplecount, allelecount etc allready entered, with
 		// room for the sample probabilities
@@ -373,7 +433,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 
     	// Initialize a genotype data block buffer so that all probability data for a variant fits.
 		ByteBuffer genotypeDataBlockBuffer = ByteBuffer
-				.allocate(10 // Fixed value for every genotype block.
+				.allocateDirect(10 // Fixed value for every genotype block.
 						+ sampleCount // Every sample has a single byte containing missingness and ploidy.
 						+ probabilitiesBytesCount) // The number of probabilities in bytes.
 				.order(ByteOrder.LITTLE_ENDIAN);
@@ -485,7 +545,6 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	 */
 	private byte getPloidyMissingnessByte(int ploidy, boolean missingness) {
 		return (byte) ((byte) (ploidy & 63) | (missingness ? 128 : 0));
-
 	}
 
 	/**
@@ -494,17 +553,24 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	 * @param bgenOutputByteChannel The channel that is able to pass byte buffers to the output stream.
 	 * @param genotypeDataBlockBuffer The byte buffer that holds the genotype probability data.
 	 * @throws IOException If an I/O exception has occurred.
+	 * @return The number of bytes written.
 	 */
-	private void writeCompressedBgenGenotypeDataBlock(WritableByteChannel bgenOutputByteChannel, ByteBuffer genotypeDataBlockBuffer) throws IOException {
+	private long writeCompressedBgenGenotypeDataBlock(WritableByteChannel bgenOutputByteChannel,
+													  ByteBuffer genotypeDataBlockBuffer) throws IOException {
 
 		// Compress the genotype data using the Zstandard compression method.
 		// Compression level 3 is used since this was the defualt when writing this.
 		// (The byte buffer compression method does not have have an overloaded method with default compression level)
 		ByteBuffer compressedGenotypeDataBuffer = Zstd.compress(genotypeDataBlockBuffer, 3);
+		// If this was successful, the limit is equal to the position of the original buffer.
+		// Check if the alternative condition applies.
+		if (genotypeDataBlockBuffer.position() != genotypeDataBlockBuffer.limit()) {
+			throw new GenotypeDataException("Zstd compression of genotype data failed, exiting");
+		}
 
-		// Get the length of the variant probability data.
+		// Get the length of the compressed variant probability data.
 		int lengthOfVariantProbabilityData =
-				compressedGenotypeDataBuffer.capacity() + 4; // Add 4 since the D field takes 4 bytes
+				compressedGenotypeDataBuffer.limit() + 4; // Add 4 since the D field takes 4 bytes
 		// Get the decompressed length of variant probability data.
 		int decompressedLengthOfVariantProbabilityData = genotypeDataBlockBuffer.capacity();
 
@@ -515,10 +581,12 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		genotypeBlockLengths.putInt(lengthOfVariantProbabilityData);
 		genotypeBlockLengths.putInt(decompressedLengthOfVariantProbabilityData);
 
+		genotypeBlockLengths.flip(); // reset pointer
+
 		// First write the lengths.
-		bgenOutputByteChannel.write(genotypeBlockLengths);
+		int numberOfBytesWritten = bgenOutputByteChannel.write(genotypeBlockLengths);
 		// Now write the actual data.
-		bgenOutputByteChannel.write(compressedGenotypeDataBuffer);
+		return numberOfBytesWritten + bgenOutputByteChannel.write(compressedGenotypeDataBuffer);
 	}
 
 	/**
@@ -567,6 +635,8 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 				fieldLengthBuffer.putInt((int) lengthOfFieldInBytes);
 				break;
 		}
+		buffer.flip(); // reset pointer
+		fieldLengthBuffer.flip(); // reset pointer
 
 		// Write the buffer to the channel
 		int writtenBytes = outputByteChannel.write(fieldLengthBuffer);
@@ -593,7 +663,16 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	 * @return the ploidy.
 	 */
 	private static int getPloidy(int numberOfProbabilities, int alleleCount) {
-		throw new UnsupportedOperationException("Not yet implemented!");
+		List<Integer> pascalRange = IntStream.rangeClosed(1, alleleCount).boxed()
+				.collect(Collectors.toList());
+		int currentR = 1;
+		while (numberOfProbabilities > pascalRange.get(alleleCount - 1)) {
+			for (int i = 1; i < pascalRange.size(); i++) {
+				pascalRange.set(i, pascalRange.get(i - 1) + pascalRange.get(i));
+			}
+			currentR++;
+		}
+		return currentR;
 	}
 
 	/**
