@@ -25,6 +25,7 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvide
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -54,7 +55,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
     private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
     private static final Logger LOGGER = Logger.getLogger(BgenGenotypeData.class);
-    private static final Charset CHARSET = Charset.forName("UTF-8");
+    private static final Charset CHARSET = StandardCharsets.UTF_8;
 
     private final RandomAccessFile bgenFile;
     private final byte[] byteArray4 = new byte[4]; //resuable 4 byte array
@@ -63,7 +64,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     private final Map<String, SampleAnnotation> sampleAnnotations;
     private final Inflater gzipInflater = new Inflater();
     private final ZstdDecompressor zstdInflater = new ZstdDecompressor();
-    private final LinkedHashSet<String> sequenceNames = new LinkedHashSet<String>();
+    private LinkedHashSet<String> sequenceNames = new LinkedHashSet<>();
     private final BlockRepresentation snpBlockRepresentation;
     private final Layout fileLayout;
     private boolean sampleIdentifiersPresent;
@@ -233,11 +234,14 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
                     pointerFirstSnp);
 
             bgenixWriter.finalizeIndex();
-        }
+            bgenixReader = new BgenixReader(bgenixFile);
 
-        // Not sure what bgenix reader should do in this object other than read an existing BGENIX file.
-        bgenixReader = new BgenixReader(bgenixFile);
-        readExistingBgenixFile(bgenFile);
+        } else {
+            LOGGER.info(String.format("Reading existing bgenix file at: %s", bgenixFile.getAbsolutePath()));
+            bgenixReader = new BgenixReader(bgenixFile);
+            readExistingBgenixFile(bgenFile);
+            sequenceNames = bgenixReader.getChromosomes();
+        }
 
         sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
         // If the specified cache size is greater than 0, construct a new SampleVariantProvider
@@ -277,6 +281,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             if (!Arrays.equals(metadata.getFirst1000bytes(), firstBytes)) {
                 throw new GenotypeDataException("First 1000 bytes of meta data and actual data are not equal. Invalid Bgen and Bgenix combination.");
             }
+
         } else {
             // Also throw an exception whenever the BGENIX files metadata is null as returned by the getMetadata method
             // in the bgenixReader object.
@@ -549,8 +554,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         }
 
         // Log this variant
-        LOGGER.debug(String.format("reading %s, %s at %d | seq:pos = %s:%d, %d alleles",
-                snpRsId, snpId, variantStartPosition, seqName, variantPosition, numberOfAlleles));
+        LOGGER.debug(String.format("Reading %s, %s at %d | seq:pos = %s:%d, %d alleles",
+                snpRsId, !snpId.isEmpty() ? snpId : "-", variantStartPosition, seqName, variantPosition, numberOfAlleles));
 
         return ReadOnlyGeneticVariantBgen.createVariant(
                 variantIds, variantPosition, seqName, sampleVariantProvider, alleles, variantStartPosition);
@@ -972,8 +977,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     }
 
     private static int numberOfOrderedCombinationsWithRepetition(int r, int nMinOne) {
-        return IntMath.factorial(r + nMinOne) /
-                (IntMath.factorial(r) * IntMath.factorial(nMinOne));
+//        return IntMath.factorial(r + nMinOne) /
+//                (IntMath.factorial(r) * IntMath.factorial(nMinOne));
+        return IntMath.binomial(nMinOne + r, r); // This is quicker
     }
 
     /**

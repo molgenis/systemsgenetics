@@ -8,6 +8,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedHashSet;
+
 import org.molgenis.genotype.GenotypeDataException;
 
 /**
@@ -20,6 +22,7 @@ public class BgenixReader {
 	private final PreparedStatement queryByChromosome;
 	private final PreparedStatement queryByPosition;
 	private final PreparedStatement queryByRange;
+	private final PreparedStatement queryChromosomes;
 	private final PreparedStatement queryAll;
 	private final PreparedStatement countAll;
 
@@ -34,6 +37,7 @@ public class BgenixReader {
 			queryByChromosome = dbConnection.prepareStatement("SELECT * FROM Variant WHERE chromosome = ?");//ORDER BY position ASC
 			queryByPosition = dbConnection.prepareStatement("SELECT * FROM Variant WHERE chromosome = ? AND position = ?");
 			queryByRange = dbConnection.prepareStatement("SELECT * FROM Variant WHERE chromosome = ? AND (position BETWEEN ? AND ?)");
+			queryChromosomes = dbConnection.prepareStatement("SELECT DISTINCT chromosome FROM Variant");
 			queryAll = dbConnection.prepareStatement("SELECT * FROM Variant");
 			countAll = dbConnection.prepareStatement("SELECT count(*) FROM Variant");
 		} catch (SQLException ex) {
@@ -94,6 +98,19 @@ public class BgenixReader {
 	public synchronized BgenixVariantQueryResult getVariants() {
 		try {
 			return new BgenixVariantQueryResult(queryAll.executeQuery());
+		} catch (SQLException ex) {
+			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
+		}
+	}
+
+	public synchronized LinkedHashSet<String> getChromosomes() {
+		try {
+			LinkedHashSet<String> sequences = new LinkedHashSet<>();
+			ResultSet chromosomeColumnResult = queryChromosomes.executeQuery();
+			while (chromosomeColumnResult.next()) {
+				sequences.add(chromosomeColumnResult.getString(1));
+			}
+			return sequences;
 		} catch (SQLException ex) {
 			throw new GenotypeDataException("Unable to query bgenix file. Error: " + ex.getMessage(), ex);
 		}
