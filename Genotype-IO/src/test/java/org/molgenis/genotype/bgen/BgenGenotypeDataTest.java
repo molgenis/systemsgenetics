@@ -120,7 +120,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
             int bitRepresentation = matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
 
             // Set the maximum error from the bit representation as shown within the BGEN specification.
-            double maximumError = 1 / (Math.pow(2, Math.min(bitRepresentation, 2)) - 1);
+            double maximumError = 1 / (Math.pow(2, bitRepresentation) - 1);
             // Replace the maximum error by 1*10^4 if the original maximum error was lower, as the precision of
             // the probabilities in the .gen file is often not greater than 4 decimals.
             maximumError = Math.max(maximumError, 1e-4);
@@ -183,7 +183,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
         }
     }
 
-    private static void assertProbabilityEquality(float[][] actual, float[][] expected, double maximumError) {
+    static void assertProbabilityEquality(float[][] actual, float[][] expected, double maximumError) {
         assertEquals(actual.length, expected.length);
         for (int i = 0; i < actual.length; i++) {
             assertEquals(actual[i].length, expected[i].length,
@@ -195,7 +195,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
         }
     }
 
-    private static void assertProbabilityEquality(double[][] actual, double[][] expected) {
+    static void assertProbabilityEquality(double[][] actual, double[][] expected) {
         assertEquals(actual.length, expected.length);
         for (int i = 0; i < actual.length; i++) {
             assertEquals(actual[i].length, expected[i].length,
