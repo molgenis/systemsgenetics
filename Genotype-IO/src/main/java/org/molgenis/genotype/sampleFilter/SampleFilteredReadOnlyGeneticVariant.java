@@ -257,8 +257,8 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 	}
 
 	@Override
-	public double[][] getSampleGenotypeProbabilitiesBgen() {
-		throw new UnsupportedOperationException("Not supported yet.");
+	public double[][] getSampleGenotypeProbabilitiesComplex() {
+		return getSampleVariantsProvider().getSampleProbabilitiesComplex(this);
 	}
 
 	@Override

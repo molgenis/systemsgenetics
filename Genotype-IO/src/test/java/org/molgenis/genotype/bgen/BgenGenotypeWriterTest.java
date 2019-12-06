@@ -1,15 +1,12 @@
 package org.molgenis.genotype.bgen;
 
 import org.molgenis.genotype.GenotypeData;
-import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
-import org.molgenis.genotype.oxford.GenGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.util.GenotypeDataCompareTool;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -21,8 +18,6 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.molgenis.genotype.bgen.BgenGenotypeDataTest.assertProbabilityEquality;
 import static org.testng.Assert.*;
@@ -113,8 +108,8 @@ public class BgenGenotypeWriterTest extends ResourceTest {
             assertEquals(bgenVariant.getAlternativeVariantIds(),
                     expectedVariant.getAlternativeVariantIds());
 
-            double[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesBgen();
-            assertProbabilityEquality(bgenProbabilities, expectedVariant.getSampleGenotypeProbabilitiesBgen());
+            double[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesComplex();
+            assertProbabilityEquality(bgenProbabilities, expectedVariant.getSampleGenotypeProbabilitiesComplex());
 
             // Check if the regular probabilities are according to the expected stuff
             // (a lot should be coded as being missing)
@@ -130,8 +125,8 @@ public class BgenGenotypeWriterTest extends ResourceTest {
                 assertFalse(bgenVariant.getSamplePhasing().contains(false));
                 // Only then get the phased probabilities
                 assertTrue(Arrays.deepEquals(
-                        bgenVariant.getSampleGenotypeProbabilitiesBgenPhased(),
-                        expectedVariant.getSampleGenotypeProbabilitiesBgenPhased()));
+                        bgenVariant.getSampleGenotypeProbabilitiesPhased(),
+                        expectedVariant.getSampleGenotypeProbabilitiesPhased()));
             } else {
                 // These are not phased, which we have to test for
                 assertFalse(bgenVariant.getSamplePhasing().contains(true));

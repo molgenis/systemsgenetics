@@ -75,6 +75,11 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     private final int sampleVariantProviderUniqueId;
     private final int sampleCount;
 
+    public BgenGenotypeData(String bgenFilePath) throws IOException {
+        this(new File(bgenFilePath + ".bgen"),
+                new File(bgenFilePath + ".sample"));
+    }
+
     public BgenGenotypeData(File bgenFile) throws IOException {
         this(bgenFile, null);
     }
@@ -786,11 +791,13 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
      * @return an array of probabilities of length n.
      */
     private double[] computeApproximateProbabilities(byte[] probabilitiesArray, int probabilitiesLengthInBits, int bitOffset, int numberOfProbabilities) {
+        // Calculate (2^B)-1 where B is the probabilities length in bits
+        double maxValue = Math.pow(2, probabilitiesLengthInBits) - 1;
         // Keep track of the probabilities
         double[] probabilities = new double[numberOfProbabilities];
         // Keep track of the sum of all probabilities as the last value is calculated by
-        // subtracting this sum from 1.
-        double sumOfProbabilities = 0;
+        // subtracting this sum from the maximum value.
+        long sumOfProbabilities = 0;
         for (int j = 0; j < numberOfProbabilities - 1; j++) {
             // Get the probability
 
@@ -802,16 +809,14 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             // Convert x to an integer in floating point representation (double because values are stored with the double precision)
             double probability = readProbabilityValue(probabilitiesArray, bitOffset, probabilitiesLengthInBits);
 
-            // Divide by (2^B)-1
-            double maxValue = Math.pow(2, probabilitiesLengthInBits) - 1;
-            probability = probability / maxValue;
-            probabilities[j] = probability;
             sumOfProbabilities += probability;
+            // Divide by (2^B)-1
+            probabilities[j] = probability / maxValue;
             // Update the offset of the current bit
             bitOffset += probabilitiesLengthInBits;
         }
         // Calculate probability of Kth allele (P_iK)
-        probabilities[numberOfProbabilities - 1] = 1 - sumOfProbabilities;
+        probabilities[numberOfProbabilities - 1] = (maxValue - sumOfProbabilities) / maxValue;
         return probabilities;
     }
 
@@ -844,22 +849,25 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
                     numberOfAlleles,
                     ploidies.get(sampleIndex), true);
 
+            int numberOfCombinations = numberOfOrderedCombinationsWithRepetition(
+                    ploidies.get(sampleIndex), numberOfAlleles - 1);
+
             // If the probabilities are missing for this sample, read zero and continue with the
             // next sample.
             if (isMissing.get(sampleIndex)) {
                 // If this is missing, the probability is zero.
-                bitOffset += probabilitiesLengthInBits * (combinations.size() - 1);
-                probabilities[sampleIndex] = new double[combinations.size()];
+                bitOffset += probabilitiesLengthInBits * (numberOfCombinations - 1);
+                probabilities[sampleIndex] = new double[numberOfCombinations];
                 continue;
             }
 
             // Get all probabilities for this sample.
             double[] genotypeProbabilities = computeApproximateProbabilities(
-                    probabilitiesArray, probabilitiesLengthInBits, bitOffset, combinations.size());
+                    probabilitiesArray, probabilitiesLengthInBits, bitOffset, numberOfCombinations);
             probabilities[sampleIndex] = genotypeProbabilities;
 
             // Update the bit to read the next probabilities from.
-            bitOffset += probabilitiesLengthInBits * (combinations.size() - 1);
+            bitOffset += probabilitiesLengthInBits * (numberOfCombinations - 1);
         }
         return probabilities;
     }
@@ -1368,7 +1376,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     @Override
     public float[][] getSampleProbilities(GeneticVariant variant) {
         // Make sure that probabilities for other than biallelic variants return missingness
-        double[][] sampleGenotypeProbabilitiesBgen = getSampleGenotypeProbabilitiesBgen(variant);
+        double[][] sampleGenotypeProbabilitiesBgen = getSampleProbabilitiesComplex(variant);
         if (variant.isBiallelic()) {
             return ProbabilitiesConvertor.convertBiallelicBgenProbabilitiesToProbabilities(
                     sampleGenotypeProbabilitiesBgen);
@@ -1378,7 +1386,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     }
 
     @Override
-    public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant) {
+    public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
         ReadOnlyGeneticVariantBgen bgenVariant = getCastedBgenVariant(variant);
         try {
             return readGenotypeDataFromVariant(bgenVariant);
@@ -1390,7 +1398,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     }
 
     @Override
-    public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant) {
+    public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
         ReadOnlyGeneticVariantBgen bgenVariant = getCastedBgenVariant(variant);
         try {
             return readPhasedGenotypeDataFromVariant(bgenVariant);
@@ -1404,7 +1412,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     private ReadOnlyGeneticVariantBgen getCastedBgenVariant(GeneticVariant variant) {
         if (!(variant instanceof ReadOnlyGeneticVariantBgen)) {
             throw new GenotypeDataException("Variant is not of type 'ReadOnlyGeneticVariantBgen' and thus cannot" +
-                    "be used within this sampleVariantProvider");
+                    " be used within this sampleVariantProvider");
         }
         return (ReadOnlyGeneticVariantBgen) variant;
     }

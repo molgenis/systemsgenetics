@@ -284,7 +284,7 @@ abstract public class AbstractGeneticVariant implements GeneticVariant {
 	}
 
     @Override
-    public double[][][] getSampleGenotypeProbabilitiesBgenPhased() {
+    public double[][][] getSampleGenotypeProbabilitiesPhased() {
         throw new GenotypeDataException("Phased data not available");
     }
 }

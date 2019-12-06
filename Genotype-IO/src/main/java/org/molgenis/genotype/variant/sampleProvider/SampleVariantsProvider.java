@@ -82,7 +82,7 @@ public interface SampleVariantsProvider
 	 * @param variant The variant to request probabilities for.
 	 * @return An array of probabilities for every sample and possible genotype for a sample and the given variant
 	 */
-	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant);
+	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant);
 
 	/**
 	 * [sample][haplotype][A, B, C, ...]
@@ -93,5 +93,5 @@ public interface SampleVariantsProvider
 	 * @param variant The variant to request probabilities for.
 	 * @return An array of probabilities per haplotype, per sample.
 	 */
-	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant);
+	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant);
 }

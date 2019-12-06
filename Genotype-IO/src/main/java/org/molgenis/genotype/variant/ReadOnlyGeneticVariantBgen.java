@@ -259,12 +259,12 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
         return sampleVariantsProvider.getSampleProbilities(this);
     }
 
-    public double[][] getSampleGenotypeProbabilitiesBgen() {
-        return this.sampleVariantsProvider.getSampleGenotypeProbabilitiesBgen(this);
+    public double[][] getSampleGenotypeProbabilitiesComplex() {
+        return this.sampleVariantsProvider.getSampleProbabilitiesComplex(this);
     }
 
-    public double[][][] getSampleGenotypeProbabilitiesBgenPhased() {
-        return this.sampleVariantsProvider.getSampleGenotypeProbabilitiesBgenPhased(this);
+    public double[][][] getSampleGenotypeProbabilitiesPhased() {
+        return this.sampleVariantsProvider.getSampleProbabilitiesPhased(this);
     }
 
     @Override

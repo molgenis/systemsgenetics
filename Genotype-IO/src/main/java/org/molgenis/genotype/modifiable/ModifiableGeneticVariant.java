@@ -265,8 +265,42 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 	}
 
 	@Override
-	public double[][] getSampleGenotypeProbabilitiesBgen() {
-		throw new UnsupportedOperationException("Not supported yet.");
+	public double[][] getSampleGenotypeProbabilitiesComplex() {
+
+		double[][] probByProvider = getSampleVariantsProvider().getSampleProbabilitiesComplex(originalVariant);
+
+		Allele refUsedForOriginalDosage = originalVariant.getRefAllele() == null ? originalVariant.getVariantAlleles()
+				.get(0) : originalVariant.getRefAllele();
+
+		if(modifiableGenotypeData.isSwapped(originalVariant)){
+			refUsedForOriginalDosage = refUsedForOriginalDosage.getComplement();
+		}
+
+		Allele refShouldBeUsed = getRefAllele() == null ? getVariantAlleles().get(0) : getRefAllele();
+
+		if (refUsedForOriginalDosage == refShouldBeUsed) {
+			return probByProvider;
+		} else {
+			if (isBiallelic() && probByProvider[0].length != 3) {
+				throw new GenotypeDataException("Can't swap probabilities multiallelic / polyploid variants");
+			}
+
+			double[][] probs = new double[probByProvider.length][];
+
+			for (int i = 0; i < probByProvider.length; ++i) {
+				int numberOfProbabilities = probByProvider[i].length;
+				probs[i] = new double[numberOfProbabilities];
+
+				for (int j = 0; j < numberOfProbabilities; ++j) {
+					// If this block is reached, the probabilities should be modified so that
+					// The reference comes comes first.
+					probs[i][2 - j] = probByProvider[i][j];
+				}
+
+			}
+			return probs;
+
+		}
 	}
 
 	@Override

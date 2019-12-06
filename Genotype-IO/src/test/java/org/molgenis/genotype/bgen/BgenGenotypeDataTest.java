@@ -94,12 +94,13 @@ public class BgenGenotypeDataTest extends ResourceTest {
 
 //    @Test
 //    public void testBgenGenotypeData() throws URISyntaxException, IOException {
-//        File bgenFile = getTestResourceFile("/bgenExamples/example.25bits.bgen");
-//        Path target = Paths.get(folder.getRoot().toString(), bgenFile.getName());
+//        File bgenFile = getTestResourceFile("/bgenExamples/example.16bits.bgen");
+//        Path target = Paths.get(folder.toString(), bgenFile.getName());
 //        Files.copy(bgenFile.toPath(), target);
 //        bgenGenotypeData = new BgenGenotypeData(target.toFile());
 //        for (GeneticVariant variant : bgenGenotypeData) {
 //            System.out.printf("%s %s %d %s%n", variant.getPrimaryVariantId(), variant.getSequenceName(), variant.getStartPos(), variant.getVariantAlleles());
+//            variant.getSampleGenotypeProbilities();
 //        }
 //    }
 
@@ -283,7 +284,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
                 // Check the equality of probabilities.
                 // First check if the bgenProbabilities are according to the expected stuff
                 if (Arrays.asList(0, 1, 2, 3, 4, 8, 9).contains(variantIndex)) {
-                    double[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesBgen();
+                    double[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesComplex();
                     assertProbabilityEquality(bgenProbabilities, expectedBgenProbabilities.get(variantIndex));
                 }
 
@@ -302,7 +303,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
                     // First we have to check if the variant is phased
                     assertFalse(bgenVariant.getSamplePhasing().contains(false));
                     // Only then get the phased probabilities
-                    double[][][] phasedBgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesBgenPhased();
+                    double[][][] phasedBgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesPhased();
                     assertTrue(Arrays.deepEquals(phasedBgenProbabilities, expectedPhasedBgenProbabilities.get(variantIndex)));
                 } else if (Arrays.asList(6, 7).contains(variantIndex)) {
                     // These are also phased, but probabilities are not interesting enough...
@@ -312,7 +313,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
                     assertFalse(bgenVariant.getSamplePhasing().contains(true));
                     // Calling the method then should generate an exception
                     try {
-                        bgenVariant.getSampleGenotypeProbabilitiesBgenPhased();
+                        bgenVariant.getSampleGenotypeProbabilitiesPhased();
                         fail("bgenVariant.getSampleGenotypeProbabilitiesBgenPhased() did not raise a " +
                                 "GenotypeDataException while phased data was not available");
                     } catch (GenotypeDataException e) {

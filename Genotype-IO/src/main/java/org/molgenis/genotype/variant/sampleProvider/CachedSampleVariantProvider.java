@@ -122,12 +122,12 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	}
 
 	@Override
-	public double[][] getSampleGenotypeProbabilitiesBgen(GeneticVariant variant) {
+	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
 		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
 	}
 
 	@Override
-	public double[][][] getSampleGenotypeProbabilitiesBgenPhased(GeneticVariant variant) {
+	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
 

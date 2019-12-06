@@ -35,7 +35,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 	private final GenotypeData genotypeData;
 	private final double maxValue;
-	private final int probabilitiesLengthInBits;
+	private int probabilitiesLengthInBits;
     private final double maxValue32Bits = Math.pow(2, 32) - 1;
 	private final double maxValue16Bits = Math.pow(2, 16) - 1;
 	private Zstd zstd = new Zstd();
@@ -346,8 +346,9 @@ public class BgenGenotypeWriter implements GenotypeWriter {
     private ByteBuffer getUnphasedGenotypeDataBlockByteBuffer(int sampleCount,
 															  float[] sampleMissingCount,
 															  GeneticVariant variant) {
+
     	// Get the unphased bgen probabilities (this can represent polyploidity and multiallelic variants)
-		double[][] sampleGenotypeProbabilitiesBgen = variant.getSampleGenotypeProbabilitiesBgen();
+		double[][] sampleGenotypeProbabilitiesBgen = variant.getSampleGenotypeProbabilitiesComplex();
 
 		// Get the allele count for the variant.
 		int alleleCount = variant.getAlleleCount();
@@ -468,7 +469,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	private ByteBuffer getPhasedGenotypeDataBlockByteBuffer(int sampleCount,
 															float[] sampleMissingCount,
 															GeneticVariant variant) {
-		double[][][] sampleGenotypeProbabilitiesBgenPhased = variant.getSampleGenotypeProbabilitiesBgenPhased();
+		double[][][] sampleGenotypeProbabilitiesBgenPhased = variant.getSampleGenotypeProbabilitiesPhased();
 
 		// Get the allele count
 		int alleleCount = variant.getAlleleCount();
@@ -763,4 +764,11 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		// >>> and << is used since these both only pad with 0s at the right / left side.
 	}
 
+	/**
+	 * Setter for the precision of probabilities in number of bits.
+	 * @param bgenBitRepresentation The number of bits.
+	 */
+	public void setProbabilityPrecisionInBits(Integer bgenBitRepresentation) {
+		probabilitiesLengthInBits = bgenBitRepresentation;
+	}
 }

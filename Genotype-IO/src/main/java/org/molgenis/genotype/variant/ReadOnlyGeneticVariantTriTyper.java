@@ -13,7 +13,6 @@ import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.util.FixedSizeIterable;
 import org.molgenis.genotype.util.MafCalculator;
-import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
@@ -153,8 +152,8 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
     }
 
     @Override
-    public double[][] getSampleGenotypeProbabilitiesBgen() {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public double[][] getSampleGenotypeProbabilitiesComplex() {
+        return sampleVariantsProvider.getSampleProbabilitiesComplex(this);
     }
 
     @Override

@@ -213,7 +213,7 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 *
 	 * @return An array of probabilities for every sample and possible genotype for a sample and the given variant
 	 */
-	public double[][] getSampleGenotypeProbabilitiesBgen();
+	public double[][] getSampleGenotypeProbabilitiesComplex();
 
 	/**
 	 * [sample][haplotype][A, B, C, ...]
@@ -223,7 +223,7 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 *
 	 * @return An array of probabilities per haplotype, per sample.
 	 */
-	public double[][][] getSampleGenotypeProbabilitiesBgenPhased();
+	public double[][][] getSampleGenotypeProbabilitiesPhased();
 
 	/**
 	 * Get the records that are available for this variants from the different samples

@@ -168,6 +168,7 @@ public class ModifiableGenotypeDataInMemory extends AbstractRandomAccessGenotype
 
         swappedVariants.add(originalGeneticVariant);
 
+        // Get the complement alleles from the original alleles
         Alleles variantAlleles = getUpdatedAlleles(geneticVariant);
         if (variantAlleles == null) {
             variantAlleles = originalGeneticVariant.getVariantAlleles();
