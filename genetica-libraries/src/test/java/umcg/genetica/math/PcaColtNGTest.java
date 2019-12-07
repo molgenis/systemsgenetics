@@ -34,17 +34,17 @@ public class PcaColtNGTest {
 	 */
 	@Test
 	public void testPca() throws Exception {
-		File testMatrixFile = new File(this.getClass().getResource("/testMatrix.txt").toURI());
-		
-		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
-		
-		PcaColt pcaRes = new PcaColt(testMatrix, true);
-		
-		pcaRes.getEigenValues().printMatrix();
-		
-		pcaRes.getEigenvectors().printMatrix();
-		
-		pcaRes.getPcs().printMatrix();
+//		File testMatrixFile = new File(this.getClass().getResource("/testMatrix.txt").toURI());
+//		
+//		DoubleMatrixDataset<String, String> testMatrix = DoubleMatrixDataset.loadDoubleTextData(testMatrixFile.getPath(), '\t');
+//		
+//		PcaColt pcaRes = new PcaColt(testMatrix, true);
+//		
+//		pcaRes.getEigenValues().printMatrix();
+//		
+//		pcaRes.getEigenvectors().printMatrix();
+//		
+//		pcaRes.getPcs().printMatrix();
 		
 	}
 	

@@ -731,7 +731,7 @@ public class Depict2 {
 
 				if (mergedColNames.contains(newCol)) {
 					int i = 1;
-					while (mergedColNames.contains(newCol + "_" + i++));
+					while (mergedColNames.contains(newCol + "_" + ++i));
 					newCol = newCol + "_" + i;
 				}
 				mergedColNames.add(newCol);
@@ -1160,11 +1160,15 @@ public class Depict2 {
 
 		final DoubleMatrixDataset<String, String> dataset = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 
-		PcaColt pcaRes = new PcaColt(dataset, true);
+		//if debug is enabled keep cov matrix in memory
+		PcaColt pcaRes = new PcaColt(dataset, true, true, LOGGER.isDebugEnabled());
 
 		pcaRes.getEigenvectors().save(options.getOutputBasePath() + "_eigenVectors.txt");
 		pcaRes.getEigenValues().save(options.getOutputBasePath() + "_eigenValues.txt");
 		pcaRes.getPcs().save(options.getOutputBasePath() + "_pcs.txt");
+		if(LOGGER.isDebugEnabled()){
+			pcaRes.getCovMatrix().save(options.getOutputBasePath() + "_correlationMatrix.txt");
+		}
 
 	}
 
