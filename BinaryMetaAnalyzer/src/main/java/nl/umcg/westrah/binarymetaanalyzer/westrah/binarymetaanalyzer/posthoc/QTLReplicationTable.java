@@ -182,7 +182,7 @@ public class QTLReplicationTable {
 						if (flip != null) {
 
 
-							int nother = Descriptives.sum(Primitives.toPrimitiveArr(reference.getDatasetsSamples()));
+							int nother = Descriptives.sum(Primitives.toPrimitiveArr(other.getDatasetsSamples()));
 							double z = other.getZscore();
 							if (flip) {
 								z *= -1;
