@@ -220,7 +220,7 @@ public class GenotypeHarmonizerParamaters {
 
         option = OptionBuilder.withArgName("int")
                 .hasArg()
-                .withDescription("The probability precision for a BGEN file to be written in number of bits. Option only valid in combination with --outputType BGEN")
+                .withDescription("The probability precision for a BGEN file to be written in number of bits. Valid range is from 1 to 32 inclusive. Option only valid in combination with --outputType BGEN")
                 .withLongOpt("probabilityPrecision")
                 .create("bts");
         OPTIONS.addOption(option);
@@ -401,7 +401,17 @@ public class GenotypeHarmonizerParamaters {
             throw new ParseException("Error parsing --inputProb \"" + commandLine.getOptionValue("ip") + "\" is not an double");
         }
 
-        bitRepresentation = commandLine.hasOption("bts") ? Integer.parseInt(commandLine.getOptionValue('f')) : null;
+        try {
+            bitRepresentation = commandLine.hasOption("bts") ? Integer.valueOf(commandLine.getOptionValue("bts")) : null;
+        } catch (NumberFormatException e) {
+            throw new ParseException("Error parsing --probabilityPrecision \""
+                    + commandLine.getOptionValue("bts") + "\" is not an int");
+        }
+        if (bitRepresentation != null && (bitRepresentation < 1 || bitRepresentation > 32)) {
+            throw new ParseException("Error parsing --probabilityPrecision \"" + commandLine.getOptionValue("bts")
+                    + "\" is not in range 1 to 32 inclusive.");
+        }
+
         forceSeqName = commandLine.hasOption('f') ? commandLine.getOptionValue('f') : null;
         ldCheck = commandLine.hasOption('c');
         keep = commandLine.hasOption('k');

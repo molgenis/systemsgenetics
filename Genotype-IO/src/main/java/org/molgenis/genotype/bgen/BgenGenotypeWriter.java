@@ -768,7 +768,11 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	 * Setter for the precision of probabilities in number of bits.
 	 * @param bgenBitRepresentation The number of bits.
 	 */
-	public void setProbabilityPrecisionInBits(Integer bgenBitRepresentation) {
+	public void setProbabilityPrecisionInBits(int bgenBitRepresentation) {
+		if (bgenBitRepresentation < 1 || bgenBitRepresentation > 32) {
+			throw new GenotypeDataException(String.format("The given probability precision '%d' was " +
+					"not in range 1 - 32 bits (both inclusive)", bgenBitRepresentation));
+		}
 		probabilitiesLengthInBits = bgenBitRepresentation;
 	}
 }

@@ -4,6 +4,7 @@
  */
 package nl.umcg.deelenp.genotypeharmonizer;
 
+import org.apache.commons.cli.ParseException;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -17,10 +18,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
@@ -29,8 +27,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
 /**
  *
@@ -657,6 +654,43 @@ public class GenotypeHarmonizerTest {
         assertEquals(aligenedHapmap3Data.getSamples().size(), 165);
         assertEquals(aligenedHapmap3Data.getSnpVariantByPos("20", 809930).getSampleVariants().size(), 165);
 
+    }
+
+    @Test
+    public void testGenotypeHarmonizerBgenProbabilityPrecisionOption() throws InterruptedException, IOException {
+
+        String studyDataBasePath = testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6RandomStrand";
+
+        String[] erroneousArgs1 = {"--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--outputType", "BGEN", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "testProbabilityPrecisionOption", "--probabilityPrecision", "-1"};
+        String[] erroneousArgs2 = {"--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--outputType", "BGEN", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "testProbabilityPrecisionOption", "--probabilityPrecision", "33"};
+
+        GenotypeHarmonizerParamaters parameters;
+        try {
+            new GenotypeHarmonizerParamaters(erroneousArgs1);
+            fail("GenotypeHarmonizerParameters with erroneous ProbabilityPrecision did not raise an exception.");
+        } catch (ParseException ex) {
+            assertEquals(ex.getMessage(), "Error parsing --probabilityPrecision \"-1\" is " +
+                    "not in range 1 to 32 inclusive.");
+        }
+
+        try {
+            new GenotypeHarmonizerParamaters(erroneousArgs2);
+            fail("GenotypeHarmonizerParameters with erroneous ProbabilityPrecision did not raise an exception.");
+        } catch (ParseException ex) {
+            assertEquals(ex.getMessage(), "Error parsing --probabilityPrecision \"33\" is " +
+                    "not in range 1 to 32 inclusive.");
+        }
+
+        String[] args = {"--debug", "--inputType", "PLINK_BED", "--input", studyDataBasePath, "--outputType", "BGEN", "--output", tmpOutputFolder.getAbsolutePath() + fileSep + "testProbabilityPrecisionOption", "--probabilityPrecision", "24"};
+
+        // Should throw no error
+        GenotypeHarmonizer.main(
+                args);
+
+        // Should not throw an error either.
+        BgenGenotypeData genotypeData = new BgenGenotypeData(
+                tmpOutputFolder.getAbsolutePath() + fileSep + "testProbabilityPrecisionOption");
+        genotypeData.getSampleProbabilitiesComplex(genotypeData.iterator().next());
     }
 
 
