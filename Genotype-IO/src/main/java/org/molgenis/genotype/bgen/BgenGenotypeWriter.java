@@ -663,7 +663,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	 * @param alleleCount The number of alleles that are counted.
 	 * @return the ploidy.
 	 */
-	private static int getPloidy(int numberOfProbabilities, int alleleCount) {
+	public static int getPloidy(int numberOfProbabilities, int alleleCount) {
 		List<Integer> pascalRange = IntStream.rangeClosed(1, alleleCount).boxed()
 				.collect(Collectors.toList());
 		int currentR = 1;

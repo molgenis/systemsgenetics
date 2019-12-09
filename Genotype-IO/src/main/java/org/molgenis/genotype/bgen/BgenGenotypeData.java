@@ -844,13 +844,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 
         for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
 
-            // Get the list of combinations that should have probabilities in this probability-block.
-            List<List<Integer>> combinations = getGenotypeCombinations(
-                    numberOfAlleles,
-                    ploidies.get(sampleIndex), true);
-
+            // Get the number of probabilities that are to be read here
             int numberOfCombinations = numberOfOrderedCombinationsWithRepetition(
-                    ploidies.get(sampleIndex), numberOfAlleles - 1);
+                    ploidies.get(sampleIndex), numberOfAlleles - 1); // -1 because formula requires n-1
 
             // If the probabilities are missing for this sample, read zero and continue with the
             // next sample.
@@ -936,8 +932,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     private double[] phasedProbabilitiesToGenotypeProbabilities(double[][] phasedProbabilities,
                                                                 int numberOfAlleles) {
         // Get all possible combinations of alleles for the haplotypes (all permutations)
-        List<List<Integer>> haplotypeCombinations = getGenotypeCombinations(
-                numberOfAlleles, phasedProbabilities.length, false);
+        List<List<Integer>> haplotypeCombinations = getHaplotypeCombinations(
+                numberOfAlleles, phasedProbabilities.length);
 
         // Initialize an array of probabilities.
         double[] genotypeProbabilities = new double[numberOfOrderedCombinationsWithRepetition(
@@ -1440,7 +1436,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     /**
      * Method that returns the list of all possible allele combinations, for the given ploidy.
      * These allele combinations, or genotypes represent the way in which genotypes are stored in a layout 2 BGEN file
-     * for a specific sample, if onlyOrdered is true, otherwise also permutations of these combinations are returned.
+     * for a specific sample.
      * <p>
      * For example, the method returns 4 combinations with 2 alleles and a ploidy of 2
      * in case of all combinations:
@@ -1448,20 +1444,12 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
      * [2, 1]
      * [1, 2]
      * [2, 2]
-     * The method returns 3 combinations with 2 alleles and a ploidy of 2
-     * in case only ordered combinations are requested:
-     * [1, 1]
-     * [1, 2]
-     * [2, 2]
      *
      * @param numberOfAlleles The number of alleles for the variant to create combinations for.
      * @param ploidy          The ploidity of the sample to create combinations for.
-     * @param onlyOrdered     Flag indicating if the combinations should only be the sorted combinations according to the
-     *                        BGEN file specifications.
-     * @return the combinations of alleles that represent all possible genotypes or haplotypes
-     * for an unphased variant and sample, in this specified order.
+     * @return the combinations of alleles that represent all possible haplotypes
      */
-    private static List<List<Integer>> getGenotypeCombinations(int numberOfAlleles, int ploidy, boolean onlyOrdered) {
+    private static List<List<Integer>> getHaplotypeCombinations(int numberOfAlleles, int ploidy) {
         // Construct nested lists
         List<List<Integer>> combinations = new ArrayList<>();
 
@@ -1470,17 +1458,11 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         int maxAlleleValue = numberOfAlleles - 1;
 
         // Get the combinations
-        if (onlyOrdered) {
-            getCombinationsRecursively(combinations,
-                    new ArrayList<>(),
-                    maxAlleleValue,
-                    ploidy);
-        } else {
-            getAllCombinationsRecursively(combinations,
-                    new ArrayList<>(),
-                    maxAlleleValue,
-                    ploidy);
-        }
+        getAllCombinationsRecursively(combinations,
+                new ArrayList<>(),
+                maxAlleleValue,
+                ploidy);
+
 
         return combinations;
     }
@@ -1514,16 +1496,43 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     }
 
     /**
+     * The method returns 3 combinations with 2 alleles and a ploidy of 2
+     * in case only ordered combinations are requested:
+     * [1, 1]
+     * [1, 2]
+     * [2, 2]
+     *
+     * @param alleles The alleles for the variant to create combinations for.
+     * @param ploidy The ploidity of the sample to create combinations for.
+     * @return the combinations of alleles that represent all possible haplotypes
+     */
+    private static List<List<Integer>> getGenotypeCombinations(List<Integer> alleles, int ploidy) {
+        // Construct nested lists
+        List<List<Integer>> combinations = new ArrayList<>();
+
+        // Set the maximum value of an allele, which is the number of alleles minus one, because we want to count
+        // from 0 to n-1
+        int maxAlleleValue = alleles.size() - 1;
+
+        // Get the combinations
+        getCombinationsRecursively(combinations,
+                new ArrayList<>(), alleles,
+                maxAlleleValue, ploidy);
+
+        return combinations;
+    }
+
+    /**
      * Method that recursively fills a list of combinations.
      * Combinations are always ordered.
-     *
-     * @param combinations   The list of combinations to fill.
+     *  @param combinations   The list of combinations to fill.
      * @param combination    The current combination that is being constructed.
+     * @param alleles The alleles to put into the combinations
      * @param maxAlleleValue The number of different values to fit into a combinations.
      * @param ploidy         The size of a combination.
      */
     private static void getCombinationsRecursively(
-            List<List<Integer>> combinations, List<Integer> combination, int maxAlleleValue, int ploidy) {
+            List<List<Integer>> combinations, List<Integer> combination, List<Integer> alleles, int maxAlleleValue, int ploidy) {
         // If the combination is complete, the size of the combination equals the required size.
         // Add the combination and return
         if (combination.size() == ploidy) {
@@ -1536,8 +1545,8 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             // Copy the preliminary combination
             List<Integer> newCombination = new ArrayList<>(combination);
             // Add a new value to the combination
-            newCombination.add(0, newAlleleValue); // Add in the beginning to maintain the correct order.
-            getCombinationsRecursively(combinations, newCombination, newAlleleValue, ploidy);
+            newCombination.add(0, alleles.get(newAlleleValue)); // Add in the beginning to maintain the correct order.
+            getCombinationsRecursively(combinations, newCombination, alleles, newAlleleValue, ploidy);
         }
     }
 

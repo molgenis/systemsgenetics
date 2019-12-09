@@ -1,9 +1,13 @@
 package org.molgenis.genotype.modifiable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -14,6 +18,9 @@ import org.molgenis.genotype.variant.GeneticVariantMeta;
 import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
+
+import static org.molgenis.genotype.bgen.BgenGenotypeWriter.getPloidy;
+import static org.molgenis.genotype.variant.ReadOnlyGeneticVariantBgen.getAlleleCountsPerProbability;
 
 public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 
@@ -281,21 +288,60 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 		if (refUsedForOriginalDosage == refShouldBeUsed) {
 			return probByProvider;
 		} else {
-			if (isBiallelic() && probByProvider[0].length != 3) {
-				throw new GenotypeDataException("Can't swap probabilities multiallelic / polyploid variants");
-			}
+			// Here we have to swap the probabilities to match the new ref
+			// Probabilities for complex probabilities are sorted in a special manner
+			// We can get a list of allele counts corresponding to the genotypes in current order,
+			// which can be easily ordered into the situation with the new ref allele.
+			// Therefore we can sort the probabilities using the list of allele counts as well.
+
+			// First generate a list with alleles, in which every allele is encoded as the index in the new situation
+			// Get the index of the new reference allele within the old list of alleles
+			// TODO: implement obtaining the index of the new reference allele according to the old list of alleles.
+			int refShouldBeUsedOldIndex = 1;
+			// Continue to create a list of alleles
+			List<Integer> allelesAsIntegers = IntStream.range(1, getAlleleCount()).boxed().collect(Collectors.toList());
+			allelesAsIntegers.add(refShouldBeUsedOldIndex, 0); // Add the ref with index 0;
 
 			double[][] probs = new double[probByProvider.length][];
 
 			for (int i = 0; i < probByProvider.length; ++i) {
-				int numberOfProbabilities = probByProvider[i].length;
-				probs[i] = new double[numberOfProbabilities];
-
-				for (int j = 0; j < numberOfProbabilities; ++j) {
-					// If this block is reached, the probabilities should be modified so that
-					// The reference comes comes first.
-					probs[i][2 - j] = probByProvider[i][j];
+				// Get the number of probabilities for this sample
+				double[] sampleProbabilities = probByProvider[i];
+				int numberOfProbabilities = sampleProbabilities.length;
+				// Check if the number of probabilities is 3 since this is not entirely complete.
+				if (numberOfProbabilities != 3) {
+					throw new GenotypeDataException("Swapping probabilities is not supported for " +
+							"probabilities representing polyploid samples");
 				}
+				// Convert the array to a list to be able to make use of the .indexOf(...) method.
+				List<Pair<Integer, Double>> probabilitiesWithIndices = new ArrayList<>();
+				double[] doubles = probByProvider[i];
+				for (int j = 0; j < doubles.length; j++) {
+					double probability = doubles[j];
+					probabilitiesWithIndices.add(new ImmutablePair<>(j, probability));
+				}
+				// Get the allele counts per probability, in which the alleles are sorted according to the old order alleles.
+				List<List<Integer>> alleleCounts = getAlleleCountsPerProbability(
+						allelesAsIntegers,
+						getPloidy(numberOfProbabilities, getAlleleCount()));
+				// Now sort the probabilities for this sample
+				probabilitiesWithIndices.sort((left, right) -> {
+					// Initialize return value at 0 (no difference)
+					int comparison = 0;
+					// Loop through the allele counts from the last to first to match sorting precedence.
+					// The first column (from last to first) that shows difference indicates sorting order,
+					// so continue until the comparison value is not equal to zero.
+					for (int alleleIndex = alleleCounts.get(left.getLeft()).size() - 1; // Initialize at last index
+						 comparison == 0 && alleleIndex >= 0; // Stay in loop condition
+						 alleleIndex--) { // Decrease index
+						comparison = alleleCounts.get(left.getLeft()).get(alleleIndex)
+								.compareTo(
+										alleleCounts.get(right.getLeft()).get(alleleIndex));
+					}
+					return comparison;
+				});
+				// Insert the sorted probabilities as an array into the new probabilities.
+				probs[i] = probabilitiesWithIndices.stream().mapToDouble(Pair::getRight).toArray();
 
 			}
 			return probs;
