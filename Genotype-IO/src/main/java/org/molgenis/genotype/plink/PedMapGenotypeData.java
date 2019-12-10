@@ -19,12 +19,7 @@ import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
-import org.molgenis.genotype.Allele;
-import org.molgenis.genotype.Alleles;
-import org.molgenis.genotype.Sample;
-import org.molgenis.genotype.Sequence;
-import org.molgenis.genotype.SimpleSequence;
+import org.molgenis.genotype.*;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.SexAnnotation;
@@ -318,12 +313,12 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 
 	@Override
 	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
-		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
+		return ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(getSampleProbilities(variant));
 	}
 
 	@Override
 	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
-		throw new UnsupportedOperationException("Not supported yet.");
+		throw new GenotypeDataException("Phased data not available");
 	}
 
 	@Override

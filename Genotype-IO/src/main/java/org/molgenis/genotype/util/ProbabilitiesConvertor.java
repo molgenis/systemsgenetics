@@ -6,6 +6,7 @@ package org.molgenis.genotype.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -215,25 +216,25 @@ public class ProbabilitiesConvertor {
 	}
 
 	/**
-	 * Method for converting BGEN probabilities to regular posterior probabilities.
+	 * Method for converting complex probabilities to regular posterior probabilities.
 	 * unlike the regular posterior probabilities, probabilities in BGEN can be stored
 	 * in an array of arbitrary length corresponding to the number of ordered combinations of
 	 * alleles for a given ploidy. Any number of alleles can be represented.
 	 *
-	 * If the BGEN probabilities for a sample represent 3 possible genotypes (biallelic for dipoid samples)
-	 * This is returned.
+	 * If the complex probabilities for a sample represent 3 possible genotypes
+	 * (diploid samples for a biallelic variant) This is returned.
 	 *
-	 * If the BGEN probabilities represent less than 3 or more than 3 possible genotypes
+	 * If the complex probabilities represent less than 3 or more than 3 possible genotypes
 	 * an empty array of size 3 is returned for the sample.
 	 *
-	 * If the BGEN probabilities represent 2 possible genotypes (biallelic for haploid samples)
+	 * If the complex probabilities represent 2 possible genotypes (biallelic for haploid samples)
 	 * this is <b>not</b> expanded as if diploid with a zero probability for heterozygosity.
 	 * Instead missingness is returned.
 	 *
 	 * @param bgenProbabilities The BGEN probabilities returned by a BgenGenotypeData sampleVariantProvider.
 	 * @return An array of arrays of size 3 with posterior probabilities.
 	 */
-	public static float[][] convertBiallelicBgenProbabilitiesToProbabilities(double[][] bgenProbabilities) {
+	public static float[][] convertBiallelicComplexProbabilitiesToProbabilities(double[][] bgenProbabilities) {
 		// Define an array consisting of an array of posterior bgenProbabilities for each genotype
 		float[][] probabilities = new float[bgenProbabilities.length][3];
 
@@ -266,7 +267,16 @@ public class ProbabilitiesConvertor {
 		return probabilities;
 	}
 
-	public static double[][] convertProbabilitiesToBgenProbabilities(float[][] probabilities) {
+	/**
+	 * Method that converts between posterior probabilities in its legacy format
+	 * (3 probabilities, float values)
+	 * and complex posterior probabilities that can contain an arbitrary number of probabilities.
+	 * This method effectively only converts between float and double values.
+	 *
+	 * @param probabilities The probabilities to convert.
+	 * @return An array of probabilities as doubles for every individual in an array.
+	 */
+	public static double[][] convertProbabilitiesToComplexProbabilities(float[][] probabilities) {
 		double[][] bgenProbabilities = new double[probabilities.length][probabilities[0].length];
 		for (int i = 0; i < probabilities.length; i++) {
 			for (int j = 0; j < probabilities[0].length; j++) {
@@ -274,5 +284,40 @@ public class ProbabilitiesConvertor {
 			}
 		}
 		return bgenProbabilities;
+	}
+
+	/**
+	 * Method that converts between called alleles and phased probabilities.
+	 *
+	 * @param sampleAlleles A list with called alleles for every sample
+	 * @param alleles The variant's alleles.
+	 * @return An array with for every sample an array, with for every chromosome another array,
+	 * with for every possible allele in the variant the probability of that allele being represented on the
+	 * the chromosome of the sample.
+	 */
+	public static double[][][] convertCalledAllelesToPhasedProbabilities(List<Alleles> sampleAlleles, Alleles alleles) {
+		double[][][] probs = new double[sampleAlleles.size()][][];
+
+		if (alleles.getAlleleCount() == 0) {
+			throw new GenotypeDataException("Error converting alleles to probabilities. No alleles detected");
+		}
+
+		// Loop through samples
+		for (int sampleIndex = 0; sampleIndex < sampleAlleles.size(); sampleIndex++) {
+			// Get the alleles that are called for this sample.
+			Alleles allelesForSample = sampleAlleles.get(sampleIndex);
+			// The number of alleles called is assumed to be the ploidy of the sample for this variant.
+			int ploidy = allelesForSample.getAlleles().size();
+			// Initialize a nested array of probabilities for the current sample.
+			double[][] sampleProbabilities = new double[ploidy][alleles.getAlleles().size()];
+			for (int i = 0; i < ploidy; i++) {
+				// Set, at the position of the called allele in the list of alleles from the variant, the probability of 1.
+				Allele allele = allelesForSample.get(i);
+				sampleProbabilities[i][alleles.getAlleles().indexOf(allele)] = 1;
+			}
+			probs[sampleIndex] = sampleProbabilities;
+		}
+
+		return probs;
 	}
 }

@@ -289,5 +289,10 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 		altAlleles.remove(this.getRefAllele());
 		return Alleles.createAlleles(altAlleles);
 	}
+
+	@Override
+	public double[][][] getSampleGenotypeProbabilitiesPhased() {
+		return this.sampleVariantsProvider.getSampleProbabilitiesPhased(this);
+	}
 	
 }

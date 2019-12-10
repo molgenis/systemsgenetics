@@ -282,9 +282,4 @@ abstract public class AbstractGeneticVariant implements GeneticVariant {
 	public double getMachR2() {
 		return MachR2Calculator.calculateMachR2(this.getSampleGenotypeProbilities());
 	}
-
-    @Override
-    public double[][][] getSampleGenotypeProbabilitiesPhased() {
-        throw new GenotypeDataException("Phased data not available");
-    }
 }

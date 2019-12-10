@@ -3,6 +3,7 @@ package org.molgenis.genotype.bgen;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
+import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.util.GenotypeDataCompareTool;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -28,6 +29,7 @@ public class BgenGenotypeWriterTest extends ResourceTest {
     private String fileSep = System.getProperty("file.separator");
     private File complexFile = getTestResourceFile("/bgenExamples/complex.31bits.bgen");
     private File exampleFile = getTestResourceFile("/bgenExamples/example.16bits.bgen");
+    private File sampleFile = getTestResourceFile("/bgenExamples/genFiles/example.sample");
 
     public BgenGenotypeWriterTest() throws URISyntaxException {
     }
@@ -138,21 +140,27 @@ public class BgenGenotypeWriterTest extends ResourceTest {
     @Test
     public void largeBgenGenotypeWriterTest() throws IOException {
 
-        BgenGenotypeData expectedGenotypeData = new BgenGenotypeData(exampleFile);
+        BgenGenotypeData expectedGenotypeData = new BgenGenotypeData(exampleFile, sampleFile,
+                new File(tmpOutputFolder.getAbsolutePath() + fileSep + exampleFile.getName() + ".bgi"));
 
         BgenGenotypeWriter writer = new BgenGenotypeWriter(expectedGenotypeData);
 
         writer.write(tmpOutputFolder.getAbsolutePath() + fileSep + "testlarge");
 
-        BgenGenotypeData bgenGenotypeData = new BgenGenotypeData(new File(
-                tmpOutputFolder.getAbsolutePath() + fileSep + "testlarge.bgen"));
+        BgenGenotypeData bgenGenotypeData = new BgenGenotypeData(
+                tmpOutputFolder.getAbsolutePath() + fileSep + "testlarge");
 
-        double maximumError = 1 / (Math.pow(2, 16) - 1);
+        double maximumError = 0;
 
         assertTrue(bgenGenotypeData.areSampleIdentifiersPresent());
         // Test the equality of sample names and sequence names
         assertEquals(bgenGenotypeData.getSampleNames(), expectedGenotypeData.getSampleNames());
-        assertEquals(bgenGenotypeData.getSampleAnnotationsMap(), expectedGenotypeData.getSampleAnnotationsMap());
+        Map<String, SampleAnnotation> sampleAnnotationsMap = bgenGenotypeData.getSampleAnnotationsMap();
+        System.out.println("sampleAnnotationsMap = " + sampleAnnotationsMap);
+
+        Map<String, SampleAnnotation> sampleAnnotationsMap1 = expectedGenotypeData.getSampleAnnotationsMap();
+        System.out.println("sampleAnnotationsMap1 = " + sampleAnnotationsMap1);
+        assertEquals(sampleAnnotationsMap, sampleAnnotationsMap1);
 
         assertEquals(bgenGenotypeData.getSeqNames(), expectedGenotypeData.getSeqNames());
 

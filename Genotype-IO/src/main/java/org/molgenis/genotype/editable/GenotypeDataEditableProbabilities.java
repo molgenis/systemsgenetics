@@ -192,12 +192,12 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 
 	@Override
 	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
-		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
+		return ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(getSampleProbilities(variant));
 	}
 
 	@Override
 	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
-		throw new UnsupportedOperationException("Not supported yet.");
+		throw new GenotypeDataException("Phased data not available");
 	}
 
 	public void setSampleVariantProbabilities(VariantInformation variantInfo, Sample sample, float[] probabilities){

@@ -38,7 +38,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	private int probabilitiesLengthInBits;
     private final double maxValue32Bits = Math.pow(2, 32) - 1;
 	private final double maxValue16Bits = Math.pow(2, 16) - 1;
-	private Zstd zstd = new Zstd();
+	private CharSequence sampleIdDelimeter = "_";
 
 	public BgenGenotypeWriter(GenotypeData genotypeData) {
 		this.genotypeData = genotypeData;
@@ -154,9 +154,10 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		// Write the sample identifiers for every sample
 		for (Sample sample : genotypeData.getSamples()) {
 			// Get the identifier and its length
-			String id = sample.getId();
+			String concatenatedIds = new StringJoiner(sampleIdDelimeter).add(
+					sample.getId()).toString();
 			sampleIdentifierBlockLength += writeFieldWithFieldLength(sampleBlockByteChannel,
-					id, 2, "sample identifier");
+					concatenatedIds, 2, "sample identifier");
 		}
 
 		// Get the total offset

@@ -258,7 +258,47 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 
 	@Override
 	public double[][] getSampleGenotypeProbabilitiesComplex() {
-		return getSampleVariantsProvider().getSampleProbabilitiesComplex(this);
+		double[][] unfilteredProbs = original.getSampleGenotypeProbabilitiesComplex();
+		double[][] includedSamplesProbs = new double[genotypeData.getIncludedSampleCount()][];
+
+		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
+
+		try {
+			int i = 0;
+			for (double[] prob : unfilteredProbs) {
+				if (genotypeData.getSampleFilter().doesSamplePassFilter(sampleIterator.next())) {
+					includedSamplesProbs[i] = prob;
+					++i;
+				}
+			}
+		} catch (NoSuchElementException e) {
+			throw new GenotypeDataException("Error in filtering on included samples. More prob values than samples detected", e);
+		}
+
+		return includedSamplesProbs;
+
+	}
+
+	@Override
+	public double[][][] getSampleGenotypeProbabilitiesPhased() {
+		double[][][] unfilteredProbs = original.getSampleGenotypeProbabilitiesPhased();
+		double[][][] includedSamplesProbs = new double[genotypeData.getIncludedSampleCount()][][];
+
+		Iterator<Sample> sampleIterator = genotypeData.getOriginalSampleList().iterator();
+
+		try {
+			int i = 0;
+			for (double[][] prob : unfilteredProbs) {
+				if (genotypeData.getSampleFilter().doesSamplePassFilter(sampleIterator.next())) {
+					includedSamplesProbs[i] = prob;
+					++i;
+				}
+			}
+		} catch (NoSuchElementException e) {
+			throw new GenotypeDataException("Error in filtering on included samples. More prob values than samples detected", e);
+		}
+
+		return includedSamplesProbs;
 	}
 
 	@Override

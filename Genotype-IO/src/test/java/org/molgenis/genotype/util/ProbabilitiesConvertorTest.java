@@ -5,6 +5,7 @@
 package org.molgenis.genotype.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
@@ -279,8 +280,8 @@ public class ProbabilitiesConvertorTest {
 	}
 
 	@Test
-	public void testBiallelicBgenProbabilitiesToProbabilities() {
-		System.out.println("convertBiallelicBgenProbabilitiesToProbabilities");
+	public void testBiallelicComplexProbabilitiesToProbabilities() {
+		System.out.println("convertBiallelicComplexProbabilitiesToProbabilities");
 
 		double[][] probs = new double[6][];
 
@@ -301,7 +302,7 @@ public class ProbabilitiesConvertorTest {
 		expectedProbs[5] = new float[]{0, 0, 0};
 
 		float[][] actualProbabilities = ProbabilitiesConvertor
-				.convertBiallelicBgenProbabilitiesToProbabilities(probs);
+				.convertBiallelicComplexProbabilitiesToProbabilities(probs);
 		for (int i = 0; i < actualProbabilities.length; i++) {
 			float[] actualProbs = actualProbabilities[i];
 			assertEquals(actualProbs, expectedProbs[i]);
@@ -309,8 +310,8 @@ public class ProbabilitiesConvertorTest {
 	}
 
 	@Test
-	public void testProbabilitiesToBgenProbabilities() {
-		System.out.println("convertProbabilitiesToBgenProbabilities");
+	public void testProbabilitiesToComplexProbabilities() {
+		System.out.println("convertProbabilitiesToComplexProbabilities");
 
 		float[][] probs = new float[3][];
 
@@ -325,11 +326,37 @@ public class ProbabilitiesConvertorTest {
 		expectedProbs[2] = new double[]{0, 1, 0};
 
 		double[][] actualProbabilities = ProbabilitiesConvertor
-				.convertProbabilitiesToBgenProbabilities(probs);
+				.convertProbabilitiesToComplexProbabilities(probs);
 		for (int i = 0; i < actualProbabilities.length; i++) {
 			double[] actualProbs = actualProbabilities[i];
 			assertEquals(actualProbs, expectedProbs[i]);
 		}
+	}
+
+	@Test
+	public void testCalledAllelesToPhasedProbabilities() {
+		System.out.println("convertCalledAllelesToPhasedProbabilities");
+
+		double[][][] expectedProbs = new double[4][][];
+
+		expectedProbs[0] = new double[][]{{0, 1},{0, 1}};
+		expectedProbs[1] = new double[][]{{1, 0},{1, 0}};
+		expectedProbs[2] = new double[][]{{1, 0},{0, 1}};
+		expectedProbs[3] = new double[][]{{0, 1},{1, 0}};
+
+		List<Alleles> sampleAlleles = Arrays.asList(
+				Alleles.createAlleles(Allele.G, Allele.G),
+				Alleles.createAlleles(Allele.A, Allele.A),
+				Alleles.createAlleles(Allele.A, Allele.G),
+				Alleles.createAlleles(Allele.G, Allele.A));
+
+		Alleles alleles = Alleles.createAlleles(Allele.A, Allele.G);
+
+		double[][][] actualProbs = ProbabilitiesConvertor
+				.convertCalledAllelesToPhasedProbabilities(
+				sampleAlleles, alleles);
+
+		assertEquals(actualProbs, expectedProbs);
 	}
 	
  }

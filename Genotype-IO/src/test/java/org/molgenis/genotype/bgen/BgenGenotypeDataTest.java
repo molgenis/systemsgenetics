@@ -120,11 +120,18 @@ public class BgenGenotypeDataTest extends ResourceTest {
             // Get the bit representation.
             int bitRepresentation = matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
 
+            // We would like to set a maximum error for checking the probabilities between
+            // The BGEN files that are read and the .gen file. This is done below.
+
             // Set the maximum error from the bit representation as shown within the BGEN specification.
             double maximumError = 1 / (Math.pow(2, bitRepresentation) - 1);
             // Replace the maximum error by 1*10^4 if the original maximum error was lower, as the precision of
             // the probabilities in the .gen file is often not greater than 4 decimals.
             maximumError = Math.max(maximumError, 1e-4);
+
+            // For the bgen file with 1 bit, the maximum error is set to 1. This is because logical since probabilities
+            // have to sum to one. The rounding rule that is uses when writing bgen probabilities means for the
+            // 1 bit files that the probability closest to 1 gets rounded to one, whether this is higher than 0.5 or not.
 
             // Load the bgen file from a temporary folder
             Path bgenFile = Paths.get(folder.toString(), origBgenFile.getName());
@@ -166,8 +173,8 @@ public class BgenGenotypeDataTest extends ResourceTest {
                 float[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbilities();
 
                 // Since the variant RSID_10 is effectively equal to RSID_100 within the gen file (same chr and bp),
-                // the genotype probabilities returned by the gen file for RSID_10 correspond to RSID_100 instead.
-                // Therefore we check some probabilities for this variant manually.
+                // the genotype probabilities returned by the genGenotypeData for RSID_10 correspond to RSID_100 instead.
+                // Therefore we check some probabilities for this variant (RSID_10) manually.
                 if (genVariant.getPrimaryVariantId().equals("RSID_10")) {
                     float[][] genProbabilities = {
                             {0.0145569f, 0.960388f, 0.0250549f},
@@ -362,6 +369,44 @@ public class BgenGenotypeDataTest extends ResourceTest {
             float[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbilities();
             float[][] hapsProbabilities = hapsVariant.getSampleGenotypeProbilities();
             assertProbabilityEquality(bgenProbabilities, hapsProbabilities, 0);
+        }
+    }
+
+    @Test
+    public void TestBgenGenotypeDataBgenix() throws URISyntaxException, IOException {
+        // Get the bgen input file to test with
+        File bgenFile = getTestResourceFile("/bgenExamples/genFiles/haplotypes.edited.n3.bgen");
+
+        // Copy the input file
+        Path target = Paths.get(folder.toString(), bgenFile.getName());
+        Files.copy(bgenFile.toPath(), target);
+
+        // Read the bgen genotype data.
+        bgenGenotypeData = new BgenGenotypeData(target.toFile(), exampleComplexSampleFile);
+        // Read the bgen genotype data while the Bgenix file is present
+        BgenGenotypeData reReadGenotypeData = new BgenGenotypeData(target.toFile(), exampleComplexSampleFile);
+
+        // Sequence names are only read from the BGEN file if no bgenix file is present.
+        // Check if the results are equal.
+        assertEquals(reReadGenotypeData.getSeqNames(), bgenGenotypeData.getSeqNames());
+
+        Iterator<GeneticVariant> bgenIterator = reReadGenotypeData.iterator();
+        // Loop trough the variants of both the haps data and the bgen data.
+        for (GeneticVariant variant : bgenGenotypeData) {
+            // Check if the number of variants is equal and get the next variant from the bgen iterator.
+            assertTrue(bgenIterator.hasNext(), "reread bgen iterator is emptied while the other iterator is not.");
+            GeneticVariant reReadVariant = bgenIterator.next();
+
+            // Check for equality between the data objects
+            assertEquals(reReadVariant.getPrimaryVariantId(), variant.getPrimaryVariantId());
+            assertEquals(reReadVariant.getSequenceName(), variant.getSequenceName());
+            assertEquals(reReadVariant.getStartPos(), variant.getStartPos());
+            assertEquals(reReadVariant.getAlleleCount(), variant.getAlleleCount());
+
+            // Compare probabilities
+            float[][] actualProbabilities = reReadVariant.getSampleGenotypeProbilities();
+            float[][] expectedProbabilities = variant.getSampleGenotypeProbilities();
+            assertProbabilityEquality(actualProbabilities, expectedProbabilities, 0);
         }
     }
 }

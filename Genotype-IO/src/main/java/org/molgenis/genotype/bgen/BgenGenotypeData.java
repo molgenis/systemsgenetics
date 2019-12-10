@@ -244,7 +244,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         } else {
             LOGGER.info(String.format("Reading existing bgenix file at: %s", bgenixFile.getAbsolutePath()));
             bgenixReader = new BgenixReader(bgenixFile);
-            readExistingBgenixFile(bgenFile);
+            // Check if the existing bgenix file corresponds to this Bgen file.
+            checkExistingBgenixFile(bgenFile);
+            // Read the sequence names from the Bgenix file.
             sequenceNames = bgenixReader.getChromosomes();
         }
 
@@ -258,13 +260,13 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
     }
 
     /**
-     * Method responsible for reading a BGENIX file. This BGENIX file stores indexes of variants
+     * Method responsible for checking a BGENIX file. This BGENIX file stores indexes of variants
      * for quick random access to genotype data.
      *
      * @param bgenFile The BGENIX file to read.
      * @throws IOException if an I/O error occurs
      */
-    private void readExistingBgenixFile(File bgenFile) throws IOException {
+    private void checkExistingBgenixFile(File bgenFile) throws IOException {
         BgenixMetadata metadata = bgenixReader.getMetadata();
         if (metadata != null) {
             // Check if the metadata of the read BGENIX file is equal to
@@ -454,15 +456,13 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         byte[] firstBytes = new byte[1000];
         this.bgenFile.read(firstBytes, 0, 1000);
 
-        //Add current time in int.
-        System.out.println((System.currentTimeMillis() / 1000L));
         // Create and write new metadata.
         BgenixMetadata m = new BgenixMetadata(
                 bgen.getName(),
                 (int) this.bgenFile.length(),
                 (int) (bgen.lastModified() / 1000L),
                 firstBytes,
-                (System.currentTimeMillis() / 1000L));
+                (System.currentTimeMillis() / 1000L)); // Current time as integer
         bgenixWriter.writeMetadata(m);
 
         //Loop through the start of the file
@@ -1374,7 +1374,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         // Make sure that probabilities for other than biallelic variants return missingness
         double[][] sampleGenotypeProbabilitiesBgen = getSampleProbabilitiesComplex(variant);
         if (variant.isBiallelic()) {
-            return ProbabilitiesConvertor.convertBiallelicBgenProbabilitiesToProbabilities(
+            return ProbabilitiesConvertor.convertBiallelicComplexProbabilitiesToProbabilities(
                     sampleGenotypeProbabilitiesBgen);
         } else {
             return new float[sampleGenotypeProbabilitiesBgen.length][3];

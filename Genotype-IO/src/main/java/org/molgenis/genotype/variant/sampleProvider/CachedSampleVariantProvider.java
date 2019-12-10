@@ -5,7 +5,6 @@ import java.util.List;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.util.Cache;
 import org.molgenis.genotype.util.FixedSizeIterable;
-import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GenotypeRecord;
 
@@ -25,6 +24,8 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	private final Cache<GeneticVariant, byte[]> calledDosageCache;
 	private final Cache<GeneticVariant, float[]> dosageCache;
 	private final Cache<GeneticVariant, float[][]> probCache;
+	private final Cache<GeneticVariant, double[][]> probCacheComplex;
+	private final Cache<GeneticVariant, double[][][]> probCachePhased;
 	private final Cache<GeneticVariant, FixedSizeIterable<GenotypeRecord>> genotypeRecordCache;
 	private final int cacheSize;
 	private final int sampleVariantProviderUniqueId;
@@ -37,6 +38,8 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 		this.calledDosageCache = new Cache<GeneticVariant, byte[]>(cacheSize);
 		this.dosageCache = new Cache<GeneticVariant, float[]>(cacheSize);
 		this.probCache = new Cache<GeneticVariant, float[][]>(cacheSize);
+		this.probCacheComplex = new Cache<GeneticVariant, double[][]>(cacheSize);
+		this.probCachePhased = new Cache<GeneticVariant, double[][][]>(cacheSize);
 		this.genotypeRecordCache = new Cache<GeneticVariant, FixedSizeIterable<GenotypeRecord>>(cacheSize);
 		this.cacheSize = cacheSize;
 		sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
@@ -123,12 +126,26 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 
 	@Override
 	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
-		return ProbabilitiesConvertor.convertProbabilitiesToBgenProbabilities(getSampleProbilities(variant));
+		if (probCacheComplex.containsKey(variant))
+		{
+			return probCacheComplex.get(variant);
+		}
+
+		double[][] probs = sampleVariantProvider.getSampleProbabilitiesComplex(variant);
+		probCacheComplex.put(variant, probs);
+		return probs;
 	}
 
 	@Override
 	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
-		throw new UnsupportedOperationException("Not supported yet.");
+		if (probCachePhased.containsKey(variant))
+		{
+			return probCachePhased.get(variant);
+		}
+
+		double[][][] probs = sampleVariantProvider.getSampleProbabilitiesPhased(variant);
+		probCachePhased.put(variant, probs);
+		return probs;
 	}
 
 	@Override

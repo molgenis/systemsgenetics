@@ -350,6 +350,11 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 	}
 
 	@Override
+	public double[][][] getSampleGenotypeProbabilitiesPhased() {
+		return getSampleVariantsProvider().getSampleProbabilitiesPhased(originalVariant);
+	}
+
+	@Override
 	public SampleVariantsProvider getSampleVariantsProvider() {
 		SampleVariantsProvider sampleVariantProvider = modifiableGenotypeData.getUpdatedSampleVariantProvider(this);
 		if (sampleVariantProvider != null) {
