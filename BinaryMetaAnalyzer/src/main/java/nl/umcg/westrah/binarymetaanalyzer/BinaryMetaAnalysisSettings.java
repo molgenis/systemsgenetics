@@ -19,37 +19,47 @@ import umcg.genetica.io.Gpio;
  */
 public class BinaryMetaAnalysisSettings {
 
+
 	@Override
 	public String toString() {
-		return "BinaryMetaAnalysisSettings{\n" +
-				"nrPermutations\t" + nrPermutations + "\n" +
-				"startPermutations\t" + startPermutations + "\n" +
-				"useAbsoluteZscore\t" + useAbsoluteZscore + "\n" +
-				"finalEQTLBufferMaxLength\t" + finalEQTLBufferMaxLength + "\n" +
-				"includeSNPsWithoutProperMapping\t" + includeSNPsWithoutProperMapping + "\n" +
-				"includeProbesWithoutProperMapping\t" + includeProbesWithoutProperMapping +
-				"analysisType\t" + analysisType + "\n" +
-				"cisdistance\t" + cisdistance + "\n" +
-				"transdistance\t" + transdistance + "\n" +
-				"makezscoreplot\t" + makezscoreplot + "\n" +
-				"probetranslationfile\t'" + probetranslationfile + '\'' + "\n" +
-				"output\t'" + output + '\'' + "\n" +
-				"makezscoretable\t" + makezscoretable + "\n" +
-				"confineSNPs\t" + confineSNPs + "\n" +
-				"probeDatasetPresenceThreshold\t" + probeDatasetPresenceThreshold + "\n" +
-				"snpDatasetPresenceThreshold\t" + snpDatasetPresenceThreshold + "\n" +
-				"probeAndSNPPresenceFilterSampleThreshold\t" + probeAndSNPPresenceFilterSampleThreshold + "\n" +
-				"runonlypermutation\t" + runonlypermutation + "\n" +
-				"nrThreads\t" + nrThresds + "\n" +
-				"probeselection\t'" + probeselection + '\'' + "\n" +
-				"snpselection\t'" + snpselection + '\'' + "\n" +
-				"snpprobeselection\t'" + snpprobeselection + '\'' + "\n" +
-				"snpAnnotationFile\t'" + snpAnnotationFile + '\'' + "\n" +
-				"minimalNumberOfDatasets\t" + minimalNumberOfDatasets + "\n" +
-				"debug\t" + debug + "\n" +
-				"fullpermutationoutput\t" + fullpermutationoutput + "\n" +
-				"usetmp\t" + usetmp + "\n" +
-				"genetosnp\t" + genetosnp + "\n" +
+		return "BinaryMetaAnalysisSettings{" +
+				"nrPermutations=" + nrPermutations +
+				"\n startPermutations=" + startPermutations +
+				"\n useAbsoluteZscore=" + useAbsoluteZscore +
+				"\n finalEQTLBufferMaxLength=" + finalEQTLBufferMaxLength +
+				"\n nrOfBins=" + nrOfBins +
+				"\n includeSNPsWithoutProperMapping=" + includeSNPsWithoutProperMapping +
+				"\n includeProbesWithoutProperMapping=" + includeProbesWithoutProperMapping +
+				"\n analysisType=" + analysisType +
+				"\n cisdistance=" + cisdistance +
+				"\n transdistance=" + transdistance +
+				"\n makezscoreplot=" + makezscoreplot +
+				"\n probetranslationfile='" + probetranslationfile + '\'' +
+				"\n rescalingOfSampleSize=" + rescalingOfSampleSize +
+				"\n featureOccuranceScaleMaps=" + featureOccuranceScaleMaps +
+				"\n datasetnames=" + datasetnames +
+				"\n datasetPrefix=" + datasetPrefix +
+				"\n datasetlocations=" + datasetlocations +
+				"\n datasetannotations=" + datasetannotations +
+				"\n selectedProbes=" + selectedProbes +
+				"\n output='" + output + '\'' +
+				"\n makezscoretable=" + makezscoretable +
+				"\n confineSNPs=" + confineSNPs +
+				"\n probeDatasetPresenceThreshold=" + probeDatasetPresenceThreshold +
+				"\n snpDatasetPresenceThreshold=" + snpDatasetPresenceThreshold +
+				"\n probeAndSNPPresenceFilterSampleThreshold=" + probeAndSNPPresenceFilterSampleThreshold +
+				"\n runonlypermutation=" + runonlypermutation +
+				"\n nrThresds=" + nrThresds +
+				"\n probeselection='" + probeselection + '\'' +
+				"\n snpselection='" + snpselection + '\'' +
+				"\n config=" + config +
+				"\n snpprobeselection='" + snpprobeselection + '\'' +
+				"\n snpAnnotationFile='" + snpAnnotationFile + '\'' +
+				"\n minimalNumberOfDatasets=" + minimalNumberOfDatasets +
+				"\n debug=" + debug +
+				"\n fullpermutationoutput=" + fullpermutationoutput +
+				"\n usetmp=" + usetmp +
+				"\n genetosnp='" + genetosnp + '\'' +
 				'}';
 	}
 
