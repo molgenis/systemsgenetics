@@ -16,7 +16,7 @@ import cern.colt.matrix.tdouble.algo.DoubleSorting;
 public class QuantileNormalizationToReference {
 
 	/**
-	 * The columns of the matrix will q-normed to the reference.
+	 * The columns of the matrix will be q-normed to the reference.
 	 * 
 	 * @param reference
 	 * @param matrix 
