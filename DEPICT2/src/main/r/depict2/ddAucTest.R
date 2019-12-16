@@ -62,6 +62,8 @@ genes <- intersect(rownames(heightGeneP)[!is.na(heightGeneP)], rownames(heightCo
 str(genes)
 
 all(genes %in% rownames(heightCoregulation))
+all(genes %in% rownames(hpoPredictions))
+
 
 hpoMatrix2 <- hpoMatrix[match(genes, rownames(hpoMatrix)),,drop=F]
 hpoPredictions2 <- hpoPredictions[match(genes, rownames(hpoPredictions)),]
@@ -120,10 +122,10 @@ dev.off()
 png("educational_attainment_2018_30038396_hg19_v41/HP_0011153_npc.png", width = 1000, height = 1000)
 par(pty="s", bty = "n", cex = 2.2, cex.axis = 1, las = 1, cex.lab = 1.2)
 plot.roc(geneP, col = "goldenrod2", main = "Prediction of 'focal motor seizures' genes\n using a 'educational attainment' GWAS", mgp=c(2.6, 0.7, 0), lwd =3)
-lines.roc(gado, col = "springgreen2", lwd = 3)
+#lines.roc(gado, col = "springgreen2", lwd = 3)
 lines.roc(geneCoReg, col = "dodgerblue3", lwd = 3)
 lines.roc(SRR1237983_2_roc, col = "magenta4")
-legend("bottomright", legend=c(paste0("DEPICT2 core-gene prioritization (AUC: ", round(geneCoReg$auc,2),")"), paste0("GWAS gene p-values (AUC: ", round(geneP$auc,2),")"), paste0("GADO (AUC: ", round(gado$auc,2),")"),paste0("N (AUC: ", round(SRR1237983_2_roc$auc,2),")")), col=c("dodgerblue3", "goldenrod2", "springgreen2", "magnenta4"), lwd=3, bty="n")
+legend("bottomright", legend=c(paste0("DEPICT2 core-gene prioritization (AUC: ", round(geneCoReg$auc,2),")"), paste0("GWAS gene p-values (AUC: ", round(geneP$auc,2),")") ,paste0("Neuronal precursor cells expression (AUC: ", round(SRR1237983_2_roc$auc,2),")")), col=c("dodgerblue3", "goldenrod2", "magenta4"), lwd=3, bty="n")
 dev.off()
 
 
