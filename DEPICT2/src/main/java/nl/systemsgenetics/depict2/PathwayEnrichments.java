@@ -49,7 +49,7 @@ public class PathwayEnrichments {
 	private final int numberOfPathways;
 	private final File intermediateFolder;
 
-	public PathwayEnrichments(final PathwayDatabase pathwayDatabase, final HashSet<String> genesWithPvalue, final List<Gene> genes, final boolean forceNormalPathwayPvalues, final boolean forceNormalGenePvalues, final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation, final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final boolean ignoreGeneCorrelations, final double genePruningR, final int geneCorrelationWindow, final File debugFolder, final File intermediateFolder) throws IOException {
+	public PathwayEnrichments(final PathwayDatabase pathwayDatabase, final HashSet<String> genesWithPvalue, final List<Gene> genes, final boolean forceNormalPathwayPvalues, final boolean forceNormalGenePvalues, final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation, final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final boolean ignoreGeneCorrelations, final double genePruningR, final int geneCorrelationWindow, final File debugFolder, final File intermediateFolder, final boolean quantileNormalizePermutations) throws IOException {
 		this.pathwayDatabase = pathwayDatabase;
 		this.genes = genes;
 		this.outputBasePath = outputBasePath;

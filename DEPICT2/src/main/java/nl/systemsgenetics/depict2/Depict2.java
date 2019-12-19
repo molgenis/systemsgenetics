@@ -395,7 +395,7 @@ public class Depict2 {
 
 		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow(), options.getDebugFolder(), options.getIntermediateFolder()));
+			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow(), options.getDebugFolder(), options.getIntermediateFolder(), options.isQuantileNormalizePermutations()));
 		}
 
 		if (options.isSaveOuputAsExcelFiles()) {
