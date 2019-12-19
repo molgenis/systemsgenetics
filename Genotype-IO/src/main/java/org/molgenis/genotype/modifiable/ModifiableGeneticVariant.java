@@ -286,6 +286,10 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 		if (refUsedForOriginalDosage == refShouldBeUsed) {
 			return probByProvider;
 		} else {
+			// Currently throw an exception whenever the following is not true
+			if (!(isBiallelic() && Arrays.stream(probByProvider).allMatch(a -> a.length == 3))) {
+				throw new GenotypeDataException("Can't swap probabilities multiallelic / polyploid variants");
+			}
 			// Here we have to swap the probabilities to match the new ref
 			// Probabilities for complex probabilities are sorted in a special manner
 			// We can get a list of allele counts corresponding to the genotypes in current order,
@@ -295,7 +299,7 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 			// First generate a list with alleles, in which every allele is encoded as the index in the new situation
 			// Get the index of the new reference allele within the old list of alleles
 			// TODO: implement obtaining the index of the new reference allele according to the old list of alleles.
-			int refShouldBeUsedOldIndex = 1;
+			int refShouldBeUsedOldIndex = 1; // first index == second allele
 			// Continue to create a list of alleles
 			List<Integer> allelesAsIntegers = IntStream.range(1, getAlleleCount()).boxed().collect(Collectors.toList());
 			allelesAsIntegers.add(refShouldBeUsedOldIndex, 0); // Add the ref with index 0;
@@ -306,11 +310,7 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 				// Get the number of probabilities for this sample
 				double[] sampleProbabilities = probByProvider[i];
 				int numberOfProbabilities = sampleProbabilities.length;
-				// Check if the number of probabilities is 3 since this is not entirely complete.
-				if (numberOfProbabilities != 3) {
-					throw new GenotypeDataException("Swapping probabilities is not supported for " +
-							"probabilities representing polyploid samples");
-				}
+
 				// Convert the array to a list to be able to make use of the .indexOf(...) method.
 				List<Pair<Integer, Double>> probabilitiesWithIndices = new ArrayList<>();
 				double[] doubles = probByProvider[i];
@@ -349,7 +349,35 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 
 	@Override
 	public double[][][] getSampleGenotypeProbabilitiesPhased() {
-		return getSampleVariantsProvider().getSampleProbabilitiesPhased(originalVariant);
+		double[][][] probByProvider = getSampleVariantsProvider().getSampleProbabilitiesPhased(originalVariant);
+
+		Allele refUsedForOriginalDosage = originalVariant.getRefAllele() == null ? originalVariant.getVariantAlleles()
+				.get(0) : originalVariant.getRefAllele();
+
+		if(modifiableGenotypeData.isSwapped(originalVariant)){
+			refUsedForOriginalDosage = refUsedForOriginalDosage.getComplement();
+		}
+
+		Allele refShouldBeUsed = getRefAllele() == null ? getVariantAlleles().get(0) : getRefAllele();
+
+		if (refUsedForOriginalDosage == refShouldBeUsed) {
+			return probByProvider;
+		} else {
+			// Currently throw an exception whenever the following is not true
+			if (!(isBiallelic() && Arrays.stream(probByProvider).allMatch(a -> a.length == 2))) {
+				throw new GenotypeDataException("Can't swap probabilities multiallelic / polyploid variants");
+			}
+
+			double[][][] probs = new double[probByProvider.length][2][2];
+
+			for (int i = 0; i < probByProvider.length; i++) {
+				for (int j = 0; j < 2; j++) {
+					probs[i][j][1] = probByProvider[i][j][0];
+					probs[i][j][0] = probByProvider[i][j][1];
+				}
+			}
+			return probs;
+		}
 	}
 
 	@Override
