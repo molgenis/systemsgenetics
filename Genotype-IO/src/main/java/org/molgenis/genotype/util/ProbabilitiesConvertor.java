@@ -231,16 +231,17 @@ public class ProbabilitiesConvertor {
 	 * this is <b>not</b> expanded as if diploid with a zero probability for heterozygosity.
 	 * Instead missingness is returned.
 	 *
-	 * @param bgenProbabilities The BGEN probabilities returned by a BgenGenotypeData sampleVariantProvider.
+	 * @param complexProbabilities The probabilities returned by a getSampleProbabilitiesComplex method, only for
+	 *                             biallelic variants.
 	 * @return An array of arrays of size 3 with posterior probabilities.
 	 */
-	public static float[][] convertBiallelicComplexProbabilitiesToProbabilities(double[][] bgenProbabilities) {
-		// Define an array consisting of an array of posterior bgenProbabilities for each genotype
-		float[][] probabilities = new float[bgenProbabilities.length][3];
+	public static float[][] convertBiallelicComplexProbabilitiesToProbabilities(double[][] complexProbabilities) {
+		// Define an array consisting of an array of posterior complexProbabilities for each genotype
+		float[][] probabilities = new float[complexProbabilities.length][3];
 
-		for (int sampleIndex = 0; sampleIndex < bgenProbabilities.length; sampleIndex++) {
+		for (int sampleIndex = 0; sampleIndex < complexProbabilities.length; sampleIndex++) {
 			// Get the array of doubles
-			double[] sampleProbabilitiesBgen = bgenProbabilities[sampleIndex];
+			double[] sampleProbabilitiesBgen = complexProbabilities[sampleIndex];
 			// Get the length of the probabilities array
 			int probabilitiesArrayLength = sampleProbabilitiesBgen.length;
 			// Initialize empty array for float values.

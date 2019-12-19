@@ -1,10 +1,8 @@
 package org.molgenis.genotype.modifiable;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -20,7 +18,7 @@ import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 import static org.molgenis.genotype.bgen.BgenGenotypeWriter.getPloidy;
-import static org.molgenis.genotype.variant.ReadOnlyGeneticVariantBgen.getAlleleCountsPerProbability;
+import static org.molgenis.genotype.bgen.BgenGenotypeData.getAlleleCountsPerProbability;
 
 public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 

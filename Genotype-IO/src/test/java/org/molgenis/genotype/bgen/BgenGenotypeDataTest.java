@@ -142,12 +142,25 @@ public class BgenGenotypeDataTest extends ResourceTest {
                 bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile(), exampleSampleFile);
                 assertFalse(bgenGenotypeData.areSampleIdentifiersPresent());
                 assertEquals(bgenGenotypeData.getSampleAnnotationsMap(), genGenotypeData.getSampleAnnotationsMap());
+                // Check if the filelayout equals 1
+                assertEquals(bgenGenotypeData.getFileLayout(), BgenGenotypeData.Layout.layOut_1);
+                // Check if the compression type is 0
+                assertEquals(bgenGenotypeData.getGenotypeDataBlockRepresentation(), BgenGenotypeData.BlockRepresentation.compression_1);
             } else {
                 bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile());
                 assertTrue(bgenGenotypeData.areSampleIdentifiersPresent());
                 // Test the equality of sample names and sequence names
                 assertEquals(bgenGenotypeData.getSampleNames(), genGenotypeData.getSampleNames());
                 assertEquals(bgenGenotypeData.getSampleAnnotationsMap(), new LinkedHashMap<>());
+                // Check if the filelayout equals 1
+                assertEquals(bgenGenotypeData.getFileLayout(), BgenGenotypeData.Layout.layOut_2);
+                if (origBgenFile.getName().equals("example.16bits.zstd.bgen")) {
+                    assertEquals(bgenGenotypeData.getGenotypeDataBlockRepresentation(),
+                            BgenGenotypeData.BlockRepresentation.compression_2);
+                } else {
+                    assertEquals(bgenGenotypeData.getGenotypeDataBlockRepresentation(),
+                            BgenGenotypeData.BlockRepresentation.compression_1);
+                }
             }
 
             assertEquals(bgenGenotypeData.getSeqNames(), genGenotypeData.getSeqNames());

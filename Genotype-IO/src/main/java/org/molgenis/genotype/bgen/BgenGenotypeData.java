@@ -487,9 +487,21 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         }
     }
 
+    /**
+     * Method that reads data from a genetic variant in the correct order.
+     * These methods are dependent on the filepointer in the BGEN file.
+     *
+     * @param variantReadingPosition The position in the BGEN file where to start reading a variant from.
+     * @return a bgen variant.
+     * @throws IOException If an I/O error has occured.
+     */
     private ReadOnlyGeneticVariantBgen readGeneticVariantBgen(long variantReadingPosition) throws IOException {
+        // Read the variant identifying info, the size cannot be determined from this alone.
         ReadOnlyGeneticVariantBgen variant = processVariantIdentifyingData(variantReadingPosition);
+        // Get the variantGenotypeBlockInfo,
+        // this holds variables for the length of the rest of the data for this variant.
         VariantGenotypeBlockInfo variantGenotypeBlockInfo = extractVariantGenotypeDataBlockInfo();
+        // Set the variant data size in bytes.
         variant.setVariantDataSizeInBytes(variantGenotypeBlockInfo.getVariantDataSizeInBytes(variantReadingPosition));
         return variant;
     }
@@ -618,13 +630,21 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         alleles.add(allele);
     }
 
+    /**
+     * Method that reads genotype data for the given variant and returns complex probabilities.
+     *
+     * @param variant The variant to get the genotype data for.
+     * @return A nested array of probabilities (probabilities[number of samples][ploidy * number of alleles]).
+     * @throws IOException If an I/O error has occured.
+     */
     private double[][] readGenotypeDataFromVariant(ReadOnlyGeneticVariantBgen variant) throws IOException {
         double[][] probabilities = new double[sampleCount][];
         // Get the decompressed variant data of length D
         byte[] variantBlockData = getDecompressedBlockData(variant);
 
-        // Read
+        // Check what layout the bgen file is.
         if (fileLayout == Layout.layOut_1) {
+            // Loop through the samples and get the variant probabilities.
             for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
                 double[] sampleProbabilities = new double[3];
 
@@ -698,6 +718,14 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         return probabilities;
     }
 
+    /**
+     * Method that reads genotype data for the given variant and returns phased probabilities if available.
+     * If no phased data is available an exception is thrown.
+     *
+     * @param variant The variant to get the genotype data for.
+     * @return A nested array of probabilities (probabilities[number of samples][ploidy][number of alleles]).
+     * @throws IOException If an I/O error has occured.
+     */
     private double[][][] readPhasedGenotypeDataFromVariant(ReadOnlyGeneticVariantBgen variant) throws IOException {
         if (fileLayout != Layout.layOut_2) {
             throw new GenotypeDataException("Phased data not available");
@@ -980,6 +1008,14 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         return index;
     }
 
+    /**
+     * Return the number of probabilities for a sample with ploidy <i>r</i> and variant with <i>n</i> number
+     * of alleles - 1.
+     *
+     * @param r The ploidy of the sample.
+     * @param nMinOne The number of alleles for a variant - 1.
+     * @return The number of probabilities that are used.
+     */
     private static int numberOfOrderedCombinationsWithRepetition(int r, int nMinOne) {
 //        return IntMath.factorial(r + nMinOne) /
 //                (IntMath.factorial(r) * IntMath.factorial(nMinOne));
@@ -1659,6 +1695,64 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
                         " remainingBitOffset=" + remainingBitOffset + " totalBits=" + totalBitsToRead);
         }
         return value;
+    }
+
+
+    /**
+     * @param alleles The alleles for the variant to create combinations for.
+     * @param ploidy  The ploidity of the sample to create combinations for.
+     * @return the combinations of alleles that represent all possible haplotypes
+     */
+    public static List<List<Integer>> getAlleleCountsPerProbability(List<Integer> alleles, int ploidy) {
+        // Construct nested lists
+        List<List<Integer>> combinations = new ArrayList<>();
+
+        // Set the maximum value of an allele, which is the number of alleles minus one, because we want to count
+        // from 0 to n-1
+        int maxAlleleValue = alleles.size() - 1;
+
+        Map<Integer, Integer> initialCounter = new HashMap<>();
+        for (int pe : alleles) {
+            if (initialCounter.put(pe, 0) != null) {
+                throw new IllegalStateException("Duplicate key");
+            }
+        }
+
+        // Get the combinations
+        getAlleleCountsPerProbabilityRecursively(combinations,
+                initialCounter, alleles,
+                maxAlleleValue, ploidy);
+
+        return combinations;
+    }
+
+    /**
+     * Method that recursively fills a list of allAlleleCounts.
+     * Combinations are always ordered.
+     *
+     * @param allAlleleCounts   The list of allAlleleCounts to fill.
+     * @param alleleCounts    The current combination that is being constructed.
+     * @param alleles        The alleles to put into the allAlleleCounts
+     * @param maxAlleleValue The number of different values to fit into a allAlleleCounts.
+     * @param ploidy         The size of a combination.
+     */
+    private static void getAlleleCountsPerProbabilityRecursively(
+            List<List<Integer>> allAlleleCounts, Map<Integer, Integer> alleleCounts, List<Integer> alleles, int maxAlleleValue, int ploidy) {
+        // If the combination is complete, the size of the combination equals the required size.
+        // Add the combination and return
+        if (alleleCounts.values().stream().reduce(0, Integer::sum) == ploidy) {
+            allAlleleCounts.add(0, new ArrayList<>(alleleCounts.values())); // Add in the beginning to maintain the correct order.
+            return;
+        }
+
+        // Loop through the possible values from high to low.
+        for (int newAlleleValue = maxAlleleValue; newAlleleValue >= 0; newAlleleValue--) {
+            // Copy the preliminary combination
+            LinkedHashMap<Integer, Integer> alleleCountsCopy = new LinkedHashMap<>(alleleCounts);
+            // Add a new value to the combination
+            alleleCountsCopy.merge(alleles.get(newAlleleValue), 1, Integer::sum);
+            getAlleleCountsPerProbabilityRecursively(allAlleleCounts, alleleCountsCopy, alleles, newAlleleValue, ploidy);
+        }
     }
 
     /**
