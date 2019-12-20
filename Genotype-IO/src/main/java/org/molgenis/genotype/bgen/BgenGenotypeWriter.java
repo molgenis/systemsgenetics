@@ -707,7 +707,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		}
 
 		// Round the total fractional part
-		long roundedSumOfFractionalPart = (int) Math.round(totalFractionalPart);
+		long roundedSumOfFractionalPart = Math.round(totalFractionalPart);
 		// Make sure things do not proceed if the rounded sum of fractional part is greater than the maximum of an int.
 		assert(roundedSumOfFractionalPart < Integer.MAX_VALUE);
 
