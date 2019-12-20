@@ -1,12 +1,5 @@
 package org.molgenis.genotype.modifiable;
 
-import static org.mockito.Mockito.mock;
-import static org.molgenis.genotype.bgen.BgenGenotypeDataTest.assertProbabilityEquality;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-
-import java.util.*;
-
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.bgen.BgenGenotypeDataTest;
@@ -21,6 +14,11 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvide
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.*;
+
+import static org.mockito.Mockito.mock;
+import static org.testng.Assert.assertEquals;
 
 public class ModifiableGeneticVariantIteratorTest {
     public static final ModifiableGenotypeData dummyModifiableGenotypeData = new ModifiableGenotypeDataInMemory(null);
