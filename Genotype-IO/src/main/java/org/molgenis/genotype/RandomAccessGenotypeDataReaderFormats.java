@@ -53,7 +53,6 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	public EnumSet<GenotypeFileType> getRequiredFiles() {
 		return requiredFiles;
 	}
-	
 
 	public static RandomAccessGenotypeDataReaderFormats matchFormatToPath(String... paths) {
 
@@ -94,16 +93,11 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				return GEN;
 			}
 
-			if (new File(path + ".bgen").exists() && new File(path + ".sample").exists()) {
-				return BGEN;
-			}
-
 			if (new File(path + ".bgen").exists()) {
 				return BGEN;
 			}
 
-			if (pathFile.exists() && pathFile.isFile() && pathFile.getName().endsWith(".bgen")
-					&& new File(path + ".sample").exists()) {
+			if (pathFile.exists() && pathFile.isFile() && pathFile.getName().endsWith(".bgen")) {
 				return BGEN;
 			}
 
@@ -125,10 +119,6 @@ public enum RandomAccessGenotypeDataReaderFormats {
 			}
 
 		}
-
-
-
-
 
 		throw new GenotypeDataException("Cannot find any suitable genotype data format based on path, please make sure the files exist");
 	}
@@ -251,8 +241,8 @@ public enum RandomAccessGenotypeDataReaderFormats {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
 				if (paths.length == 1) {
-					if (new File(paths[0] + ".bgen").exists() &&
-							new File(paths[0] + ".sample").exists()) {
+					if (new File(paths[0] + ".bgen").exists()
+							&& new File(paths[0] + ".sample").exists()) {
 						return new BgenGenotypeData(new File(paths[0] + ".bgen"), new File(
 								paths[0] + ".sample"), cacheSize, minimumPosteriorProbabilityToCall);
 					} else if (new File(paths[0] + ".bgen").exists()) {
@@ -321,9 +311,9 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
 
 		return createFilteredGenotypeData(path, cacheSize, variantFilter, sampleFilter, null, 0.34f);
-		
+
 	}
-	
+
 	/**
 	 * Samples are filtered first then the variant filter is applied.
 	 *
@@ -332,7 +322,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	 * @param variantFilter
 	 * @param sampleFilter
 	 * @param forcedSequence null if not used
-	 * @param minimumPosteriorProbabilityToCall 
+	 * @param minimumPosteriorProbabilityToCall
 	 * @return
 	 * @throws IOException
 	 */
@@ -353,7 +343,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 		}
 
 	}
-	
+
 	/**
 	 * Samples are filtered first then the variant filter is applied.
 	 *
@@ -362,7 +352,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	 * @param variantFilter
 	 * @param sampleFilter
 	 * @param forcedSequence null if not used
-	 * @param minimumPosteriorProbabilityToCall 
+	 * @param minimumPosteriorProbabilityToCall
 	 * @return
 	 * @throws IOException
 	 */
@@ -371,27 +361,27 @@ public enum RandomAccessGenotypeDataReaderFormats {
 		return createFilteredGenotypeData(new String[]{path}, cacheSize, variantFilter, sampleFilter, forcedSequence, minimumPosteriorProbabilityToCall);
 
 	}
-	
-	public static RandomAccessGenotypeDataReaderFormats valueOfSmart(String value){
-		
+
+	public static RandomAccessGenotypeDataReaderFormats valueOfSmart(String value) {
+
 		value = value.toUpperCase();
-		if(value.equals("VCFFOLDER")){
+		if (value.equals("VCFFOLDER")) {
 			return VCF_FOLDER;
-		} else if (value.equals("PLINKBED")){
+		} else if (value.equals("PLINKBED")) {
 			return PLINK_BED;
-		} else if (value.equals("GENFOLDER")){
+		} else if (value.equals("GENFOLDER")) {
 			return GEN_FOLDER;
-		} else if (value.equals("BPLINK")){
+		} else if (value.equals("BPLINK")) {
 			return PLINK_BED;
-		} else if (value.equals("B_PLINK")){
+		} else if (value.equals("B_PLINK")) {
 			return PLINK_BED;
-		} else if (value.equals("PLINKB")){
+		} else if (value.equals("PLINKB")) {
 			return PLINK_BED;
-		} else if (value.equals("PLINK_B")){
+		} else if (value.equals("PLINK_B")) {
 			return PLINK_BED;
 		}
 		return RandomAccessGenotypeDataReaderFormats.valueOf(value);
-		
+
 	}
-	
+
 }

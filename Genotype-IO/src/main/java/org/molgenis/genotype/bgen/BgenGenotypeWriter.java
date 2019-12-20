@@ -38,7 +38,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	private int probabilitiesLengthInBits;
     private final double maxValue32Bits = Math.pow(2, 32) - 1;
 	private final double maxValue16Bits = Math.pow(2, 16) - 1;
-	private CharSequence sampleIdDelimeter = "_";
+	private final CharSequence sampleIdDelimeter = "_";
 
 	public BgenGenotypeWriter(GenotypeData genotypeData) {
 		this.genotypeData = genotypeData;

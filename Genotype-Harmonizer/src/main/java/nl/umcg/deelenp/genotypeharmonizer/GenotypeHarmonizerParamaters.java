@@ -112,7 +112,7 @@ public class GenotypeHarmonizerParamaters {
                         + "* VCFFOLDER - matches all bgziped vcf files + tabix index in a folder\n"
                         + "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample\n"
                         + "* GEN - Oxford .gen & .sample\n"
-                        + "* BGEN - Oxford .bgen & .sample\n"
+                        + "* BGEN - Oxford .bgen & optionally .sample\n"
                         + "* TRITYPER - TriTyper format folder")
                 .withLongOpt("inputType")
                 .create("I");
@@ -127,7 +127,7 @@ public class GenotypeHarmonizerParamaters {
                         + "* VCF_FOLDER - matches all bgziped vcf files + tabix index in a folder\n"
                         + "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample\n"
                         + "* GEN - Oxford .gen & .sample\n"
-                        + "* BGEN - Oxford .bgen & .sample\n"
+                        + "* BGEN - Oxford .bgen & optionally .sample\n"
                         + "* TRITYPER - TriTyper format folder")
                 .withLongOpt("refType")
                 .create("R");
