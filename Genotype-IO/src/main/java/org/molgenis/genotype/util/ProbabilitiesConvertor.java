@@ -4,15 +4,13 @@
  */
 package org.molgenis.genotype.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
+import org.molgenis.genotype.bgen.BgenGenotypeData;
 
 /**
  *
@@ -285,6 +283,60 @@ public class ProbabilitiesConvertor {
 			}
 		}
 		return bgenProbabilities;
+	}
+
+	/**
+	 * Converts phased probabilities to complex / bgen probabilities.
+	 *
+	 * @param haplotypeProbabilities The haplotype probabilities
+	 * @return The probabilities per genotype per sample.
+	 */
+	public static double[][] convertPhasedProbabilitiesToComplexProbabilities(double[][][] haplotypeProbabilities) {
+		double[][] probabilities;
+		probabilities = new double[haplotypeProbabilities.length][];
+		// Calculate the probability for homozygous genotype 'AA',
+		// the probability for 'AB', and the probability for 'BB'
+		for (int sampleIndex = 0; sampleIndex < haplotypeProbabilities.length; sampleIndex++) {
+			// Convert the probabilities for this particular sample
+			probabilities[sampleIndex] = phasedSampleProbabilitiesToGenotypeProbabilities(
+					haplotypeProbabilities[sampleIndex], haplotypeProbabilities[sampleIndex][0].length);
+		}
+		return probabilities;
+	}
+
+	/**
+	 * Converts an array of arrays with probabilities per allele for particular haplotypes, to
+	 * regular genotype probability values per genotype.
+	 *
+	 * @param phasedProbabilities An array, with its size equal to the number haplotypes, with arrays
+	 *                            with a probability for every possible allele for the haplotype.
+	 * @param numberOfAlleles     The number of alleles.
+	 * @return The number of probabilities for every possible genotype.
+	 */
+	private static double[] phasedSampleProbabilitiesToGenotypeProbabilities(double[][] phasedProbabilities,
+																			 int numberOfAlleles) {
+		// Get all possible combinations of alleles for the haplotypes (all permutations)
+		List<List<Integer>> haplotypeCombinations = BgenGenotypeData.getHaplotypeCombinations(
+				numberOfAlleles, phasedProbabilities.length);
+
+		// Initialize an array of probabilities.
+		double[] genotypeProbabilities = new double[BgenGenotypeData.numberOfOrderedCombinationsWithRepetition(
+				phasedProbabilities.length,
+				numberOfAlleles - 1)]; // number of alleles is equal to n, n-1 = numberOfAlleles - 1
+
+		// Loop through the combinations of haplotypes
+		for (List<Integer> haplotypeCombination : haplotypeCombinations) {
+			double probability = 1;
+			// Multiply the probabilities that correspond to the indices within the haplotype combination
+			for (int haplotypeIndex = 0; haplotypeIndex < haplotypeCombination.size(); haplotypeIndex++) {
+				probability *= phasedProbabilities[haplotypeIndex][haplotypeCombination.get(haplotypeIndex)];
+			}
+			// Add the multiplied probability of this combination to the other combinations with the same genotype
+			Collections.sort(haplotypeCombination);
+			genotypeProbabilities[BgenGenotypeData.getIndexOfOrderedCombination(
+					Collections.unmodifiableList(haplotypeCombination))] += probability;
+		}
+		return genotypeProbabilities;
 	}
 
 	/**

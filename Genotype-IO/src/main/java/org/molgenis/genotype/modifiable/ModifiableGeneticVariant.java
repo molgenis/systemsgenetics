@@ -287,8 +287,8 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 			return probByProvider;
 		} else {
 			// Currently throw an exception whenever the following is not true
-			if (!(isBiallelic() && Arrays.stream(probByProvider).allMatch(a -> a.length == 3))) {
-				throw new GenotypeDataException("Can't swap probabilities multiallelic / polyploid variants");
+			if (!isBiallelic()) {
+				throw new GenotypeDataException("Can't swap probabilities multiallelic variants");
 			}
 			// Here we have to swap the probabilities to match the new ref
 			// Probabilities for complex probabilities are sorted in a special manner
@@ -298,7 +298,7 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 
 			// First generate a list with alleles, in which every allele is encoded as the index in the new situation
 			// Get the index of the new reference allele within the old list of alleles
-			// TODO: implement obtaining the index of the new reference allele according to the old list of alleles.
+			// TODO: to be able to pass non biallelic stuff, implement obtaining the index of the new reference allele according to the old list of alleles.
 			int refShouldBeUsedOldIndex = 1; // first index == second allele
 			// Continue to create a list of alleles
 			List<Integer> allelesAsIntegers = IntStream.range(1, getAlleleCount()).boxed().collect(Collectors.toList());
@@ -364,14 +364,15 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 			return probByProvider;
 		} else {
 			// Currently throw an exception whenever the following is not true
-			if (!(isBiallelic() && Arrays.stream(probByProvider).allMatch(a -> a.length == 2))) {
-				throw new GenotypeDataException("Can't swap probabilities multiallelic / polyploid variants");
+			if (!isBiallelic()) {
+				throw new GenotypeDataException("Can't swap probabilities multiallelic variants");
 			}
 
-			double[][][] probs = new double[probByProvider.length][2][2];
+			double[][][] probs = new double[probByProvider.length][][];
 
 			for (int i = 0; i < probByProvider.length; i++) {
-				for (int j = 0; j < 2; j++) {
+				probs[i] = new double[probByProvider[i].length][2];
+				for (int j = 0; j < probByProvider[i].length; j++) {
 					probs[i][j][1] = probByProvider[i][j][0];
 					probs[i][j][0] = probByProvider[i][j][1];
 				}

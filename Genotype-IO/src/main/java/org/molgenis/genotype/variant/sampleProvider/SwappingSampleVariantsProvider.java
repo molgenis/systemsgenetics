@@ -73,7 +73,7 @@ public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 
 	@Override
 	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
-		return ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(getSampleProbilities(variant));
+		return sampleVariantsProvider.getSampleProbabilitiesComplex(variant);
 	}
 
 	@Override

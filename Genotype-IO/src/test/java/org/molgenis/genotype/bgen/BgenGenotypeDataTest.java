@@ -216,13 +216,13 @@ public class BgenGenotypeDataTest extends ResourceTest {
         }
     }
 
-    static void assertProbabilityEquality(double[][] actual, double[][] expected) {
+    public static void assertProbabilityEquality(double[][] actual, double[][] expected, double maximumError) {
         assertEquals(actual.length, expected.length);
         for (int i = 0; i < actual.length; i++) {
             assertEquals(actual[i].length, expected[i].length,
                     String.format("number of probabilities not equal for sample %d", i));
             for (int y = 0; y < actual[i].length; y++) {
-                assertEquals(actual[i][y], expected[i][y], String.format("prob %d in sample %d", y, i));
+                assertEquals(actual[i][y], expected[i][y], maximumError, String.format("prob %d in sample %d", y, i));
             }
         }
     }
@@ -305,7 +305,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
                 // First check if the bgenProbabilities are according to the expected stuff
                 if (Arrays.asList(0, 1, 2, 3, 4, 8, 9).contains(variantIndex)) {
                     double[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesComplex();
-                    assertProbabilityEquality(bgenProbabilities, expectedBgenProbabilities.get(variantIndex));
+                    assertProbabilityEquality(bgenProbabilities, expectedBgenProbabilities.get(variantIndex), 0);
                 }
 
                 // Check if the regular probabilities are according to the expected stuff

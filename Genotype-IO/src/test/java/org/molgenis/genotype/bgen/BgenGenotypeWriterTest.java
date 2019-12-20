@@ -111,7 +111,7 @@ public class BgenGenotypeWriterTest extends ResourceTest {
                     expectedVariant.getAlternativeVariantIds());
 
             double[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesComplex();
-            assertProbabilityEquality(bgenProbabilities, expectedVariant.getSampleGenotypeProbabilitiesComplex());
+            assertProbabilityEquality(bgenProbabilities, expectedVariant.getSampleGenotypeProbabilitiesComplex(), 0);
 
             // Check if the regular probabilities are according to the expected stuff
             // (a lot should be coded as being missing)
