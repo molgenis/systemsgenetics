@@ -220,7 +220,7 @@ public class GenotypeHarmonizerParamaters {
 
         option = OptionBuilder.withArgName("int")
                 .hasArg()
-                .withDescription("The probability precision for a BGEN file to be written in number of bits. Valid range is from 1 to 32 inclusive. Option only valid in combination with --outputType BGEN")
+                .withDescription("The precision of probabilities, in number of bits, to use when writing BGEN files. Valid range is from 1 to 32 inclusive. Option only valid in combination with --outputType BGEN")
                 .withLongOpt("probabilityPrecision")
                 .create("bts");
         OPTIONS.addOption(option);

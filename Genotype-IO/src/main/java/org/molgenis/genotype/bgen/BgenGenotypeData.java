@@ -635,10 +635,10 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
                 double[] sampleProbabilities = new double[3];
 
-//				System.out.println(getUInt16(variantBlockData, 0) / 32768f + " " + getUInt16(variantBlockData, 2) / 32768f + " " + getUInt16(variantBlockData, 4) / 32768f);
-                sampleProbabilities[0] = getUInt16(variantBlockData, 0) / 32768f;
-                sampleProbabilities[1] = getUInt16(variantBlockData, 2) / 32768f;
-                sampleProbabilities[2] = getUInt16(variantBlockData, 4) / 32768f;
+                int byteIndex = sampleIndex * 6;
+                sampleProbabilities[0] = getUInt16(variantBlockData, byteIndex) / 32768f;
+                sampleProbabilities[1] = getUInt16(variantBlockData, byteIndex + 2) / 32768f;
+                sampleProbabilities[2] = getUInt16(variantBlockData, byteIndex + 4) / 32768f;
                 probabilities[sampleIndex] = sampleProbabilities;
             }
         } else if (fileLayout.equals(Layout.layOut_2)) {
@@ -1172,7 +1172,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             variantBlockSize = getUInt32(snpInfoBuffer, snpInfoBufferPos);
             return new VariantGenotypeBlockInfo(
                     variantGenotypeStartPosition,
-                    fileLayout, variantBlockSize, true);
+                    fileLayout, variantBlockSize, 6 * sampleCount, true);
         } else {
             // If the file layout is 1 and the variants are not zlib compressed,
             // the genotype data for this variant is 6 times the number of samples

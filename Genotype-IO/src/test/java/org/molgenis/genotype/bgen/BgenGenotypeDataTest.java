@@ -119,7 +119,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
             Matcher matcher = Pattern.compile("example\\.(\\d+)bits\\.(zstd\\.)?bgen")
                     .matcher(origBgenFile.getName());
             // Get the bit representation.
-            int bitRepresentation = matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
+            int bitRepresentation = matcher.matches() ? Integer.parseInt(matcher.group(1)) : 16;
 
             // We would like to set a maximum error for checking the probabilities between
             // The BGEN files that are read and the .gen file. This is done below.
@@ -133,6 +133,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
             // For the bgen file with 1 bit, the maximum error is set to 1. This is because logical since probabilities
             // have to sum to one. The rounding rule that is uses when writing bgen probabilities means for the
             // 1 bit files that the probability closest to 1 gets rounded to one, whether this is higher than 0.5 or not.
+            maximumError = Math.min(maximumError, 0.99);
 
             // Load the bgen file from a temporary folder
             Path bgenFile = Paths.get(folder.toString(), origBgenFile.getName());
