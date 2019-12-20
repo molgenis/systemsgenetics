@@ -434,7 +434,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         // Convert the read bytes to a long
         long value = getUInt32(byteArray4, 0);
 
-        LOGGER.debug(fieldName + ": " + value);
+        LOGGER.trace(fieldName + ": " + value);
         return value;
     }
 
@@ -1473,61 +1473,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
             // Add a new value to the combination
             newCombination.add(alleleValue); // Add in the beginning to maintain the correct order.
             getAllCombinationsRecursively(combinations, newCombination, maxAlleleValue, ploidy);
-        }
-    }
-
-    /**
-     * The method returns 3 combinations with 2 alleles and a ploidy of 2
-     * in case only ordered combinations are requested:
-     * [1, 1]
-     * [1, 2]
-     * [2, 2]
-     *
-     * @param alleles The alleles for the variant to create combinations for.
-     * @param ploidy The ploidity of the sample to create combinations for.
-     * @return the combinations of alleles that represent all possible haplotypes
-     */
-    private static List<List<Integer>> getGenotypeCombinations(List<Integer> alleles, int ploidy) {
-        // Construct nested lists
-        List<List<Integer>> combinations = new ArrayList<>();
-
-        // Set the maximum value of an allele, which is the number of alleles minus one, because we want to count
-        // from 0 to n-1
-        int maxAlleleValue = alleles.size() - 1;
-
-        // Get the combinations
-        getCombinationsRecursively(combinations,
-                new ArrayList<>(), alleles,
-                maxAlleleValue, ploidy);
-
-        return combinations;
-    }
-
-    /**
-     * Method that recursively fills a list of combinations.
-     * Combinations are always ordered.
-     *  @param combinations   The list of combinations to fill.
-     * @param combination    The current combination that is being constructed.
-     * @param alleles The alleles to put into the combinations
-     * @param maxAlleleValue The number of different values to fit into a combinations.
-     * @param ploidy         The size of a combination.
-     */
-    private static void getCombinationsRecursively(
-            List<List<Integer>> combinations, List<Integer> combination, List<Integer> alleles, int maxAlleleValue, int ploidy) {
-        // If the combination is complete, the size of the combination equals the required size.
-        // Add the combination and return
-        if (combination.size() == ploidy) {
-            combinations.add(0, combination); // Add in the beginning to maintain the correct order.
-            return;
-        }
-
-        // Loop through the possible values from high to low.
-        for (int newAlleleValue = maxAlleleValue; newAlleleValue >= 0; newAlleleValue--) {
-            // Copy the preliminary combination
-            List<Integer> newCombination = new ArrayList<>(combination);
-            // Add a new value to the combination
-            newCombination.add(0, alleles.get(newAlleleValue)); // Add in the beginning to maintain the correct order.
-            getCombinationsRecursively(combinations, newCombination, alleles, newAlleleValue, ploidy);
         }
     }
 
