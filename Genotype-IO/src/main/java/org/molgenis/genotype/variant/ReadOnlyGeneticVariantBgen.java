@@ -23,7 +23,6 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
     private MafResult mafResult = null;
     private final GeneticVariantMeta variantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGp();
     private final long variantReadingPosition;
-    private Long variantDataSizeInBytes;
     private final int alleleCount;
 
     private ReadOnlyGeneticVariantBgen(GeneticVariantId variantId,
@@ -63,7 +62,6 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
         this.alleleCount = alleleCount;
         this.refAllele = refAllele;
         this.variantReadingPosition = variantReadingPosition;
-        this.variantDataSizeInBytes = variantDataSizeInBytes;
     }
 
 //	public static GeneticVariant createSnp(String snpId, int pos, String sequenceName,
@@ -328,13 +326,6 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
         return variantReadingPosition;
     }
 
-    public long getVariantDataSizeInBytes() {
-        if (variantDataSizeInBytes == null) {
-            throw new IllegalStateException("variantDataSizeInBytes was not set. Use .setVariantDataSizeInBytes(...)");
-        }
-        return variantDataSizeInBytes;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -348,9 +339,5 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
     @Override
     public int hashCode() {
         return (int)(variantReadingPosition ^ (variantReadingPosition >>> 32));
-    }
-
-    public void setVariantDataSizeInBytes(long variantDataSizeInBytes) {
-        this.variantDataSizeInBytes = variantDataSizeInBytes;
     }
 }

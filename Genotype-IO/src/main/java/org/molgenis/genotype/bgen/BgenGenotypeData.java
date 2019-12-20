@@ -471,39 +471,26 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         while ((variantReadingPosition) < bgenFile.length()) {
             //Loop through variants.
 
-            // Read the variant data creating a variant.
-            ReadOnlyGeneticVariantBgen variant = readGeneticVariantBgen(variantReadingPosition);
+            // Methods are dependent on the filepointer in the BGEN file.
+            // Read the variant identifying info, the size cannot be determined from this alone.
+            ReadOnlyGeneticVariantBgen variant = processVariantIdentifyingData(variantReadingPosition);
+            // Get the variantGenotypeBlockInfo,
+            // this holds variables for the length of the rest of the data for this variant.
+            VariantGenotypeBlockInfo variantGenotypeBlockInfo = extractVariantGenotypeDataBlockInfo();
+            // Get the variant reading size in bytes
+            long variantDataSizeInBytes = variantGenotypeBlockInfo.getVariantDataSizeInBytes(variantReadingPosition);
 
             // Add the read variant to the BGENIX file so that it can quickly be retrieved.
             bgenixWriter.addVariantToIndex(
                     variant,
                     variant.getVariantReadingPosition(),
-                    variant.getVariantDataSizeInBytes(),
+                    variantDataSizeInBytes,
                     variant.getPrimaryVariantId());
 
             // Get the position in the file to start reading the next variant.
             variantReadingPosition = variant.getVariantReadingPosition() +
-                    variant.getVariantDataSizeInBytes();
+                    variantDataSizeInBytes;
         }
-    }
-
-    /**
-     * Method that reads data from a genetic variant in the correct order.
-     * These methods are dependent on the filepointer in the BGEN file.
-     *
-     * @param variantReadingPosition The position in the BGEN file where to start reading a variant from.
-     * @return a bgen variant.
-     * @throws IOException If an I/O error has occured.
-     */
-    private ReadOnlyGeneticVariantBgen readGeneticVariantBgen(long variantReadingPosition) throws IOException {
-        // Read the variant identifying info, the size cannot be determined from this alone.
-        ReadOnlyGeneticVariantBgen variant = processVariantIdentifyingData(variantReadingPosition);
-        // Get the variantGenotypeBlockInfo,
-        // this holds variables for the length of the rest of the data for this variant.
-        VariantGenotypeBlockInfo variantGenotypeBlockInfo = extractVariantGenotypeDataBlockInfo();
-        // Set the variant data size in bytes.
-        variant.setVariantDataSizeInBytes(variantGenotypeBlockInfo.getVariantDataSizeInBytes(variantReadingPosition));
-        return variant;
     }
 
     /**
@@ -1032,8 +1019,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
         // Extract the variant genotype data block info starting from the current position of the
         // file pointer, which should be right after all alleles for a specific variant.
         VariantGenotypeBlockInfo variantGenotypeBlockInfo = extractVariantGenotypeDataBlockInfo();
-        variant.setVariantDataSizeInBytes(variantGenotypeBlockInfo.getVariantDataSizeInBytes(
-                variant.getVariantReadingPosition()));
 
         long decompressedVariantBlockLength = variantGenotypeBlockInfo.getDecompressedBlockLength();
         long variantBlockLength = variantGenotypeBlockInfo.getBlockLength();

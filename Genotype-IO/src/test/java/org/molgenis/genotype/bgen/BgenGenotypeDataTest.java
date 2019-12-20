@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.bgen;
 
+import org.apache.commons.io.FilenameUtils;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -280,69 +281,87 @@ public class BgenGenotypeDataTest extends ResourceTest {
             Path bgenFile = Paths.get(folder.toString(), origBgenFile.getName());
             Files.copy(origBgenFile.toPath(), bgenFile);
             bgenGenotypeData = new BgenGenotypeData(bgenFile.toFile(), exampleComplexSampleFile);
+            TestComplexBgenGenotypeDataEquality(expectedSampleNames,
+                    expectedVariantIds, expectedVariantPositions,
+                    alleles, expectedBgenProbabilities,
+                    expectedProbabilities, expectedPhasedBgenProbabilities);
 
-            // Test the equality of sample names and sequence names
-            assertEquals(bgenGenotypeData.getSampleNames(), expectedSampleNames);
-            assertEquals(bgenGenotypeData.getSeqNames(), Collections.singletonList("01"));
+            // Write and read again
+            BgenGenotypeWriter bgenGenotypeWriter = new BgenGenotypeWriter(bgenGenotypeData);
+            File tempFile = Paths.get(folder.toString(),
+                    FilenameUtils.removeExtension(String.valueOf(origBgenFile)) + ".temp.bgen").toFile();
+            File tempSampleFile = Paths.get(folder.toString(),
+                    FilenameUtils.removeExtension(String.valueOf(origBgenFile)) + ".sample").toFile();
+            bgenGenotypeWriter.write(tempFile, tempSampleFile);
+            bgenGenotypeData = new BgenGenotypeData(tempFile, tempSampleFile);
+            TestComplexBgenGenotypeDataEquality(expectedSampleNames,
+                    expectedVariantIds, expectedVariantPositions,
+                    alleles, expectedBgenProbabilities,
+                    expectedProbabilities, expectedPhasedBgenProbabilities);
+        }
+    }
 
-            assertEquals(bgenGenotypeData.getVariantIdMap().keySet(), new HashSet<>(expectedVariantIds));
-            // Loop through variants and check their similarity.
-            int variantIndex = 0;
-            for (GeneticVariant bgenVariant : bgenGenotypeData) {
-                // Check if these variants are equal:
-                assertEquals(bgenVariant.getPrimaryVariantId(), expectedVariantIds.get(variantIndex));
-                assertEquals(bgenVariant.getStartPos(), expectedVariantPositions.get(variantIndex).intValue());
-                assertEquals(bgenVariant.getAlternativeAlleles(), alleles.get(variantIndex));
+    private void TestComplexBgenGenotypeDataEquality(String[] expectedSampleNames, List<String> expectedVariantIds, List<Integer> expectedVariantPositions, List<Alleles> alleles, List<double[][]> expectedBgenProbabilities, List<float[][]> expectedProbabilities, List<double[][][]> expectedPhasedBgenProbabilities) {
+        // Test the equality of sample names and sequence names
+        assertEquals(bgenGenotypeData.getSampleNames(), expectedSampleNames);
+        assertEquals(bgenGenotypeData.getSeqNames(), Collections.singletonList("01"));
 
-                // V2 has an alternative id, the other variants don't. Check this.
-                if (bgenVariant.getPrimaryVariantId().equals("V2")) {
-                    assertEquals(bgenVariant.getAlternativeVariantIds().get(0), "V2.1");
-                } else {
-                    assertEquals(bgenVariant.getAlternativeVariantIds().size(), 0);
-                }
+        assertEquals(bgenGenotypeData.getVariantIdMap().keySet(), new HashSet<>(expectedVariantIds));
+        // Loop through variants and check their similarity.
+        int variantIndex = 0;
+        for (GeneticVariant bgenVariant : bgenGenotypeData) {
+            // Check if these variants are equal:
+            assertEquals(bgenVariant.getPrimaryVariantId(), expectedVariantIds.get(variantIndex));
+            assertEquals(bgenVariant.getStartPos(), expectedVariantPositions.get(variantIndex).intValue());
+            assertEquals(bgenVariant.getAlternativeAlleles(), alleles.get(variantIndex));
 
-                // Check the equality of probabilities.
-                // First check if the bgenProbabilities are according to the expected stuff
-                if (Arrays.asList(0, 1, 2, 3, 4, 8, 9).contains(variantIndex)) {
-                    double[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesComplex();
-                    assertProbabilityEquality(bgenProbabilities, expectedBgenProbabilities.get(variantIndex), 0);
-                }
-
-                // Check if the regular probabilities are according to the expected stuff
-                // (a lot should be coded as being missing)
-                if (Arrays.asList(0, 3, 4).contains(variantIndex)) {
-                    float[][] probabilities = bgenVariant.getSampleGenotypeProbilities();
-                    assertProbabilityEquality(
-                            probabilities,
-                            expectedProbabilities.get(variantIndex),
-                            0); // Maximum error is 0 as no decimal values are expected
-                }
-
-                // Check if the phased probabilities are correct as well
-                if (Arrays.asList(1, 2, 4, 5).contains(variantIndex)) {
-                    // First we have to check if the variant is phased
-                    assertFalse(bgenVariant.getSamplePhasing().contains(false));
-                    // Only then get the phased probabilities
-                    double[][][] phasedBgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesPhased();
-                    assertTrue(Arrays.deepEquals(phasedBgenProbabilities, expectedPhasedBgenProbabilities.get(variantIndex)));
-                } else if (Arrays.asList(6, 7).contains(variantIndex)) {
-                    // These are also phased, but probabilities are not interesting enough...
-                    assertFalse(bgenVariant.getSamplePhasing().contains(false));
-                } else {
-                    // These are not phased, which we have to test for
-                    assertFalse(bgenVariant.getSamplePhasing().contains(true));
-                    // Calling the method then should generate an exception
-                    try {
-                        bgenVariant.getSampleGenotypeProbabilitiesPhased();
-                        fail("bgenVariant.getSampleGenotypeProbabilitiesBgenPhased() did not raise a " +
-                                "GenotypeDataException while phased data was not available");
-                    } catch (GenotypeDataException e) {
-                        assertEquals(e.getMessage(), "Phased data not available");
-                    }
-                }
-                variantIndex++;
+            // V2 has an alternative id, the other variants don't. Check this.
+            if (bgenVariant.getPrimaryVariantId().equals("V2")) {
+                assertEquals(bgenVariant.getAlternativeVariantIds().get(0), "V2.1");
+            } else {
+                assertEquals(bgenVariant.getAlternativeVariantIds().size(), 0);
             }
 
+            // Check the equality of probabilities.
+            // First check if the bgenProbabilities are according to the expected stuff
+            if (Arrays.asList(0, 1, 2, 3, 4, 8, 9).contains(variantIndex)) {
+                double[][] bgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesComplex();
+                assertProbabilityEquality(bgenProbabilities, expectedBgenProbabilities.get(variantIndex), 0);
+            }
+
+            // Check if the regular probabilities are according to the expected stuff
+            // (a lot should be coded as being missing)
+            if (Arrays.asList(0, 3, 4).contains(variantIndex)) {
+                float[][] probabilities = bgenVariant.getSampleGenotypeProbilities();
+                assertProbabilityEquality(
+                        probabilities,
+                        expectedProbabilities.get(variantIndex),
+                        0); // Maximum error is 0 as no decimal values are expected
+            }
+
+            // Check if the phased probabilities are correct as well
+            if (Arrays.asList(1, 2, 4, 5).contains(variantIndex)) {
+                // First we have to check if the variant is phased
+                assertFalse(bgenVariant.getSamplePhasing().contains(false));
+                // Only then get the phased probabilities
+                double[][][] phasedBgenProbabilities = bgenVariant.getSampleGenotypeProbabilitiesPhased();
+                assertTrue(Arrays.deepEquals(phasedBgenProbabilities, expectedPhasedBgenProbabilities.get(variantIndex)));
+            } else if (Arrays.asList(6, 7).contains(variantIndex)) {
+                // These are also phased, but probabilities are not interesting enough...
+                assertFalse(bgenVariant.getSamplePhasing().contains(false));
+            } else {
+                // These are not phased, which we have to test for
+                assertFalse(bgenVariant.getSamplePhasing().contains(true));
+                // Calling the method then should generate an exception
+                try {
+                    bgenVariant.getSampleGenotypeProbabilitiesPhased();
+                    fail("bgenVariant.getSampleGenotypeProbabilitiesBgenPhased() did not raise a " +
+                            "GenotypeDataException while phased data was not available");
+                } catch (GenotypeDataException e) {
+                    assertEquals(e.getMessage(), "Phased data not available");
+                }
+            }
+            variantIndex++;
         }
     }
 

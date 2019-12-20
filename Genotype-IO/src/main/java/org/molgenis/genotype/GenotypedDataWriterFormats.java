@@ -32,7 +32,7 @@ public enum GenotypedDataWriterFormats
 		return name;
 	}
 
-	public GenotypeWriter createGenotypeWriter(GenotypeData genotypeData, Integer bgenBitRepresentation)
+	public GenotypeWriter createGenotypeWriter(GenotypeData genotypeData, int bgenBitRepresentation)
 	{
 
 		switch (this)
