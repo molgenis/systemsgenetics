@@ -50,8 +50,8 @@ class GenotypeHarmonizer {
 			+ "  |        patrickdeelen@gmail.com        |\n"
 			+ "  |                                       |\n"
 			+ "  | Harm-Jan Westra, Joeri van der Velde, |\n"
-			+ "  |    Marc Jan Bonder, Erwin Winder,     |\n"
-			+ "  |           Dennis Hendriksen           |\n"
+			+ "  |     Marc Jan Bonder, Erwin Winder,    |\n"
+			+ "  |  Dennis Hendriksen, Robert Warmerdam, |\n"
 			+ "  |      Lude Franke, Morris Swertz       |\n"
 			+ "  |                                       |\n"
 			+ "  |     Genomics Coordination Center      |\n"
@@ -172,6 +172,7 @@ class GenotypeHarmonizer {
 		}
 
 		if (parameters.getForceSeqName() != null && parameters.getInputType() != RandomAccessGenotypeDataReaderFormats.SHAPEIT2 && parameters.getInputType() != RandomAccessGenotypeDataReaderFormats.GEN) {
+			LOGGER.fatal("Error cannot force sequence name of: " + parameters.getInputType().getName());
 			System.err.println("Error cannot force sequence name of: " + parameters.getInputType().getName());
 			System.exit(1);
 			return;
@@ -411,13 +412,25 @@ class GenotypeHarmonizer {
 
 		}
 
+		if (parameters.getBitRepresentation() != null && parameters.getOutputType() != GenotypedDataWriterFormats.BGEN) {
+			String errorMessage = String.format(
+					"Probability precision can only be set for a " +
+							"BGEN file to be written, not for '%s'",
+					parameters.getInputType().getName());
+			LOGGER.fatal(errorMessage);
+			System.err.println(errorMessage);
+			System.exit(1);
+		}
+
 		System.out.println(
 				"Writing results");
 		LOGGER.info(
 				"Writing results");
 
 		try {
-			GenotypeWriter inputDataWriter = parameters.getOutputType().createGenotypeWriter(aligedInputData == null ? inputData : aligedInputData);
+			GenotypeWriter inputDataWriter = parameters.getOutputType()
+					.createGenotypeWriter(aligedInputData == null ? inputData : aligedInputData,
+							parameters.getBitRepresentation() != null ? parameters.getBitRepresentation() : 16);
 			inputDataWriter.write(parameters.getOutputBasePath());
 		} catch (IOException e) {
 			System.err.println("IOException: Error writing output data: " + e.getMessage());

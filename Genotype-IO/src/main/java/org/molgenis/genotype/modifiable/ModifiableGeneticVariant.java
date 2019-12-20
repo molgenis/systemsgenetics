@@ -1,24 +1,24 @@
 package org.molgenis.genotype.modifiable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
-import org.molgenis.genotype.util.FixedSizeIterable;
-import org.molgenis.genotype.util.Ld;
-import org.molgenis.genotype.util.LdCalculator;
-import org.molgenis.genotype.util.LdCalculatorException;
-import org.molgenis.genotype.util.MafCalculator;
-import org.molgenis.genotype.util.MafResult;
+import org.molgenis.genotype.util.*;
 import org.molgenis.genotype.variant.AbstractGeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariantMeta;
 import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.id.GeneticVariantId;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
+
+import static org.molgenis.genotype.bgen.BgenGenotypeWriter.getPloidy;
+import static org.molgenis.genotype.bgen.BgenGenotypeData.getAlleleCountsPerProbability;
 
 public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 
@@ -267,6 +267,118 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 
 		}
 
+	}
+
+	@Override
+	public double[][] getSampleGenotypeProbabilitiesComplex() {
+
+		double[][] probByProvider = getSampleVariantsProvider().getSampleProbabilitiesComplex(originalVariant);
+
+		Allele refUsedForOriginalDosage = originalVariant.getRefAllele() == null ? originalVariant.getVariantAlleles()
+				.get(0) : originalVariant.getRefAllele();
+
+		if(modifiableGenotypeData.isSwapped(originalVariant)){
+			refUsedForOriginalDosage = refUsedForOriginalDosage.getComplement();
+		}
+
+		Allele refShouldBeUsed = getRefAllele() == null ? getVariantAlleles().get(0) : getRefAllele();
+
+		if (refUsedForOriginalDosage == refShouldBeUsed) {
+			return probByProvider;
+		} else {
+			// Currently throw an exception whenever the following is not true
+			if (!isBiallelic()) {
+				throw new GenotypeDataException("Can't swap probabilities multiallelic variants");
+			}
+			// Here we have to swap the probabilities to match the new ref
+			// Probabilities for complex probabilities are sorted in a special manner
+			// We can get a list of allele counts corresponding to the genotypes in current order,
+			// which can be easily ordered into the situation with the new ref allele.
+			// Therefore we can sort the probabilities using the list of allele counts as well.
+
+			// First generate a list with alleles, in which every allele is encoded as the index in the new situation
+			// Get the index of the new reference allele within the old list of alleles
+			// TODO: to be able to pass non biallelic stuff, implement obtaining the index of the new reference allele according to the old list of alleles.
+			int refShouldBeUsedOldIndex = 1; // first index == second allele
+			// Continue to create a list of alleles
+			List<Integer> allelesAsIntegers = IntStream.range(1, getAlleleCount()).boxed().collect(Collectors.toList());
+			allelesAsIntegers.add(refShouldBeUsedOldIndex, 0); // Add the ref with index 0;
+
+			double[][] probs = new double[probByProvider.length][];
+
+			for (int i = 0; i < probByProvider.length; ++i) {
+				// Get the number of probabilities for this sample
+				double[] sampleProbabilities = probByProvider[i];
+				int numberOfProbabilities = sampleProbabilities.length;
+
+				// Convert the array to a list to be able to make use of the .indexOf(...) method.
+				List<Pair<Integer, Double>> probabilitiesWithIndices = new ArrayList<>();
+				double[] doubles = probByProvider[i];
+				for (int j = 0; j < doubles.length; j++) {
+					double probability = doubles[j];
+					probabilitiesWithIndices.add(new ImmutablePair<>(j, probability));
+				}
+				// Get the allele counts per probability, in which the alleles are sorted according to the old order alleles.
+				List<List<Integer>> alleleCounts = getAlleleCountsPerProbability(
+						allelesAsIntegers,
+						getPloidy(numberOfProbabilities, getAlleleCount()));
+				// Now sort the probabilities for this sample
+				probabilitiesWithIndices.sort((left, right) -> {
+					// Initialize return value at 0 (no difference)
+					int comparison = 0;
+					// Loop through the allele counts from the last to first to match sorting precedence.
+					// The first column (from last to first) that shows difference indicates sorting order,
+					// so continue until the comparison value is not equal to zero.
+					for (int alleleIndex = alleleCounts.get(left.getLeft()).size() - 1; // Initialize at last index
+						 comparison == 0 && alleleIndex >= 0; // Stay in loop condition
+						 alleleIndex--) { // Decrease index
+						comparison = alleleCounts.get(left.getLeft()).get(alleleIndex)
+								.compareTo(
+										alleleCounts.get(right.getLeft()).get(alleleIndex));
+					}
+					return comparison;
+				});
+				// Insert the sorted probabilities as an array into the new probabilities.
+				probs[i] = probabilitiesWithIndices.stream().mapToDouble(Pair::getRight).toArray();
+
+			}
+			return probs;
+
+		}
+	}
+
+	@Override
+	public double[][][] getSampleGenotypeProbabilitiesPhased() {
+		double[][][] probByProvider = getSampleVariantsProvider().getSampleProbabilitiesPhased(originalVariant);
+
+		Allele refUsedForOriginalDosage = originalVariant.getRefAllele() == null ? originalVariant.getVariantAlleles()
+				.get(0) : originalVariant.getRefAllele();
+
+		if(modifiableGenotypeData.isSwapped(originalVariant)){
+			refUsedForOriginalDosage = refUsedForOriginalDosage.getComplement();
+		}
+
+		Allele refShouldBeUsed = getRefAllele() == null ? getVariantAlleles().get(0) : getRefAllele();
+
+		if (refUsedForOriginalDosage == refShouldBeUsed) {
+			return probByProvider;
+		} else {
+			// Currently throw an exception whenever the following is not true
+			if (!isBiallelic()) {
+				throw new GenotypeDataException("Can't swap probabilities multiallelic variants");
+			}
+
+			double[][][] probs = new double[probByProvider.length][][];
+
+			for (int i = 0; i < probByProvider.length; i++) {
+				probs[i] = new double[probByProvider[i].length][2];
+				for (int j = 0; j < probByProvider[i].length; j++) {
+					probs[i][j][1] = probByProvider[i][j][0];
+					probs[i][j][0] = probByProvider[i][j][1];
+				}
+			}
+			return probs;
+		}
 	}
 
 	@Override

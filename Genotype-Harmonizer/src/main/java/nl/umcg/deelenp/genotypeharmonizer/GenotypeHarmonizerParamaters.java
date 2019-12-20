@@ -41,6 +41,7 @@ public class GenotypeHarmonizerParamaters {
     private final double minLdToIncludeAlign;
     private final double maxMafForMafAlignment;
     private final double minimumPosteriorProbability;
+    private final Integer bitRepresentation;
     private final String forceSeqName;
     private final boolean ldCheck;
     private final boolean keep;
@@ -111,6 +112,7 @@ public class GenotypeHarmonizerParamaters {
                         + "* VCFFOLDER - matches all bgziped vcf files + tabix index in a folder\n"
                         + "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample\n"
                         + "* GEN - Oxford .gen & .sample\n"
+                        + "* BGEN - Oxford .bgen & .sample\n"
                         + "* TRITYPER - TriTyper format folder")
                 .withLongOpt("inputType")
                 .create("I");
@@ -125,6 +127,7 @@ public class GenotypeHarmonizerParamaters {
                         + "* VCF_FOLDER - matches all bgziped vcf files + tabix index in a folder\n"
                         + "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample\n"
                         + "* GEN - Oxford .gen & .sample\n"
+                        + "* BGEN - Oxford .bgen & .sample\n"
                         + "* TRITYPER - TriTyper format folder")
                 .withLongOpt("refType")
                 .create("R");
@@ -145,6 +148,7 @@ public class GenotypeHarmonizerParamaters {
                         + "* PLINK_BED - plink BED BIM FAM files\n"
                         + "* SHAPEIT2 - shapeit2 phased haplotypes\n"
                         + "* GEN - Oxford .gen & .sample\n"
+                        + "* BGEN - Oxford .bgen & .sample\n"
                         + "* TRITYPER - TriTyper format folder")
                 .withLongOpt("outputType")
                 .create("O");
@@ -212,6 +216,13 @@ public class GenotypeHarmonizerParamaters {
                 .withDescription("Shapeit2 does not output the sequence name in the first column of the haplotype file. Use this option to force the chromosome for all variants. This option is only valid in combination with --inputType SHAPEIT2")
                 .withLongOpt("forceChr")
                 .create("f");
+        OPTIONS.addOption(option);
+
+        option = OptionBuilder.withArgName("int")
+                .hasArg()
+                .withDescription("The probability precision for a BGEN file to be written in number of bits. Valid range is from 1 to 32 inclusive. Option only valid in combination with --outputType BGEN")
+                .withLongOpt("probabilityPrecision")
+                .create("bts");
         OPTIONS.addOption(option);
 
         option = OptionBuilder.withArgName("double")
@@ -388,6 +399,17 @@ public class GenotypeHarmonizerParamaters {
             minimumPosteriorProbability = commandLine.hasOption("ip") ? Double.parseDouble(commandLine.getOptionValue("ip")) : DEFAULT_MINIMUM_POSTERIOR_PROBABILITY;
         } catch (NumberFormatException e) {
             throw new ParseException("Error parsing --inputProb \"" + commandLine.getOptionValue("ip") + "\" is not an double");
+        }
+
+        try {
+            bitRepresentation = commandLine.hasOption("bts") ? Integer.valueOf(commandLine.getOptionValue("bts")) : null;
+        } catch (NumberFormatException e) {
+            throw new ParseException("Error parsing --probabilityPrecision \""
+                    + commandLine.getOptionValue("bts") + "\" is not an int");
+        }
+        if (bitRepresentation != null && (bitRepresentation < 1 || bitRepresentation > 32)) {
+            throw new ParseException("Error parsing --probabilityPrecision \"" + commandLine.getOptionValue("bts")
+                    + "\" is not in range 1 to 32 inclusive.");
         }
 
         forceSeqName = commandLine.hasOption('f') ? commandLine.getOptionValue('f') : null;
@@ -656,7 +678,11 @@ public class GenotypeHarmonizerParamaters {
     public boolean getMatchRefAllele() {
         return matchRefAllele;
     }
-	//ToDo add Bgen file type for ref / in  / out
+
+    public Integer getBitRepresentation() {
+        return bitRepresentation;
+    }
+    //ToDo add Bgen file type for ref / in  / out
 	
 	//ToDo add filter for multi-allelic SNPs
 	

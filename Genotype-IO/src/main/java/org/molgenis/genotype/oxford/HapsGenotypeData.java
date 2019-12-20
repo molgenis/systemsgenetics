@@ -419,6 +419,19 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 	}
 
 	@Override
+	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(getSampleProbilities(variant));
+	}
+
+	@Override
+	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
+		if (variant.getSamplePhasing().contains(false)) {
+			throw new GenotypeDataException("Phased data not available");
+		}
+		return ProbabilitiesConvertor.convertCalledAllelesToPhasedProbabilities(variant.getSampleVariants(), variant.getVariantAlleles());
+	}
+
+	@Override
 	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
 		return RecordIteratorCreators.createIteratorFromAlleles(variant.getSampleVariants());
 	}
