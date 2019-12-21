@@ -83,7 +83,7 @@ public final class Allele implements Comparable<Allele>
 		}
 		else
 		{
-			throw new RuntimeException("Complement currenlty only supported for SNPs");
+			throw new RuntimeException("Complement currently only supported for SNPs");
 		}
 	}
 

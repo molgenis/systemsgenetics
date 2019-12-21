@@ -231,6 +231,11 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 	}
 
 	@Override
+	public double[][] getSampleGenotypeProbabilitiesComplex() {
+		return sampleVariantsProvider.getSampleProbabilitiesComplex(this);
+	}
+
+	@Override
 	public Map<String, ?> getAnnotationValues() {
 		return Collections.unmodifiableMap(annotationValues);
 	}
@@ -283,6 +288,11 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 		ArrayList<Allele> altAlleles = new ArrayList<>(this.getVariantAlleles().getAlleles());
 		altAlleles.remove(this.getRefAllele());
 		return Alleles.createAlleles(altAlleles);
+	}
+
+	@Override
+	public double[][][] getSampleGenotypeProbabilitiesPhased() {
+		return this.sampleVariantsProvider.getSampleProbabilitiesPhased(this);
 	}
 	
 }

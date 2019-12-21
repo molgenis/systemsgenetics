@@ -38,7 +38,7 @@ public class ConvertMyoclonusClustersToMatrix {
 		//final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
 		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
 
-		final File clusterFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Myoclonus\\18072019_myoclonusClusters.txt");
+		final File clusterFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Myoclonus\\2019_12_17_myoclonusClusters.txt");
 		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + clusterFile.getName() + "_matrix.txt.gz");
 
 		HashMap<String, HashSet<String>> clusterToGenes = readClusterFile(clusterFile);
@@ -72,7 +72,7 @@ public class ConvertMyoclonusClustersToMatrix {
 	private static HashMap<String, HashSet<String>> readClusterFile(File hpoFile) throws Exception {
 
 		final CSVParser hpoParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(1).withCSVParser(hpoParser).build();
+		final CSVReader hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(0).withCSVParser(hpoParser).build();
 
 		HashMap<String, HashSet<String>> hpoToGenes = new HashMap<>();
 

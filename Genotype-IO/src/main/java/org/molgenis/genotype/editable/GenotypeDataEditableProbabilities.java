@@ -189,7 +189,17 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return probabilitiesMatrix[variantAllelesIndex.get(new VariantInformation(variant.getPrimaryVariantId(), variant.getStartPos(), variant.getSequenceName(), variant.getVariantAlleles()))];
 	}
-	
+
+	@Override
+	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(getSampleProbilities(variant));
+	}
+
+	@Override
+	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
+		throw new GenotypeDataException("Phased data not available");
+	}
+
 	public void setSampleVariantProbabilities(VariantInformation variantInfo, Sample sample, float[] probabilities){
 		
 		if(!samples.containsKey(sample)){

@@ -1,5 +1,7 @@
 package org.molgenis.genotype;
 
+import org.molgenis.genotype.bgen.BgenGenotypeData;
+import org.molgenis.genotype.bgen.BgenGenotypeWriter;
 import org.molgenis.genotype.oxford.GenGenotypeWriter;
 import org.molgenis.genotype.oxford.HapsGenotypeWriter;
 import org.molgenis.genotype.plink.BedBimFamGenotypeWriter;
@@ -14,6 +16,7 @@ public enum GenotypedDataWriterFormats
 	SHAPEIT2("Impute2 haplotypes haps / sample files"), 
 	PLINK_BED("Plink BED / BIM / FAM files"),
 	GEN("Oxford GEN / SAMPLE files"),
+	BGEN("Oxford Binary GEN / SAMPLE files"),
 	TRITYPER("Trityper folder"),
 	TABLE("Simple tab separated files with dosage and genotypes");
 
@@ -29,7 +32,7 @@ public enum GenotypedDataWriterFormats
 		return name;
 	}
 
-	public GenotypeWriter createGenotypeWriter(GenotypeData genotypeData)
+	public GenotypeWriter createGenotypeWriter(GenotypeData genotypeData, int bgenBitRepresentation)
 	{
 
 		switch (this)
@@ -42,6 +45,10 @@ public enum GenotypedDataWriterFormats
 				return new BedBimFamGenotypeWriter(genotypeData);
 			case GEN:
 				return new GenGenotypeWriter(genotypeData);
+			case BGEN:
+				BgenGenotypeWriter bgenGenotypeWriter = new BgenGenotypeWriter(genotypeData);
+				bgenGenotypeWriter.setProbabilityPrecisionInBits(bgenBitRepresentation);
+				return bgenGenotypeWriter;
 			case TRITYPER:
 				return new TriTyperGenotypeWriter(genotypeData);
 			case TABLE:

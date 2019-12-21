@@ -4,7 +4,7 @@
 ##FORMAT=<ID=HP,Type=Float,Number=.,Description="Haplotype probabilities">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample_0	sample_1	sample_2	sample_3
 01	1	V1	A	G	.	.	.	GT:GP	0:1,0	0/0:1,0,0	0/0:1,0,0	0/1:0,1,0
-01	2	V2,V2.1	A	G	.	.	.	GT:GP	0:1,0	0:1,0	0:1,0	1:0,1
+01	2	V2;V2.1	A	G	.	.	.	GT:GP	0:1,0	0:1,0	0:1,0	1:0,1
 01	3	V3	A	G	.	.	.	GT:HP	0:1,0	1|1:0,1,0,1	0|0:1,0,1,0	0|1:1,0,0,1
 01	4	M4	A	G,T	.	.	.	GT:GP	0:1,0,0	0/0:1,0,0,0,0,0	0/1:0,1,0,0,0,0	0/2:0,0,0,1,0,0
 01	5	M5	A	G	.	.	.	GT:HP	0:1,0	0|0|0:1,0,1,0,1,0	0|0|1:1,0,1,0,0,1	0|1:1,0,0,1
