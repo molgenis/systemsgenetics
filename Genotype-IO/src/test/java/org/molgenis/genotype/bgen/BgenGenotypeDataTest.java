@@ -287,10 +287,10 @@ public class BgenGenotypeDataTest extends ResourceTest {
 			// Write and read again
 			BgenGenotypeWriter bgenGenotypeWriter = new BgenGenotypeWriter(bgenGenotypeData);
 
-			File tempFile = Paths.get(
-					FilenameUtils.removeExtension(String.valueOf(origBgenFile)) + ".temp.bgen").toFile();
-			File tempSampleFile = Paths.get(
-					FilenameUtils.removeExtension(String.valueOf(origBgenFile)) + ".temp.sample").toFile();
+			File tempFile = Paths.get(folder.toString(),
+					FilenameUtils.removeExtension(String.valueOf(origBgenFile.getName())) + ".temp.bgen").toFile();
+			File tempSampleFile = Paths.get(folder.toString(),
+					FilenameUtils.removeExtension(String.valueOf(origBgenFile.getName())) + ".temp.sample").toFile();
 			bgenGenotypeWriter.write(tempFile, tempSampleFile);
 			bgenGenotypeData = new BgenGenotypeData(tempFile, tempSampleFile);
 			TestComplexBgenGenotypeDataEquality(expectedSampleNames,
