@@ -256,12 +256,13 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			variantDataSizeInBytes += writeCompressedBgenGenotypeDataBlock(
 					bgenOutputByteChannel, genotypeDataBlockByteBuffer);
 
-			LOGGER.debug(String.format("Written %s, %s at %d, of size %d | seq:pos = %s:%d, %d alleles",
+			if(LOGGER.isTraceEnabled()){
+			LOGGER.trace(String.format("Written %s, %s at %d, of size %d | seq:pos = %s:%d, %d alleles",
 					variant.getPrimaryVariantId(),
 					!variant.getAlternativeVariantIds().isEmpty() ? variant.getAlternativeVariantIds().get(0) : "-",
 					variantStartPositionInFile, variantDataSizeInBytes,
 					variant.getSequenceName(), variant.getStartPos(), alleleCount));
-
+			}
 			// Add the read variant to the BGENIX file so that it can quickly be retrieved.
 			bgenixWriter.addVariantToIndex(
 					variant,
