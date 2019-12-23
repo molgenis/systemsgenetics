@@ -290,7 +290,7 @@ public class BgenGenotypeDataTest extends ResourceTest {
 			File tempFile = Paths.get(
 					FilenameUtils.removeExtension(String.valueOf(origBgenFile)) + ".temp.bgen").toFile();
 			File tempSampleFile = Paths.get(
-					FilenameUtils.removeExtension(String.valueOf(origBgenFile)) + ".sample").toFile();
+					FilenameUtils.removeExtension(String.valueOf(origBgenFile)) + ".temp.sample").toFile();
 			bgenGenotypeWriter.write(tempFile, tempSampleFile);
 			bgenGenotypeData = new BgenGenotypeData(tempFile, tempSampleFile);
 			TestComplexBgenGenotypeDataEquality(expectedSampleNames,
