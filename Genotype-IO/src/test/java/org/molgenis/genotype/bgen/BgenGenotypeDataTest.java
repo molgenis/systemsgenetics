@@ -287,9 +287,6 @@ public class BgenGenotypeDataTest extends ResourceTest {
 			// Write and read again
 			BgenGenotypeWriter bgenGenotypeWriter = new BgenGenotypeWriter(bgenGenotypeData);
 
-			System.out.println("AAAAAAAAAAAA" + origBgenFile.getAbsolutePath());
-			System.out.println("BBBBBBBBBBBB" + FilenameUtils.removeExtension(String.valueOf(origBgenFile)));
-
 			File tempFile = Paths.get(
 					FilenameUtils.removeExtension(String.valueOf(origBgenFile)) + ".temp.bgen").toFile();
 			File tempSampleFile = Paths.get(
