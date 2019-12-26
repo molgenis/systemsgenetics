@@ -92,17 +92,17 @@ public class BgenGenotypeDataTest extends ResourceTest {
 //    public void testSomeMethod() {
 //        // TODO review the generated test code and remove the default call to fail.
 //    }
+
 //    @Test
 //    public void testBgenGenotypeData() throws URISyntaxException, IOException {
 //        File bgenFile = getTestResourceFile("/bgenExamples/example.16bits.bgen");
-//        Path target = Paths.get(folder.toString(), bgenFile.getName());
-//        Files.copy(bgenFile.toPath(), target);
-//        bgenGenotypeData = new BgenGenotypeData(target.toFile());
+//        bgenGenotypeData = new BgenGenotypeData(bgenFile);
 //        for (GeneticVariant variant : bgenGenotypeData) {
 //            System.out.printf("%s %s %d %s%n", variant.getPrimaryVariantId(), variant.getSequenceName(), variant.getStartPos(), variant.getVariantAlleles());
 //            variant.getSampleGenotypeProbilities();
 //        }
 //    }
+
 	@Test
 	public void bgenGenotypeDataTest() throws IOException {
 
