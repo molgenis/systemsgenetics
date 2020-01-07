@@ -73,7 +73,7 @@ public class CreateGeuvadisTestTrityper {
 		
 		System.out.println(outputFile.getAbsolutePath());
 		
-		GenotypedDataWriterFormats.TRITYPER.createGenotypeWriter(modifiedGenotypeData).write(outputFile.getAbsolutePath());
+		GenotypedDataWriterFormats.TRITYPER.createGenotypeWriter(modifiedGenotypeData, sampleCount).write(outputFile.getAbsolutePath());
 		
 		
     }

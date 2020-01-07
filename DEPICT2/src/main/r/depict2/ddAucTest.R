@@ -5,11 +5,14 @@ setwd("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
 
 library(readr)
 
+#saveRDS(hpoMatrix, "../GeneNetwork/Data31995Genes05-12-2017/PCA_01_02_2018/PathwayMatrix/ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.rds")
 
-table_tmp <- read_delim("../GeneNetwork/Data31995Genes05-12-2017/PCA_01_02_2018/PathwayMatrix/ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.txt.gz", delim = "\t", quote = "")
-hpoMatrix <- as.matrix(table_tmp[,c("HP:0000750", "HP:0001249", "HP:0011339")])
-rownames(hpoMatrix) <- table_tmp[,1][[1]]
-rm(table_tmp)
+
+hpoMatrix <- readRDS("../GeneNetwork/Data31995Genes05-12-2017/PCA_01_02_2018/PathwayMatrix/ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.rds")
+str(hpoMatrix)
+
+hpoMatrix <- hpoMatrix[,c("HP:0011153", "HP:0000622") , drop = F]
+str(hpoMatrix)
 
 table_tmp <- read_delim("dd.txt", delim = "\t", quote = "")
 hpoPredictions <- as.matrix(table_tmp[,-1])
@@ -59,8 +62,10 @@ genes <- intersect(rownames(heightGeneP)[!is.na(heightGeneP)], rownames(heightCo
 str(genes)
 
 all(genes %in% rownames(heightCoregulation))
+all(genes %in% rownames(hpoPredictions))
 
-hpoMatrix2 <- hpoMatrix[match(genes, rownames(hpoMatrix)),]
+
+hpoMatrix2 <- hpoMatrix[match(genes, rownames(hpoMatrix)),,drop=F]
 hpoPredictions2 <- hpoPredictions[match(genes, rownames(hpoPredictions)),]
 heightGeneP2 <- heightGeneP[match(genes, rownames(heightGeneP)),]
 heightCoregulation2 <- heightCoregulation[match(genes, rownames(heightCoregulation)),]
@@ -75,12 +80,14 @@ all(row.names(hpoPredictions2) ==names(heightCoregulation2))
 all(row.names(hpoPredictions2) ==names(coregulationBrain2))
 all(row.names(hpoPredictions2) ==names(SRR1237983_2))
 
-hpoTerm = "HP:0001249"
+hpoTerm = "HP:0011153"
+
+cat(rownames(hpoMatrix2)[hpoMatrix2[,hpoTerm] == 1])
 
 layout(matrix(1:3, nrow = 1))
 boxplot(hpoPredictions2[,hpoTerm] ~ as.factor(hpoMatrix2[,hpoTerm]), main = "GADO Tall stature")
 boxplot(-log10(heightGeneP2) ~ as.factor(hpoMatrix2[,hpoTerm]), main = "-log10 Height gene p-value")
-boxplot(heightCoregulation2 ~ as.factor(hpoMatrix2[,hpoTerm]), main = "Height gene co-regulation Z-score")
+boxplot(heightCoregulation2 ~ as.factor(hpoMatrix2[,hpoTerm]), main = "Gene co-regulation Z-score")
 layout(1)
 
 library(pROC)
@@ -94,23 +101,46 @@ coexpBrain_roc <- roc(as.factor(hpoMatrix2[,hpoTerm]), coexpBrain2)
 finemap2_roc <- roc(as.factor(hpoMatrix2[,hpoTerm]), finemap2)
 #geneGadoAndCoReg <- roc(as.factor(hpoMatrix2[,hpoTerm]), (heightCoregulation2 + hpoPredictions2[,hpoTerm]))
 
-roc.test(gado, geneP)
-roc.test(geneP, geneCoReg)
+roc.test(gado, geneProc.test(geneP, geneCoReg)
 roc.test(geneCoRegBrain, geneCoReg)
 roc.test(gado, geneCoRegBrain)
-roc.test(geneCoRegBrain, SRR1237983_2_roc)
+roc.test(geneCoReg, SRR1237983_2_roc)
 roc.test(geneCoRegBrain, coexpBrain_roc)
 
-plot.roc(gado, col = "springgreen2", main = "Prediction of medelian genes associated to 'Intellectual disability' using educational attainment GWAS")
-lines.roc(geneP, col = "goldenrod2")
+
+
+png("educational_attainment_2018_30038396_hg19_v41/HP_0011153.png", width = 1000, height = 1000)
+par(pty="s", bty = "n", cex = 2.2, cex.axis = 1, las = 1, cex.lab = 1.2)
+plot.roc(geneP, col = "goldenrod2", main = "Prediction of 'focal motor seizures' genes\n using a 'educational attainment' GWAS", mgp=c(2.6, 0.7, 0), lwd =3)
+lines.roc(gado, col = "springgreen2", lwd = 3)
+lines.roc(geneCoReg, col = "dodgerblue3", lwd = 3)
+lines.roc(SRR1237983_2_roc, col = "magenta4")
+legend("bottomright", legend=c(paste0("DEPICT2 core-gene prioritization (AUC: ", round(geneCoReg$auc,2),")"), paste0("GWAS gene p-values (AUC: ", round(geneP$auc,2),")"), paste0("GADO (AUC: ", round(gado$auc,2),")")), col=c("dodgerblue3", "goldenrod2", "springgreen2"), lwd=3, bty="n")
+dev.off()
+
+
+png("educational_attainment_2018_30038396_hg19_v41/HP_0011153_npc.png", width = 1000, height = 1000)
+par(pty="s", bty = "n", cex = 2.2, cex.axis = 1, las = 1, cex.lab = 1.2)
+plot.roc(geneP, col = "goldenrod2", main = "Prediction of 'focal motor seizures' genes\n using a 'educational attainment' GWAS", mgp=c(2.6, 0.7, 0), lwd =3)
+#lines.roc(gado, col = "springgreen2", lwd = 3)
+lines.roc(geneCoReg, col = "dodgerblue3", lwd = 3)
+lines.roc(SRR1237983_2_roc, col = "magenta4")
+legend("bottomright", legend=c(paste0("DEPICT2 core-gene prioritization (AUC: ", round(geneCoReg$auc,2),")"), paste0("GWAS gene p-values (AUC: ", round(geneP$auc,2),")") ,paste0("Neuronal precursor cells expression (AUC: ", round(SRR1237983_2_roc$auc,2),")")), col=c("dodgerblue3", "goldenrod2", "magenta4"), lwd=3, bty="n")
+dev.off()
+
+
+
+par(pty="s")
+plot.roc(gado, col = "springgreen2", main = "Prediction of medelian genes associated to 'Intellectual disability' using educational attainment GWAS", xlim = c(0,1))
+plot.roc(geneP, col = "goldenrod2", xlim = c(1,0), ylim = c(0,1))
 lines.roc(geneCoReg, col = "dodgerblue3")
-lines.roc(geneCoRegBrain, col = "magenta4")
+#lines.roc(geneCoRegBrain, col = "magenta4")
 #lines.roc(SRR1237983_2_roc, col = "black")
 #lines.roc(coexp_roc, col = "black")
 #lines.roc(coexpBrain_roc, col = "grey")
 #lines.roc(finemap2_roc, col = "black")
-legend("bottomright", legend=c("GADO", "GWAS gene p-values", "GWAS coregulation", "GWAS coregulation brain"), col=c("springgreen2", "goldenrod2", "dodgerblue3", "magenta4", "black", "grey"), lwd=2)
-
+legend("bottomright", legend=c("GWAS gene p-values", "GWAS coregulation"), col=c( "goldenrod2", "dodgerblue3", "magenta4", "black", "grey"), lwd=2)
+  #legend("bottomright", legend=c("GADO", "GWAS gene p-values", "GWAS coregulation", "GWAS coregulation brain"), col=c("springgreen2", "goldenrod2", "dodgerblue3", "magenta4", "black", "grey"), lwd=2)
 
 plot(coexp2, finemap2, xlab = "Gene network coexpression enrichment", ylab = "Finemappnig with gene network data")
 plot(-log10(heightGeneP2), finemap2, xlab = "-log10(gene p-value)", ylab = "Finemappnig with gene network data")

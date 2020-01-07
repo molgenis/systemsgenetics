@@ -19,6 +19,8 @@ public enum GenotypeFileType {
 	HAPS(Pattern.compile(".*\\.haps$", Pattern.CASE_INSENSITIVE), ".haps", "Oxford haps"),
 	SAMPLE(Pattern.compile(".*\\.sample$", Pattern.CASE_INSENSITIVE), ".sample", "Oxford sample"),
 	VCF(Pattern.compile(".*\\.vcf\\.gz$", Pattern.CASE_INSENSITIVE), ".vcf.gz", "gzipped vcf"),
+	BGEN(Pattern.compile(".*\\.bgen$", Pattern.CASE_INSENSITIVE), ".bgen", "Oxford Binary gen"),
+	BGENIX(Pattern.compile(".*\\.bgen\\.bgi$", Pattern.CASE_INSENSITIVE), ".bgen.bgi", "Oxford Binary gen index file"),
 	VCF_FOLDER(null, "", "folder with gzipped vcf"),
 	GEN_FOLDER(null, "", "folder with oxford gen files"),
 	TRITYPER_GENOTYPE(Pattern.compile(".*GenotypeMatrix.dat$", Pattern.CASE_INSENSITIVE), "GenotypeMatrix.dat", "Trityper GenotypeMatrix.dat"),//Do not change prefix, it is also used as default file name
@@ -28,7 +30,7 @@ public enum GenotypeFileType {
 	TRITYPER_IND(Pattern.compile(".*Individuals.txt(\\.gz)?$", Pattern.CASE_INSENSITIVE), "Individuals.txt", "Trityper Individuals.txt"),//Do not change prefix, it is also used as default file name
 	TRITYPER_PHENO(Pattern.compile(".*PhenotypeInformation.txt(\\.gz)?$", Pattern.CASE_INSENSITIVE), "PhenotypeInformation.txt", "Trityper PhenotypeInformation.txt"),//Do not change prefix, it is also used as default file name
 	UNKNOWN(null, "", "unspecified type, potentially oxford gen without extention");
-	
+
 	private final Pattern namePattern;
 	private final String suffix;
 	private final String friendlyName;

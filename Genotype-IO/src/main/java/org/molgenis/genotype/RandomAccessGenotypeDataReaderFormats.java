@@ -1,13 +1,10 @@
 package org.molgenis.genotype;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.EnumSet;
-import org.molgenis.genotype.oxford.HapsGenotypeData;
+import org.molgenis.genotype.bgen.BgenGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.multipart.MultiPartGenotypeData;
 import org.molgenis.genotype.oxford.GenGenotypeData;
+import org.molgenis.genotype.oxford.HapsGenotypeData;
 import org.molgenis.genotype.plink.BedBimFamGenotypeData;
 import org.molgenis.genotype.plink.PedMapGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
@@ -16,6 +13,12 @@ import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.EnumSet;
+
 import static org.molgenis.genotype.GenotypeFileType.*;
 
 public enum RandomAccessGenotypeDataReaderFormats {
@@ -27,7 +30,8 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	PLINK_BED("Plink BED / BIM / FAM files", "Plink BED / BIM / FAM files", EnumSet.of(BED, BIM, FAM)),
 	TRITYPER("TriTyper folder", "Folder with files in trityper format: GenotypeMatrix.dat, Individuals.txt, PhenotypeInformation.txt, SNPMappings.txt, SNPs.txt and optionally: ImputedDosageMatrix.dat", EnumSet.of(TRITYPER_GENOTYPE, TRITYPER_IND, TRITYPER_MAPPINGS, TRITYPER_MAPPINGS, TRITYPER_PHENO, TRITYPER_SNPS)),
 	GEN("Oxford GEN / SAMPLE files", "Oxford .gen and .sample", EnumSet.of(GenotypeFileType.GEN, SAMPLE)),
-	GEN_FOLDER("Oxford GEN folder", "Folder with oxford .gen and .sample files", EnumSet.of(GenotypeFileType.GEN_FOLDER));
+	GEN_FOLDER("Oxford GEN folder", "Folder with oxford .gen and .sample files", EnumSet.of(GenotypeFileType.GEN_FOLDER)),
+	BGEN("Oxford Binary GEN / SAMPLE files", "Oxford .bgen and .sample", EnumSet.of(GenotypeFileType.BGEN));
 	private final String name;
 	private final String description;
 	private final EnumSet<GenotypeFileType> requiredFiles;
@@ -49,7 +53,6 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	public EnumSet<GenotypeFileType> getRequiredFiles() {
 		return requiredFiles;
 	}
-	
 
 	public static RandomAccessGenotypeDataReaderFormats matchFormatToPath(String... paths) {
 
@@ -85,8 +88,17 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				return GEN;
 			}
 
-			if (pathFile.exists() && pathFile.isFile() && new File(path + ".sample").exists()) {
+			if (pathFile.exists() && pathFile.isFile() && pathFile.getName().endsWith(".gen")
+					&& new File(path + ".sample").exists()) {
 				return GEN;
+			}
+
+			if (new File(path + ".bgen").exists()) {
+				return BGEN;
+			}
+
+			if (pathFile.exists() && pathFile.isFile() && pathFile.getName().endsWith(".bgen")) {
+				return BGEN;
 			}
 
 			if (pathFile.isDirectory()) {
@@ -107,10 +119,6 @@ public enum RandomAccessGenotypeDataReaderFormats {
 			}
 
 		}
-
-
-
-
 
 		throw new GenotypeDataException("Cannot find any suitable genotype data format based on path, please make sure the files exist");
 	}
@@ -228,6 +236,63 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				}
 				return MultiPartGenotypeData.createFromGenFolder(new File(paths[0]), cacheSize, minimumPosteriorProbabilityToCall);
 
+			case BGEN:
+				if (forcedSequence != null) {
+					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
+				}
+				if (paths.length == 1) {
+					if (new File(paths[0] + ".bgen").exists()
+							&& new File(paths[0] + ".sample").exists()) {
+						return new BgenGenotypeData(new File(paths[0] + ".bgen"), new File(
+								paths[0] + ".sample"), cacheSize, minimumPosteriorProbabilityToCall);
+					} else if (new File(paths[0] + ".bgen").exists()) {
+						return new BgenGenotypeData(new File(paths[0] + ".bgen"),
+								cacheSize, minimumPosteriorProbabilityToCall);
+					} else if (new File(paths[0]).exists() && new File(paths[0] + ".sample").exists()) {
+						return new BgenGenotypeData(new File(paths[0]), new File(
+								paths[0] + ".sample"), cacheSize, minimumPosteriorProbabilityToCall);
+					} else {
+						throw new FileNotFoundException("Unable to load .bgen and .sample file at: " + paths[0]);
+					}
+				} else if (paths.length == 2) {
+					File bgenFile = null;
+					File sampleFile = null;
+					for (String path : paths) {
+						if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.SAMPLE) {
+							sampleFile = new File(path);
+						} else {
+							bgenFile = new File(path);
+						}
+					}
+					if (sampleFile == null) {
+						throw new GenotypeDataException("Path to .sample file not specified for oxford BGEN data");
+					}
+					return new BgenGenotypeData(bgenFile, sampleFile, cacheSize, minimumPosteriorProbabilityToCall);
+				} else if (paths.length == 3) {
+					File bgenFile = null;
+					File sampleFile = null;
+					File bgenixFile = null;
+					for (String path : paths) {
+						if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.SAMPLE) {
+							sampleFile = new File(path);
+						} else if (GenotypeFileType.getTypeForPath(path) == GenotypeFileType.BGENIX) {
+							bgenixFile = new File(path);
+						} else {
+							bgenFile = new File(path);
+						}
+					}
+					if (sampleFile == null) {
+						throw new GenotypeDataException("Path to .sample file not specified for oxford BGEN data");
+					}
+					if (bgenixFile == null) {
+						throw new GenotypeDataException("Path to .bgen.bgi file not specified for oxford BGEN data");
+					}
+					return new BgenGenotypeData(bgenFile, sampleFile, bgenixFile, cacheSize,
+							minimumPosteriorProbabilityToCall);
+				} else {
+					throw new GenotypeDataException("Expected 1 - 3 paths for oxford BGEN data but found: " + paths.length);
+				}
+
 			default:
 				throw new RuntimeException("This should not be reachable. Please contact the authors");
 		}
@@ -246,9 +311,9 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
 
 		return createFilteredGenotypeData(path, cacheSize, variantFilter, sampleFilter, null, 0.34f);
-		
+
 	}
-	
+
 	/**
 	 * Samples are filtered first then the variant filter is applied.
 	 *
@@ -257,7 +322,7 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	 * @param variantFilter
 	 * @param sampleFilter
 	 * @param forcedSequence null if not used
-	 * @param minimumPosteriorProbabilityToCall 
+	 * @param minimumPosteriorProbabilityToCall
 	 * @return
 	 * @throws IOException
 	 */
@@ -278,16 +343,16 @@ public enum RandomAccessGenotypeDataReaderFormats {
 		}
 
 	}
-	
+
 	/**
 	 * Samples are filtered first then the variant filter is applied.
 	 *
-	 * @param paths
+	 * @param path
 	 * @param cacheSize
 	 * @param variantFilter
 	 * @param sampleFilter
 	 * @param forcedSequence null if not used
-	 * @param minimumPosteriorProbabilityToCall 
+	 * @param minimumPosteriorProbabilityToCall
 	 * @return
 	 * @throws IOException
 	 */
@@ -296,27 +361,27 @@ public enum RandomAccessGenotypeDataReaderFormats {
 		return createFilteredGenotypeData(new String[]{path}, cacheSize, variantFilter, sampleFilter, forcedSequence, minimumPosteriorProbabilityToCall);
 
 	}
-	
-	public static RandomAccessGenotypeDataReaderFormats valueOfSmart(String value){
-		
+
+	public static RandomAccessGenotypeDataReaderFormats valueOfSmart(String value) {
+
 		value = value.toUpperCase();
-		if(value.equals("VCFFOLDER")){
+		if (value.equals("VCFFOLDER")) {
 			return VCF_FOLDER;
-		} else if (value.equals("PLINKBED")){
+		} else if (value.equals("PLINKBED")) {
 			return PLINK_BED;
-		} else if (value.equals("GENFOLDER")){
+		} else if (value.equals("GENFOLDER")) {
 			return GEN_FOLDER;
-		} else if (value.equals("BPLINK")){
+		} else if (value.equals("BPLINK")) {
 			return PLINK_BED;
-		} else if (value.equals("B_PLINK")){
+		} else if (value.equals("B_PLINK")) {
 			return PLINK_BED;
-		} else if (value.equals("PLINKB")){
+		} else if (value.equals("PLINKB")) {
 			return PLINK_BED;
-		} else if (value.equals("PLINK_B")){
+		} else if (value.equals("PLINK_B")) {
 			return PLINK_BED;
 		}
 		return RandomAccessGenotypeDataReaderFormats.valueOf(value);
-		
+
 	}
-	
+
 }

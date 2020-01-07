@@ -71,6 +71,7 @@ public class Depict2Options {
 	private final File variantGeneLinkingFile;
 	private final boolean saveUsedVariantsPerGene;
 	private final double mafFilter;
+	private final boolean quantileNormalizePermutations;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -290,7 +291,7 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("columnsToExtract");
 		OPTIONS.addOption(OptionBuilder.create("cte"));
 
-		OptionBuilder.withArgName("strings");
+		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Save enrichement results also as excel files. Will generate 1 file per input phenotype");
 		OptionBuilder.withLongOpt("saveExcel");
 		OPTIONS.addOption(OptionBuilder.create("se"));
@@ -300,6 +301,11 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Minimum MAF");
 		OptionBuilder.withLongOpt("maf");
 		OPTIONS.addOption(OptionBuilder.create("maf"));
+
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Quantile normalize the permutations gene p-values before pathway enrichments to fit the real gene p-value distribution");
+		OptionBuilder.withLongOpt("qnorm");
+		OPTIONS.addOption(OptionBuilder.create("qn"));
 
 	}
 
@@ -331,6 +337,11 @@ public class Depict2Options {
 		normalizeEigenvectors = commandLine.hasOption("ne");
 		saveOuputAsExcelFiles = commandLine.hasOption("se");
 		saveUsedVariantsPerGene = commandLine.hasOption("uvg");
+		quantileNormalizePermutations = commandLine.hasOption("qn");
+		
+		if(quantileNormalizePermutations && forceNormalGenePvalues){
+			throw new ParseException("Can't combine -qn with -fngp");
+		}
 
 		try {
 			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
@@ -338,7 +349,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -419,6 +430,14 @@ public class Depict2Options {
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
 				genePruningR = 0;
+				geneCorrelationWindow = 0;
+				break;
+			case CORE_GENE_AUC:
+				pathwayDatabases = parsePd(commandLine);
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				genePruningR = 0;
+				geneInfoFile = null;
 				geneCorrelationWindow = 0;
 				break;
 			case CONVERT_BIN:
@@ -705,6 +724,10 @@ public class Depict2Options {
 			case PCA:
 				LOGGER.info(" * Matrix to do PCA on: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
+			case CORE_GENE_AUC:
+				LOGGER.info(" * GWAS core gene prediction matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				logPathwayDatabases();
+				break;
 			case CONVERT_BIN:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (columnsToExtract != null) {
@@ -783,6 +806,7 @@ public class Depict2Options {
 		LOGGER.info(" * Gene pruning r: " + genePruningR);
 		LOGGER.info(" * Ignoring gene correlations: " + (ignoreGeneCorrelations ? "on" : "off"));
 		LOGGER.info(" * Force normal gene p-values: " + (forceNormalGenePvalues ? "on" : "off"));
+		LOGGER.info(" * Quantile normalize permuted gene p-values: " + (quantileNormalizePermutations ? "on" : "off"));
 		LOGGER.info(" * Force normal pathway p-values: " + (forceNormalPathwayPvalues ? "on" : "off"));
 		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
 		LOGGER.info(" * Save output as excel files: " + (saveOuputAsExcelFiles ? "on" : "off"));
@@ -939,6 +963,10 @@ public class Depict2Options {
 
 	public double getMafFilter() {
 		return mafFilter;
+	}
+
+	public boolean isQuantileNormalizePermutations() {
+		return quantileNormalizePermutations;
 	}
 
 }

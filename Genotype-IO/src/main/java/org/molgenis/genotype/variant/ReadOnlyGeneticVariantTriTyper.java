@@ -152,6 +152,16 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
     }
 
     @Override
+    public double[][] getSampleGenotypeProbabilitiesComplex() {
+        return sampleVariantsProvider.getSampleProbabilitiesComplex(this);
+    }
+
+    @Override
+    public double[][][] getSampleGenotypeProbabilitiesPhased() {
+        return this.sampleVariantsProvider.getSampleProbabilitiesPhased(this);
+    }
+
+    @Override
     public int hashCode() {
         // TriTyper genotypes always have a primary ID, we should hash that.
         return this.getPrimaryVariantId().hashCode();

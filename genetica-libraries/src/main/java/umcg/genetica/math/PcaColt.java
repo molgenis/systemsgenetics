@@ -21,15 +21,38 @@ public class PcaColt {
 	private final DoubleMatrixDataset<String, String> eigenvectors;
 	private final DoubleMatrixDataset<String, String> eigenValues;
 	private final DoubleMatrixDataset<String, String> pcs;
+	private final DoubleMatrixDataset<String, String> covMatrix;
 
-	public PcaColt(DoubleMatrixDataset<String, String> dataset, final boolean center) {
+	public PcaColt(DoubleMatrixDataset<String, String> dataset, final boolean center, final boolean scale) {
+		this(dataset, center, scale, false);
+	}
+	
+	/**
+	 * 
+	 * @param dataset
+	 * @param center
+	 * @param scale
+	 * @param keepCovMatrix keep covariance matrix in memory. 
+	 */
+	public PcaColt(DoubleMatrixDataset<String, String> dataset, final boolean center, final boolean scale, final boolean keepCovMatrix) {
 
-		if (center) {
+		if (center & scale) {
+			dataset = dataset.duplicate();
+			dataset.normalizeColumns();
+		} else if(center){
 			dataset = dataset.duplicate();
 			dataset.centerColumns();
+		} else if (scale){
+			throw new RuntimeException("Scale without center not implemented in PCA");
 		}
 
 		final DoubleMatrix2D covarianceMatrix = DoubleStatistic.covariance(dataset.getMatrix());
+		
+		if(keepCovMatrix){
+			covMatrix = new DoubleMatrixDataset<>(covarianceMatrix, dataset.getHashCols(), dataset.getHashCols());
+		} else {
+			covMatrix = null;
+		}
 
 		final DenseDoubleEigenvalueDecomposition eigDecom = new DenseDoubleEigenvalueDecomposition(covarianceMatrix);
 
@@ -65,6 +88,10 @@ public class PcaColt {
 
 	public DoubleMatrixDataset<String, String> getPcs() {
 		return pcs;
+	}
+
+	public DoubleMatrixDataset<String, String> getCovMatrix() {
+		return covMatrix;
 	}
 	
 }

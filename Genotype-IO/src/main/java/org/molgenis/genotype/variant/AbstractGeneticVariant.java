@@ -2,6 +2,7 @@ package org.molgenis.genotype.variant;
 
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.util.ChromosomeComparator;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculator;

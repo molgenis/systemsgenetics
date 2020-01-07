@@ -53,15 +53,13 @@ public class BgenixWriter {
 
 	/**
 	 *
-	 *
-	 * @param variant
+	 *  @param variant
 	 * @param startPos
 	 * @param sizeInBytesInBgenFile
 	 * @param variantId variant ID as is written to bgen file. Variant ID is
-	 * requered by bgen so might be different from the null ID that can be
-	 * stored in Genetic variant object
+* required by bgen so might be different from the null ID that can be
 	 */
-	public synchronized void addVariantToIndex(GeneticVariant variant, long startPos, int sizeInBytesInBgenFile, String variantId) {
+	public synchronized void addVariantToIndex(GeneticVariant variant, long startPos, long sizeInBytesInBgenFile, String variantId) {
 
 		if (finalized) {
 			throw new GenotypeDataException("Cannot add variants to bgenix after finalizing");
@@ -82,7 +80,7 @@ public class BgenixWriter {
 			addVariantStatement.setString(6, alleles.size() > 1 ? alleles.get(1) : null);
 			
 			addVariantStatement.setLong(7, startPos);
-			addVariantStatement.setInt(8, sizeInBytesInBgenFile);
+			addVariantStatement.setLong(8, sizeInBytesInBgenFile);
 
 			addVariantStatement.addBatch();
 			
