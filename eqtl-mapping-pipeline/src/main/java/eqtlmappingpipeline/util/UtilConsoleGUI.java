@@ -34,7 +34,7 @@ public class UtilConsoleGUI {
 		GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
 		SORTEQTLFILEBYZSCORE, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
 		ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE, PHENOTYPESAMPLEFILTER, SPLITEQTLFILEBYCHR, QTLFILEMERGE, EQTLEQTMLINK, SPLITPHENO,
-		SORTEQTLFILEBYCHRPOS, SPLITTRITYPERBYCHR, GETMAFFROMQCLOG, CALCULATEBETA, CONVERTTOSMR, CONVERTBINMAT
+		SORTEQTLFILEBYPVALUE, SORTEQTLFILEBYCHRPOS, SPLITTRITYPERBYCHR, GETMAFFROMQCLOG, CALCULATEBETA, CONVERTTOSMR, CONVERTBINMAT
 	}
 
 	;
@@ -121,6 +121,9 @@ public class UtilConsoleGUI {
 			} else if (arg.equals("--sorteqtlfilebyz") || arg.equals("--sortfile")) {
 				region = val;
 				run = MODE.SORTEQTLFILEBYZSCORE;
+			} else if (arg.equals("--sorteqtlfilebyp")) {
+				region = val;
+				run = MODE.SORTEQTLFILEBYPVALUE;
 			} else if (arg.equals("--sorteqtlfilebypos")) {
 				region = val;
 				run = MODE.SORTEQTLFILEBYCHRPOS;
@@ -351,6 +354,14 @@ public class UtilConsoleGUI {
 						} else {
 							QTLFileMerger m = new QTLFileMerger();
 							m.mergeChr(in, out);
+						}
+						break;
+					case SORTEQTLFILEBYPVALUE:
+						if (in == null) {
+							System.out.println("USAGE: --in eQTLFile --out eQTLFile");
+						} else {
+							QTLFileSorter f = new QTLFileSorter();
+							f.run(in, out, QTLFileSorter.SORTBY.P);
 						}
 						break;
 					case SORTEQTLFILEBYZSCORE:
