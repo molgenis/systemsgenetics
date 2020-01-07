@@ -112,8 +112,8 @@
                 <version>3.8.1</version>
                 <configuration>
                     <encoding>UTF-8</encoding>
-                    <source>8</source>
-                    <target>8</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -149,9 +149,9 @@
                     <execution>
                         <phase>process-test-resources</phase>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <copy file="src/test/resources/bgenExamples/example.16bits.bgen" todir="${project.build.testOutputDirectory}/bgenExamples" preservelastmodified="true"/>
-                            </tasks>
+                            </target>
                         </configuration>
                         <goals>
                             <goal>run</goal>
@@ -184,7 +184,6 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>2.10</version>
                         <configuration>
-                            <encoding>UTF-8</encoding>
                             <suiteXmlFiles>
                                 <suiteXmlFile>target/nb-private/testng-suite.xml</suiteXmlFile>
                             </suiteXmlFiles>
