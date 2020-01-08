@@ -4,7 +4,7 @@
  */
 package org.molgenis.genotype.bgen;
 
-import com.facebook.presto.orc.zstd.ZstdDecompressor;
+import com.github.luben.zstd.Zstd;
 import com.google.common.math.IntMath;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.*;
@@ -65,7 +65,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final List<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
 	private final Inflater gzipInflater = new Inflater();
-	private final ZstdDecompressor zstdInflater = new ZstdDecompressor();
 	private LinkedHashSet<String> sequenceNames = new LinkedHashSet<>();
 	private final BlockRepresentation snpBlockRepresentation;
 	private final Layout fileLayout;
@@ -1085,13 +1084,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				break;
 
 			case compression_2:
-				zstdInflater.decompress(
-						compressedBlockData,
-						0,
-						(int) variantBlockLength,
+				Zstd.decompress(
 						decompressedBlockData,
-						0,
-						(int) decompressedVariantBlockLength);
+						compressedBlockData);
 				break;
 
 			default:
