@@ -55,7 +55,7 @@ public class BgenixReaderTest extends ResourceTest {
 
 		//We can't test this since this is flexible.
 //		assertEquals(bgenixMeta.getIndexCreationTime(), 2017);
-//		assertEquals(bgenixMeta.getLastWriteTime(), (bgenFile.lastModified()/1000L));
+		assertEquals(bgenixMeta.getLastWriteTime(), 1568284398);
 
 		System.out.println(bgenix.getVariantCount());
 
