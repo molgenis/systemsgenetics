@@ -211,9 +211,8 @@ public class Main {
 		if(riskFileFolder.isDirectory()){
 			riskFiles = riskFileFolder.listFiles();
 		} else {
-			ArrayList<File> tmpList = new ArrayList<>();
-			tmpList.add(riskFileFolder);
-			riskFiles = (File[]) tmpList.toArray();
+			riskFiles = new File[1];
+			riskFiles[0] = riskFileFolder;
 		}
         
         
