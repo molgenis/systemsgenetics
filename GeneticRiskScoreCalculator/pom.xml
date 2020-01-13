@@ -9,7 +9,7 @@
         <version>1.0.3-SNAPSHOT</version>
     </parent>
     <artifactId>GeneticRiskScoreCalculator</artifactId>
-    <version>0.1.3.2-SNAPSHOT</version>
+    <version>0.1.3.3-SNAPSHOT</version>
     <name>Genetic Risk Score Calculator</name>
     <url>http://maven.apache.org</url>
     <properties>
@@ -92,8 +92,8 @@
                             -->
                             <classpathPrefix>lib/</classpathPrefix>
                             <!-- Specifies the main class of the application -->
-                            <!--<mainClass>nl.systemsgenetics.simplegeneticriskscorecalculator.Main</mainClass>-->
-                            <mainClass>nl.systemsgenetics.benchmark.Benchmark</mainClass>
+                            <mainClass>nl.systemsgenetics.simplegeneticriskscorecalculator.Main</mainClass>
+                            <!--<mainClass>nl.systemsgenetics.benchmark.Benchmark</mainClass>-->
                         </manifest>
                     </archive>
                 </configuration>
