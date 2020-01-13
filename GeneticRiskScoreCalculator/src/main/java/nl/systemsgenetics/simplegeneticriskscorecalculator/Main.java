@@ -209,7 +209,7 @@ public class Main {
 			System.out.println(riskFileFolder);
 			System.exit(-1);
 		}
-		File[] riskFiles = null;
+		File[] riskFiles;
 		if(riskFileFolder.isDirectory()){
 			riskFiles = riskFileFolder.listFiles();
 		} else {
