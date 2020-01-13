@@ -163,6 +163,11 @@ public class ReadOnlyGeneticVariantBgen extends AbstractGeneticVariant {
     }
 
     @Override
+    public boolean isPhasedDataPresent() {
+        return !this.getSamplePhasing().contains(false);
+    }
+
+    @Override
     public float[][] getSampleGenotypeProbilities() {
         return sampleVariantsProvider.getSampleProbilities(this);
     }
