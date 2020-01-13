@@ -6,11 +6,13 @@ package eqtlmappingpipeline.qcpca;
 
 import eqtlmappingpipeline.graphics.ScatterPlot;
 import umcg.genetica.math.PCA;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.SortableSNP;
 import umcg.genetica.io.Gpio;
@@ -20,13 +22,12 @@ import umcg.genetica.io.trityper.SNPLoader;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDataset;
 import umcg.genetica.io.trityper.TriTyperGeneticalGenomicsDatasetSettings;
 import umcg.genetica.io.trityper.util.DetermineLD;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Log2Transform;
 import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.QuantileNormalization;
 
 /**
- *
  * @author harmjan
  */
 public class QCPCA {
@@ -54,7 +55,6 @@ public class QCPCA {
             SNPLoader loader = ds.getGenotypeData().createSNPLoader();
 
 
-
             ArrayList<Integer> ldSNPs;
             int numsamples = ds.getTotalGGSamples();
             int[] indWGA = ds.getExpressionToGenotypeIdArray();
@@ -67,7 +67,6 @@ public class QCPCA {
                 // PCA based SNP window multiple regression pruning
                 ldSNPs = pruneSNPsByMLRegressionPCA(ds, loader);
             }
-
 
 
             System.out.println("Copying data to array");
@@ -220,24 +219,25 @@ public class QCPCA {
             out.close();
 
 // EXPRESSION DATA!    
-            double[][] rawData = ds.getExpressionData().getMatrix();
-            DoubleMatrixDataset<String,String> dataset = new DoubleMatrixDataset<String,String>(rawData.length, rawData[rawData.length - 1].length);
 
-            QuantileNormalization.quantilenormalize(rawData);
-            Log2Transform.log2transform(rawData);
-            dataset.rowObjects = Arrays.asList(ds.getExpressionData().getProbes());
-            dataset.colObjects = Arrays.asList(ds.getExpressionData().getIndividuals());
-            dataset.rawData = rawData;
-            
-            int nrProbes = dataset.rowObjects.size();
-            int nrSamples = dataset.colObjects.size();
+            DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>();
+            dataset.setMatrix(ds.getExpressionData().getMatrix());
+            dataset.setColObjects(Arrays.asList(ds.getExpressionData().getIndividuals()));
+            dataset.setRowObjects(Arrays.asList(ds.getExpressionData().getProbes()));
+            QuantileNormalization.quantilenormalize(dataset);
+            Log2Transform.log2transform(dataset);
+
+            int nrProbes = dataset.rows();
+            int nrSamples = dataset.columns();
             System.out.println("Standardizing probe mean and standard deviation");
-            for (int p = 0; p < dataset.rowObjects.size(); p++) {
-                double mean = Descriptives.mean(rawData[p]);
-                double stdev = Math.sqrt(Descriptives.variance(rawData[p], mean));
-                for (int s = 0; s < dataset.colObjects.size(); s++) {
-                    rawData[p][s] -= mean;
-                    //                rawData[p][s] /= stdev;   // do not scale each probe for stdev: this will remove the variation captured by the 
+            for (int p = 0; p < dataset.rows(); p++) {
+                double[] row = dataset.getRow(p).toArray();
+                double mean = Descriptives.mean(row);
+                double stdev = Math.sqrt(Descriptives.variance(row, mean));
+                for (int s = 0; s < dataset.columns(); s++) {
+                    double v = row[s];
+                    dataset.setElementQuick(p,s,v-mean);
+                    //                rawData[p][s] /= stdev;   // do not scale each probe for stdev: this will remove the variation captured by the
                 }
             }
 
@@ -245,7 +245,7 @@ public class QCPCA {
             for (int s = 0; s < nrSamples; s++) {
                 double[] vals = new double[nrProbes];
                 for (int p = 0; p < nrProbes; p++) {
-                    vals[p] = dataset.rawData[p][s];
+                    vals[p] = dataset.getElementQuick(p,s);
                 }
                 double mean = Descriptives.mean(vals);
                 for (int p = 0; p < nrProbes; p++) {
@@ -254,7 +254,7 @@ public class QCPCA {
                 double var = Descriptives.variance(vals, mean);
                 double stdev = Math.sqrt(var);
                 for (int p = 0; p < nrProbes; p++) {
-                    dataset.rawData[p][s] = (vals[p] / stdev);
+                    dataset.setElementQuick(p,s,(vals[p] / stdev));
                 }
             }
 
@@ -268,7 +268,7 @@ public class QCPCA {
 
                     double covarianceInterim = 0;
                     for (int p = 0; p < nrProbes; p++) {
-                        covarianceInterim += dataset.rawData[p][f] * dataset.rawData[p][g];
+                        covarianceInterim += dataset.getElementQuick(p,f)* dataset.getElementQuick(p,g);
                     }
                     double covariance = covarianceInterim / probeCountMinusOne;
                     correlationMatrix[f][g] = covariance;
@@ -323,7 +323,7 @@ public class QCPCA {
 
                     // sqrt[(1—r2)/(N—2)]
 
-                    cern.jet.random.tdouble.StudentT  tDistColt = new cern.jet.random.tdouble.StudentT(df, (new cern.jet.random.tdouble.engine.DRand()));
+                    cern.jet.random.tdouble.StudentT tDistColt = new cern.jet.random.tdouble.StudentT(df, (new cern.jet.random.tdouble.engine.DRand()));
 
                     double tTestPValue1 = tDistColt.cdf(t);
                     if (tTestPValue1 < bonferroni) {
@@ -751,21 +751,12 @@ public class QCPCA {
                         }
 
 
-
 //                        for(int query=0; query<windowsize; query++) {
-
-
-
-
-
-
-
 
 
                         //                        for(int sample=0; sample<10; sample++){
                         //                            System.out.println(snp1+"\t"+sample+"\t"+snpdata[snp1][sample]+"\t"+pcscores[snp1][sample]);
                         //                        }
-
 
 
 //                        }
@@ -823,7 +814,6 @@ public class QCPCA {
 //                        System.exit(0);
 
 
-
                         //                    // check for orthogonality
                         //                    for(int i=0;i<pcscores.length; i++){
                         //                    
@@ -842,7 +832,6 @@ public class QCPCA {
                         //                        }
                         //
                         //                    }
-
 
 
                     }
@@ -1044,4 +1033,4 @@ public class QCPCA {
 //                    }
 //                }
 //                
-                //            }
+//            }

@@ -5,7 +5,9 @@ import java.util.Collections;
 import java.util.List;
 
 import org.molgenis.genotype.Alleles;
+import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.util.FixedSizeIterable;
+import org.molgenis.genotype.util.ProbabilitiesConvertor;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GenotypeRecord;
 
@@ -67,6 +69,16 @@ public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
 		return sampleVariantsProvider.getSampleProbilities(variant);
+	}
+
+	@Override
+	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
+		return sampleVariantsProvider.getSampleProbabilitiesComplex(variant);
+	}
+
+	@Override
+	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
+		throw new GenotypeDataException("Phased data not available");
 	}
 
 	@Override

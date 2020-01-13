@@ -16,7 +16,7 @@ import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.io.trityper.util.BaseAnnot;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
-import umcg.genetica.math.matrix.DoubleMatrixDataset;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
 
 import java.util.ArrayList;
@@ -63,7 +63,7 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
 		ArrayList<Pair<String, String>> eQTLsTested = new ArrayList<Pair<String, String>>();
 
-		int nrTotalCovariates = covariateData.nrRows;
+		int nrTotalCovariates = covariateData.rows();
 
 		double[][] interactionZScoreMatrix = new double[eQTLsForSNP.size()][nrTotalCovariates];
 
@@ -121,10 +121,10 @@ public class InteractionAnalysisTask implements Callable<InteractionAnalysisResu
 
 				for (int i = 0; i < tmpVarCelCount.length; i++) {
 					String sampleName = expInds[i];
-					Integer individualIdInCovariateData = covariateData.hashCols.get(sampleName);
+					Integer individualIdInCovariateData = covariateData.getHashCols().get(sampleName);
 					if (individualIdInCovariateData != null) {
 						// presorting greatly speeds this stuff up
-						tmpVarCelCount[i] = covariateData.rawData[covariate][individualIdInCovariateData];
+						tmpVarCelCount[i] = covariateData.getElementQuick(covariate,individualIdInCovariateData); // rawData[covariate][individualIdInCovariateData];
 					} else {
 						tmpVarCelCount[i] = Double.NaN;
 					}

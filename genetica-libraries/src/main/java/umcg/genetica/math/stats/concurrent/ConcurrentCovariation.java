@@ -38,7 +38,10 @@ public class ConcurrentCovariation {
         for(int i=0; i<meanOfSamples.length; ++i){
             meanOfSamples[i] = Descriptives.mean(in[i]);
         }
-        
+
+
+
+
         for (int i = 0; i < in.length; i++) {
             ConcurrentCovariationTask task = new ConcurrentCovariationTask(in, meanOfSamples, i);
             pool.submit(task);

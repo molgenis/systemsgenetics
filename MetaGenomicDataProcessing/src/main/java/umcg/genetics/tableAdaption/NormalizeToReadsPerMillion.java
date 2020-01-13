@@ -20,7 +20,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 public class NormalizeToReadsPerMillion {
     
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\nonHumanReadsRNA_Seq\\Kraken\\TB_SA_Candida_kraken.merged.noEukaryot.Filtered.tsv";
         String cladeInformationFile = "D:\\UMCG\\Projects\\nonHumanReadsRNA_Seq\\Metaphlan\\CountBased\\cladeSize.txt";
 //        String fileNameMetaphlanTable = "D:\\UMCG\\Projects\\nonHumanReadsRNA_Seq\\Kraken\\TB_SA_kraken.merged.tsv";

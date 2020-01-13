@@ -12,6 +12,9 @@ deconvolution of expression quantitative trait loci ([Decon-eQTL](Decon-eQTL)) i
 In R do
 
 ```
+install.packages('devtools')
+install.packages('matrixStats')
+install.packages('truncnorm')
 library('devtools')
 # NOTE: This can take a few minutes:
 install_github("molgenis/systemsgenetics/Decon2/DeconCell")
@@ -78,6 +81,8 @@ write.table(new_count_table,
 
 In R
 
+**NOTE: run [Simulate count data](#Simulate-count-data) to get example_data/count.table.simulated.txt**
+
 ```r
 library(DeconCell)
 # read the count data
@@ -95,6 +100,9 @@ prediction <- dCell.predict(dCell.exp, dCell.models, res.type = "median")
 The prediction object contains the predicted cellcounts and model evaluation. For more info on model information, see the DeconCell Vignette. For this example run, we will use only 6 main cell types: ```Granulocytes```, ```Monocytes```, ```CD4+```, ```CD8+```, ```NK```, and ```B cells```. For Decon-eQTL the cellcounts have to be scaled to sum to 100.
 
 In R
+
+**NOTE: run [Simulate count data](#Simulate-count-data) to get example_data/count.table.simulated.txt**
+
 
 ```r
 # select relevant cell types
@@ -130,7 +138,7 @@ java -jar Decon-eQTL-v*.*.*-jar-with-dependencies.jar \
 	--outfolder example_output/
 ```
 
-A file called ```deconvolutionResults.csv``` will be written to ```example_output/```. Below is one line from the deconvolution result file. The first 6 columns are the p-values for each of the cell types, and the last 6 columns are the beta (effect size) of the cell type - genotype interaction effect, relative to the allele that is coded as 2 in the dosage file. So if `A/A = 0`, `A/T = `, and `T/T = 2`, a negative beta means that the `T` has allele has a negative effect on expression.
+A file called ```deconvolutionResults.csv``` will be written to ```example_output/```. Below is one line from the deconvolution result file. The first 6 columns are the p-values for each of the cell types, and the last 6 columns are the beta (effect size) of the cell type - genotype interaction effect, relative to the allele that is coded as 2 in the dosage file. So if `A/A = 0`, `A/T = `, and `T/T = 2`, a negative beta means that the `T` allele has a negative effect on expression.
 
 
 |	|Granulocytes_pvalue	|B cells (CD19+)_pvalue	|CD4+ T cells_pvalue	|CD8+ T cells_pvalue	|NK cells (CD3- CD56+)_pvalue	|Monocytes (CD14+)_pvalue	|Beta1_Granulocytes	|Beta2_B cells (CD19+)	|Beta3_CD4+ T cells	|Beta4_CD8+ T cells	|Beta5_NK cells (CD3- CD56+)	|Beta6_Monocytes (CD14+)	|Beta7_Granulocytes:GT	|Beta8_B cells (CD19+):GT	|Beta9_CD4+ T cells:GT	|Beta10_CD8+ T cells:GT	|Beta11_NK cells (CD3- CD56+):GT	|Beta12_Monocytes (CD14+):GT

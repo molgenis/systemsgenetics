@@ -4,16 +4,13 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
-import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import cern.colt.matrix.tint.IntMatrix2D;
 import cern.jet.random.tdouble.StudentT;
 import cern.jet.random.tdouble.engine.DRand;
-import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
-import umcg.genetica.math.stats.Descriptives;
+import eqtlmappingpipeline.metaqtl3.containers.Settings;
+import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLPlotter;
-import java.util.HashSet;
-import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.commons.math3.distribution.FDistribution;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
@@ -21,10 +18,13 @@ import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.TriTyperExpressionData;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 import umcg.genetica.math.stats.Correlation;
+import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.ZScores;
 
+import java.util.HashSet;
+import java.util.concurrent.LinkedBlockingQueue;
+
 /**
- *
  * @author harmjan
  */
 class CalculationThread extends Thread {
@@ -35,36 +35,36 @@ class CalculationThread extends Thread {
     private int m_numProbes;
     private int m_numDatasets;
     private final int[][] m_expressionToGenotypeIds;
-//    private final double[][] probeVariance;
+    //    private final double[][] probeVariance;
 //    private final double[][] probeMean;
 //    private final String[][] probeName;
     private final LinkedBlockingQueue<WorkPackage> m_workpackage_queue;
     private final LinkedBlockingQueue<WorkPackage> m_result_queue;
     int testsPerformed = 0;
     public boolean done = false;
-//    private int failedQC;
+    //    private int failedQC;
     private boolean cisOnly;
-//    private boolean cisTrans;
+    //    private boolean cisTrans;
     private boolean transOnly;
-//    private boolean useAbsolutePValues;
+    //    private boolean useAbsolutePValues;
     private final EQTLPlotter m_eQTLPlotter;
     private final double m_pvaluePlotThreshold;
     private boolean determinebeta = false;
     private boolean determinefoldchange = false;
     private WorkPackage currentWP;
-//    private boolean m_binaryoutput = false;
+    //    private boolean m_binaryoutput = false;
     private final DoubleMatrixDataset<String, String>[] m_covariates;
 
     private final boolean m_useAbsoluteZScores;
-    private final boolean testSNPsPresentInBothDatasets; 
+    private final boolean testSNPsPresentInBothDatasets;
     private boolean metaAnalyseInteractionTerms = false;
     private boolean metaAnalyseModelCorrelationYHat = false;
     private static DRand randomEngine = new cern.jet.random.tdouble.engine.DRand();
 
     CalculationThread(int i, LinkedBlockingQueue<WorkPackage> packageQueue, LinkedBlockingQueue<WorkPackage> resultQueue, TriTyperExpressionData[] expressiondata,
-            DoubleMatrixDataset<String, String>[] covariates,
-            IntMatrix2D probeTranslationTable,
-            int[][] expressionToGenotypeIds, Settings settings, EQTLPlotter plotter, boolean binaryoutput, boolean useAbsoluteZScores, boolean testSNPsPresentInBothDatasets) {
+                      DoubleMatrixDataset<String, String>[] covariates,
+                      IntMatrix2D probeTranslationTable,
+                      int[][] expressionToGenotypeIds, Settings settings, EQTLPlotter plotter, boolean binaryoutput, boolean useAbsoluteZScores, boolean testSNPsPresentInBothDatasets) {
 //        m_binaryoutput = binaryoutput;
         m_name = i;
         m_workpackage_queue = packageQueue;
@@ -80,7 +80,7 @@ class CalculationThread extends Thread {
         m_numProbes = m_probeTranslation.columns();
         m_numDatasets = m_probeTranslation.rows();
         m_expressionToGenotypeIds = expressionToGenotypeIds;
-        
+
 //        probeVariance = new double[m_numDatasets][0];
 //        probeMean = new double[m_numDatasets][0];
 //        probeName = new String[m_numDatasets][0];
@@ -159,6 +159,7 @@ class CalculationThread extends Thread {
 
                 double[] x = dSNP.selectGenotypes(m_expressionToGenotypeIds[d], false, true);
                 originalgenotypes[d] = dSNP.selectGenotypes(m_expressionToGenotypeIds[d], false, false);
+
 
                 int xLen = x.length;
                 double meanX = JSci.maths.ArrayMath.mean(x);
@@ -341,12 +342,11 @@ class CalculationThread extends Thread {
 //        System.out.println("Analyze: "+t1.getTimeDesc());
     }
 
-    
-    
+
     protected static void test(int d, int p, Integer probeId, double[] x, double[] originalGenotypes, double varianceX, double varianceY, double meanY, boolean[] includeExpressionSample, int sampleCount, double[][] rawData, double[][] covariateRawData, Result r, WorkPackage wp, boolean metaAnalyseModelCorrelationYHat, boolean metaAnalyseInteractionTerms, boolean determinefoldchange) {
         final double[] y;
         double[][] covariates = covariateRawData;
-        
+
         if (x.length != sampleCount) {
             y = new double[x.length];
             int itr = 0;
@@ -361,11 +361,12 @@ class CalculationThread extends Thread {
                     itr++;
                 }
             }
+
             meanY = sum / itr;
-            
-            if(meanY!=0){
-                for(int i = 0; i < y.length; ++i){
-                    y[i] = y[i]-meanY;
+
+            if (meanY != 0) {
+                for (int i = 0; i < y.length; ++i) {
+                    y[i] = y[i] - meanY;
                 }
                 meanY = 0;
             }
@@ -390,24 +391,24 @@ class CalculationThread extends Thread {
             y = new double[x.length];
             System.arraycopy(rawData[probeId], 0, y, 0, x.length);
         }
-        
-        
+
+
         double meanX = JSci.maths.ArrayMath.mean(x);
-        if(meanY > 0.000000001d || meanY < -0.00000001d || meanX > 0.000000001d || meanX < -0.00000001d){
-            
+        if (meanY > 0.000000001d || meanY < -0.00000001d || meanX > 0.000000001d || meanX < -0.00000001d) {
+
             double res = 0;
-            for(double y2 : y){
+            for (double y2 : y) {
                 res += y2;
             }
             res /= y.length;
-            
+
             double res2 = 0;
-            for(double x2 : x){
+            for (double x2 : x) {
                 res2 += x2;
             }
             res2 /= x.length;
-            
-            throw new RuntimeException("Error in eQTL calculation, mean of X or Y was not 0, specified mean y: " + meanY + " and really is: " + res+", specified mean x: " + meanX + " and really is: " + res2);
+
+            throw new RuntimeException("Error in eQTL calculation, mean of X or Y was not 0, specified mean y: " + meanY + " and really is: " + res + ", specified mean x: " + meanX + " and really is: " + res2);
         }
 
 
@@ -456,7 +457,7 @@ class CalculationThread extends Thread {
                 double tInteraction = betaInteraction / seInteraction;
                 double pValueInteraction;
                 double zScoreInteraction;
-                
+
                 StudentT tDistColt = new cern.jet.random.tdouble.StudentT(x.length - 4, randomEngine);
                 if (tInteraction < 0) {
                     pValueInteraction = tDistColt.cdf(tInteraction);
@@ -476,7 +477,7 @@ class CalculationThread extends Thread {
                 r.correlations[d][p] = regressionFullWithInteraction.calculateRSquared();
                 r.se[d][p] = seInteraction;
                 r.beta[d][p] = betaInteraction;
-                
+
             } else {
                 double residualSS = regressionFullWithInteraction.calculateResidualSumOfSquares();
                 double r2 = regressionFullWithInteraction.calculateRSquared();
@@ -521,22 +522,19 @@ class CalculationThread extends Thread {
 
             if (correlation >= -1 && correlation <= 1) {
                 double zScore = Correlation.convertCorrelationToZScore(x.length, correlation);
-                double[] xcopy = new double[x.length];
+//				double[] xcopy = new double[x.length];
 //                double meany = JSci.maths.ArrayMath.mean(y);
-                for (int i = 0; i < y.length; i++) {
-                    y[i] /= stdevy;
-                    xcopy[i] = x[i] / stdevx;
-                }
 
 //                meany = JSci.maths.ArrayMath.mean(y);
 //                double meanxCopy = JSci.maths.ArrayMath.mean(xcopy);
 //                calculateRegressionCoefficients(xcopy, meanxCopy, y, meany, randomNumberGenerator, d, p);
-                calculateRegressionCoefficients(xcopy, y, r, d, p);
+                // calculateRegressionCoefficients(xcopy, y, r, d, p);
                 if (determinefoldchange) {
                     determineFoldchange(originalGenotypes, y, r, d, p, wp);
                 }
                 r.zscores[d][p] = zScore;
                 r.correlations[d][p] = correlation;
+
             } else {
                 // Ususally if the genotype variance is very low
                 System.err.println("Error! correlation invalid: " + correlation + "; genotype variance = " + varianceX + "; expression variance = " + varianceY);
@@ -565,9 +563,9 @@ class CalculationThread extends Thread {
         }
 
         r.beta[d][p] = beta;
-        r.se[d][p] = Math.sqrt((ssxy/(y.length - 2))/sxx);
+        r.se[d][p] = Math.sqrt((ssxy / (y.length - 2)) / sxx);
     }
-    
+
     private static void calculateRegressionCoefficients(double[] x, double meanx, double[] y, double meany, Result r, int d, int p) {
         double beta;
         double alpha;
@@ -653,41 +651,61 @@ class CalculationThread extends Thread {
             int nrDatasetsPassingQC = 0;
             int nrTotalSamples = 0;
             double zSum = 0;
+            int nrTotalAlleleAssessed = 0;
+
 
             for (int d = 0; d < m_numDatasets; d++) {
-                // TODO: check whether this actually returns the correct Z-scores: should the stored values be flipped?
+
                 double zscore = dsResults.zscores[d][p];
                 double correlation = dsResults.correlations[d][p];
 
                 Integer numSamples = dsResults.numSamples[d];
-                if (!Double.isNaN(correlation)) {
-                    boolean flipalleles = wp.getFlipSNPAlleles()[d];
-                    if (m_useAbsoluteZScores) {
-                        zscore = Math.abs(zscore);
-                        dsResults.zscores[d][p] = Math.abs(zscore);
-                        dsResults.correlations[d][p] = Math.abs(correlation);
-                        if (!Double.isNaN(dsResults.beta[d][p])) {
-                            dsResults.beta[d][p] = Math.abs(dsResults.beta[d][p]);
-                        }
-                        wp.getFlipSNPAlleles()[d] = false;
-                    } else if (flipalleles) {
-                        zscore = -zscore;
+                if (wp.getSnps()[d] != null) {
+                    double maf = wp.getSnps()[d].getMAF();
+
+
+                    if (!Double.isNaN(correlation)) {
+                        boolean flipalleles = wp.getFlipSNPAlleles()[d];
+                        double[] betaAndSe = ZScores.zToBeta(zscore, maf, numSamples);
+                        dsResults.beta[d][p] = betaAndSe[0];
+                        dsResults.se[d][p] = betaAndSe[1];
+
+
+                        if (m_useAbsoluteZScores) {
+                            zscore = Math.abs(zscore);
+                            dsResults.zscores[d][p] = Math.abs(zscore);
+                            dsResults.correlations[d][p] = Math.abs(correlation);
+                            dsResults.beta[d][p] = Math.abs(betaAndSe[0]);
+                            wp.getFlipSNPAlleles()[d] = false;
+                        } else if (flipalleles) {
+                            zscore = -zscore;
+
+                            // NOTE: z-scores and correlations get flipped once more when writing output.
 //                        dsResults.zscores[d][p] = zscore;
 //                        correlation = -correlation;
 //                        dsResults.correlations[d][p] = correlation;
-                    }
-                    nrDatasetsPassingQC++;
+                        }
+                        nrDatasetsPassingQC++;
+                        double weight = Descriptives.getSqrt(numSamples);
 
-                    double weight = Descriptives.getSqrt(numSamples);
+                        zSum += (zscore * weight);
+                        nrTotalSamples += numSamples;
 
-                    zSum += (zscore * weight);
-                    nrTotalSamples += numSamples;
-    
-                    if (flipalleles) {
-                        dsResults.beta[d][p] = -dsResults.beta[d][p];
+                        SNP snp = wp.getSnps()[d];
+                        if (flipalleles) {
+                            nrTotalAlleleAssessed += (snp.getGenotypeFreq()[2] * 2) + snp.getGenotypeFreq()[1];
+                        } else {
+                            nrTotalAlleleAssessed += (snp.getGenotypeFreq()[0] * 2) + snp.getGenotypeFreq()[1];
+                        }
+
+
+//					if (flipalleles) {
+//						dsResults.beta[d][p] = -dsResults.beta[d][p];
+//					}
+
                     }
-                    
                 }
+
             }
 
             if (nrTotalSamples > 0 && (testSNPsPresentInBothDatasets && nrDatasetsPassingQC == m_numDatasets) || (!testSNPsPresentInBothDatasets && nrDatasetsPassingQC > 0)) {
@@ -699,14 +717,28 @@ class CalculationThread extends Thread {
                 dsResults.pvalues[p] = pValueOverall;
                 dsResults.finalZScore[p] = zScore;
 
-                
+
+                int totalAlleles = nrTotalSamples * 2;
+                if (nrTotalAlleleAssessed > totalAlleles) {
+                    System.err.println("Error in beta calculation: nr alleles assessed " + nrTotalAlleleAssessed + " bigger than nr total allelles " + totalAlleles);
+
+                }
+
+
+                double freq = (double) nrTotalAlleleAssessed / totalAlleles;
+                if (freq > 0.5) {
+                    freq = 1 - freq;
+                }
+
+                double[] betaAndSe = ZScores.zToBeta(zScore, freq, nrTotalSamples);
+                dsResults.finalBeta[p] = betaAndSe[0];
+                dsResults.finalBetaSe[p] = betaAndSe[1];
+
                 // calculate total MAF
-                
-                
+
+
                 // derive beta + se from meta-analyzed Z-score
 //                double[] metabetastats = ZScores.zToBeta(zScore,totalmaf,nrTotalSamples);
-//                dsResults.finalBeta[p] = metabetastats[0];
-//                dsResults.finalBetaSe[p] = metabetastats[1];
             } else {
                 dsResults.pvalues[p] = Double.NaN;
                 dsResults.finalZScore[p] = Double.NaN;
@@ -722,6 +754,7 @@ class CalculationThread extends Thread {
     private void ploteQTL(WorkPackage wp, int p) {
         m_eQTLPlotter.draw(wp, p);
     }
+
     private int tmpbuffersize = 4096;
 //
 //    private byte[] deflate(byte[] input) {

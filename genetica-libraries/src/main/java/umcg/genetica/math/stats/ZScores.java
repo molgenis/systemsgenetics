@@ -21,8 +21,8 @@ public class ZScores {
 		return r;
 	}
 	
-	
-	private static NormalDistribution normDist;
+	private final static NormalDistribution NORM_DIST = new NormalDistribution();
+
 	
 	/**
 	 * Calculates a weighted Z-score according to Whitlock's paper:
@@ -163,15 +163,11 @@ public class ZScores {
 	 */
 	public static double zToP(double z) {
 		
-		if (normDist == null) {
-			normDist = new NormalDistribution();
-			System.out.println("Creating new Normal Dist");
-		}
 		double p;
 		if (z > 0) {
-			p = normDist.cumulative(-z);
+			p = NORM_DIST.cumulative(-z);
 		} else {
-			p = normDist.cumulative(z);
+			p = NORM_DIST.cumulative(z);
 		}
 		if (p > 0.5) {
 			p = 1 - p;
@@ -182,11 +178,11 @@ public class ZScores {
 	}
 	
 	/**
-	 * Returns the absolute Z-score for a given p-value using a normal
+	 * Returns the negative Z-score for a given p-value using a normal
 	 * distribution.
 	 *
 	 * @param p p-value
-	 * @return absolute Z-score
+	 * @return negative Z-score
 	 */
 	public static double pToZ(double p) {
 		if (p == 1d) {
@@ -194,14 +190,14 @@ public class ZScores {
 		} else if (p < 0 || p > 1d) {
 			throw new IllegalStateException("P-value should be between 0 and 1.");
 		} else if (p == 0d) {
-			return 40d;
+			return -40d;
 		}
 		
 		return Probability.normalInverse(p);
 	}
 	
 	/**
-	 * Returns the absolute Z-score for a given p-value using a normal
+	 * Returns the negative Z-score for a given p-value using a normal
 	 * distribution.
 	 *
 	 * @param p p-value
@@ -434,8 +430,9 @@ public class ZScores {
 	
 	public static double[] zToBeta(double z, double maf, int n) {
 		double chi = z * z;
-		double beta = z / Math.sqrt(2 * maf * (1 - maf) * (n + chi));
-		double se = 1d / Math.sqrt(2 * maf * (1 - maf) * (n + chi));
+		double a = 2 * maf * (1 - maf) * (n + chi);
+		double beta = z / Math.sqrt(a);
+		double se = 1d / Math.sqrt(a);
 		return new double[]{beta, se};
 	}
 	

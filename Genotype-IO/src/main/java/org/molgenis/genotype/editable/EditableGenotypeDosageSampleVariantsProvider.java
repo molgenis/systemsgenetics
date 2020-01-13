@@ -95,6 +95,16 @@ public class EditableGenotypeDosageSampleVariantsProvider implements EditableSam
 	}
 
 	@Override
+	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
+		return ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(getSampleProbilities(variant));
+	}
+
+	@Override
+	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
+		throw new GenotypeDataException("Phased data not available");
+	}
+
+	@Override
 	public GeneticVariantMeta getGeneticVariantMeta() {
 		return this.geneticVariantMeta;
 	}
