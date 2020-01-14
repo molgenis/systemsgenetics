@@ -392,14 +392,21 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 
 					if (settings.getRescalingOfSampleSize()) {
 						weights = new double[sampleSizes.length];
-						for (int d = 0; d < datasetZScores.length; d++) {
-							Double rescaleValue = datasets[d].getFeatureOccuranceScaleMap().get(t.getPlatformIds()[d]);
-							if (!Double.isFinite(rescaleValue)) {
-								System.out.println("Warning for feature: " + t.getPlatformIds()[d] + " no rescale value set for: " + datasets[d].getName() + "\n Defaulted to weight of 1.");
+						for(int d=0; d<datasetZScores.length;d++){
+							if(debug){
+								System.out.println("Dataset: "+d);
+								System.out.println("Dataset name: "+datasets[d].getName());
+								System.out.println("Dataset platformId: "+t.getPlatformIds()[0]);
+								System.out.println("Dataset rescaling size: "+datasets[d].getFeatureOccuranceScaleMap().size());
+								System.out.println("Dataset rescaling contains key: "+datasets[d].getFeatureOccuranceScaleMap().containsKey(t.getPlatformIds()[0]));
+							}
+							Double rescaleValue = datasets[d].getFeatureOccuranceScaleMap().get(t.getPlatformIds()[0]);
+							if(rescaleValue==null || !Double.isFinite(rescaleValue)){
+								System.out.println("Warning for feature: "+ t.getPlatformIds()[0] + " no rescale value set for: " + datasets[d].getName()+"\n Defaulted to weight of 1.");
 								rescaleValue = 1.0d;
 							}
-							if (debug) {
-								System.out.println("Weight for: " + t.getPlatformIds()[d] + " is: " + rescaleValue);
+							if(debug){
+								System.out.println("Weight for: "+t.getPlatformIds()[0]+" is: "+rescaleValue);
 							}
 							weights[d] = rescaleValue;
 						}
@@ -411,7 +418,7 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 						if (!settings.getRescalingOfSampleSize()) {
 							metaAnalysisZ = ZScores.getWeightedZ(datasetZScores, sampleSizes);
 						} else {
-							metaAnalysisZ = ZScores.getWeightedZ(datasetZScores, sampleSizes, weights);
+							metaAnalysisZ = ZScores.getDatasetSizeWeightedZ(datasetZScores, sampleSizes, weights);
 						}
 
 						if (debug && traitList[probe].getMetaTraitName().equals("ENSG00000132465")) {

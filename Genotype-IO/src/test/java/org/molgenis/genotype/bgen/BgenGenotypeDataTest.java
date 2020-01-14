@@ -441,3 +441,4 @@ public class BgenGenotypeDataTest extends ResourceTest {
 		}
 	}
 }
+
