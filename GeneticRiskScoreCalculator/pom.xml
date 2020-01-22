@@ -93,7 +93,7 @@
                             <classpathPrefix>lib/</classpathPrefix>
                             <!-- Specifies the main class of the application -->
                             <mainClass>nl.systemsgenetics.simplegeneticriskscorecalculator.Main</mainClass>
-<!--                            <mainClass>nl.systemsgenetics.benchmark.Benchmark</mainClass>-->
+                            <!--<mainClass>nl.systemsgenetics.benchmark.Benchmark</mainClass>-->
                         </manifest>
                     </archive>
                 </configuration>

@@ -54,7 +54,7 @@ public class Main {
 		Option FileOut = OptionBuilder.withArgName("path").hasArg().withDescription("Location (folder) for the output.").withLongOpt("OutputFolder").create("o");
 		Option GenotypeTypeIn = OptionBuilder.withArgName("type").hasArg().withDescription("Type of reference data.").withLongOpt("GenotypeType").create("gt");
 		Option GenotypeIn = OptionBuilder.withArgName("path").hasArg().withDescription("Location for the reference data.").withLongOpt("GenotypeLocation").create("gi");
-		Option InFolder = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the folder with genetic risk score information.").withLongOpt("input").create("i");
+		Option InFolder = OptionBuilder.withArgName("path").hasArg().withDescription("Location of the file/folder with genetic risk score information.").withLongOpt("input").create("i");
 		Option rSquared = OptionBuilder.withArgName("double").hasArg().withDescription("R2 for pruning.").withLongOpt("rSquared").create("r");
 		Option pValueThreshold = OptionBuilder.withArgName("double").hasArg().withDescription("P-value thresholds for genetic risk score inclusion, colon separated should be ordered from most stringent to least stringent.").withLongOpt("pValue").create("p");
 		Option WindowSize = OptionBuilder.withArgName("double").hasArg().withDescription("Window size for pruning, if given two window-sizes (colon separated), a two step window approach is used.").withLongOpt("wSize").create("w");
@@ -205,11 +205,17 @@ public class Main {
 
 		File riskFileFolder = new File(riskFolder);
 		if (!riskFileFolder.exists()) {
-			System.out.println("Warning: input risk folder does not exists:\n");
+			System.out.println("Warning: input risk file / folder does not exists:\n");
 			System.out.println(riskFileFolder);
 			System.exit(-1);
 		}
-		File[] riskFiles = riskFileFolder.listFiles();
+		File[] riskFiles;
+		if(riskFileFolder.isDirectory()){
+			riskFiles = riskFileFolder.listFiles();
+		} else {
+			riskFiles = new File[1];
+			riskFiles[0] = riskFileFolder;
+		}
 
 
 		IntStream.range(0, riskFiles.length).parallel().forEach(fi -> {
