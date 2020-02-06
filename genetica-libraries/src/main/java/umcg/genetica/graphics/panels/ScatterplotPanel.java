@@ -33,6 +33,8 @@ public class ScatterplotPanel extends Panel {
 	private float alpha = 1.0f;
 	private boolean clip = true;
 	private double[][] colorValues;
+	private double nrTicksMarksX = 2;
+	private double nrTicksMarksY = 2;
 
 	public void disableClipping() {
 		clip = false;
@@ -352,7 +354,7 @@ public class ScatterplotPanel extends Panel {
 	private void plotAxes(Graphics2D g2d, Range plotRange, int nrPixelsMaxX, int nrPixelsMaxY) {
 
 		g2d.setColor(theme.getDarkGrey());
-		double tickUnitY = plotRange.getRangeY() / 10;
+		double tickUnitY = plotRange.getRangeY() / nrTicksMarksY;
 		String pattern = "###,###,###.###";
 		DecimalFormat decimalFormat = new DecimalFormat(pattern);
 		g2d.setFont(theme.getMediumFont());
@@ -361,25 +363,27 @@ public class ScatterplotPanel extends Panel {
 
 		// plot cross X
 
-		g2d.setColor(theme.getLightGrey());
+		g2d.setColor(theme.getDarkGrey());
 
 		int yPosXAxis = y0 + marginY + nrPixelsMaxY + 10;
 
 		int xPosXAxis = x0 + marginX;
 		g2d.setStroke(theme.getStroke());
 		g2d.drawLine(xPosXAxis, yPosXAxis, xPosXAxis + nrPixelsMaxX, yPosXAxis);
-		double tickUnitX = plotRange.getRangeX() / 10;
+		double tickUnitX = plotRange.getRangeX() / nrTicksMarksX;
 
 		// X axis
 		// plot x-axis
 		// center x-axis around 0
 		if (dataRange.getMinX() < 0 && dataRange.getMaxX() > 0) {
+			g2d.setColor(theme.getLightGrey());
 			g2d.setStroke(theme.getStrokeDashed());
 			double perc = dataRange.getRelativePositionX(0);
 			int pixelX = x0 + marginX + (int) Math.ceil(nrPixelsMaxX * perc);
 			int ystart = y0 + marginY + nrPixelsMaxY;
 			int ystop = y0 + marginY;
 			g2d.drawLine(pixelX, ystart, pixelX, ystop);
+			g2d.setColor(theme.getDarkGrey());
 			g2d.setStroke(theme.getStroke());
 			for (double xval = 0; xval < plotRange.getMaxX() + (tickUnitX / 2); xval += tickUnitX) {
 				double xPerc = plotRange.getRelativePositionX(xval);
@@ -392,6 +396,7 @@ public class ScatterplotPanel extends Panel {
 
 		} else {
 			// plot other values
+			g2d.setColor(theme.getDarkGrey());
 			g2d.setStroke(theme.getStroke());
 			for (double xval = plotRange.getMinX(); xval < plotRange.getMaxX() + (tickUnitX / 2); xval += tickUnitX) {
 				double xPerc = plotRange.getRelativePositionX(xval);
@@ -401,6 +406,7 @@ public class ScatterplotPanel extends Panel {
 
 		if (xAxisLabel != null) {
 			g2d.setFont(theme.getLargeFont());
+			g2d.setColor(theme.getDarkGrey());
 			// determine middle of axis
 			int middle = xPosXAxis + (nrPixelsMaxX / 2);
 			int lengthOfAxisStr = metrics.stringWidth(xAxisLabel);
@@ -414,18 +420,21 @@ public class ScatterplotPanel extends Panel {
 		int xPosYAxis = x0 + marginX - 10;
 		int yPosYAxis = y0 + marginY;
 		g2d.setStroke(theme.getStroke());
+		g2d.setColor(theme.getDarkGrey());
 		g2d.drawLine(xPosYAxis, yPosYAxis, xPosYAxis, yPosYAxis + nrPixelsMaxY);
 
 		int maxlen = 0;
 		// plot cross Y
 		if (dataRange.getMinY() < 0 && dataRange.getMaxY() > 0) {
 			g2d.setStroke(theme.getStrokeDashed());
+			g2d.setColor(theme.getLightGrey());
 			double perc = dataRange.getRelativePositionY(0);
 			int pixelY = y0 + marginY + nrPixelsMaxY - (int) Math.ceil(nrPixelsMaxY * perc);
 			int xstart = x0 + marginX + nrPixelsMaxX;
 			int xstop = x0 + marginX;
 			g2d.drawLine(xstart, pixelY, xstop, pixelY);
 			g2d.setStroke(theme.getStroke());
+			g2d.setColor(theme.getDarkGrey());
 			for (double yval = 0; yval < plotRange.getMaxY() + (tickUnitY / 2); yval += tickUnitY) {
 				double yPerc = plotRange.getRelativePositionY(yval);
 				plotYAxisTick(xPosYAxis, yval, yPerc, nrPixelsMaxY, decimalFormat, g2d, metrics, maxlen);
@@ -437,6 +446,7 @@ public class ScatterplotPanel extends Panel {
 
 		} else {
 			g2d.setStroke(theme.getStroke());
+			g2d.setColor(theme.getDarkGrey());
 			for (double yval = plotRange.getMinY(); yval < plotRange.getMaxY() + (tickUnitY / 2); yval += tickUnitY) {
 				double yPerc = plotRange.getRelativePositionY(yval);
 				plotYAxisTick(xPosYAxis, yval, yPerc, nrPixelsMaxY, decimalFormat, g2d, metrics, maxlen);
@@ -450,6 +460,7 @@ public class ScatterplotPanel extends Panel {
 
 
 		if (yAxisLabel != null) {
+			g2d.setColor(theme.getDarkGrey());
 			g2d.setFont(theme.getLargeFont());
 			// determine middle of axis
 			int middle = yPosYAxis + (nrPixelsMaxY / 2);

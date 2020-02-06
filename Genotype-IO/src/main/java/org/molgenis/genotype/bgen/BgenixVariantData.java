@@ -18,7 +18,7 @@ public class BgenixVariantData {
 	private final String allele1;
 	private final String allele2;
 	private final long file_start_position;
-	private final int size_in_bytes;
+	private final long size_in_bytes;
 
 	public BgenixVariantData(String chromosome, int position, String rsid, int number_of_alleles, String allele1, String allele2, long file_start_position, int size_in_bytes) {
 		this.chromosome = chromosome;
@@ -59,7 +59,7 @@ public class BgenixVariantData {
 		return file_start_position;
 	}
 
-	public int getSize_in_bytes() {
+	public long getSize_in_bytes() {
 		return size_in_bytes;
 	}
 

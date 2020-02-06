@@ -84,6 +84,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public DoubleMatrixDataset(DoubleMatrix2D matrix, LinkedHashMap<R, Integer> hashRows, LinkedHashMap<C, Integer> hashCols) {
+		
+		if(hashRows.size() != matrix.rows()){
+			throw new IllegalArgumentException("Matrix contains " + matrix.rows() + " rows but rowmap contains " + hashRows.size());
+		}
+		
+		if(hashCols.size() != matrix.columns()){
+			throw new IllegalArgumentException("Matrix contains " + matrix.columns()+ " cols but colmap contains " + hashCols.size());
+		}
+		
 		this.hashRows = hashRows;
 		this.hashCols = hashCols;
 		this.matrix = matrix;
@@ -184,7 +193,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static List<String> readDoubleTextDataColNames(String fileName, char delimiter) throws IOException {
-		if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
+		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz")  || fileName.endsWith(".tsv.bgz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct") || fileName.endsWith(".gct.gz"))) {
 			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
 		}
 
@@ -209,12 +218,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static List<String> readDoubleTextDataRowNames(String fileName, char delimiter) throws IOException {
-		if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
+		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz")  || fileName.endsWith(".tsv.bgz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct") || fileName.endsWith(".gct.gz"))) {
 			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
 		}
 
 		//Pattern splitPatern = Pattern.compile(delimiter);
-		
 		TextFile in = new TextFile(fileName, TextFile.R);
 		String str = in.readLine(); // header
 		String[] data = StringUtils.splitPreserveAllTokens(str, delimiter);
@@ -231,7 +239,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, char delimiter) throws IOException, Exception {
-		if (!(fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
+		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz")  || fileName.endsWith(".tsv.bgz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct") || fileName.endsWith(".gct.gz"))) {
 			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
 		}
 
@@ -495,7 +503,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, Set<String> desiredRows, Set<String> desiredCols, int linesToSkip) throws IOException, Exception {
-		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct"))) {
+		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz")  || fileName.endsWith(".tsv.bgz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct") || fileName.endsWith(".gct.gz"))) {
 			throw new IllegalArgumentException("File type must be .txt or .tsv when delimiter is given (given filename: " + fileName + ")");
 		}
 
@@ -818,6 +826,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		for (R row : hashRows.keySet()) {
 			out.append(row.toString());
 			out.append('\t');
+			//This is a very slow implementation. 
 			matrix.viewRow(r).toArray(data);
 			out.append(Strings.concat(data, Strings.tab));
 			out.append('\n');
@@ -905,6 +914,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public void setHashRows(LinkedHashMap<R, Integer> hashRows) {
+
+		if (hashRows.size() != rows()) {
+			throw new RuntimeException("Unable to update hashRows, size mismatch");
+		}
+
 		this.hashRows = hashRows;
 	}
 
@@ -913,6 +927,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public void setHashCols(LinkedHashMap<C, Integer> hashCols) {
+
+		if (hashCols.size() != columns()) {
+			throw new RuntimeException("Unable to update hashCols, size mismatch");
+		}
+
 		this.hashCols = hashCols;
 	}
 
@@ -1453,7 +1472,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public DoubleMatrix1D viewRow(R row) {
 		return matrix.viewRow(hashRows.get(row));
 	}
-	
+
 	public DoubleMatrix1D viewRow(int row) {
 		return matrix.viewRow(row);
 	}
@@ -1798,15 +1817,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		DoubleMatrix2D m = DoubleFactory2D.dense.appendColumns(m1, m2);
 
 		LinkedHashMap<String, Integer> mergedHashCols = new LinkedHashMap();
-		
+
 		int i = 0;
-		for(String c : d1.getHashCols().keySet()){
+		for (String c : d1.getHashCols().keySet()) {
 			mergedHashCols.put(c, i++);
 		}
-		for(String c : d2.getHashCols().keySet()){
+		for (String c : d2.getHashCols().keySet()) {
 			mergedHashCols.put(c, i++);
 		}
-		
+
 		return new DoubleMatrixDataset<>(m, d1.getHashRowsCopy(), mergedHashCols);
 	}
 

@@ -189,11 +189,11 @@ dCell.run <- function(exp,
   deconCell.marker.genes <- list()
 
   for(i.cellType in 1:n.cellTypes){
-
+    cat(paste0("Calculate for celltype ",i.cellType))
     i.ct.proportions <- proportions[,i.cellType]
     names(i.ct.proportions) <- rownames(proportions)
 
-    i.dCell.run <- dCell.run.single(exp = exp, iterations = 5,
+    i.dCell.run <- dCell.run.single(exp = exp, iterations = iterations,
                      i.ct.proportions=i.ct.proportions)
 
     deconCell.models.per.CT[[i.cellType]] <- i.dCell.run$decon.cell.models
@@ -221,17 +221,18 @@ dCell.run.single <- function(exp, i.ct.proportions,
 
   decon.cell.models.list <- list()
   marker.gene.list <- list()
-  cat("\nINFO\t Starting eNet iterations \n")
+  cat(paste0("\nINFO\t Starting ",iterations," eNet iterations \n"))
   j <- 1
   while(j <= iterations) {
+    cat(paste0("\nINFO\t Starting eNet iteration ",j, "\n"))
     ## Define samples used of iteratrion
     eNetRes <- glmnet.wrapper(y=i.ct.proportions,
                               x= t(data.matrix(exp)),
                               parallel=F,
                               return.type="custom",
-                              alpha.runs = c(0.01, 0.03 ,0.05, 0,075, 0.1, 0.15, 0.2))
+                              alpha.runs = c(0.01, 0.03 ,0.05, 0.075, 0.1, 0.15, 0.2))
 
-    if(!length(eNetRes$coef) >= nrow(datasets)) {
+    if(!length(eNetRes$coef) >= nrow(exp)) {
       marker.gene.list[[j]] <- names(eNetRes$coef)[-1]
       decon.cell.models.list[[j]] <- eNetRes$coef
       #cat("[INFO]\tDone iteration ", j, "\n")

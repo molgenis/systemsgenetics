@@ -22,15 +22,15 @@
 	<files>
 		<file>
 			<source>README.md</source>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 		</file>
 		<file>
 			<source>LICENSE</source>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 		</file>
 		<file>
 			<source>${project.build.directory}/GeneticRiskScoreCalculator-${project.version}.jar</source>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 			<destName>GeneticRiskScoreCalculator.jar</destName>
 		</file>
 	</files>
@@ -43,7 +43,7 @@
   -->
 		<fileSet>
 			<directory>${project.build.scriptSourceDirectory}</directory>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>./</outputDirectory>
 			<includes>
 				<include>*.sh</include>
 				<include>*.bat</include>

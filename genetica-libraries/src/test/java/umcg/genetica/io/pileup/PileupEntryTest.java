@@ -4,10 +4,10 @@
  */
 package umcg.genetica.io.pileup;
 
-import umcg.genetica.io.pileup.PileupEntry;
-import umcg.genetica.io.pileup.PileupParseException;
 import org.molgenis.genotype.Allele;
 import static org.testng.Assert.*;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
@@ -23,7 +23,8 @@ public class PileupEntryTest {
 	PileupEntry entry5;
 	PileupEntry entry6;
 	
-	public PileupEntryTest() throws PileupParseException {
+	@BeforeMethod
+	public void setUpMethod() throws Exception {
 		
 		entry1 = new PileupEntry("1", 1, Allele.G, 10, "...........A", 0);
 		entry2 = new PileupEntry("1", 1, Allele.G, 10, ".$...........^~.", 0);

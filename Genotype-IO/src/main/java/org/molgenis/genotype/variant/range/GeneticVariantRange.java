@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.plink.BedBimFamGenotypeWriter;
 import org.molgenis.genotype.util.ChromosomeComparator;
@@ -11,13 +12,12 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variant.GeneticVariantChrPosComparator;
 
 /**
- *
  * @author Patrick Deelen
  */
 public class GeneticVariantRange implements Iterable<GeneticVariant> {
 
 	private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(GeneticVariantRange.class);
-	
+
 	public static GeneticVariantRangeCreate createRangeFactory() {
 		return new GeneticVariantRangeCreate();
 	}
@@ -25,6 +25,7 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 	public static GeneticVariantRangeCreate createRangeFactory(int expectedNumberVariants) {
 		return new GeneticVariantRangeCreate(expectedNumberVariants);
 	}
+
 	private final List<GeneticVariant> variants;
 
 	/**
@@ -48,80 +49,77 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 	 */
 	public Iterable<GeneticVariant> getVariantsByRange(String startSeqName, int startPos, String stopSeqName, int stopPos) {
 
-		if(ChromosomeComparator.chrASmallerChrB(startSeqName, stopSeqName)){
+		if (ChromosomeComparator.chrASmallerChrB(startSeqName, stopSeqName)) {
 			throw new GenotypeDataException("Cannot query range. Start chr is larger than stop chr");
 		}
-		
-		if(startSeqName.equals(startSeqName) && startPos > stopPos){
+
+		if (startSeqName.equals(startSeqName) && startPos > stopPos) {
 			throw new GenotypeDataException("Cannot query range. Start position is larger than stop postion and chr is identical");
 		}
-		
+
 		//we need to find the first entry that is larger then startSeq and startPos.
 		//aka the elements that matched the start search but whose left neighbour does not.
 		//startIndex will be number of variants.size if no variants are within the range. The iteratble will handle this.
-		int startIndex =  binarySearchStartIndex(startSeqName, startPos, stopSeqName, stopPos);
+		int startIndex = binarySearchStartIndex(startSeqName, startPos, stopSeqName, stopPos);
 
 		return new GeneticVariantRangeSubIterable(startIndex, stopSeqName, stopPos, variants);
 
 	}
-	
+
 	/**
 	 * WARNING: variants.size, end is handled by the iterable
-	 * 
-	 * 
+	 *
 	 * @param startSeqName
 	 * @param startPos
 	 * @param stopSeqName
 	 * @param stopPos
-	 * @return 
-	 * 
+	 * @return
 	 */
-	private int binarySearchStartIndex(String startSeqName, int startPos, String stopSeqName, int stopPos){
-		
+	private int binarySearchStartIndex(String startSeqName, int startPos, String stopSeqName, int stopPos) {
+
 		//define start search range
 		int startSearch = 0;
 		int endSearch = variants.size() - 1;
-		
-		while(endSearch >= startSearch){
-			
-			int midSearch = startSearch + ( (endSearch - startSearch) / 2 );
+
+		while (endSearch >= startSearch) {
+
+			int midSearch = startSearch + ((endSearch - startSearch) / 2);
 			GeneticVariant midSearchVariant = variants.get(midSearch);
-			
+
 			//first test if current variants is larger than start of range. Then test if variant before is not in range
-			if(ChromosomeComparator.chrASmallerChrB(midSearchVariant.getSequenceName(), startSeqName) || (midSearchVariant.getSequenceName().equals(startSeqName) && midSearchVariant.getStartPos() < startPos) ){
+			if (ChromosomeComparator.chrASmallerChrB(midSearchVariant.getSequenceName(), startSeqName) || (midSearchVariant.getSequenceName().equals(startSeqName) && midSearchVariant.getStartPos() < startPos)) {
 				//variant is smaller than start we have to search to right
 				startSearch = midSearch + 1;
 			} else if (ChromosomeComparator.chrASmallerEqualChrB(midSearchVariant.getSequenceName(), stopSeqName) && midSearchVariant.getStartPos() <= stopPos) {
 				//variant is within the range of interest, lets check variant to the left
-				
-				if(midSearch == 0){
+
+				if (midSearch == 0) {
 					//We have found the start of our range. It streches from the beginning
 					return 0;
-				}
-				else {
-					
-					GeneticVariant leftOfMidSearchVariant = variants.get(midSearch-1);
-				
-					
-					if(ChromosomeComparator.chrASmallerChrB(leftOfMidSearchVariant.getSequenceName(), startSeqName) || (leftOfMidSearchVariant.getSequenceName().equals(startSeqName) && leftOfMidSearchVariant.getStartPos() < startPos)){
+				} else {
+
+					GeneticVariant leftOfMidSearchVariant = variants.get(midSearch - 1);
+
+
+					if (ChromosomeComparator.chrASmallerChrB(leftOfMidSearchVariant.getSequenceName(), startSeqName) || (leftOfMidSearchVariant.getSequenceName().equals(startSeqName) && leftOfMidSearchVariant.getStartPos() < startPos)) {
 						//We found the start of the range since the current variant is included but the variant to left is not.
 						return midSearch;
 					} else {
 						//The variant to the left is also part of the range we need to look further to the left
 						endSearch = midSearch - 1;
 					}
-					
+
 				}
-				
+
 			} else {
 				//variant is to large we should search to the left
 				endSearch = midSearch - 1;
 			}
-			
+
 		}
 		return variants.size();
 
-		
+
 	}
 
 	/**
@@ -136,14 +134,12 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int startPos, int stopPos) {
 		return getVariantsByRange(seqName, startPos, seqName, stopPos);
 	}
-	
+
 	public Iterable<GeneticVariant> getVariantsBySequence(String seqName) {
 		return getVariantsByRange(seqName, -1, seqName, Integer.MAX_VALUE);
 	}
 
 	/**
-	 *
-	 *
 	 * @param seqName
 	 * @param pos
 	 * @return empty list if no variant found at pos
@@ -161,8 +157,8 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 	public List<GeneticVariant> getAllVrariantsInRange() {
 		return variants;
 	}
-	
-	public int size(){
+
+	public int size() {
 		return variants.size();
 	}
 
@@ -191,7 +187,7 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 		}
 
 		public GeneticVariantRangeCreate() {
-			this.variants = new ArrayList<GeneticVariant>();
+			this.variants = new ArrayList<GeneticVariant>(20000000); // increase initial loading to match modern day datasets.
 			this.isSorted = true;
 		}
 
@@ -202,10 +198,13 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 
 		public void addVariant(GeneticVariant variant) {
 
-			if (lastVariant != null && variant.getSequenceName().equals(lastVariant.getSequenceName()) && variant.getStartPos() < lastVariant.getStartPos()) {
-				isSorted = false;
-			} else if (lastVariant != null && ChromosomeComparator.chrASmallerChrB(variant.getSequenceName(), lastVariant.getSequenceName())) {
-				isSorted = false;
+			if (isSorted) {
+				// only check if we know that the data is actually sorted. (if it isn't. isSorted will never be changed to true)
+				if (lastVariant != null && variant.getSequenceName().equals(lastVariant.getSequenceName()) && variant.getStartPos() < lastVariant.getStartPos()) {
+					isSorted = false;
+				} else if (lastVariant != null && ChromosomeComparator.chrASmallerChrB(variant.getSequenceName(), lastVariant.getSequenceName())) {
+					isSorted = false;
+				}
 			}
 
 			lastVariant = variant;
@@ -220,8 +219,8 @@ public class GeneticVariantRange implements Iterable<GeneticVariant> {
 			}
 			return new GeneticVariantRange(variants);
 		}
-		
-		public int size(){
+
+		public int size() {
 			return variants.size();
 		}
 	}
