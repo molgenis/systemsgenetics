@@ -53,7 +53,9 @@ public class DoubleMatrixDatasetRandomAccessWriter {
 	}
 
 	public void initialize(ArrayList<String> rows, ArrayList<String> cols, String out) throws IOException {
-		channel = new RandomAccessFile(out, "rw").getChannel();
+		System.out.println("Initializing new output matrix: " + out);
+
+		channel = new RandomAccessFile(out + ".dat", "rw").getChannel();
 		counter = new CountingOutputStream(new BufferedOutputStream(Channels.newOutputStream(channel), buffersize));
 		os = new DataOutputStream(counter);
 		os.writeInt(rows.size());
@@ -75,12 +77,14 @@ public class DoubleMatrixDatasetRandomAccessWriter {
 		currentPos = 8;
 		this.nrCols = cols.size();
 		this.nrRows = rows.size();
+		System.out.println("Matrix has size: " + this.nrRows + " rows x " + this.nrCols + " cols");
 		bytesPerRow = cols.size() * 8;
 		buffersize = bytesPerRow * 10;
 	}
 
 
 	private void initializeWithNaNs() throws IOException {
+		System.out.println("Initializing with NaNs: " + nrRows + " rows x " + nrCols + " cols");
 		for (int row = 0; row < nrRows; row++) {
 			for (int col = 0; col < nrCols; col++) {
 				os.writeDouble(Double.NaN);
@@ -176,7 +180,7 @@ public class DoubleMatrixDatasetRandomAccessWriter {
 
 	public void writeBlock(int startRow, int startCol, double[] vals) throws IOException {
 		long seekLoc = ((long) startRow * bytesPerRow) + headerLen + (startCol * 8);
-		System.out.println(startRow + "\t" + startCol + "\t" + seekLoc + "\t" + vals[0]);
+//		System.out.println(startRow + "\t" + startCol + "\t" + seekLoc + "\t" + vals[0]);
 		channel.position(seekLoc);
 
 		if (blockbuffer == null || blockbuffer.limit() != vals.length * 8) {

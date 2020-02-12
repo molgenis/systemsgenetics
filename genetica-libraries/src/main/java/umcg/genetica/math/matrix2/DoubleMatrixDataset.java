@@ -49,6 +49,17 @@ import umcg.genetica.text.Strings;
  * @param <R>
  * @param <C>
  * @author MarcJan, Juha, Harm-Jan, Patrick
+ *
+ * Reader for (gzip) text and binary based matrices.
+ * Expected formats:
+ *
+ * Txt (.gz)
+ * - colid1 colid2
+ * rowid1 0.1 0.2
+ * rowid2 0.3 0.4
+ *
+ * Binary requires three files: PREFIX.dat (binary data), PREFIX.rows.txt (row ids), and PREFIX.cols.txt (col ids)
+ * PREFIX.dat should have size: nrRows+nrCols (2x4bytes) + (rows * cols * 8 bytes)
  */
 public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
@@ -696,6 +707,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadDoubleBinaryData(String fileName) throws FileNotFoundException, IOException {
+
 		//First load the raw binary data:
 		File fileBinary = new File(fileName + ".dat");
 		BufferedInputStream in;

@@ -1,5 +1,6 @@
 package umcg.genetica.math.matrix2;
 
+import umcg.genetica.console.ProgressBar;
 import umcg.genetica.text.Strings;
 
 import java.io.File;
@@ -29,9 +30,12 @@ public class DoubleMatrixDatasetRandomAccessTranspose {
 	}
 
 	public void transposeLargeMatrix(String in, String out, int rowsToProcessAtOnce) throws IOException {
+		System.out.println("This code is broken");
+		System.exit(-1);
+
 		System.out.println("Transposing big matrix.");
-		System.out.println(in);
-		System.out.println(out);
+		System.out.println("Input: " + in);
+		System.out.println("Output: " + out);
 
 		// Gpio.delete(out);
 		DoubleMatrixDatasetRandomAccessReader reader = new DoubleMatrixDatasetRandomAccessReader(in);
@@ -41,7 +45,7 @@ public class DoubleMatrixDatasetRandomAccessTranspose {
 		writer.open(out);
 
 
-		System.out.println("Stuff is printed here");
+//		System.out.println("Stuff is printed here");
 		if (rowsToProcessAtOnce > reader.rows()) {
 			rowsToProcessAtOnce = reader.rows();
 		}
@@ -51,6 +55,7 @@ public class DoubleMatrixDatasetRandomAccessTranspose {
 		int ctr = 0;
 
 		int buffernr = 0;
+		ProgressBar pb = new ProgressBar(reader.nrRows, "Transposing.");
 		for (int i = 0; i < reader.nrRows; i++) {
 			if (ctr == rowsToProcessAtOnce) {
 				// buffer full
@@ -77,7 +82,7 @@ public class DoubleMatrixDatasetRandomAccessTranspose {
 
 			}
 
-
+			pb.set(i);
 		}
 
 		if (ctr > 0) {
@@ -97,6 +102,9 @@ public class DoubleMatrixDatasetRandomAccessTranspose {
 				writer.writeBlock(q, colstart, transpose[q]);
 			}
 		}
+		pb.close();
+
+
 		writer.close();
 
 
