@@ -13,10 +13,7 @@ import umcg.genetica.text.Strings;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Objects;
+import java.util.*;
 
 
 /**
@@ -29,10 +26,14 @@ public class QTLFileSorter {
 	}
 
 	public void run(String efile, String outfile, SORTBY s) throws IOException {
-		System.out.println("Loading: " + efile);
+		run(efile, outfile, 2500000, s);
+	}
+
+	public void run(String efile, String outfile, int n, SORTBY s) throws IOException {
+		System.out.println("Sorting: " + efile + " by " + s + " in batches of " + n);
 
 		TextFile tf = new TextFile(efile, TextFile.R);
-		int cap = 2500000;
+		int cap = n;
 		ArrayList<QTLObj> eQtls = new ArrayList<>(cap);
 		int ctr = 0;
 		int total = 0;
@@ -41,10 +42,12 @@ public class QTLFileSorter {
 		while (ln != null) {
 			if (eQtls.size() == cap) {
 				if (eQtls != null) {
-					Collections.sort(eQtls, new QTLComparator(s));
-					System.out.println("Writing: " + eQtls.size() + " to batch " + ctr);
+					System.out.println("Sorting: " + eQtls.size() + " to batch " + ctr);
+					QTLObj[] qtlarr = eQtls.toArray(new QTLObj[0]);
+					Arrays.parallelSort(qtlarr, new QTLComparator(s));
+					System.out.println("Writing: " + eQtls.size() + " to batch " + ctr + ": " + outfile + "-tmp-" + ctr + ".txt.gz");
 					TextFile out = new QTLTextFile(outfile + "-tmp-" + ctr + ".txt.gz", QTLTextFile.W);
-					for (QTLObj obj : eQtls) {
+					for (QTLObj obj : qtlarr) {
 						out.writeln(obj.ln);
 					}
 					out.close();
