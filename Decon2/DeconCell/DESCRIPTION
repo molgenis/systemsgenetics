@@ -7,7 +7,7 @@ Maintainer: Raúl Aguirre-Gamboa <raul.aguirre.gamboa@gmail.com>
 Description: 
 	DeconCell is an statitsical framework for generating cell proportions predictive models using bulk expresion data. It currently has pre-calculated models
 URL: pending....
-License: What license is it under?
+License: GNU GENERAL PUBLIC LICENSE, Version 3
 Encoding: UTF-8
 LazyData: true
 Suggests: knitr,rmarkdown
