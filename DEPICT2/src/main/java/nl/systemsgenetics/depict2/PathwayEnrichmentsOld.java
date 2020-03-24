@@ -55,6 +55,7 @@ import umcg.genetica.math.stats.ZScores;
  *
  * @author patri
  */
+@Deprecated
 public class PathwayEnrichmentsOld {
 
 	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);

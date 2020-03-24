@@ -28,61 +28,48 @@ theme.nature <- function(p, base_size = 11, base_family = "ArialMT") {
 # Plot depict2 scatterplot by enrichment score
 make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour="Enrichment.Z.score") {
   data <- data[order(abs(data[,colour])),]
+  # low  <- colorRampPalette(c('firebrick3', '#F6DCDC'))
+  # mid  <- colorRampPalette(c("#F6DCDC", "#DDE6EE"))
+  # high <- colorRampPalette(c('#DDE6EE', 'dodgerblue4'))
+  # bins= 100
+  # breaks = seq(-15, 15, length.out = bins)
+  # colRamp <- c(low((bins-10)/2), mid(10), high((bins-10)/2))
+  # cols <- colRamp[as.numeric(cut(data[,colour], breaks = breaks))]
+  # 
+  # pdf(width=7.5, height=7.5, file="~/Desktop/")
+  # 
+  # 
+  # layout(matrix(1:2,ncol=2), width = c(2,1),height = c(1,1))
+  # plot(data$Annotation1, data$Annotation2, pch = 20, col=adjustcolor(cols, alpha.f = 0.8), bty='n', xlab="t-SNE component 1", ylab="t-SNE compenent 2")
+  # 
+  # legend_image <- as.raster(matrix(colRamp, ncol=1))
+  # plot(c(0,2),c(0,1),type = 'n', axes = F,xlab = '', ylab = '', main = 'Z-score')
+  # text(x=1.5, y = seq(0,1,l=5), labels = seq(0,1,l=5))
+  # rasterImage(legend_image, 0, 0, 1,1)
+  # 
+  #  legend("topright",legend=c("15", "0", "-15"),fill=c("dodgerblue4", "grey", "firebrick3"), title="Z-score", border=F, bty="n")
+  # #legend.scale(c(-15, 15), col=cols)
+  # 
+  # p <- ggplot(aes(x=as.numeric(data[,x]),
+  #                 y=as.numeric(data[,y]),
+  #                 fill=data[,colour]),
+  #             data=data) +
+  #   geom_point(color=cols) +
+  #   labs(title=trait) +
+  #   xlab(x) +
+  #   ylab(y) +
+  #   scale_fill_continuous(name="Z-score", limits=c(-15, 15), low="firebrick3", mid="grey", high="dodgerblue4")
   
-  low  <- colorRampPalette(c('firebrick3', '#F6DCDC'))
-  mid  <- colorRampPalette(c("#F6DCDC", "#DDE6EE"))
-  high <- colorRampPalette(c('#DDE6EE', 'dodgerblue4'))
-  bins= 100
-  breaks = seq(-15, 15, length.out = bins)
-  colRamp <- c(low((bins-10)/2), mid(10), high((bins-10)/2))
-  cols <- colRamp[as.numeric(cut(data[,colour], breaks = breaks))]
-  
-  pdf(width=7.5, height=7.5, file="~/Desktop/")
-  
-  
-  layout(matrix(1:2,ncol=2), width = c(2,1),height = c(1,1))
-  plot(data$Annotation1, data$Annotation2, pch = 20, col=adjustcolor(cols, alpha.f = 0.8), bty='n', xlab="t-SNE component 1", ylab="t-SNE compenent 2")
- 
-  legend_image <- as.raster(matrix(colRamp, ncol=1))
-  plot(c(0,2),c(0,1),type = 'n', axes = F,xlab = '', ylab = '', main = 'Z-score')
-  text(x=1.5, y = seq(0,1,l=5), labels = seq(0,1,l=5))
-  rasterImage(legend_image, 0, 0, 1,1)
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-   legend("topright",legend=c("15", "0", "-15"),fill=c("dodgerblue4", "grey", "firebrick3"), title="Z-score", border=F, bty="n")
-  #legend.scale(c(-15, 15), col=cols)
-  
-  p <- ggplot(aes(x=as.numeric(data[,x]),
-                  y=as.numeric(data[,y]),
-                  fill=data[,colour]),
-              data=data) +
-    geom_point(color=cols) +
-    labs(title=trait) +
-    xlab(x) +
-    ylab(y) +
-    scale_fill_continuous(name="Z-score", limits=c(-15, 15), low="firebrick3", mid="grey", high="dodgerblue4")
-  
-#  p <- ggplot(aes(x=as.numeric(data[,x]), y=as.numeric(data[,y])), data=data) +
- #   geom_point(colour=cols) +
-  #  labs(title=trait) + xlab(x) + ylab(y)
-  
- # p <- ggplot(aes(x=as.numeric(data[,x]), y=as.numeric(data[,y]), colour=data[,colour]), data=data) +
-  #  geom_point() +
-  #  labs(title=trait) +xlab(x) + ylab(y) +
-  #scale_colour_gradient(low=adjustcolor("red", alpha.f = 0.5),
-  #                       high=adjustcolor("blue", alpha.f = 0.5),
-  #                      limits=c(-15, 15),
-  #                       name="Z-score") 
+ p <- ggplot(aes(x=as.numeric(data[,x]), y=as.numeric(data[,y])), data=data) +
+    labs(title=trait) + xlab(x) + ylab(y)
+
+ p <- ggplot(aes(x=as.numeric(data[,x]), y=as.numeric(data[,y]), colour=data[,colour]), data=data) +
+    geom_point() +
+    labs(title=trait) + xlab(x) + ylab(y) +
+   scale_colour_gradient(low=adjustcolor("red", alpha.f = 0.5),
+                         high=adjustcolor("blue", alpha.f = 0.5),
+                         limits=c(-15, 15),
+                         name="Z-score")
   
   p <- theme.nature(p)
   return(p)
@@ -171,8 +158,8 @@ hm <- function(data, cellwidth=12, cellheight=12, limit=NULL, ...) {
 
 path <- "/home/work/Desktop/depict2/maf_filtered/metabolites_2016_27005778_hg19_48/"
 
-path <- "/home/work/Desktop/depict2/maf_filtered/"
-files <- list.files(path)[16]
+path <- "/home/work/Desktop/depict2/output/maf_filtered/v51/"
+files <- list.files(path)
 
 datasets <- list()
 for (file in files) {
@@ -188,43 +175,42 @@ p1 <- make.tsne.plot(cur.dataset$expression, "Educational attainment", x="Annota
 
 p1
 
-
-pdf(width=30, height=10, file="~/Desktop/depict2/tsne_plots_blood.pdf")
+pdf(width=10, height=10, file="/home/work/Desktop/depict2/plots/v51_tsne_plots_blood.pdf")
 for (dataset in 1:length(datasets)) {
   cur.dataset <- datasets[[dataset]]
   p1 <- make.tsne.plot(cur.dataset$expression, paste0(names(datasets)[dataset], " expression"), x="Annotation1", y="Annotation2")
-  p2 <- make.tsne.plot(cur.dataset$expression_scP3, paste0(names(datasets)[dataset], " expression_scP3"), x="Annotation2", y="Annotation3")
-  p3 <- make.tsne.plot(cur.dataset$expression_brain,paste0(names(datasets)[dataset], " expression_brain"), x="Annotation6", y="Annotation7")
-  
-  grid.arrange(grobs=list(p1,p2,p3), ncol=3)
+  #p2 <- make.tsne.plot(cur.dataset$expression_scP3, paste0(names(datasets)[dataset], " expression_scP3"), x="Annotation2", y="Annotation3")
+  #p3 <- make.tsne.plot(cur.dataset$expression_brain,paste0(names(datasets)[dataset], " expression_brain"), x="Annotation6", y="Annotation7")
+  plot(p1)
+  #grid.arrange(grobs=list(p1,p2,p3), ncol=3)
 }
 dev.off()
 
 
-pdf(width=30, height=30, file="~/Desktop/depict2/correlation_heatmaps_metabolites.pdf")
+pdf(width=30, height=30, file="~/Desktop/depict2/plots/v51_correlation_heatmaps.pdf")
 trait <- "Coregulation"
 bla <- make.zscore.matrix(datasets, trait=trait)
 make.correlation.heatmap(bla, trait)
 
-trait <- "Coregulation_brain"
-bla <- make.zscore.matrix(datasets, trait=trait)
-make.correlation.heatmap(bla, trait)
+#trait <- "Coregulation_brain"
+#bla <- make.zscore.matrix(datasets, trait=trait)
+#make.correlation.heatmap(bla, trait)
 
-trait <- "Coregulation_eQTLGen"
-bla <- make.zscore.matrix(datasets, trait=trait)
-make.correlation.heatmap(bla, trait)
+#trait <- "Coregulation_eQTLGen"
+#bla <- make.zscore.matrix(datasets, trait=trait)
+#make.correlation.heatmap(bla, trait)
 
 trait <- "expression"
 bla <- make.zscore.matrix(datasets, trait=trait)
 make.correlation.heatmap(bla, trait)
 
-trait <- "expression_brain"
-bla <- make.zscore.matrix(datasets, trait=trait)
-make.correlation.heatmap(bla, trait)
+#trait <- "expression_brain"
+#bla <- make.zscore.matrix(datasets, trait=trait)
+#make.correlation.heatmap(bla, trait)
 
-trait <- "expression_scP3"
-bla <- make.zscore.matrix(datasets, trait=trait)
-make.correlation.heatmap(bla, trait)
+#trait <- "expression_scP3"
+#bla <- make.zscore.matrix(datasets, trait=trait)
+#make.correlation.heatmap(bla, trait)
 
 trait <- "KEGG"
 bla <- make.zscore.matrix(datasets, trait=trait)

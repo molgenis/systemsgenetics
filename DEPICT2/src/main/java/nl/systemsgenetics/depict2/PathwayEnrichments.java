@@ -112,6 +112,7 @@ public class PathwayEnrichments {
 				geneZscoresNullGwasNullBetasPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasNullBetas, false, metaGenesPerArm.values());
 			}
 
+			//TODO: Is this appropriate on the this type of half normal dist?
 			genePathwayZscores.normalizeColumns();
 			geneZscoresPathwayMatched.normalizeColumns();
 			geneZscoresNullGwasCorrelationPathwayMatched.normalizeColumns();

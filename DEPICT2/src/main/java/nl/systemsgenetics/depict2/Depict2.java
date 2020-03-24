@@ -167,6 +167,9 @@ public class Depict2 {
 				case FIRST1000:
 					First1000qtl.printFirst1000(options);
 					break;
+				case PTOZSCORE:
+					convertPvalueToZscore(options);
+					break;
 				case RUN:
 					run(options);
 					break;
@@ -340,7 +343,7 @@ public class Depict2 {
 
 		final DoubleMatrix2D matrix = genePvalues.getMatrix();
 
-		//Inplace convert gene p-values to z-scores
+		// Inplace convert gene p-values to z-scores
 		IntStream.range(0, matrix.rows()).parallel().forEach(r -> {
 			for (int c = 0; c < matrix.columns(); ++c) {
 				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
@@ -1195,5 +1198,34 @@ public class Depict2 {
 			System.exit(1);
 		}
 	}
+
+	/**
+	 * Quick util that converts a txt matrix of pvalues to zscores using ZScores.pToZTwoTailed(pvalue)
+	 *
+	 * @param options
+	 * @throws Exception
+	 */
+	private static void convertPvalueToZscore(Depict2Options options) throws Exception {
+
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+
+		DoubleMatrix2D matrixContent = matrix.getMatrix();
+		LOGGER.info("Read data, converting matrix to zscores");
+
+		// Inplace convert to zscores
+		IntStream.range(0, matrix.rows()).parallel().forEach(r -> {
+			for (int c = 0; c < matrixContent.columns(); ++c) {
+				matrixContent.setQuick(r, c, -ZScores.pToZTwoTailed(matrixContent.getQuick(r, c)));
+			}
+		});
+		LOGGER.info("Done converting matrix to zscores, writing results");
+
+		// Write output
+		matrix.save(options.getOutputBasePath() + ".txt");
+
+		LOGGER.info("Done");
+
+	}
+
 
 }
