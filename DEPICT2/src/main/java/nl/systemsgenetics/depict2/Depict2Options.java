@@ -15,6 +15,8 @@ import java.util.List;
 
 import static nl.systemsgenetics.depict2.Depict2.LARGE_INT_FORMAT;
 
+import nl.systemsgenetics.depict2.gene.GenePvalueCalculator;
+import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
