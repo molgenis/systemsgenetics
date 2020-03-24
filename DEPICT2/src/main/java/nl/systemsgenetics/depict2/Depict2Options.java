@@ -132,6 +132,7 @@ public class Depict2Options {
 				+ "* VCFFOLDER - matches all bgziped vcf files + tabix index in a folder\n"
 				+ "* SHAPEIT2 - shapeit2 phased haplotypes .haps & .sample\n"
 				+ "* GEN - Oxford .gen & .sample\n"
+				+ "* BGEN - Oxford .bgen & optionally .sample\n"
 				+ "* TRITYPER - TriTyper format folder");
 		OptionBuilder.withLongOpt("referenceGenotypeFormat");
 		OPTIONS.addOption(OptionBuilder.create("R"));
@@ -349,7 +350,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC || mode == Depict2Mode.INVESTIGATE_NETWORK) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
