@@ -24,5 +24,6 @@ public enum Depict2Mode {
 	CONVERT_EXP,
 	MERGE_BIN,
 	CORE_GENE_AUC,
+	INVESTIGATE_NETWORK,
 	SPECIAL;
 }

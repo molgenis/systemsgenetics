@@ -26,7 +26,6 @@ import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.depict2.development.ExtractCol;
 import nl.systemsgenetics.depict2.development.First1000qtl;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.apache.log4j.ConsoleAppender;
@@ -184,8 +183,11 @@ public class Depict2 {
 					doPcaOnBinMatrix(options);
 					break;
 				case CORE_GENE_AUC:
-					testCoregulationPerformance.testCoreGenePredictionPerformance(options);
+					TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
 					break;	
+				case INVESTIGATE_NETWORK:
+					NetworkProperties.investigateNetwork(options);
+					break;
 				case SPECIAL:
 					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
 			}

@@ -8,12 +8,14 @@ package nl.systemsgenetics.depict2;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
+import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.MannWhitneyUTest2;
@@ -22,7 +24,9 @@ import umcg.genetica.math.stats.MannWhitneyUTest2;
  *
  * @author patri
  */
-public class testCoregulationPerformance {
+public class TestCoregulationPerformance {
+	
+	private static final Logger LOGGER = Logger.getLogger(TestCoregulationPerformance.class);
 
 	public static void testCoreGenePredictionPerformance(Depict2Options options) throws IOException {
 
@@ -50,8 +54,11 @@ public class testCoregulationPerformance {
 			final DoubleMatrixDataset<String, String> pathwayMatrix = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);
 			final DoubleMatrixDataset<String, String> gwasCoreGenePredictionsMatched = gwasCoreGenePredictions.viewRowSelection(sharedGenes);
 
+			
 			final DoubleMatrixDataset<String, String> outputMatrix = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), gwasCoreGenePredictionsMatched.getHashCols());
 
+			final ArrayList<String> pathwayNames = pathwayMatrix.getColObjects();
+			
 			try (ProgressBar pb = new ProgressBar(pathwayDatabase.getName(), pathwayMatrix.columns(), ProgressBarStyle.ASCII)) {
 
 				for (int pathwayI = 0; pathwayI < pathwayMatrix.columns(); ++pathwayI) {
@@ -62,8 +69,14 @@ public class testCoregulationPerformance {
 					final int pathwayI2 = pathwayI;
 
 					if (annotatedGenesCount < 10) {
+						if(LOGGER.isDebugEnabled()){
+							LOGGER.debug("Skipping " + pathwayNames.get(pathwayI) + " " + annotatedGenesCount + " genes annotated");
+						}
+						pb.step();
 						continue;
 					}
+					
+					final int pathwayI_2 = pathwayI;
 
 					IntStream.range(0, gwasCoreGenePredictionsMatched.columns()).parallel().forEach(traitI -> {
 
@@ -87,7 +100,13 @@ public class testCoregulationPerformance {
 
 						uTest.setData(coreGeneScoresAnnotatedGenes, coreGeneScoresOtherGenes);
 
-						outputMatrix.setElementQuick(pathwayI2, traitI, uTest.getAuc());
+						final double auc = uTest.getAuc();
+						
+						if(LOGGER.isDebugEnabled() && Double.isNaN(auc)){
+							LOGGER.debug(pathwayNames.get(pathwayI_2) + " NaN AUC " + Arrays.toString(coreGeneScoresAnnotatedGenes));
+						}
+						
+						outputMatrix.setElementQuick(pathwayI2, traitI, auc);
 
 					});
 					

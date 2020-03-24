@@ -11,7 +11,7 @@ library(readr)
 hpoMatrix <- readRDS("../GeneNetwork/Data31995Genes05-12-2017/PCA_01_02_2018/PathwayMatrix/ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt_matrix.rds")
 str(hpoMatrix)
 
-hpoMatrix <- hpoMatrix[,c("HP:0011153", "HP:0000622") , drop = F]
+hpoMatrix <- hpoMatrix[,c("HP:0011153", "HP:0000622", "HP:0012759", "HP:0001249", "HP:0000750", "HP:0001263" ,"HP:0012758") , drop = F]
 str(hpoMatrix)
 
 table_tmp <- read_delim("dd.txt", delim = "\t", quote = "")
@@ -19,12 +19,12 @@ hpoPredictions <- as.matrix(table_tmp[,-1])
 rownames(hpoPredictions) <- table_tmp[,1][[1]]
 rm(table_tmp)
 
-table_tmp <- read_delim("./educational_attainment_2018_30038396_hg19_v41/educational_attainment_genePvalues.txt", delim = "\t", quote = "")
+table_tmp <- read_delim("./educational_attainment_2018_30038396_hg19_48/educational_attainment_2018_30038396_hg19_genePvalues.txt", delim = "\t", quote = "")
 heightGeneP <- as.matrix(table_tmp[,-1])
 rownames(heightGeneP) <- table_tmp[,1][[1]]
 rm(table_tmp)
 
-table_tmp <- read_delim("./educational_attainment_2018_30038396_hg19_v41/educational_attainment_Coregulation_Enrichment_zscoreExHla.txt", delim = "\t", quote = "")
+table_tmp <- read_delim("./educational_attainment_2018_30038396_hg19_48/educational_attainment_2018_30038396_hg19_intermediates_Coregulation_Enrichment_zscoreExHla.txt", delim = "\t", quote = "")
 heightCoregulation <- as.matrix(table_tmp[,-1])
 rownames(heightCoregulation) <- table_tmp[,1][[1]]
 rm(table_tmp)
@@ -80,7 +80,8 @@ all(row.names(hpoPredictions2) ==names(heightCoregulation2))
 all(row.names(hpoPredictions2) ==names(coregulationBrain2))
 all(row.names(hpoPredictions2) ==names(SRR1237983_2))
 
-hpoTerm = "HP:0011153"
+
+hpoTerm = "HP:0001249"
 
 cat(rownames(hpoMatrix2)[hpoMatrix2[,hpoTerm] == 1])
 
@@ -92,8 +93,8 @@ layout(1)
 
 library(pROC)
 gado <- roc(as.factor(hpoMatrix2[,hpoTerm]), hpoPredictions2[,hpoTerm])
-geneP <- roc(as.factor(hpoMatrix2[,hpoTerm]), -log10(heightGeneP2))
-geneCoReg <- roc(as.factor(hpoMatrix2[,hpoTerm]), heightCoregulation2)
+(geneP <- roc(as.factor(hpoMatrix2[,hpoTerm]), -log10(heightGeneP2)))
+(geneCoReg <- roc(as.factor(hpoMatrix2[,hpoTerm]), heightCoregulation2))
 geneCoRegBrain <- roc(as.factor(hpoMatrix2[,hpoTerm]), coregulationBrain2)
 SRR1237983_2_roc <- roc(as.factor(hpoMatrix2[,hpoTerm]), SRR1237983_2)
 coexp_roc <- roc(as.factor(hpoMatrix2[,hpoTerm]), coexp2)
