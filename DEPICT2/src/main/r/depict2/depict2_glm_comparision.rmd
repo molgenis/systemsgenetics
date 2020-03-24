@@ -79,7 +79,7 @@ coreg <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/hei
 gwas.chr1q <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_1_q_Enrichment_geneScores.txt.gz", data.table = F), row.names = 1)
 
 # Cene coregulation zscores
-coreg.chr1q <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_1_q_Enrichment_pathwayScores.tx.gzt", data.table = F), row.names = 1)
+coreg.chr1q <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_1_q_Enrichment_pathwayScores.txt.gz", data.table = F), row.names = 1)
 
 # Cene gene correlations
 gene.cor.chr1q <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_1_q_Enrichment_geneCor.txt.gz", data.table = F), row.names = 1)
