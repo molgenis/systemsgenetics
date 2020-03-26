@@ -178,7 +178,7 @@ public class Depict2 {
 					run(options);
 					break;
 				case RUN2:
-					run2(options, null, null, null, null);
+					run2(options, null, null, null, null, null, null);
 					break;
 				case CORRELATE_GENES:
 					correlateGenes(options);
@@ -285,10 +285,15 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
-
+		DoubleMatrixDataset<String, String> geneMinSnpPvalues = gpc.getGeneMinSnpPvalues();
+		DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas = gpc.getGeneMinSnpPvaluesNullGwas();
+		
 		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
 		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+		geneMinSnpPvalues.save(options.getOutputBasePath() + "_geneMinSnpPvalues");
+		geneMinSnpPvaluesNullGwas.save(options.getOutputBasePath() + "_geneMinSnpPvaluesNullGwas");
+		
 		if (LOGGER.isDebugEnabled()) {
 			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
 			gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
@@ -298,7 +303,7 @@ public class Depict2 {
 		if (options.getPathwayDatabases().isEmpty()) {
 			LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode RUN2 and exactly the same output path and genes file to continue");
 		} else {
-			run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount);
+			run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount, geneMinSnpPvalues, geneMinSnpPvaluesNullGwas);
 		}
 	}
 
@@ -311,7 +316,7 @@ public class Depict2 {
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount) throws IOException, Exception {
+	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount, DoubleMatrixDataset<String, String> geneMinSnpPvalues, DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas) throws IOException, Exception {
 
 		options.getIntermediateFolder().mkdir();
 
@@ -320,10 +325,6 @@ public class Depict2 {
 			if (new File(options.getOutputBasePath() + "_genePvalues.dat").exists()) {
 				genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvalues");
 				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvaluesNullGwas");
-			} else if (new File(options.getOutputBasePath() + "_genePvalues.txt").exists()) {
-				//This is for some legacy results. New versions of DEPICT2 will not create these files
-				genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
-				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
 			} else {
 				LOGGER.fatal("Could not find gene pvalues at: " + options.getOutputBasePath() + "_genePvalues.dat");
 				LOGGER.fatal("First use --mode RUN to calculate gene p-values");

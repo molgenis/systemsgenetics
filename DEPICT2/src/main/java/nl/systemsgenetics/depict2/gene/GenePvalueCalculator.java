@@ -102,7 +102,9 @@ public class GenePvalueCalculator {
 	private final DoubleMatrixDataset<String, String> randomNormalizedPhenotypes;//Rows samples order of sample hash, cols phenotypes
 	private final PearsonRToZscoreBinned r2zScore;//Based on number of samples with genotypes
 	private final DoubleMatrixDataset<String, String> genePvalues;
+	private final DoubleMatrixDataset<String, String> geneMinSnpPvalues;
 	private final DoubleMatrixDataset<String, String> genePvaluesNullGwas;
+	private final DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas;
 	private final DoubleMatrixDataset<String, String> geneVariantCount;
 	private final DoubleMatrixDataset<String, String> geneMaxPermutationCount;
 	private final DoubleMatrixDataset<String, String> geneRuntime;
@@ -246,10 +248,12 @@ public class GenePvalueCalculator {
 
 		//Result matrix. Rows: genes, Cols: phenotypes
 		genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(phenotypes));
+		geneMinSnpPvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(phenotypes));
 
 		//Result matrix null GWAS. Rows: genes, Cols: phenotypes
 		genePvaluesNullGwas = new DoubleMatrixDataset<>(createGeneHashRows(genes), randomNormalizedPhenotypes.getHashCols());
-
+		geneMinSnpPvaluesNullGwas = new DoubleMatrixDataset<>(createGeneHashRows(genes), randomNormalizedPhenotypes.getHashCols());
+		
 		geneVariantCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"count"})));
 		geneMaxPermutationCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"maxPermutations"})));
 		geneRuntime = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"runtime"})));
@@ -349,8 +353,16 @@ public class GenePvalueCalculator {
 		return genePvalues;
 	}
 
+	public DoubleMatrixDataset<String, String> getGeneMinSnpPvalues() {
+		return geneMinSnpPvalues;
+	}
+
 	public DoubleMatrixDataset<String, String> getGenePvaluesNullGwas() {
 		return genePvaluesNullGwas;
+	}
+
+	public DoubleMatrixDataset<String, String> getGeneMinSnpPvaluesNullGwas() {
+		return geneMinSnpPvaluesNullGwas;
 	}
 
 	public DoubleMatrixDataset<String, String> getGeneVariantCount() {
@@ -593,8 +605,13 @@ public class GenePvalueCalculator {
 				//PASCAL would now check if there is only a single significant lambda. For us this cannot hapend because of the pruning of SNPs
 				timeStart = System.currentTimeMillis();
 
-				final double geneChi2Sum = geneVariantPhenotypeMatrix.getCol(phenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
-
+				DoubleMatrix1D phenoPvalues = geneVariantPhenotypeMatrix.getCol(phenoI);
+				
+				final double geneChi2Sum = phenoPvalues.aggregate(DoubleFunctions.plus, DoubleFunctions.square);
+				final double geneMinPvalue = phenoPvalues.aggregate(DoubleFunctions.min, DoubleFunctions.identity);
+							
+				geneMinSnpPvalues.setElementQuick(geneI, phenoI, geneMinPvalue);
+				
 				timeStop = System.currentTimeMillis();
 				timeInCalculatingRealSumChi2 += (timeStop - timeStart);
 
@@ -760,8 +777,14 @@ public class GenePvalueCalculator {
 
 				timeStart = System.currentTimeMillis();
 
-				final double geneChi2Sum = nullGwasZscores.getCol(nullPhenoI).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
-
+				DoubleMatrix1D phenoPvalues = geneVariantPhenotypeMatrix.getCol(nullPhenoI);
+				
+				final double geneChi2Sum = phenoPvalues.aggregate(DoubleFunctions.plus, DoubleFunctions.square);
+				final double geneMinPvalue = phenoPvalues.aggregate(DoubleFunctions.min, DoubleFunctions.identity);
+							
+				geneMinSnpPvaluesNullGwas.setElementQuick(geneI, nullPhenoI, geneMinPvalue);
+				
+			
 				timeStop = System.currentTimeMillis();
 				timeInCalculatingRealSumChi2 += (timeStop - timeStart);
 
