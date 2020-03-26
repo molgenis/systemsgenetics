@@ -8,7 +8,6 @@ rotate <- function(x) t(apply(x, 2, rev))
 
 custom.gls <- function(x, y, Sigi) {
   x <- as.matrix(x, ncol=1)
-  y <- as.matrix(y, ncol=1)
 
   # Calculated beta on pre-computed inverse matrix
   # xtxi = b1
@@ -17,13 +16,25 @@ custom.gls <- function(x, y, Sigi) {
   beta <- xtxi %*% (t(x) %*% Sigi %*% y)
   
   # Calculate SE
-  res <- y - (x %*% beta)
-  sig <- sqrt(sum(res^2) / (nrow(x)-2))
-  se  <- sqrt(diag(xtxi))*sig
+  res       <- y - (x %*% beta)
+  sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
+  se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
+
+  # Below commented code is uncorrect, does not scale the residuals to the correlation matrix
+  #res <- y - (x %*% beta)
+  #sig <- sqrt(sum(res^2) / (nrow(x)-1))
+  #se  <- sqrt(diag(xtxi))*sig
+  
+  #sigma.sq <- sum((y - (x %*% beta))^2) / (nrow(x)-1)
+  #var.beta <- sigma.sq * xtxi
+  #se       <- sqrt(var.beta)
+
+  #vcov      <- c(sigma.sqr) * solve(t(x) %*% xtxi %*% x )
+  #se        <- sqrt(diag(vcov))
   
   # Calculate p
   tstats <- abs(beta / se)
-  pval <- 2 * pt(tstats, df=nrow(x)-2, lower=F)
+  pval <- 2 * pt(tstats, df=nrow(x)-1, lower=F)
   return(c(beta, se, pval))
 }
 
@@ -33,18 +44,19 @@ custom.gls.intercept <- function(x, y, Sigi) {
 
   # Calculated beta on pre-computed inverse matrix
   xtxi <- solve(t(x) %*% Sigi %*% x )
-  beta <- xtxi %*% t(x) %*% Sigi %*% y
+  beta <- xtxi %*% (t(x) %*% Sigi %*% y)
   
   # Calculate SE
-  res <- y - (x %*% beta)
-  sig <- sqrt(sum(res^2) / (nrow(x)-2))
-  se  <- sqrt(diag(xtxi))*sig
-  
+  res       <- y - (x %*% beta)
+  sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
+  se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
+
+  # Below commented code is uncorrect, does not scale the residuals to the correlation matrix
   # Calculate p
-  tstats <- abs(beta / se)
-  pval <- 2 * pt(tstats[2], df=nrow(x)-2, lower=F)
+  tstats <- abs(beta[2] / se[2])
+  pval <- 2 * pt(tstats, df=nrow(x)-2, lower=F)
   
-  return(c(beta[2], se[2], pval))
+  return(c(beta[1], se[1], beta[2], se[2], pval))
 }
 
 custom.gls.per.arm <- function(x, y, Sigi) {
@@ -225,11 +237,22 @@ y     <- gwas.chr1q[,1]
 Sigma <- gene.cor.chr1q
 
 # Test gene ENSG00000075420
-x     <- coreg[,"ENSG00000000003"]
-y     <- gwas[rownames(coreg),1]
+y     <- coreg[,"ENSG00000075420"]
+x     <- gwas[rownames(coreg),1]
 #Sigi  <- solve(gene.cor)
 Sigi  <- gene.cor.inv[rownames(coreg), rownames(coreg)]
-gls.out <- custom.gls(y, x, Sigi)
+
+# Run GLS
+gls.out.i <- custom.gls.intercept(x, y, Sigi)
+gls.out.o <- custom.gls(x, y, Sigi)
+
+# Pre transform, to use with base R OLS
+P  <- chol(Sigi)
+xp <- P %*% as.matrix(x)
+yp <- P %*% as.matrix(y)
+
+gls.out.r <- summary(lm(yp ~ 0 +  xp))$coefficients
+gls.out.r.i <- summary(lm(yp ~  xp))$coefficients
 
 # Cleanup to save mem
 rm(Sigma, gene.cor, gene.cor.chr1q, gwas.chr1q, tmp.mat.q, x, gwas.null, gwas.x, tmp.mat.p, tmp.range, index, gene.names)
@@ -302,6 +325,8 @@ theme.nature(p)
 ```{r}
 b1.all <- c()
 b2.all <- c()
+x.all <- c()
+y.all <- c()
 gene.names <- c()
 
 b1.all.depict <- c()
@@ -345,6 +370,8 @@ for (chr in 1:22) {
       Sigi <- Sigi[rownames(y), rownames(y)]
       x   <- x[rownames(y),]
     
+      x.all      <- c(x.all, x)
+      y.all      <- c(y.all, y[,1])
       out        <- custom.gls.per.arm(x, y[,1], as.matrix(Sigi))
       b1.all     <- c(b1.all, out[1])
       b2.all     <- c(b2.all, out[2])
@@ -356,6 +383,21 @@ for (chr in 1:22) {
   }
   }
 }
+
+x.all <- as.matrix(x.all)
+
+# Calculate P-value
+beta.all <- sum(b2.all) / sum(b1.all)
+
+# Calculate SE
+res <- y.all - (x.all %*% beta.all)
+sig <- sqrt(sum(res^2) / (nrow(x.all)-2))
+se  <- sqrt(solve(sum(b1.all)))*sig
+
+# Calculate p
+tstats <- abs(beta.all / se)
+pval <- 2 * pt(tstats[1], df=nrow(x.all)-2, lower=F)
+
 
 plot(b1.all, b1.all.depict)
 plot(b2.all, b2.all.depict)
