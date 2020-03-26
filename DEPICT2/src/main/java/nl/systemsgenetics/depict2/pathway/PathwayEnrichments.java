@@ -30,6 +30,7 @@ import nl.systemsgenetics.depict2.Depict2;
 import nl.systemsgenetics.depict2.gene.Gene;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
+import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 
@@ -44,6 +45,8 @@ public class PathwayEnrichments {
     private final HashSet<String> hlaGenesToExclude;
     private final boolean ignoreGeneCorrelations;
     private final DoubleMatrixDataset<String, String> betas;
+    private final DoubleMatrixDataset<String, String> standardErrors;
+    private final DoubleMatrixDataset<String, String> pvalues;
     private final DoubleMatrixDataset<String, String> betasNull;
     private DoubleMatrixDataset<String, String> enrichmentPvalues = null;
     private final int numberOfPathways;
@@ -142,6 +145,9 @@ public class PathwayEnrichments {
             final List<DoubleMatrixDataset<String, String>> b1NullPerArm = Collections.synchronizedList(new ArrayList<>(metaGenesPerArm.size()));
             final List<DoubleMatrixDataset<String, String>> b2NullPerArm = Collections.synchronizedList(new ArrayList<>(metaGenesPerArm.size()));
 
+            // Store the inverse gene-gene correlation matrices
+            final List<DoubleMatrixDataset<String, String>> inverseCorrelationMatrices = Collections.synchronizedList(new ArrayList<>(metaGenesPerArm.size()));
+
             // Advance progressbar
             pb.step();
 
@@ -223,6 +229,9 @@ public class PathwayEnrichments {
                             geneZscoresNullGwasSubsetGeneCorrelations.getHashRows(),
                             geneZscoresNullGwasSubsetGeneCorrelations.getHashCols());
 
+                    // Store in list
+                    inverseCorrelationMatrices.add(geneInvCorMatrixSubset);
+
                     if (LOGGER.isDebugEnabled()) {
                         geneInvCorMatrixSubset.saveBinary(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor").getAbsolutePath());
                     }
@@ -257,6 +266,9 @@ public class PathwayEnrichments {
             final DoubleMatrixDataset<String, String> b1NullGwas = new DoubleMatrixDataset<>(geneZscoresNullGwasNullBetas.getHashCols(), singleColMap);
             final DoubleMatrixDataset<String, String> b2NullGwas = new DoubleMatrixDataset<>(geneZscoresNullGwasNullBetas.getHashCols(), genePathwayZscores.getHashCols());
 
+            // Combine the inverse gene-gene correlation matrix into one matrix
+            final DoubleMatrixDataset<String, String> fullInverseCorrelationMatrix = mergeCorrelationMatrices(inverseCorrelationMatrices);
+
             // Combine the results per arm can be done in parallel over the 4 different matrices
             for (DoubleMatrixDataset<String, String> b1Arm : b1PerArm) {
                 b1.getMatrix().assign(b1Arm.getMatrix(), cern.jet.math.tdouble.DoubleFunctions.plus);
@@ -281,19 +293,27 @@ public class PathwayEnrichments {
 
             // Determine final betas and p values
             betas = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
+            standardErrors = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
+            pvalues = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
+
             betasNull = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscoresNullGwasNullBetas.getHashColsCopy());
             numberOfPathways = genePathwayZscores.columns();
-            final int numberTraits = geneZscores.columns();
 
+            // Should be eq to geneZscoresPathwayMatched.columns();
+            final int numberTraits = geneZscores.columns();
 
             // Betas for actual data
             for (int traitI = 0; traitI < numberTraits; ++traitI) {
                 final double b1Trait = b1.getElementQuick(traitI, 0);
                 for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
+                    // Determine beta
                     double beta = b2.getElementQuick(traitI, pathwayI) / b1Trait;
                     betas.setElementQuick(pathwayI, traitI, beta);
 
-                   // DoubleMatrix1D residuals = genePathwayZscores.getMatrix().like1D(traitI);
+                    // Determine model residuals
+                    DoubleMatrix1D residuals = genePathwayZscores.getMatrix().like1D(pathwayI);
+                    residuals.assign(DoubleFunctions.minus(geneZscoresPathwayMatched.getElement(pathwayI, traitI) * beta));
+
 
 
                 }
@@ -334,6 +354,8 @@ public class PathwayEnrichments {
 
 
             pb.step();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -714,6 +736,65 @@ public class PathwayEnrichments {
 
         return datasetCollapsed;
 
+    }
+
+    /**
+     * Merges a list of correlation matrices so they are on the diagonal, and the rest is padded with 0
+     * Matrix needs to be square
+     * @param correlationMatrices list of correlation matrices as DoubleMatrixDatasets
+     * @return One correlation matrix with the off diagonal parts not covered by a matrix as 0
+     */
+    private static final DoubleMatrixDataset<String, String> mergeCorrelationMatrices(List<DoubleMatrixDataset<String, String>> correlationMatrices) throws Exception {
+
+        // Determine what the dimension of the output is going to be and check for matrix squareness
+        int matrixDimension = 0;
+        for (DoubleMatrixDataset<String, String> curMatrix : correlationMatrices) {
+            if (curMatrix.columns() != curMatrix.rows()) {
+                LOGGER.fatal("Input matrix not square, this should be square if it is a correlation matrix");
+                throw new IllegalArgumentException("Input matrix not square, this should be square if it is a correlation matrix");
+            }
+            matrixDimension += curMatrix.columns();
+        }
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Merging over " + correlationMatrices.size() + " matrices");
+            LOGGER.debug("Total dimension: " + matrixDimension);
+        }
+
+        // Initialize the output storage
+        DoubleMatrixDataset<String, String> fullCorrelationMatrix = new DoubleMatrixDataset<>(matrixDimension, matrixDimension);
+        List<String> rowNames = new ArrayList<>(matrixDimension);
+        List<String> colNames = new ArrayList<>(matrixDimension);
+
+        // Merge the matrices
+        int index = 0;
+        for (DoubleMatrixDataset<String, String> curMatrix : correlationMatrices) {
+
+            int start = index;
+            // The column count is not zero based, so it should work as the end index, i.e. column count 100 is index 101
+            // Since r < end, r goes to 99 not 100
+            int end = index + curMatrix.columns();
+
+            for (int r=start; r < end; r++) {
+                for (int c=start; c < end; c++) {
+                    fullCorrelationMatrix.setElementQuick(r, c, curMatrix.getElementQuick(r-start, c-start));
+                }
+                rowNames.set(r, curMatrix.getRowObjects().get(r-start));
+                colNames.set(r, curMatrix.getColObjects().get(r-start));
+            }
+            // The column count is not zero based, so it should work as the next index, i.e. column count 100 is index 101
+            index += curMatrix.columns();
+        }
+
+        fullCorrelationMatrix.setRowObjects(rowNames);
+        fullCorrelationMatrix.setColObjects(colNames);
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Index count. Should be equal to total dimension: " + index);
+            LOGGER.debug("Done merging");
+        }
+
+        return fullCorrelationMatrix;
     }
 
 }
