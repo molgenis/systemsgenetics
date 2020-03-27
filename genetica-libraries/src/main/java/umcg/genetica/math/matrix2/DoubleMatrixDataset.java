@@ -1428,7 +1428,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		int i = 0;
 		for (C col : colsToView) {
 
-			//Null pointer below probabli indicates looking for non existing row
+			if(!hashCols.containsKey(col)){
+				throw new RuntimeException("Column not found: " + col);
+			}
 			colNrs[i] = hashCols.get(col);
 			newHashCols.put(col, i++);
 

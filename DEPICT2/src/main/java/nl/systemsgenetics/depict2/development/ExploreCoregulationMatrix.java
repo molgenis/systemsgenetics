@@ -22,7 +22,8 @@ public class ExploreCoregulationMatrix {
 	 */
 	public static void main(String[] args) throws IOException {
 
-		String coregFile = "C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\UKBIO_neale_lab_batch1_B_50\\Coregulation_Enrichment_zscoreExHla";
+		//String coregFile = "C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\UKBIO_neale_lab_batch1_B_50\\Coregulation_Enrichment_zscoreExHla";
+		String coregFile = "C:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\educational_attainment_2018_30038396_hg19_48\\educational_attainment_2018_30038396_hg19_intermediates_Coregulation_eQTLGen_Enrichment_zscoreExHla";
 
 		DoubleMatrixDataset<String, String> coregData = DoubleMatrixDataset.loadDoubleBinaryData(coregFile);
 

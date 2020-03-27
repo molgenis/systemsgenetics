@@ -54,7 +54,6 @@ public class PearsonRToZscoreBinned {
 			} else {
 
 				final double corBinCenter = -1 + (stepSize * bin) + halfStep;
-
 				StudentT tDistColt = new StudentT(df, randomEngine);
 				double t = corBinCenter / (Math.sqrt((1 - corBinCenter * corBinCenter) / (double) (df)));
 				double pValue;

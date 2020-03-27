@@ -91,18 +91,6 @@
             <artifactId>zstd-jni</artifactId>
             <version>1.4.4-3</version>
         </dependency>
-        <dependency>
-            <groupId>com.facebook.presto</groupId>
-            <artifactId>presto-orc</artifactId>
-            <version>0.188-SNAPSHOT</version>
-            <type>jar</type>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.facebook.presto.hive</groupId>
-                    <artifactId>hive-apache</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
