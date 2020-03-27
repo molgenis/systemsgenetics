@@ -57,7 +57,7 @@ public class PathwayEnrichments {
 	private final List<Gene> genes;
 	private final String outputBasePath;
 
-    public PathwayEnrichments(final PathwayDatabase pathwayDatabase, final HashSet<String> genesWithPvalue, final List<Gene> genes, final boolean forceNormalPathwayPvalues, final boolean forceNormalGenePvalues, final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation, final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final boolean ignoreGeneCorrelations, final double genePruningR, final int geneCorrelationWindow, final File debugFolder, final File intermediateFolder, final boolean quantileNormalizePermutations) throws IOException {
+    public PathwayEnrichments(final PathwayDatabase pathwayDatabase, final HashSet<String> genesWithPvalue, final List<Gene> genes, final boolean forceNormalPathwayPvalues, final boolean forceNormalGenePvalues, final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation, final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final boolean ignoreGeneCorrelations, final double genePruningR, final int geneCorrelationWindow, final File debugFolder, final File intermediateFolder, final boolean quantileNormalizePermutations) throws Exception {
         this.pathwayDatabase = pathwayDatabase;
         this.genes = genes;
         this.outputBasePath = outputBasePath;
@@ -354,8 +354,6 @@ public class PathwayEnrichments {
 
 
             pb.step();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
