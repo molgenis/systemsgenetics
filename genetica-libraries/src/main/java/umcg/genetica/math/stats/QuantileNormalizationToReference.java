@@ -24,7 +24,7 @@ public class QuantileNormalizationToReference {
 	public static void inplaceQuantileNormalizationToReference(DoubleMatrix1D reference, DoubleMatrix2D matrix){
 		
 		if(reference.size() != matrix.rows()){
-			throw new RuntimeException("Reference not equalt to rows in matrix");
+			throw new RuntimeException("Reference not equal to rows in matrix");
 		}
 		
 		DoubleMatrix1D referenceSorted = DoubleSorting.quickSort.sort(reference);

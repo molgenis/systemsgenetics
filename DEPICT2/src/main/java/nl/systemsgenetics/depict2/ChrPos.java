@@ -9,6 +9,7 @@ package nl.systemsgenetics.depict2;
  *
  * @author patri
  */
+@Deprecated
 public class ChrPos {
 	
 	private final String chr;

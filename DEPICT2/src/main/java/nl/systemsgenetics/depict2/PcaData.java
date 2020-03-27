@@ -11,6 +11,7 @@ import java.io.File;
  *
  * @author patri
  */
+@Deprecated
 public class PcaData {
 	
 	private final String name;
