@@ -222,8 +222,12 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			variantDataSizeInBytes += writeFieldWithFieldLength(
 					bgenOutputByteChannel, alternativeId, 2, "variant identifier");
 			// Write the RSID
+			String primaryVariantId = variant.getPrimaryVariantId();
+			if (primaryVariantId == null) {
+				primaryVariantId = variant.getSequenceName() + ":" + variant.getStartPos();
+			}
 			variantDataSizeInBytes += writeFieldWithFieldLength(
-					bgenOutputByteChannel, variant.getPrimaryVariantId(), 2, "rs identifier");
+					bgenOutputByteChannel, primaryVariantId, 2, "rs identifier");
 			// Write the chromosome
 			variantDataSizeInBytes += writeFieldWithFieldLength(
 					bgenOutputByteChannel, variant.getSequenceName(), 2, "chromosome");
@@ -258,7 +262,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 
 			if(LOGGER.isTraceEnabled()){
 			LOGGER.trace(String.format("Written %s, %s at %d, of size %d | seq:pos = %s:%d, %d alleles",
-					variant.getPrimaryVariantId(),
+					primaryVariantId,
 					!variant.getAlternativeVariantIds().isEmpty() ? variant.getAlternativeVariantIds().get(0) : "-",
 					variantStartPositionInFile, variantDataSizeInBytes,
 					variant.getSequenceName(), variant.getStartPos(), alleleCount));
@@ -268,7 +272,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 					variant,
 					variantStartPositionInFile,
 					variantDataSizeInBytes,
-					variant.getPrimaryVariantId());
+					primaryVariantId);
 
 			variantStartPositionInFile += variantDataSizeInBytes;
 		}
