@@ -777,7 +777,7 @@ public class GenePvalueCalculator {
 
 				timeStart = System.currentTimeMillis();
 
-				DoubleMatrix1D phenoPvalues = geneVariantPhenotypeMatrix.getCol(nullPhenoI);
+				DoubleMatrix1D phenoPvalues = nullGwasZscores.getCol(nullPhenoI);
 				
 				final double geneChi2Sum = phenoPvalues.aggregate(DoubleFunctions.plus, DoubleFunctions.square);
 				final double geneMinPvalue = phenoPvalues.aggregate(DoubleFunctions.min, DoubleFunctions.identity);
