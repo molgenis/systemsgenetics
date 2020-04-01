@@ -17,6 +17,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.*;
+
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.jet.math.tdouble.DoubleFunctions;
+import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
+import org.apache.commons.math3.distribution.TDistribution;
 import org.testng.annotations.Test;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -63,6 +69,99 @@ public class PathwayEnrichmentsTest {
 		tmpOutputFolder.mkdir();
 
 		System.out.println("Temp folder with output of this test: " + tmpOutputFolder.getAbsolutePath());
+
+	}
+
+
+	/**
+	 * Not a proper unit test, more sandbox
+	 * @throws Exception
+	 */
+	@Test
+	public void testMergeCorrelationMatrices() throws Exception {
+		File invCorFile = new File(this.getClass().getResource("/identity6x6.txt").toURI());
+		DoubleMatrixDataset<String, String> geneInvCor = DoubleMatrixDataset.loadDoubleTextData(invCorFile.getAbsolutePath(), '\t');
+		invCorFile = new File(this.getClass().getResource("/idenity4x4.txt").toURI());
+		DoubleMatrixDataset<String, String> geneInvCor2 = DoubleMatrixDataset.loadDoubleTextData(invCorFile.getAbsolutePath(), '\t');
+		invCorFile = new File(this.getClass().getResource("/idenity5x5.txt").toURI());
+		DoubleMatrixDataset<String, String> geneInvCor3 = DoubleMatrixDataset.loadDoubleTextData(invCorFile.getAbsolutePath(), '\t');
+
+		List<DoubleMatrixDataset<String, String>> matrices = new ArrayList<>();
+		matrices.add(geneInvCor2);
+		matrices.add(geneInvCor);
+		matrices.add(geneInvCor3);
+
+		DoubleMatrixDataset<String, String> out = PathwayEnrichments.mergeCorrelationMatrices(matrices);
+		System.out.println("Debug");
+
+
+	}
+
+
+	/**
+	 * Not a proper unit test, more sandbox for figuring out the matrix algebra in Java
+	 * @throws Exception
+	 */
+	@Test
+	public void testEmpericalPvalues() throws Exception {
+		File invCorFile = new File(this.getClass().getResource("/identity6x6.txt").toURI());
+		File pathwayFile = new File(this.getClass().getResource("/pathwayGeneScores.txt").toURI());
+		File gwasFile = new File(this.getClass().getResource("/gwasGeneScores.txt").toURI());
+
+		DoubleMatrixDataset<String, String> geneZscores = DoubleMatrixDataset.loadDoubleTextData(gwasFile.getAbsolutePath(), '\t');
+		DoubleMatrixDataset<String, String> genePathwayZscores = DoubleMatrixDataset.loadDoubleTextData(pathwayFile.getAbsolutePath(), '\t');
+		DoubleMatrixDataset<String, String> geneInvCor = DoubleMatrixDataset.loadDoubleTextData(invCorFile.getAbsolutePath(), '\t');
+
+		// Analytical P-values
+		// R implementation for reference, can be removed later
+		// # Determine SE
+		// res       <- y - (x %*% beta)
+		// sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
+		// se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
+
+		// # Calculate p
+		// tstats <- abs(beta / se)
+		// pval <- 2 * pt(tstats, df=nrow(x)-1, lower=F)
+		//genePathwayZscores = y;
+		//geneZscoresPathwayMatched = x;
+
+		// This implementation is only valid for centered and scaled values, as it does not contain an intercept
+
+		// Determine model residuals
+
+		double beta = 0.1;
+		double xtxi = 0.1;
+		int n = genePathwayZscores.rows();
+		int df = n -1;
+
+
+		DoubleMatrix1D betaX = geneZscores.getCol(0);
+	 	betaX.assign(DoubleFunctions.mult(beta));
+		DoubleMatrix1D residuals = genePathwayZscores.getMatrix().viewColumn(0);
+		residuals.assign(betaX, DoubleFunctions.minus);
+
+		// TODO: Ugly, but dont know how I can do this better as I need a DoubleMatrix2D for matrix mult
+		DoubleMatrix2D residualMatrix = residuals.like2D(n, 1);
+		for (int r=0; r < n; ++r) {
+			residualMatrix.setQuick(r, 0, residuals.get(r));
+		}
+
+		// Determine sigma squared
+		DoubleMatrix2D part1 = residualMatrix.like(1, n);
+		residualMatrix.zMult(geneInvCor.getMatrix(), part1, 1, 0, true, false);
+		DoubleMatrix2D part2 = residualMatrix.like(1, 1);
+		part1.zMult(residualMatrix, part2, 1, 0, false, false);
+		double sigmaSquared =  part2.get(0,0) / df;
+
+		// Determine Se for beta
+		double standardError = Math.sqrt(xtxi) * Math.sqrt(sigmaSquared);
+
+		// Determine pvalue
+		double tstatistic = Math.abs(beta / standardError);
+		double pvalue = new TDistribution(df).cumulativeProbability(-tstatistic)*2;
+
+		System.out.println("Debug");
+
 
 	}
 

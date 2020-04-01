@@ -336,7 +336,7 @@ public class Depict2 {
 			LOGGER.info("Loaded " + genes.size() + " genes");
 		}
 
-		//Identify genes with atleast one variant in window
+		// Identify genes with at least one variant in window
 		final HashSet<String> selectedGenes = new HashSet<>();
 		final ArrayList<String> allGenes = geneVariantCount.getRowObjects();
 		final int totalGeneCount = allGenes.size();

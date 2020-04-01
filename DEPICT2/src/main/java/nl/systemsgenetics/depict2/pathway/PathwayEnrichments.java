@@ -28,6 +28,8 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.depict2.Depict2;
 import nl.systemsgenetics.depict2.gene.Gene;
+import nl.systemsgenetics.depict2.gene.GenePathwayAssociationStatistic;
+import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import umcg.genetica.graphics.panels.HistogramPanel;
@@ -46,16 +48,17 @@ public class PathwayEnrichments {
     private final boolean ignoreGeneCorrelations;
     private final DoubleMatrixDataset<String, String> betas;
     private final DoubleMatrixDataset<String, String> standardErrors;
-    private final DoubleMatrixDataset<String, String> pvalues;
+    private final DoubleMatrixDataset<String, String> tStatistics;
+    private final DoubleMatrixDataset<String, String> pValues;
     private final DoubleMatrixDataset<String, String> betasNull;
     private DoubleMatrixDataset<String, String> enrichmentPvalues = null;
     private final int numberOfPathways;
     private final File intermediateFolder;
 
     // TODO: can be locals??
-	private final Set<String> excludeGenes;
-	private final List<Gene> genes;
-	private final String outputBasePath;
+    private final Set<String> excludeGenes;
+    private final List<Gene> genes;
+    private final String outputBasePath;
 
     public PathwayEnrichments(final PathwayDatabase pathwayDatabase, final HashSet<String> genesWithPvalue, final List<Gene> genes, final boolean forceNormalPathwayPvalues, final boolean forceNormalGenePvalues, final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation, final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final boolean ignoreGeneCorrelations, final double genePruningR, final int geneCorrelationWindow, final File debugFolder, final File intermediateFolder, final boolean quantileNormalizePermutations) throws Exception {
         this.pathwayDatabase = pathwayDatabase;
@@ -269,6 +272,10 @@ public class PathwayEnrichments {
             // Combine the inverse gene-gene correlation matrix into one matrix
             final DoubleMatrixDataset<String, String> fullInverseCorrelationMatrix = mergeCorrelationMatrices(inverseCorrelationMatrices);
 
+            // Make sure the oder of metagenes is the same
+            fullInverseCorrelationMatrix.reorderRows(geneZscoresPathwayMatched.getHashRows());
+            fullInverseCorrelationMatrix.reorderCols(geneZscoresPathwayMatched.getHashRows());
+
             // Combine the results per arm can be done in parallel over the 4 different matrices
             for (DoubleMatrixDataset<String, String> b1Arm : b1PerArm) {
                 b1.getMatrix().assign(b1Arm.getMatrix(), cern.jet.math.tdouble.DoubleFunctions.plus);
@@ -294,8 +301,8 @@ public class PathwayEnrichments {
             // Determine final betas and p values
             betas = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
             standardErrors = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
-            pvalues = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
-
+            tStatistics = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
+            pValues = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
             betasNull = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscoresNullGwasNullBetas.getHashColsCopy());
             numberOfPathways = genePathwayZscores.columns();
 
@@ -303,36 +310,33 @@ public class PathwayEnrichments {
             final int numberTraits = geneZscores.columns();
 
             // Betas for actual data
+            LOGGER.info("Calculating model coefficients");
             for (int traitI = 0; traitI < numberTraits; ++traitI) {
                 final double b1Trait = b1.getElementQuick(traitI, 0);
+
                 for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
                     // Determine beta
                     double beta = b2.getElementQuick(traitI, pathwayI) / b1Trait;
+
+                    // Determine analytical pvalues
+                    GenePathwayAssociationStatistic curStat = determineGlsAnalyticalPvalues(beta,
+                            b1Trait,
+                            fullInverseCorrelationMatrix.getMatrix(),
+                            geneZscoresPathwayMatched.getCol(traitI),
+                            genePathwayZscores.getCol(pathwayI));
+
+                    // TODO: Just make this one DoubleMatrixDataset
                     betas.setElementQuick(pathwayI, traitI, beta);
-
-                    // Determine model residuals
-                    DoubleMatrix1D residuals = genePathwayZscores.getMatrix().like1D(pathwayI);
-                    residuals.assign(DoubleFunctions.minus(geneZscoresPathwayMatched.getElement(pathwayI, traitI) * beta));
-
-
-
+                    standardErrors.setElementQuick(pathwayI, traitI, curStat.getStandardError());
+                    tStatistics.setElementQuick(pathwayI, traitI, curStat.gettStatistic());
+                    pValues.setElementQuick(pathwayI, traitI, curStat.getAnalyticalPvalue());
                 }
             }
 
-            // Analytical P-values
-            // R implementation for reference, can be removed later
-            // # Determine SE
-            // res       <- y - (x %*% beta)
-            // sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
-            // se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
-
-            // # Calculate p
-            // tstats <- abs(beta / se)
-            // pval <- 2 * pt(tstats, df=nrow(x)-1, lower=F)
-            //genePathwayZscores = y;
-            //geneZscoresPathwayMatched = x;
+            LOGGER.info("Done calculating model coefficients");
 
             // Betas for null
+            LOGGER.info("Calculating null beta's");
             final int numberTraitsNull = geneZscoresNullGwasNullBetas.columns();
 
             for (int traitI = 0; traitI < numberTraitsNull; ++traitI) {
@@ -344,17 +348,96 @@ public class PathwayEnrichments {
 
                 }
             }
+            LOGGER.info("Done calculating null beta's");
 
             // Write output
             betas.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+            standardErrors.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_se" : "_seExHla"));
+            pValues.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_analyticalPvals" : "_analyticalPvalsExHla"));
             betasNull.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+
+            // Save as txt to avoid having to convert them later
+            if (LOGGER.isDebugEnabled()) {
+                betas.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas.txt" : "_betasExHla.txt"));
+                standardErrors.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_se.txt" : "_seExHla.txt"));
+                pValues.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_analyticalPvals.txt" : "_analyticalPvalsExHla.txt"));
+                fullInverseCorrelationMatrix.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_inverseCorrelationMatrix.txt" : "_inverseCorrelationMatrixExHla.txt"));
+                geneZscoresPathwayMatched.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_geneZscoresPathwayMatched.txt" : "_geneZscoresPathwayMatchedExHla.txt"));
+                genePathwayZscores.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_genePathwayZscores.txt" : "_genePathwayZscoresExHla.txt"));
+            }
+
 
             this.getEnrichmentZscores();
             this.clearZscoreCache();
 
-
             pb.step();
         }
+    }
+
+
+    /**
+     * Determine the Pvalue, Se and Tstat for a given gls regression. Only valid for cases where the data
+     * is centered and scaled and has no intercept.
+     * // TODO: Generalize this so an intercept term can be included
+     *
+     * @param beta
+     * @param b1
+     * @param geneInvCor
+     * @param genePvalues
+     * @param genePathwayZscores
+     * @return
+     */
+    private static GenePathwayAssociationStatistic determineGlsAnalyticalPvalues(double beta,
+                                                                                 double b1,
+                                                                                 DoubleMatrix2D geneInvCor,
+                                                                                 DoubleMatrix1D genePvalues,
+                                                                                 DoubleMatrix1D genePathwayZscores) {
+        // Grab the size of the array
+        int n;
+        if (genePvalues.size() < Integer.MAX_VALUE) {
+            n = (int) genePvalues.size();
+        } else {
+            throw new IllegalArgumentException("Input too large for int, this shouldn't happen");
+        }
+
+        // df is n-1 as there is no intercept
+        int df = n - 1;
+
+        // Determine model residuals
+        DoubleMatrix1D betaX = genePvalues;
+        betaX.assign(DoubleFunctions.mult(beta));
+        DoubleMatrix1D residuals = genePathwayZscores;
+        residuals.assign(betaX, DoubleFunctions.minus);
+
+        // TODO: Ugly, but dont know how I can do this better as I need a DoubleMatrix2D for matrix mult
+        // Cat residuals to n * 1 DoubleMatrix2D
+        DoubleMatrix2D residualMatrix = residuals.like2D(n, 1);
+        for (int r = 0; r < n; ++r) {
+            residualMatrix.setQuick(r, 0, residuals.get(r));
+        }
+
+        // Determine sigma squared
+        // part1 =  t(residuals) * geneInvCor
+        // 1 x n matrix
+        DoubleMatrix2D part1 = residualMatrix.like(1, n);
+        residualMatrix.zMult(geneInvCor, part1, 1, 0, true, false);
+        // part2 =  t(residuals) * geneInvCor * residuals
+        // 1 x 1 matrix
+        DoubleMatrix2D part2 = residualMatrix.like(1, 1);
+        part1.zMult(residualMatrix, part2, 1, 0, false, false);
+        double sigmaSquared = part2.get(0, 0) / df;
+
+        // Determine Se for beta
+        // as b1 is not inverse divide instead of multiply. If you want to include an intercept,
+        // this needs to be a matrix mult on the inverse of b1
+        //double standardError = Math.sqrt(b1) * Math.sqrt(sigmaSquared);
+        double standardError = Math.sqrt(sigmaSquared) / Math.sqrt(b1);
+
+        // Determine pvalue
+        double tstatistic = Math.abs(beta / standardError);
+        double pvalue = new TDistribution(df).cumulativeProbability(-tstatistic) * 2;
+
+        return new GenePathwayAssociationStatistic(beta, standardError, tstatistic, pvalue);
     }
 
     public final DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
@@ -739,10 +822,11 @@ public class PathwayEnrichments {
     /**
      * Merges a list of correlation matrices so they are on the diagonal, and the rest is padded with 0
      * Matrix needs to be square
+     *
      * @param correlationMatrices list of correlation matrices as DoubleMatrixDatasets
      * @return One correlation matrix with the off diagonal parts not covered by a matrix as 0
      */
-    private static final DoubleMatrixDataset<String, String> mergeCorrelationMatrices(List<DoubleMatrixDataset<String, String>> correlationMatrices) throws Exception {
+    public static DoubleMatrixDataset<String, String> mergeCorrelationMatrices(List<DoubleMatrixDataset<String, String>> correlationMatrices) throws Exception {
 
         // Determine what the dimension of the output is going to be and check for matrix squareness
         int matrixDimension = 0;
@@ -773,12 +857,12 @@ public class PathwayEnrichments {
             // Since r < end, r goes to 99 not 100
             int end = index + curMatrix.columns();
 
-            for (int r=start; r < end; r++) {
-                for (int c=start; c < end; c++) {
-                    fullCorrelationMatrix.setElementQuick(r, c, curMatrix.getElementQuick(r-start, c-start));
+            for (int r = start; r < end; r++) {
+                for (int c = start; c < end; c++) {
+                    fullCorrelationMatrix.setElementQuick(r, c, curMatrix.getElementQuick(r - start, c - start));
                 }
-                rowNames.set(r, curMatrix.getRowObjects().get(r-start));
-                colNames.set(r, curMatrix.getColObjects().get(r-start));
+                rowNames.add(curMatrix.getRowObjects().get(r - start));
+                colNames.add(curMatrix.getColObjects().get(r - start));
             }
             // The column count is not zero based, so it should work as the next index, i.e. column count 100 is index 101
             index += curMatrix.columns();
