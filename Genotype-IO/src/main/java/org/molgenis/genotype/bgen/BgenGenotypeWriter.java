@@ -321,9 +321,8 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	 * @param sampleMissingCount An array of floats representing the missingness for every sample.
 	 * @param variant The variant to get the probabilities from.
 	 * @return A ByteBuffer containing the entire probability data storage for the given variant.
-	 * @throws IOException if an I/O error has occurred.
-	 */
-    private ByteBuffer getGenotypeDataBlock(int sampleCount, float[] sampleMissingCount, GeneticVariant variant) throws IOException {
+     */
+    private ByteBuffer getGenotypeDataBlock(int sampleCount, float[] sampleMissingCount, GeneticVariant variant) {
         // First declare an empty ByteBuffer.
         ByteBuffer genotypeDataBlockByteBuffer;
 
