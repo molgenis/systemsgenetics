@@ -209,6 +209,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 
 		long variantStartPositionInFile = offset + firstFourBytesBuffer.limit();
 
+		LOGGER.info(String.format("Writing %d variants to BGEN file...", variantCount));
 		// Loop through variants
 		for (GeneticVariant variant : genotypeData) {
 			// Write variant data block
@@ -260,12 +261,12 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 			variantDataSizeInBytes += writeCompressedBgenGenotypeDataBlock(
 					bgenOutputByteChannel, genotypeDataBlockByteBuffer);
 
-			if(LOGGER.isTraceEnabled()){
-			LOGGER.trace(String.format("Written %s, %s at %d, of size %d | seq:pos = %s:%d, %d alleles",
-					primaryVariantId,
-					!variant.getAlternativeVariantIds().isEmpty() ? variant.getAlternativeVariantIds().get(0) : "-",
-					variantStartPositionInFile, variantDataSizeInBytes,
-					variant.getSequenceName(), variant.getStartPos(), alleleCount));
+			if(LOGGER.isDebugEnabled()){
+				LOGGER.debug(String.format("Written %s, %s at %d, of size %d | seq:pos = %s:%d, %d alleles",
+						primaryVariantId,
+						!variant.getAlternativeVariantIds().isEmpty() ? variant.getAlternativeVariantIds().get(0) : "-",
+						variantStartPositionInFile, variantDataSizeInBytes,
+						variant.getSequenceName(), variant.getStartPos(), alleleCount));
 			}
 			// Add the read variant to the BGENIX file so that it can quickly be retrieved.
 			bgenixWriter.addVariantToIndex(
@@ -320,9 +321,8 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	 * @param sampleMissingCount An array of floats representing the missingness for every sample.
 	 * @param variant The variant to get the probabilities from.
 	 * @return A ByteBuffer containing the entire probability data storage for the given variant.
-	 * @throws IOException if an I/O error has occurred.
-	 */
-    private ByteBuffer getGenotypeDataBlock(int sampleCount, float[] sampleMissingCount, GeneticVariant variant) throws IOException {
+     */
+    private ByteBuffer getGenotypeDataBlock(int sampleCount, float[] sampleMissingCount, GeneticVariant variant) {
         // First declare an empty ByteBuffer.
         ByteBuffer genotypeDataBlockByteBuffer;
 
@@ -614,18 +614,25 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		byte[] fieldValueAsBytes = fieldValue.getBytes(CHARSET);
 		long lengthOfFieldInBytes = fieldValueAsBytes.length;
 
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug(String.format("Writing field '%s' with value '%.16s...' of length '%d' in bytes",
+					fieldName, fieldValue, lengthOfFieldInBytes));
+		}
+
 		// Get the maximum number of bytes that the field can have given the maximum the length field can hold.
 		int maxLengthOfFieldInBytes = (int) Math.min(Math.pow(2, maxLengthFieldSizeInBytes * 8) - 1, Integer.MAX_VALUE);
 		if (lengthOfFieldInBytes > maxLengthOfFieldInBytes) {
 			// The length of the field value exceeds the max number of bytes. Give a warning and truncate.
-			LOGGER.warn(String.format(
+			String tooLongFieldMessage = String.format(
 					"Length of %s %.16s... exceeds the maximum number of bytes. (%d vs %d bytes respectively) " +
 							"%nField will be truncated.",
-					fieldName, fieldValue, fieldValueAsBytes.length, maxLengthOfFieldInBytes));
+					fieldName, fieldValue, fieldValueAsBytes.length, maxLengthOfFieldInBytes);
+			LOGGER.warn(tooLongFieldMessage);
+			System.err.println(tooLongFieldMessage);
 			// ...truncate...
 			lengthOfFieldInBytes = maxLengthOfFieldInBytes;
 			fieldValueAsBytes = Arrays.copyOfRange(fieldValueAsBytes, 0,
-					maxLengthOfFieldInBytes + 1);
+					maxLengthOfFieldInBytes);
 		}
 
 		// Initialize a byte buffer with the correct size.
