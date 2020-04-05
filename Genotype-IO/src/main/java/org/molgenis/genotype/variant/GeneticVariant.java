@@ -178,7 +178,15 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 * @return true if every sample contains phased data for this
 	 * variant, otherwise false.
 	 */
-	public boolean isPhasedDataPresent();
+	public boolean hasPhasedGenotypes();
+
+	/**
+	 * Method returning if phased data is present or not.
+	 *
+	 * @return true if probabilities are available for every sample for this variant,
+	 * otherwise false.
+	 */
+	public boolean hasPhasedProbabilities();
 
 	/**
 	 * Get the sample variant provider used by this variant

@@ -21,6 +21,7 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	private final SampleVariantsProvider sampleVariantProvider;
 	private final Cache<GeneticVariant, List<Alleles>> cache;
 	private final Cache<GeneticVariant, List<Boolean>> phasingCache;
+	private final Cache<GeneticVariant, Boolean> phasedProbCache;
 	private final Cache<GeneticVariant, byte[]> calledDosageCache;
 	private final Cache<GeneticVariant, float[]> dosageCache;
 	private final Cache<GeneticVariant, float[][]> probCache;
@@ -35,6 +36,7 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 		this.sampleVariantProvider = sampleVariantProvider;
 		this.cache = new Cache<GeneticVariant, List<Alleles>>(cacheSize);
 		this.phasingCache = new Cache<GeneticVariant, List<Boolean>>(cacheSize);
+		this.phasedProbCache = new Cache<GeneticVariant, Boolean>(cacheSize);
 		this.calledDosageCache = new Cache<GeneticVariant, byte[]>(cacheSize);
 		this.dosageCache = new Cache<GeneticVariant, float[]>(cacheSize);
 		this.probCache = new Cache<GeneticVariant, float[][]>(cacheSize);
@@ -77,6 +79,18 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 
 		List<Boolean> phasing = sampleVariantProvider.getSamplePhasing(variant);
 		phasingCache.put(variant, phasing);
+		return phasing;
+	}
+
+	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		if (phasedProbCache.containsKey(variant))
+		{
+			return phasedProbCache.get(variant);
+		}
+
+		boolean phasing = sampleVariantProvider.arePhasedProbabilitiesPresent(variant);
+		phasedProbCache.put(variant, phasing);
 		return phasing;
 	}
 

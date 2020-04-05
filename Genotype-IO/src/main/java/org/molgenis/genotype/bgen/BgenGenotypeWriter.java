@@ -327,7 +327,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
         ByteBuffer genotypeDataBlockByteBuffer;
 
         // Check if phased data is available for all samples
-        if (!variant.getSamplePhasing().contains(false)) {
+        if (variant.hasPhasedProbabilities()) {
             // Get the phased genotype data block byte buffer if phased data is available.
             genotypeDataBlockByteBuffer = getPhasedGenotypeDataBlockByteBuffer(
                     sampleCount, sampleMissingCount, variant);

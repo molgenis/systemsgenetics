@@ -49,6 +49,11 @@ public class SwappingSampleVariantsProvider implements SampleVariantsProvider
 	}
 
 	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		return sampleVariantsProvider.arePhasedProbabilitiesPresent(variant);
+	}
+
+	@Override
 	public int getSampleVariantProviderUniqueId()
 	{
 		return sampleVariantProviderUniqueId;

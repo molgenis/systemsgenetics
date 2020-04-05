@@ -1343,6 +1343,11 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	}
 
 	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		return !this.getSamplePhasing(variant).contains(false);
+	}
+
+	@Override
 	public int cacheSize() {
 		return 0;
 	}

@@ -295,6 +295,18 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
     }
 
     @Override
+    public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+        VcfRecord vcfRecord = getVcfRecord(variant);
+
+        final int nrSamples = vcfRecord.getNrSamples();
+        if (nrSamples == 0) {
+            return false;
+        }
+
+        return (vcfRecord.getFormatIndex("HP") > -1);
+    }
+
+    @Override
     public int getSampleVariantProviderUniqueId() {
         return sampleVariantProviderUniqueId;
     }
