@@ -340,6 +340,36 @@ public class ProbabilitiesConvertor {
 	}
 
 	/**
+	 * Converts between allele dosages per haplotype per sample, and probabilities per haplotype per sample.
+	 * The dosage value is assumed to correspond to the alternative allele.
+	 *
+	 * @param haplotypeDosages An array of dosages for the alternative allele per haplotype, per sample.
+	 * @return An array of probabilities per haplotype, per sample
+	 */
+	private static double[][][] haplotypeDosagesToHaplotypeProbabilities(double[][] haplotypeDosages) {
+		double[][][] probs = new double[haplotypeDosages.length][][];
+
+		// Loop through the samples
+		for (int sampleIndex = 0; sampleIndex < haplotypeDosages.length; sampleIndex++) {
+
+			// Get the dosages per haplotype for this sample
+			double[] haplotypeDosage = haplotypeDosages[sampleIndex];
+			// Initialize a nested array for probabilities corresponding to this sample
+			double[][] sampleProbabilities = new double[haplotypeDosage.length][2];
+			for (int haplotypeIndex = 0; haplotypeIndex < haplotypeDosage.length; haplotypeIndex++) {
+				// Get the allele dosage for this sample and haplotype
+				double alternativeAlleleDosage = haplotypeDosage[haplotypeIndex];
+				// assign probabilities for this sample and haplotype
+				sampleProbabilities[haplotypeIndex][0] = 1 - alternativeAlleleDosage;
+				sampleProbabilities[haplotypeIndex][1] = alternativeAlleleDosage;
+			}
+			// assign the probabilities for this sample.
+			probs[sampleIndex] = sampleProbabilities;
+		}
+		return probs;
+	}
+
+	/**
 	 * Method that converts between called alleles and phased probabilities.
 	 *
 	 * @param sampleAlleles A list with called alleles for every sample
