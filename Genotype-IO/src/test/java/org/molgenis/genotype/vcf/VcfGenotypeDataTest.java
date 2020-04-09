@@ -6,23 +6,30 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
+import org.apache.commons.io.FilenameUtils;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.ResourceTest;
 import org.molgenis.genotype.Sequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.VcfAnnotation;
+import org.molgenis.genotype.bgen.BgenGenotypeData;
+import org.molgenis.genotype.bgen.BgenGenotypeWriter;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.Lists;
@@ -30,11 +37,43 @@ import com.google.common.collect.Lists;
 public class VcfGenotypeDataTest extends ResourceTest
 {
 	private VcfGenotypeData genotypeData;
+	private VcfGenotypeData complexGenotypeData;
+	private File folder;
+	private File complexVcfFile;
 
 	@BeforeClass
 	public void beforeClass() throws IOException, URISyntaxException
 	{
 		genotypeData = new VcfGenotypeData(getTestVcfGz(), getTestVcfGzTbi(), 0.8);
+		complexVcfFile = getTestResourceFile("/bgenExamples/complex.vcf.gz");
+		File complexVcfIndexFile = getTestResourceFile("/bgenExamples/complex.vcf.gz.tbi");
+		complexGenotypeData = new VcfGenotypeData(
+				complexVcfFile,
+				complexVcfIndexFile, 0.0);
+	}
+
+	@BeforeTest
+	public void setUpMethod() {
+		File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+		Date date = new Date();
+
+		folder = new File(tmpDir, "BgenGenotypeDataTest_" + dateFormat.format(date));
+
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			System.out.println("Removing tmp dir and files");
+			for (File file : folder.listFiles()) {
+				System.out.println(" - Deleting: " + file.getAbsolutePath());
+				file.delete();
+			}
+			System.out.println(" - Deleting: " + folder.getAbsolutePath());
+			folder.delete();
+		}));
+
+		folder.mkdir();
+
+		System.out.println("Temp folder with output of this test: " + folder.getAbsolutePath());
 	}
 
 	@Test
@@ -209,6 +248,69 @@ public class VcfGenotypeDataTest extends ResourceTest
 		assertTrue(variantMap.containsKey("rs35434908"));
 		assertTrue(variantMap.containsKey("rs1578391"));
 		
+	}
+
+
+	@Test
+	public void complexVcfGenotypeDataTest() throws IOException {
+
+		// Initialize the expected stuff...
+		String[] expectedSampleNames = {"sample_0", "sample_1", "sample_2", "sample_3"};
+		List<String> expectedVariantIds = Arrays.asList("V1", "V2", "V3", "M4", "M5", "M6", "M7", "M8", "M9", "M10");
+		List<Integer> expectedVariantPositions = Arrays.asList(1, 2, 3, 4, 5, 7, 7, 8, 9, 10);
+		List<Alleles> alleles = Arrays.asList(
+				Alleles.createAlleles(Allele.A, Allele.G),
+				Alleles.createAlleles(Allele.A, Allele.G),
+				Alleles.createAlleles(Allele.A, Allele.G),
+				Alleles.createAlleles(Allele.A, Allele.G, Allele.T),
+				Alleles.createAlleles(Allele.A, Allele.G),
+				Alleles.createAlleles(Allele.A, Allele.G, Allele.create("GT"), Allele.create("GTT")),
+				Alleles.createAlleles(Allele.A, Allele.G, Allele.create("GT"), Allele.create("GTT"), Allele.create("GTTT"), Allele.create("GTTTT")),
+				Alleles.createAlleles(Allele.A, Allele.G, Allele.create("GT"), Allele.create("GTT"), Allele.create("GTTT"), Allele.create("GTTTT"), Allele.create("GTTTTT")),
+				Alleles.createAlleles(Allele.A, Allele.G, Allele.create("GT"), Allele.create("GTT"), Allele.create("GTTT"), Allele.create("GTTTT"), Allele.create("GTTTTT"), Allele.create("GTTTTTT")),
+				Alleles.createAlleles(Allele.A, Allele.G));
+
+		// Initialize interesting probability arrays to check against
+		List<double[][]> expectedComplexProbabilities = Arrays.asList(
+				new double[][]{{1, 0}, {1, 0, 0}, {1, 0, 0}, {0, 1, 0}},
+				new double[][]{{1, 0}, {1, 0}, {1, 0}, {0, 1}},
+				new double[][]{{1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}},
+				new double[][]{{1, 0, 0}, {1, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 0}, {0, 0, 0, 1, 0, 0}},
+				new double[][]{{1, 0}, {1, 0, 0, 0}, {0, 1, 0, 0}, {0, 1, 0}},
+				null,
+				null,
+				null,
+				new double[][]{{1, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 1, 0}, {0, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+				new double[][]{{1, 0, 0, 0, 0}, {0, 1, 0, 0, 0}, {0, 0, 1, 0, 0}, {0, 0, 0, 1, 0}});
+
+		List<float[][]> expectedProbabilities = Arrays.asList(
+				new float[][]{{0, 0, 0}, {1, 0, 0}, {1, 0, 0}, {0, 1, 0}},
+				null,
+				null,
+				new float[][]{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
+				new float[][]{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 1, 0}});
+
+		List<double[][][]> expectedPhasedProbabilities = Arrays.asList(
+				null,
+				new double[][][]{{{1, 0}}, {{1, 0}}, {{1, 0}}, {{0, 1}}},
+				new double[][][]{{{1, 0}}, {{0, 1}, {0, 1}}, {{1, 0}, {1, 0}}, {{1, 0}, {0, 1}}},
+				null,
+				new double[][][]{{{1, 0}}, {{1, 0}, {1, 0}, {1, 0}}, {{1, 0}, {1, 0}, {0, 1}}, {{1, 0}, {0, 1}}},
+				new double[][][]{{{1, 0, 0, 0}}, {{0, 1, 0, 0}}, {{0, 0, 1, 0}}, {{0, 0, 0, 1}}});
+
+//		// Write and read again
+//		BgenGenotypeWriter bgenGenotypeWriter = new BgenGenotypeWriter(complexGenotypeData);
+//
+//		File tempFile = Paths.get(folder.toString(),
+//				FilenameUtils.removeExtension(complexVcfFile.getName()) + ".temp.bgen").toFile();
+//		File tempSampleFile = Paths.get(folder.toString(),
+//				FilenameUtils.removeExtension(complexVcfFile.getName()) + ".temp.sample").toFile();
+//		bgenGenotypeWriter.write(tempFile, tempSampleFile);
+//		BgenGenotypeData bgenGenotypeData = new BgenGenotypeData(tempFile, tempSampleFile);
+//		TestComplexBgenGenotypeDataEquality(expectedSampleNames,
+//				expectedVariantIds, expectedVariantPositions,
+//				alleles, expectedBgenProbabilities,
+//				expectedProbabilities, expectedPhasedBgenProbabilities);
 	}
 	
 }

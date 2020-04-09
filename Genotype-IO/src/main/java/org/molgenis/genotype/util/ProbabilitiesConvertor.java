@@ -346,7 +346,7 @@ public class ProbabilitiesConvertor {
 	 * @param haplotypeDosages An array of dosages for the alternative allele per haplotype, per sample.
 	 * @return An array of probabilities per haplotype, per sample
 	 */
-	private static double[][][] haplotypeDosagesToHaplotypeProbabilities(double[][] haplotypeDosages) {
+	public static double[][][] haplotypeDosagesToHaplotypeProbabilities(double[][] haplotypeDosages) {
 		double[][][] probs = new double[haplotypeDosages.length][][];
 
 		// Loop through the samples

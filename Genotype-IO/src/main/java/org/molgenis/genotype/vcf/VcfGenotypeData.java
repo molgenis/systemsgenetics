@@ -439,7 +439,130 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
     @Override
     public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
-        throw new GenotypeDataException("Phased data not available");
+        VcfRecord vcfRecord = getVcfRecord(variant);
+
+        final int nrSamples = vcfRecord.getNrSamples();
+        if (nrSamples == 0) {
+            return new double[0][0][0];
+        }
+
+        int numberOfAlleles = variant.getAlleleCount();
+
+        double[][][] probabilities = null;
+
+        int idx = vcfRecord.getFormatIndex("HP");
+        if (idx != -1) {
+            // retrieve sample probabilities from sample info
+            probabilities = new double[nrSamples][][];
+            int sampleIndex = 0;
+            for (VcfSample vcfSample : vcfRecord.getSamples()) {
+                String probabilitiesStr = vcfSample.getData(idx);
+                if (probabilitiesStr == null) {
+                    //throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(sampleIndex) + "]");
+                    probabilities[sampleIndex] = new double[2][2];
+                } else {
+                    // There should be the same number of values as alleles. These should be split by a comma (",")
+                    String[] probabilitiesAsStrings = StringUtils.split(probabilitiesStr, ',');
+                    // Check if the expected number of values corresponds to the actual number of values,
+                    // and throw an exception if this is not the case.
+                    if ((probabilitiesAsStrings.length % numberOfAlleles) != 0) {
+                        throw new GenotypeDataException(String.format(
+                                "Error in haplotype probabilities (HP) value for sample [%s], found %d value(s) (%s), " +
+                                        "while a multiple of %d were expected based on total allele count",
+                                vcfMeta.getSampleName(sampleIndex), probabilitiesAsStrings.length,
+                                probabilitiesStr, numberOfAlleles));
+                    }
+                    // Should have a multiple of the number of alleles
+                    // For every haplotype, allele, get the probabilities and assign these to the probabilities
+                    int numberOfHaplotypes = probabilitiesAsStrings.length / numberOfAlleles;
+                    probabilities[sampleIndex] = new double[numberOfHaplotypes][numberOfAlleles];
+                    // Loop through haplotypes
+                    for (int haplotypeIndex = 0; haplotypeIndex < numberOfHaplotypes; haplotypeIndex++) {
+                        // Loop through alleles
+                        for (int alleleIndex = 0; alleleIndex < numberOfAlleles; alleleIndex++) {
+                            // Get the probability as a string corresponding to this haplotype and allele.
+                            String probabilityAsString = probabilitiesAsStrings
+                                    [haplotypeIndex * numberOfHaplotypes + alleleIndex];
+                            if (probabilityAsString.equals(".")) {
+                                probabilities[sampleIndex][haplotypeIndex][alleleIndex] = 0;
+                            } else {
+                                try {
+                                    probabilities[sampleIndex][haplotypeIndex][alleleIndex] =
+                                            Double.parseDouble(probabilityAsString);
+                                } catch (NumberFormatException e) {
+                                    throw new GenotypeDataException(String.format(
+                                            "Error in haplotype probabilities (HP) value for sample [%s], " +
+                                                    "found value '%s', while a double was expected",
+                                            vcfMeta.getSampleName(sampleIndex),
+                                            probabilityAsString));
+                                }
+                            }
+                        }
+                    }
+                }
+                ++sampleIndex;
+            }
+        } else if ((idx = vcfRecord.getFormatIndex("ADS")) != -1) {
+
+            // check if the number of alleles is 2
+            if (variant.getAlleleCount() != 2) {
+                throw new GenotypeDataException(String.format(
+                        "Error in per-haplotype allele dosage (ADS) for variant %s" +
+                                "found %d alleles while 2 were expected",
+                        variant.getPrimaryVariantId(), numberOfAlleles));
+            }
+
+            // retrieve sample probabilities from sample info
+            double[][] haplotypeDosages = new double[nrSamples][];
+            int sampleIndex = 0;
+            for (VcfSample vcfSample : vcfRecord.getSamples()) {
+                String probabilitiesStr = vcfSample.getData(idx);
+                if (probabilitiesStr == null) {
+                    //throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(sampleIndex) + "]");
+                    haplotypeDosages[sampleIndex] = new double[2];
+                } else {
+                    // There should be the same number of values as haplotypes. These should be split by a comma (",")
+                    String[] haplotypesAsStrings = StringUtils.split(probabilitiesStr, ',');
+                    // Check if the expected number of values corresponds to the actual number of values,
+                    // and throw an exception if this is not the case.
+
+                    int numberOfHaplotypes = 2;
+                    if (haplotypesAsStrings.length != numberOfHaplotypes) {
+                        throw new GenotypeDataException(String.format(
+                                "Error in per-haplotype allele dosage (ADS) value for sample [%s], " +
+                                        "found %d value(s) (%s), while 2 were expected",
+                                vcfMeta.getSampleName(sampleIndex), haplotypesAsStrings.length,
+                                probabilitiesStr));
+                    }
+                    // Should have a multiple of the number of alleles
+                    // For every haplotype, allele, get the probabilities and assign these to the probabilities
+                    haplotypeDosages[sampleIndex] = new double[numberOfHaplotypes];
+                    // Loop through haplotypes
+                    for (int haplotypeIndex = 0; haplotypeIndex < numberOfHaplotypes; haplotypeIndex++) {
+                        String haplotypeDosageAsString = haplotypesAsStrings[haplotypeIndex];
+                        if (haplotypeDosageAsString.equals(".")) {
+                            haplotypeDosages[sampleIndex][haplotypeIndex] = 0;
+                            try {
+                                haplotypeDosages[sampleIndex][haplotypeIndex] = Double.parseDouble(haplotypeDosageAsString);
+                            } catch (NumberFormatException e) {
+                                throw new GenotypeDataException(String.format(
+                                        "Error in per-haplotype allele dosage (ADS) value for sample [%s], " +
+                                                "found value '%s', while a double was expected",
+                                        vcfMeta.getSampleName(sampleIndex), haplotypeDosageAsString));
+                            }
+                        }
+                    }
+                }
+                ++sampleIndex;
+            }
+            probabilities = ProbabilitiesConvertor.haplotypeDosagesToHaplotypeProbabilities(haplotypeDosages);
+        } else if (vcfRecord.getFormatIndex("GT") != -1) {
+            // calculate sample probabilities from sample dosage
+            probabilities = ProbabilitiesConvertor.convertCalledAllelesToPhasedProbabilities(getSampleVariants(variant), variant.getVariantAlleles());
+        } else {
+            probabilities = new double[nrSamples][2][2];
+        }
+        return probabilities;
     }
 
     @Override
