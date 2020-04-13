@@ -23,6 +23,7 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.VcfAnnotation;
+import org.molgenis.genotype.bgen.BgenGenotypeData;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.tabix.TabixIndex;
 import org.molgenis.genotype.tabix.TabixIndex.TabixIterator;
@@ -303,7 +304,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             return false;
         }
 
-        return (vcfRecord.getFormatIndex("HP") > -1);
+        return (vcfRecord.getFormatIndex("HP") > -1
+                || vcfRecord.getFormatIndex("ADS") > -1);
     }
 
     @Override
@@ -407,7 +409,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                     }
                     String[] probabilities = StringUtils.split(probabilitiesStr, ',');
                     if (probabilities.length != 3) {
-                        throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+//                        throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+                        probs[i] = new float[3];
                     }
 
                     for (int j = 0; j < 3; ++j) {
@@ -434,7 +437,91 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
     @Override
     public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
-        return ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(getSampleProbilities(variant));
+        VcfRecord vcfRecord = getVcfRecord(variant);
+
+        final int nrSamples = vcfRecord.getNrSamples();
+        if (nrSamples == 0) {
+            return new double[0][0];
+        }
+
+        int numberOfAlleles = variant.getAlleleCount();
+
+        double[][] probs = null;
+
+        boolean hasGenotypes = vcfRecord.getFormatIndex("GT") != -1;
+
+        List<Alleles> sampleVariants = null;
+        if (hasGenotypes) {
+            sampleVariants = getSampleVariants(variant);
+        }
+
+        int idx = vcfRecord.getFormatIndex("GP");
+        if (idx != -1) {
+            // retrieve sample probabilities from sample info
+            probs = new double[nrSamples][];
+            int sampleIndex = 0;
+            for (VcfSample vcfSample : vcfRecord.getSamples()) {
+                String probabilitiesStr = vcfSample.getData(idx);
+                if (probabilitiesStr == null) {
+                    //throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(sampleIndex) + "]");
+                    probs[sampleIndex] = new double[0];
+                } else {
+                    String[] probabilities = StringUtils.split(probabilitiesStr, ',');
+                    System.out.println("probabilities = " + Arrays.toString(probabilities));
+                    // Should match with output of BgenGenotypeData.numberOfProbabilitiesForPloidyAlleleCombination(ploidy, numberOfAlleles - 1)
+                    if (hasGenotypes) {
+                        // Calculate the number of expected probabilities given the
+                        // ploidy and the number of alleles for this variant.
+                        int calledAlleleCount = sampleVariants.get(sampleIndex).getAlleleCount();
+                        int numberOfExpectedProbabilities = BgenGenotypeData
+                                .numberOfProbabilitiesForPloidyAlleleCombination(calledAlleleCount,
+                                        numberOfAlleles - 1);
+
+                        // Test if this corresponds to the actual number of probabilities.
+                        if (probabilities.length != numberOfExpectedProbabilities) {
+                            throw new GenotypeDataException(String.format(
+                                    "Error in sample prob (GP) value for sample [%s], found %d values, " +
+                                            "while %d were expected based on %d called alleles and %d variant alleles",
+                                    vcfMeta.getSampleName(sampleIndex), probabilities.length,
+                                    numberOfExpectedProbabilities, calledAlleleCount, numberOfAlleles));
+                        }
+                    }
+
+                    probs[sampleIndex] = new double[probabilities.length];
+
+                    for (int i = 0; i < probabilities.length; ++i) {
+
+                        String probabilityAsString = probabilities[i];
+                        if (probabilityAsString.equals(".")) {
+                            probs[sampleIndex][i] = 0;
+                        } else {
+                            try {
+                                probs[sampleIndex][i] = Double.parseDouble(probabilityAsString);
+                            } catch (NumberFormatException e) {
+                                throw new GenotypeDataException(String.format(
+                                        "Error in genotype probabilities (GP) value for sample [%s], " +
+                                                "found value '%s', while a double was expected",
+                                        vcfMeta.getSampleName(sampleIndex),
+                                        probabilityAsString));
+                            }
+                        }
+                    }
+                }
+                ++sampleIndex;
+            }
+        } else if (hasGenotypes) {
+            probs = ProbabilitiesConvertor.convertCalledAllelesToComplexProbabilities(
+                    sampleVariants,
+                    variant.getVariantAlleles());
+        } else if (vcfRecord.getFormatIndex("DS") != -1) {
+            // calculate sample probabilities from sample dosage
+            probs = ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(
+                    ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(
+                            getSampleDosage(variant)));
+        } else {
+            probs = new double[nrSamples][3];
+        }
+        return probs;
     }
 
     @Override

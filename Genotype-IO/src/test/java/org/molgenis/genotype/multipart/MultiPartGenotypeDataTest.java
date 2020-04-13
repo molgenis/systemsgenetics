@@ -30,9 +30,12 @@ public class MultiPartGenotypeDataTest extends ResourceTest {
     @BeforeClass
     public void beforeClass() throws IOException, URISyntaxException
     {
+        // Initialize maps of expected variant annotations and sample
+        // annotations given compatible genotype data
         createExpectedVariantAnnotationMap();
         createExpectedSampleAnnotationMap();
 
+        // Load the genotype data with variant annotations for two chromosomes
         chr1VarAnnotated = new VcfGenotypeData(
                 getTestResourceFile("/multiPart/chr1.vcf.gz"),
                 getTestResourceFile("/multiPart/chr1.vcf.gz.tbi"), 0.8);
@@ -40,6 +43,7 @@ public class MultiPartGenotypeDataTest extends ResourceTest {
                 getTestResourceFile("/multiPart/chr2.vcf.gz"),
                 getTestResourceFile("/multiPart/chr2.vcf.gz.tbi"), 0.8);
 
+        // Load the genotype data with corresponding sample annotations
         chr1SampleAnnotated = new GenGenotypeData(
                 getTestResourceFile("/multiPart/chr1.gen"),
                 getTestResourceFile("/multiPart/all.sample"));
@@ -47,36 +51,48 @@ public class MultiPartGenotypeDataTest extends ResourceTest {
                 getTestResourceFile("/multiPart/chr2.gen"),
                 getTestResourceFile("/multiPart/all.sample"));
 
+        // Load separate genotype data with sample annotations in a different order
         chr2sampleAnnotatedWithWrongOrder = new GenGenotypeData(
                 getTestResourceFile("/multiPart/chr2.gen"),
                 getTestResourceFile("/multiPart/all_unordered.sample"));
 
+        // Create multipart genotype data
         multiPartVarAnnotated = new MultiPartGenotypeData(chr1VarAnnotated, chr2VarAnnotated);
         multiPartSampleAnnotated = new MultiPartGenotypeData(chr1SampleAnnotated, chr2SampleAnnotated);
     }
 
+    /**
+     * Creates a map of sample annotations.
+     */
     private void createExpectedSampleAnnotationMap() {
         expectedSampleAnnotationMap = new LinkedHashMap<>();
-        expectedSampleAnnotationMap.put("pheno",
-                new SampleAnnotation("pheno", "pheno", "", Annotation.Type.FLOAT,
-                        SampleAnnotation.SampleAnnotationType.OTHER, false));
+        // Add phenotype annotations
         expectedSampleAnnotationMap.put("sampleMissingRateFloat",
                 new SampleAnnotation("sampleMissingRateFloat", "missing",
                         "Missing data proportion of each individual", Annotation.Type.FLOAT,
                         SampleAnnotation.SampleAnnotationType.OTHER, false));
+        expectedSampleAnnotationMap.put("pheno",
+                new SampleAnnotation("pheno", "pheno", "", Annotation.Type.FLOAT,
+                        SampleAnnotation.SampleAnnotationType.OTHER, false));
     }
 
+    /**
+     * Creates a map of variant annotations.
+     */
     private void createExpectedVariantAnnotationMap() {
         expectedVariantAnnotationMap = new LinkedHashMap<>();
+        expectedVariantAnnotationMap.put("PR",
+                new VcfAnnotation("PR",
+                        "Provisional reference allele, may not be based on real reference genome",
+                        Annotation.Type.BOOLEAN, 0, false, false, false));
         expectedVariantAnnotationMap.put("AF",
                 new VcfAnnotation("AF", "Allele frequency", Annotation.Type.FLOAT,
                 null, false, true, false));
-        expectedVariantAnnotationMap.put("PR",
-                new VcfAnnotation("PR",
-                "Provisional reference allele, may not be based on real reference genome",
-                Annotation.Type.BOOLEAN, 0, false, false, false));
     }
 
+    /**
+     * Test that expects an incompatible multipart genotype data exception.
+     */
     @Test(
             expectedExceptions = IncompatibleMultiPartGenotypeDataException.class,
             expectedExceptionsMessageRegExp =
@@ -90,6 +106,9 @@ public class MultiPartGenotypeDataTest extends ResourceTest {
         new MultiPartGenotypeData(chr1VarAnnotated, chr2SampleAnnotated);
     }
 
+    /**
+     * Test that expects an incompatible multipart genotype data exception.
+     */
     @Test(
             expectedExceptions = IncompatibleMultiPartGenotypeDataException.class,
             expectedExceptionsMessageRegExp =
@@ -107,15 +126,9 @@ public class MultiPartGenotypeDataTest extends ResourceTest {
     @Test
     public void testGetVariantAnnotations() {
         List<Annotation> expected = new ArrayList<>(expectedVariantAnnotationMap.values());
-        assertTrue(chr1VarAnnotated.getVariantAnnotations().size() == expected.size() &&
-                chr1VarAnnotated.getVariantAnnotations().containsAll(expected) &&
-                expected.containsAll(chr1VarAnnotated.getVariantAnnotations()));
-        assertTrue(chr2VarAnnotated.getVariantAnnotations().size() == expected.size() &&
-                chr2VarAnnotated.getVariantAnnotations().containsAll(expected) &&
-                expected.containsAll(chr2VarAnnotated.getVariantAnnotations()));
-        assertTrue(multiPartVarAnnotated.getVariantAnnotations().size() == expected.size() &&
-                multiPartVarAnnotated.getVariantAnnotations().containsAll(expected) &&
-                expected.containsAll(multiPartVarAnnotated.getVariantAnnotations()));
+        assertEquals(chr1VarAnnotated.getVariantAnnotations(), expected);
+        assertEquals(chr2VarAnnotated.getVariantAnnotations(), expected);
+        assertEquals(multiPartVarAnnotated.getVariantAnnotations(), expected);
     }
 
     @Test
@@ -136,9 +149,9 @@ public class MultiPartGenotypeDataTest extends ResourceTest {
     @Test
     public void testGetSampleAnnotations() {
         List<Annotation> expected = new ArrayList<>(expectedSampleAnnotationMap.values());
-        assertTrue(multiPartSampleAnnotated.getSampleAnnotations().size() == expected.size() &&
-                multiPartSampleAnnotated.getSampleAnnotations().containsAll(expected) &&
-                expected.containsAll(multiPartSampleAnnotated.getSampleAnnotations()));
+        assertEquals(chr1SampleAnnotated.getSampleAnnotations(), expected);
+        assertEquals(chr1SampleAnnotated.getSampleAnnotations(), expected);
+        assertEquals(multiPartSampleAnnotated.getSampleAnnotations(), expected);
     }
 
     @Test

@@ -1,11 +1,5 @@
 package org.molgenis.genotype.vcf;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -17,10 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.commons.io.FilenameUtils;
-import org.molgenis.genotype.Allele;
-import org.molgenis.genotype.Alleles;
-import org.molgenis.genotype.ResourceTest;
-import org.molgenis.genotype.Sequence;
+import org.molgenis.genotype.*;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.VcfAnnotation;
 import org.molgenis.genotype.bgen.BgenGenotypeData;
@@ -33,6 +24,8 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.Lists;
+
+import static org.testng.Assert.*;
 
 public class VcfGenotypeDataTest extends ResourceTest
 {
@@ -297,6 +290,71 @@ public class VcfGenotypeDataTest extends ResourceTest
 				null,
 				new double[][][]{{{1, 0}}, {{1, 0}, {1, 0}, {1, 0}}, {{1, 0}, {1, 0}, {0, 1}}, {{1, 0}, {0, 1}}},
 				new double[][][]{{{1, 0, 0, 0}}, {{0, 1, 0, 0}}, {{0, 0, 1, 0}}, {{0, 0, 0, 1}}});
+
+		// Test the equality of sample names and sequence names
+		assertEquals(complexGenotypeData.getSampleNames(), expectedSampleNames);
+		assertEquals(complexGenotypeData.getSeqNames(), Collections.singletonList("01"));
+
+		assertEquals(complexGenotypeData.getVariantIdMap().keySet(), new HashSet<>(expectedVariantIds));
+		// Loop through variants and check their similarity.
+		int variantIndex = 0;
+		for (GeneticVariant variant : complexGenotypeData) {
+			// Check if these variants are equal:
+			assertEquals(variant.getPrimaryVariantId(), expectedVariantIds.get(variantIndex));
+			assertEquals(variant.getStartPos(), expectedVariantPositions.get(variantIndex).intValue());
+			assertEquals(variant.getVariantAlleles(), alleles.get(variantIndex));
+
+			// V2 has an alternative id, the other variants don't. Check this.
+			if (variant.getPrimaryVariantId().equals("V2")) {
+				assertEquals(variant.getAlternativeVariantIds().get(0), "V2.1");
+			} else {
+				assertEquals(variant.getAlternativeVariantIds().size(), 0);
+			}
+
+			// Check the equality of probabilities.
+			// First check if the bgenProbabilities are according to the expected stuff
+			if (Arrays.asList(0, 1, 2, 3, 4, 8, 9).contains(variantIndex)) {
+				double[][] complexProbabilities = variant.getSampleGenotypeProbabilitiesComplex();
+				assertEquals(complexProbabilities, expectedComplexProbabilities.get(variantIndex));
+			}
+
+			// Check if the regular probabilities are according to the expected stuff
+			// (a lot should be coded as being missing)
+//			if (Arrays.asList(0, 3, 4).contains(variantIndex)) {
+//				float[][] probabilities = variant.getSampleGenotypeProbilities();
+//				assertEquals(
+//						probabilities,
+//						expectedProbabilities.get(variantIndex));
+//			}
+
+//			// Check if the phased probabilities are correct as well
+//			if (Arrays.asList(1, 2, 4, 5).contains(variantIndex)) {
+//				// First we have to check if the variant is phased
+//				assertFalse(variant.getSamplePhasing().contains(false));
+//				// Only then get the phased probabilities
+//				double[][][] phasedBgenProbabilities = variant.getSampleGenotypeProbabilitiesPhased();
+//				assertTrue(Arrays.deepEquals(phasedBgenProbabilities, expectedPhasedProbabilities.get(variantIndex)));
+//			} else if (Arrays.asList(6, 7).contains(variantIndex)) {
+//				// These are also phased, but probabilities are not interesting enough...
+//				assertFalse(variant.getSamplePhasing().contains(false));
+//				assertTrue(variant.hasPhasedGenotypes());
+//				assertTrue(variant.hasPhasedProbabilities());
+//			} else {
+//				// These are not phased, which we have to test for
+//				assertFalse(variant.getSamplePhasing().contains(true));
+//				assertFalse(variant.hasPhasedGenotypes());
+//				assertFalse(variant.hasPhasedProbabilities());
+//				// Calling the method then should generate an exception
+//				try {
+//					variant.getSampleGenotypeProbabilitiesPhased();
+//					fail("variant.getSampleGenotypeProbabilitiesPhased() did not raise a "
+//							+ "GenotypeDataException while phased data was not available");
+//				} catch (GenotypeDataException e) {
+//					assertEquals(e.getMessage(), "Phased data not available");
+//				}
+//			}
+			variantIndex++;
+		}
 
 //		// Write and read again
 //		BgenGenotypeWriter bgenGenotypeWriter = new BgenGenotypeWriter(complexGenotypeData);

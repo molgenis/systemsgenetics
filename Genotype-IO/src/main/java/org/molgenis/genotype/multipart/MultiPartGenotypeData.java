@@ -59,8 +59,8 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 			throws IncompatibleMultiPartGenotypeDataException
 	{
 		
-		variantAnnotationsMap = new HashMap<String, Annotation>();
-		sampleAnnotationsMap = new HashMap<String, SampleAnnotation>();
+		variantAnnotationsMap = new LinkedHashMap<>();
+		sampleAnnotationsMap = new LinkedHashMap<>();
 		
 		for (RandomAccessGenotypeData genotypeData : genotypeDataCollection)
 		{
