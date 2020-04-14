@@ -389,6 +389,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             return new float[0][0];
         }
 
+        int numberOfAlleles = variant.getAlleleCount();
+
         float[][] probs = null;
 
         int idx = vcfRecord.getFormatIndex("GP");
@@ -408,16 +410,16 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 //                        System.out.println(probabilitiesStr);
                     }
                     String[] probabilities = StringUtils.split(probabilitiesStr, ',');
-                    if (probabilities.length != 3) {
+                    if (probabilities.length != 3 || numberOfAlleles != 2) {
 //                        throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
                         probs[i] = new float[3];
-                    }
-
-                    for (int j = 0; j < 3; ++j) {
-                        try {
-                            probs[i][j] = Float.parseFloat(probabilities[j]);
-                        } catch (NumberFormatException e) {
-                            throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+                    } else {
+                        for (int j = 0; j < 3; ++j) {
+                            try {
+                                probs[i][j] = Float.parseFloat(probabilities[j]);
+                            } catch (NumberFormatException e) {
+                                throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+                            }
                         }
                     }
                 }
@@ -467,7 +469,6 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                     probs[sampleIndex] = new double[0];
                 } else {
                     String[] probabilities = StringUtils.split(probabilitiesStr, ',');
-                    System.out.println("probabilities = " + Arrays.toString(probabilities));
                     // Should match with output of BgenGenotypeData.numberOfProbabilitiesForPloidyAlleleCombination(ploidy, numberOfAlleles - 1)
                     if (hasGenotypes) {
                         // Calculate the number of expected probabilities given the
@@ -569,7 +570,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                         for (int alleleIndex = 0; alleleIndex < numberOfAlleles; alleleIndex++) {
                             // Get the probability as a string corresponding to this haplotype and allele.
                             String probabilityAsString = probabilitiesAsStrings
-                                    [haplotypeIndex * numberOfHaplotypes + alleleIndex];
+                                    [haplotypeIndex * numberOfAlleles + alleleIndex];
                             if (probabilityAsString.equals(".")) {
                                 probabilities[sampleIndex][haplotypeIndex][alleleIndex] = 0;
                             } else {
@@ -643,11 +644,11 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                 ++sampleIndex;
             }
             probabilities = ProbabilitiesConvertor.haplotypeDosagesToHaplotypeProbabilities(haplotypeDosages);
-        } else if (vcfRecord.getFormatIndex("GT") != -1) {
+        } else if (vcfRecord.getFormatIndex("GT") != -1 && variant.hasPhasedGenotypes()) {
             // calculate sample probabilities from sample dosage
             probabilities = ProbabilitiesConvertor.convertCalledAllelesToPhasedProbabilities(getSampleVariants(variant), variant.getVariantAlleles());
         } else {
-            probabilities = new double[nrSamples][2][2];
+            throw new GenotypeDataException("Phased data not available");
         }
         return probabilities;
     }

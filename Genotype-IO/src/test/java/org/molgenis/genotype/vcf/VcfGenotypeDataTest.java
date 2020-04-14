@@ -320,39 +320,41 @@ public class VcfGenotypeDataTest extends ResourceTest
 
 			// Check if the regular probabilities are according to the expected stuff
 			// (a lot should be coded as being missing)
-//			if (Arrays.asList(0, 3, 4).contains(variantIndex)) {
-//				float[][] probabilities = variant.getSampleGenotypeProbilities();
-//				assertEquals(
-//						probabilities,
-//						expectedProbabilities.get(variantIndex));
-//			}
+			if (Arrays.asList(0, 3, 4).contains(variantIndex)) {
+				float[][] probabilities = variant.getSampleGenotypeProbilities();
+				assertEquals(
+						probabilities,
+						expectedProbabilities.get(variantIndex));
+			}
 
-//			// Check if the phased probabilities are correct as well
-//			if (Arrays.asList(1, 2, 4, 5).contains(variantIndex)) {
-//				// First we have to check if the variant is phased
+			// Check if the phased probabilities are correct as well
+			if (Arrays.asList(2, 4).contains(variantIndex)) {
+				// First we have to check if the variant is phased
 //				assertFalse(variant.getSamplePhasing().contains(false));
-//				// Only then get the phased probabilities
-//				double[][][] phasedBgenProbabilities = variant.getSampleGenotypeProbabilitiesPhased();
-//				assertTrue(Arrays.deepEquals(phasedBgenProbabilities, expectedPhasedProbabilities.get(variantIndex)));
-//			} else if (Arrays.asList(6, 7).contains(variantIndex)) {
+//				assertTrue(variant.hasPhasedGenotypes());
+				assertTrue(variant.hasPhasedProbabilities());
+				// Only then get the phased probabilities
+				double[][][] phasedBgenProbabilities = variant.getSampleGenotypeProbabilitiesPhased();
+				assertTrue(Arrays.deepEquals(phasedBgenProbabilities, expectedPhasedProbabilities.get(variantIndex)));
+//			} else if (Arrays.asList(7).contains(variantIndex)) {
 //				// These are also phased, but probabilities are not interesting enough...
 //				assertFalse(variant.getSamplePhasing().contains(false));
 //				assertTrue(variant.hasPhasedGenotypes());
 //				assertTrue(variant.hasPhasedProbabilities());
-//			} else {
-//				// These are not phased, which we have to test for
-//				assertFalse(variant.getSamplePhasing().contains(true));
-//				assertFalse(variant.hasPhasedGenotypes());
-//				assertFalse(variant.hasPhasedProbabilities());
-//				// Calling the method then should generate an exception
-//				try {
-//					variant.getSampleGenotypeProbabilitiesPhased();
-//					fail("variant.getSampleGenotypeProbabilitiesPhased() did not raise a "
-//							+ "GenotypeDataException while phased data was not available");
-//				} catch (GenotypeDataException e) {
-//					assertEquals(e.getMessage(), "Phased data not available");
-//				}
-//			}
+			} else {
+				// These are not phased, which we have to test for
+				assertFalse(variant.getSamplePhasing().contains(true));
+				assertFalse(variant.hasPhasedGenotypes());
+				assertFalse(variant.hasPhasedProbabilities());
+				// Calling the method then should generate an exception
+				try {
+					variant.getSampleGenotypeProbabilitiesPhased();
+					fail("variant.getSampleGenotypeProbabilitiesPhased() did not raise a "
+							+ "GenotypeDataException while phased data was not available");
+				} catch (GenotypeDataException e) {
+					assertEquals(e.getMessage(), "Phased data not available");
+				}
+			}
 			variantIndex++;
 		}
 
