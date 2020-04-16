@@ -156,9 +156,9 @@ public class MultiPartGenotypeDataTest extends ResourceTest {
 
     @Test
     public void testGetSampleAnnotation() {
-        assertEquals(multiPartVarAnnotated.getSampleAnnotation("pheno"),
+        assertEquals(multiPartSampleAnnotated.getSampleAnnotation("pheno"),
                 expectedSampleAnnotationMap.get("pheno"));
-        assertEquals(multiPartVarAnnotated.getSampleAnnotation("sampleMissingRateFloat"),
+        assertEquals(multiPartSampleAnnotated.getSampleAnnotation("sampleMissingRateFloat"),
                 expectedSampleAnnotationMap.get("sampleMissingRateFloat"));
      }
 

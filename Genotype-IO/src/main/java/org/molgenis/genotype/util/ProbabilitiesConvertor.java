@@ -320,7 +320,7 @@ public class ProbabilitiesConvertor {
 				numberOfAlleles, phasedProbabilities.length);
 
 		// Initialize an array of probabilities.
-		double[] genotypeProbabilities = new double[BgenGenotypeData.numberOfProbabilitiesForPloidyAlleleCombination(
+		double[] genotypeProbabilities = new double[BgenGenotypeData.numberOfProbabilitiesForPloidyAlleleCountCombination(
 				phasedProbabilities.length,
 				numberOfAlleles - 1)]; // number of alleles is equal to n, n-1 = numberOfAlleles - 1
 
@@ -407,7 +407,15 @@ public class ProbabilitiesConvertor {
 		return probs;
 	}
 
-    public static double[][] convertCalledAllelesToComplexProbabilities(List<Alleles> allelesPerSample, Alleles variantAlleles) {
+	/**
+	 * Method that converts between called alleles and complex probabilities.
+	 *
+	 * @param allelesPerSample The called alleles per sample.
+	 * @param variantAlleles The all alleles.
+	 * @return The called alleles converted to probabilities.
+	 */
+    public static double[][] convertCalledAllelesToComplexProbabilities(
+    		List<Alleles> allelesPerSample, Alleles variantAlleles) {
 
 		double[][] probs = new double[allelesPerSample.size()][];
 

@@ -358,5 +358,184 @@ public class ProbabilitiesConvertorTest {
 
 		assertEquals(actualProbs, expectedProbs);
 	}
-	
- }
+
+	@Test
+	public void testCalledAllelesToComplexProbabilities() {
+		System.out.println("convertCalledAllelesToComplexProbabilities");
+		List<Alleles> sampleAlleles = new ArrayList<>();
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+
+		Alleles alleles = Alleles.createAlleles(Allele.A, Allele.C);
+		double[][] expResult = new double[6][3];
+
+		expResult[0] = new double[]{1, 0, 0};
+		expResult[1] = new double[]{1, 0, 0};
+		expResult[2] = new double[]{0, 1, 0};
+		expResult[3] = new double[]{0, 1, 0};
+		expResult[4] = new double[]{0, 0, 1};
+		expResult[5] = new double[]{0, 1, 0};
+
+		double[][] result = ProbabilitiesConvertor.convertCalledAllelesToComplexProbabilities(sampleAlleles, alleles);
+		assertEquals(result, expResult, 0.001d, "Probs not identical");
+	}
+
+	@Test
+	public void testCalledAllelesToComplexProbabilities2() {
+		System.out.println("convertCalledAllelesToComplexProbabilities");
+		List<Alleles> sampleAlleles = new ArrayList<>();
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.ZERO, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.G));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+
+		Alleles alleles = Alleles.createAlleles(Allele.C, Allele.A);
+
+		double[][] expResult = new double[6][3];
+
+		expResult[0] = new double[]{0, 0, 1};
+		expResult[1] = new double[]{0, 0, 0};
+		expResult[2] = new double[]{0, 1, 0};
+		expResult[3] = new double[]{0, 0, 0};
+		expResult[4] = new double[]{1, 0, 0};
+		expResult[5] = new double[]{0, 1, 0};
+
+
+		double[][] result = ProbabilitiesConvertor.convertCalledAllelesToComplexProbabilities(sampleAlleles, alleles);
+		assertEquals(result, expResult, 0.001d, "Probs not identical");
+
+	}
+
+	@Test
+	public void testCalledAllelesToComplexProbabilities3() {
+		System.out.println("convertCalledAllelesToComplexProbabilities");
+		List<Alleles> sampleAlleles = new ArrayList<>();
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.ZERO, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.G));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+
+		Alleles alleles = Alleles.createAlleles(Allele.C);
+
+		double[][] expResult = new double[6][3];
+
+		expResult[0] = new double[]{0};
+		expResult[1] = new double[]{0};
+		expResult[2] = new double[]{0};
+		expResult[3] = new double[]{0};
+		expResult[4] = new double[]{1};
+		expResult[5] = new double[]{0};
+
+
+		double[][] result = ProbabilitiesConvertor.convertCalledAllelesToComplexProbabilities(sampleAlleles, alleles);
+		System.out.println("result = " + Arrays.deepToString(result));
+		assertEquals(result, expResult, 0.001d, "Probs not identical");
+
+	}
+
+	@Test(expectedExceptions = GenotypeDataException.class)
+	public void testCalledAllelesToComplexProbabilities4() {
+		System.out.println("convertCalledAllelesToComplexProbabilities");
+		List<Alleles> sampleAlleles = new ArrayList<>();
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.ZERO, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.G));
+		sampleAlleles.add(Alleles.createAlleles(Allele.C, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+
+		Alleles alleles = Alleles.createAlleles();
+
+		double[][] expResult = new double[6][3];
+
+		expResult[0] = new double[]{0, 0, 1};
+		expResult[1] = new double[]{0, 0, 0};
+		expResult[2] = new double[]{0, 1, 0};
+		expResult[3] = new double[]{0, 0, 0};
+		expResult[4] = new double[]{1, 0, 0};
+		expResult[5] = new double[]{0, 1, 0};
+
+
+		double[][] result = ProbabilitiesConvertor.convertCalledAllelesToComplexProbabilities(sampleAlleles, alleles);
+
+	}
+
+	@Test
+	public void testCalledAllelesToComplexProbabilities5() {
+		System.out.println("convertCalledAllelesToComplexProbabilities");
+		List<Alleles> sampleAlleles = new ArrayList<>();
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.A, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.ZERO, Allele.A));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.C));
+		sampleAlleles.add(Alleles.createAlleles(Allele.T, Allele.T));
+		sampleAlleles.add(Alleles.createAlleles(Allele.T));
+		sampleAlleles.add(Alleles.createAlleles(Allele.A, Allele.T, Allele.C));
+
+		Alleles alleles = Alleles.createAlleles(Allele.C, Allele.A, Allele.T);
+
+		double[][] expResult = new double[6][];
+
+		expResult[0] = new double[]{0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+		expResult[1] = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+		expResult[2] = new double[]{0.0, 1.0, 0.0, 0.0, 0.0, 0.0};
+		expResult[3] = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+		expResult[4] = new double[]{0.0, 0.0, 1.0};
+		expResult[5] = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0};
+
+		double[][] result = ProbabilitiesConvertor.convertCalledAllelesToComplexProbabilities(sampleAlleles, alleles);
+		assertEquals(result, expResult, 0.001d, "Probs not identical");
+
+	}
+
+	@Test
+	public void testHaplotypeDosagesToHaplotypeProbabilities() {
+		System.out.println("ConvertHaplotypeDosagesToHaplotypeProbabilities");
+
+		double[][] haplotypeDosages = new double[4][];
+
+		haplotypeDosages[0] = new double[]{1, 1};
+		haplotypeDosages[1] = new double[]{0, 0};
+		haplotypeDosages[2] = new double[]{0, 1};
+		haplotypeDosages[3] = new double[]{1, 0};
+
+		double[][][] expResult = new double[4][][];
+
+		expResult[0] = new double[][]{{0, 1},{0, 1}};
+		expResult[1] = new double[][]{{1, 0},{1, 0}};
+		expResult[2] = new double[][]{{1, 0},{0, 1}};
+		expResult[3] = new double[][]{{0, 1},{1, 0}};
+
+		double[][][] result = ProbabilitiesConvertor.haplotypeDosagesToHaplotypeProbabilities(haplotypeDosages);
+		assertEquals(result, expResult, 0.001d, "Probs not identical");
+	}
+
+	@Test
+	public void testHaplotypeDosagesToHaplotypeProbabilities2() {
+		System.out.println("ConvertHaplotypeDosagesToHaplotypeProbabilities");
+
+		double[][] haplotypeDosages = new double[4][];
+
+		haplotypeDosages[0] = new double[]{1, 1, 0};
+		haplotypeDosages[1] = new double[]{0, 0};
+		haplotypeDosages[2] = new double[]{0, 1};
+		haplotypeDosages[3] = new double[]{1, 0};
+
+		double[][][] expResult = new double[4][][];
+
+		expResult[0] = new double[][]{{0, 1}, {0, 1}, {1, 0}};
+		expResult[1] = new double[][]{{1, 0}, {1, 0}};
+		expResult[2] = new double[][]{{1, 0}, {0, 1}};
+		expResult[3] = new double[][]{{0, 1}, {1, 0}};
+
+		double[][][] result = ProbabilitiesConvertor.haplotypeDosagesToHaplotypeProbabilities(haplotypeDosages);
+		assertEquals(result, expResult, 0.001d, "Probs not identical");
+	}
+}

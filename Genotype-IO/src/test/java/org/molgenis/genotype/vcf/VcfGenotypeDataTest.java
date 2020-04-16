@@ -3,8 +3,6 @@ package org.molgenis.genotype.vcf;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -52,19 +50,22 @@ public class VcfGenotypeDataTest extends ResourceTest
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		Date date = new Date();
 
-		folder = new File(tmpDir, "BgenGenotypeDataTest_" + dateFormat.format(date));
+		folder = new File(tmpDir, "VcfGenotypeDataTest_" + dateFormat.format(date));
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			System.out.println("Removing tmp dir and files");
-			for (File file : folder.listFiles()) {
-				System.out.println(" - Deleting: " + file.getAbsolutePath());
-				file.delete();
+			File[] files = folder.listFiles();
+			if (files != null) {
+				for (File file : files) {
+					System.out.println(" - Deleting: " + file.getAbsolutePath());
+					assert file.delete();
+				}
 			}
 			System.out.println(" - Deleting: " + folder.getAbsolutePath());
-			folder.delete();
+			assert folder.delete();
 		}));
 
-		folder.mkdir();
+		assert folder.mkdir();
 
 		System.out.println("Temp folder with output of this test: " + folder.getAbsolutePath());
 	}
@@ -291,11 +292,53 @@ public class VcfGenotypeDataTest extends ResourceTest
 				new double[][][]{{{1, 0}}, {{1, 0}, {1, 0}, {1, 0}}, {{1, 0}, {1, 0}, {0, 1}}, {{1, 0}, {0, 1}}},
 				new double[][][]{{{1, 0, 0, 0}}, {{0, 1, 0, 0}}, {{0, 0, 1, 0}}, {{0, 0, 0, 1}}});
 
-		// Test the equality of sample names and sequence names
-		assertEquals(complexGenotypeData.getSampleNames(), expectedSampleNames);
-		assertEquals(complexGenotypeData.getSeqNames(), Collections.singletonList("01"));
+		testComplexGenotypeDataCorrespondence(expectedSampleNames, expectedVariantIds, expectedVariantPositions, alleles,
+				expectedComplexProbabilities, expectedProbabilities, expectedPhasedProbabilities, complexGenotypeData);
+		int variantIndex;
 
-		assertEquals(complexGenotypeData.getVariantIdMap().keySet(), new HashSet<>(expectedVariantIds));
+		variantIndex = 0;
+		for (GeneticVariant variant : complexGenotypeData) {
+			complexGenotypeData.setPreferredGenotypeField("GT");
+
+			// Check the equality of probabilities.
+			// First check if the bgenProbabilities are according to the expected stuff
+			if (Arrays.asList(0, 1, 2, 3, 4, 8, 9).contains(variantIndex)) {
+				double[][] complexProbabilities = variant.getSampleGenotypeProbabilitiesComplex();
+				assertEquals(complexProbabilities, expectedComplexProbabilities.get(variantIndex));
+			}
+			variantIndex++;
+		}
+
+		complexGenotypeData.setPreferredGenotypeField(null);
+
+		// Write and read again
+		BgenGenotypeWriter bgenGenotypeWriter = new BgenGenotypeWriter(complexGenotypeData);
+
+		File tempFile = Paths.get(folder.toString(),
+				FilenameUtils.removeExtension(complexVcfFile.getName()) + ".temp.bgen").toFile();
+		File tempSampleFile = Paths.get(folder.toString(),
+				FilenameUtils.removeExtension(complexVcfFile.getName()) + ".temp.sample").toFile();
+		bgenGenotypeWriter.write(tempFile, tempSampleFile);
+		BgenGenotypeData bgenGenotypeData = new BgenGenotypeData(tempFile, tempSampleFile);
+
+		testComplexGenotypeDataCorrespondence(expectedSampleNames,
+				expectedVariantIds, expectedVariantPositions,
+				alleles, expectedComplexProbabilities,
+				expectedProbabilities, expectedPhasedProbabilities, bgenGenotypeData);
+	}
+
+	private void testComplexGenotypeDataCorrespondence(String[] expectedSampleNames, List<String> expectedVariantIds,
+													   List<Integer> expectedVariantPositions, List<Alleles> alleles,
+													   List<double[][]> expectedComplexProbabilities,
+													   List<float[][]> expectedProbabilities,
+													   List<double[][][]> expectedPhasedProbabilities,
+													   RandomAccessGenotypeData complexGenotypeData) {
+
+		// Test the equality of sample names and sequence names
+		assertEquals(this.complexGenotypeData.getSampleNames(), expectedSampleNames);
+		assertEquals(this.complexGenotypeData.getSeqNames(), Collections.singletonList("01"));
+
+		assertEquals(this.complexGenotypeData.getVariantIdMap().keySet(), new HashSet<>(expectedVariantIds));
 		// Loop through variants and check their similarity.
 		int variantIndex = 0;
 		for (GeneticVariant variant : complexGenotypeData) {
@@ -330,17 +373,10 @@ public class VcfGenotypeDataTest extends ResourceTest
 			// Check if the phased probabilities are correct as well
 			if (Arrays.asList(2, 4).contains(variantIndex)) {
 				// First we have to check if the variant is phased
-//				assertFalse(variant.getSamplePhasing().contains(false));
-//				assertTrue(variant.hasPhasedGenotypes());
 				assertTrue(variant.hasPhasedProbabilities());
 				// Only then get the phased probabilities
 				double[][][] phasedBgenProbabilities = variant.getSampleGenotypeProbabilitiesPhased();
 				assertTrue(Arrays.deepEquals(phasedBgenProbabilities, expectedPhasedProbabilities.get(variantIndex)));
-//			} else if (Arrays.asList(7).contains(variantIndex)) {
-//				// These are also phased, but probabilities are not interesting enough...
-//				assertFalse(variant.getSamplePhasing().contains(false));
-//				assertTrue(variant.hasPhasedGenotypes());
-//				assertTrue(variant.hasPhasedProbabilities());
 			} else {
 				// These are not phased, which we have to test for
 				assertFalse(variant.getSamplePhasing().contains(true));
@@ -357,20 +393,6 @@ public class VcfGenotypeDataTest extends ResourceTest
 			}
 			variantIndex++;
 		}
-
-//		// Write and read again
-//		BgenGenotypeWriter bgenGenotypeWriter = new BgenGenotypeWriter(complexGenotypeData);
-//
-//		File tempFile = Paths.get(folder.toString(),
-//				FilenameUtils.removeExtension(complexVcfFile.getName()) + ".temp.bgen").toFile();
-//		File tempSampleFile = Paths.get(folder.toString(),
-//				FilenameUtils.removeExtension(complexVcfFile.getName()) + ".temp.sample").toFile();
-//		bgenGenotypeWriter.write(tempFile, tempSampleFile);
-//		BgenGenotypeData bgenGenotypeData = new BgenGenotypeData(tempFile, tempSampleFile);
-//		TestComplexBgenGenotypeDataEquality(expectedSampleNames,
-//				expectedVariantIds, expectedVariantPositions,
-//				alleles, expectedBgenProbabilities,
-//				expectedProbabilities, expectedPhasedBgenProbabilities);
 	}
-	
+
 }
