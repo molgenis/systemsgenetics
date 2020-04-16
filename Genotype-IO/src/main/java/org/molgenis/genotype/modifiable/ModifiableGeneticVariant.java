@@ -109,7 +109,7 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 
 	@Override
 	public boolean hasPhasedProbabilities() {
-		return getSampleVariantsProvider().arePhasedProbabilitiesPresent(this);
+		return getSampleVariantsProvider().arePhasedProbabilitiesPresent(originalVariant);
 	}
 
 	@Override
