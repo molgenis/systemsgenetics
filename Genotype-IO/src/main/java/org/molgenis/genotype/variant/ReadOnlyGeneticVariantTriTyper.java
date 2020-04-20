@@ -147,6 +147,11 @@ public class ReadOnlyGeneticVariantTriTyper extends AbstractGeneticVariant {
     }
 
     @Override
+    public boolean hasPhasedProbabilities() {
+        return false;
+    }
+
+    @Override
     public float[][] getSampleGenotypeProbilities() {
         return sampleVariantsProvider.getSampleProbilities(this);
     }

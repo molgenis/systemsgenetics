@@ -166,6 +166,11 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 	}
 
 	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		return false;
+	}
+
+	@Override
 	public int cacheSize() {
 		return variants.size();
 	}

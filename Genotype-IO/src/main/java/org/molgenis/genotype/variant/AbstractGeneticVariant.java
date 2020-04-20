@@ -279,7 +279,7 @@ abstract public class AbstractGeneticVariant implements GeneticVariant {
     }
 
     @Override
-    public boolean isPhasedDataPresent() {
+    public boolean hasPhasedGenotypes() {
         return !this.getSamplePhasing().contains(false);
     }
 

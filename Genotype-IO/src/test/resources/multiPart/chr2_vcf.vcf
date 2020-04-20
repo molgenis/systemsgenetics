@@ -1,0 +1,31 @@
+##fileformat=VCFv4.3
+##FILTER=<ID=PASS,Description="All filters passed">
+##fileDate=20200410
+##source=PLINKv2.00
+##contig=<ID=2,length=1001>
+##SAMPLE=<ID=s_1,Pheno=160.0>
+##SAMPLE=<ID=s_2,Pheno=164.0>
+##SAMPLE=<ID=s_3,Pheno=168.0>
+##SAMPLE=<ID=s_4,Pheno=172.0>
+##SAMPLE=<ID=s_5,Pheno=176.0>
+##SAMPLE=<ID=s_6,Pheno=180.0>
+##SAMPLE=<ID=s_7,Pheno=184.0>
+##SAMPLE=<ID=s_8,Pheno=188.0>
+##SAMPLE=<ID=s_9,Pheno=192.0>
+##SAMPLE=<ID=s_10,Pheno=196.0>
+##INFO=<ID=PR,Number=0,Type=Flag,Description="Provisional reference allele, may not be based on real reference genome">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">
+##bcftools_pluginVersion=1.10.2+htslib-1.10.2
+##bcftools_pluginCommand=plugin fill-tags -- chr2.vcf -t AF; Date=Fri Apr 10 13:47:48 2020
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	s_1	s_2	s_3	s_4	s_5	s_6	s_7	s_8	s_9	s_10
+2	100	rs11	G	C	.	.	PR;AF=0.55	GT	0/1	0/1	0/1	1/1	1/1	0/0	0/1	0/1	0/1	0/1
+2	200	rs12	T	C	.	.	PR;AF=0.6	GT	0/1	0/1	0/1	1/1	0/1	1/1	0/1	1/1	0/1	0/0
+2	300	rs13	G	C	.	.	PR;AF=0.6	GT	0/1	0/1	1/1	0/1	1/1	0/0	1/1	1/1	0/1	0/0
+2	400	rs14	G	C	.	.	PR;AF=0.4	GT	0/1	1/1	0/0	0/0	0/1	1/1	0/1	0/0	0/0	0/1
+2	500	rs15	C	A	.	.	PR;AF=0.55	GT	1/1	0/0	0/1	1/1	0/1	0/1	0/1	0/0	0/1	1/1
+2	600	rs16	C	G	.	.	PR;AF=0.5	GT	0/0	1/1	0/1	1/1	0/1	0/0	0/0	0/1	0/1	1/1
+2	700	rs17	A	C	.	.	PR;AF=0.7	GT	1/1	1/1	0/1	0/1	0/1	1/1	1/1	0/0	1/1	0/1
+2	800	rs18	C	G	.	.	PR;AF=0.5	GT	0/0	0/1	1/1	0/0	1/1	1/1	1/1	0/0	0/1	0/0
+2	900	rs19	C	G	.	.	PR;AF=0.6	GT	0/1	0/1	1/1	0/1	0/0	1/1	1/1	1/1	0/0	0/1
+2	1000	rs20	A	G	.	.	PR;AF=0.55	GT	1/1	1/1	0/0	0/0	1/1	1/1	1/1	0/0	0/0	0/1

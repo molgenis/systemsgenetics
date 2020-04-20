@@ -285,6 +285,11 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	}
 
 	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		return false;
+	}
+
+	@Override
 	public int cacheSize() {
 		return cacheSize;
 	}
