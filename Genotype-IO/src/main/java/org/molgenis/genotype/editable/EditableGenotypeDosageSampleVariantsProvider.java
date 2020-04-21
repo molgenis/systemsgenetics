@@ -65,6 +65,11 @@ public class EditableGenotypeDosageSampleVariantsProvider implements EditableSam
 	}
 
 	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		return false;
+	}
+
+	@Override
 	public int cacheSize() {
 		return sampleVariants.size();
 	}

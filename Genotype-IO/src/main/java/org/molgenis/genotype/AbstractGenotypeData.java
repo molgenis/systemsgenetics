@@ -32,7 +32,7 @@ public abstract class AbstractGenotypeData implements GenotypeData
 	@Override
 	public Annotation getSampleAnnotation(String annotationId)
 	{
-		return getVariantAnnotationsMap().get(annotationId);
+		return getSampleAnnotationsMap().get(annotationId);
 	}
 
 	@Override

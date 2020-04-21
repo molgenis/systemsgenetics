@@ -164,7 +164,29 @@ public interface GeneticVariant extends Comparable<GeneticVariant>
 	 */
 	public byte[] getSampleCalledDosages();
 
+	/**
+	 * Gets boolean values for every sample indicating if, for this variant,
+	 * phased data is present in the sample.
+	 *
+	 * @return a list of booleans indicating presence of phasing data for every sample.
+	 */
 	public List<Boolean> getSamplePhasing();
+
+	/**
+	 * Method returning if phased data is present or not.
+	 *
+	 * @return true if every sample contains phased data for this
+	 * variant, otherwise false.
+	 */
+	public boolean hasPhasedGenotypes();
+
+	/**
+	 * Method returning if phased data is present or not.
+	 *
+	 * @return true if probabilities are available for every sample for this variant,
+	 * otherwise false.
+	 */
+	public boolean hasPhasedProbabilities();
 
 	/**
 	 * Get the sample variant provider used by this variant

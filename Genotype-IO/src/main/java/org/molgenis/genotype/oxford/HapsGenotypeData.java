@@ -161,6 +161,11 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 	}
 
 	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		return false;
+	}
+
+	@Override
 	public int cacheSize() {
 		return 0;
 	}
@@ -425,7 +430,7 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 
 	@Override
 	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
-		if (variant.getSamplePhasing().contains(false)) {
+		if (variant.hasPhasedGenotypes()) {
 			throw new GenotypeDataException("Phased data not available");
 		}
 		return ProbabilitiesConvertor.convertCalledAllelesToPhasedProbabilities(variant.getSampleVariants(), variant.getVariantAlleles());

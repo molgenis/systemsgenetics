@@ -25,8 +25,17 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.depict2.development.ExtractCol;
 import nl.systemsgenetics.depict2.development.First1000qtl;
+import nl.systemsgenetics.depict2.gene.Gene;
+import nl.systemsgenetics.depict2.gene.GenePvalueCalculator;
+import nl.systemsgenetics.depict2.io.ExcelWriter;
+import nl.systemsgenetics.depict2.io.GwasSummStats;
+import nl.systemsgenetics.depict2.io.IoUtils;
+import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
+import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
+import nl.systemsgenetics.depict2.runners.ConvertGtexGct;
+import nl.systemsgenetics.depict2.runners.NetworkProperties;
+import nl.systemsgenetics.depict2.runners.TestCoregulationPerformance;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.apache.log4j.ConsoleAppender;
@@ -38,14 +47,8 @@ import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
-import org.molgenis.genotype.sampleFilter.SampleFilter;
-import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.variant.GeneticVariant;
-import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
-import org.molgenis.genotype.variantFilter.VariantFilter;
-import org.molgenis.genotype.variantFilter.VariantFilterMaf;
-import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.PcaColt;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -168,11 +171,14 @@ public class Depict2 {
 				case FIRST1000:
 					First1000qtl.printFirst1000(options);
 					break;
+				case PTOZSCORE:
+					convertPvalueToZscore(options);
+					break;
 				case RUN:
 					run(options);
 					break;
 				case RUN2:
-					run2(options, null, null, null, null);
+					run2(options, null, null, null, null, null, null);
 					break;
 				case CORRELATE_GENES:
 					correlateGenes(options);
@@ -184,8 +190,11 @@ public class Depict2 {
 					doPcaOnBinMatrix(options);
 					break;
 				case CORE_GENE_AUC:
-					testCoregulationPerformance.testCoreGenePredictionPerformance(options);
+					TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
 					break;	
+				case INVESTIGATE_NETWORK:
+					NetworkProperties.investigateNetwork(options);
+					break;
 				case SPECIAL:
 					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
 			}
@@ -237,14 +246,14 @@ public class Depict2 {
 			throw new FileNotFoundException("GWAS matrix does not exist at: " + options.getGwasZscoreMatrixPath() + ".dat");
 		}
 
-		final List<String> variantsInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
-		final List<String> phenotypesInZscoreMatrix = readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
+		final List<String> variantsInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
+		final List<String> phenotypesInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
 		LOGGER.info("Number of phenotypes in GWAS matrix: " + LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
 		LOGGER.info("Number of variants in GWAS matrix: " + LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
 
 		if (options.getVariantFilterFile() != null) {
-			HashSet<String> variantsToInclude = readVariantFilterFile(options.getVariantFilterFile());
+			HashSet<String> variantsToInclude = IoUtils.readVariantFilterFile(options.getVariantFilterFile());
 
 			Iterator<String> variantsInZscoreMatrixIt = variantsInZscoreMatrix.iterator();
 			while (variantsInZscoreMatrixIt.hasNext()) {
@@ -257,11 +266,11 @@ public class Depict2 {
 			LOGGER.info("Number of variants after filtering on selected variants: " + LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
 		}
 
-		RandomAccessGenotypeData referenceGenotypeData = loadGenotypes(options, variantsInZscoreMatrix);
+		RandomAccessGenotypeData referenceGenotypeData = IoUtils.loadGenotypes(options, variantsInZscoreMatrix);
 
 		LOGGER.info("Done loading genotype data");
 
-		List<Gene> genes = readGenes(options.getGeneInfoFile());
+		List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
 
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
@@ -276,10 +285,15 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
-
+		DoubleMatrixDataset<String, String> geneMinSnpPvalues = gpc.getGeneMinSnpPvalues();
+		DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas = gpc.getGeneMinSnpPvaluesNullGwas();
+		
 		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
 		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+		geneMinSnpPvalues.save(options.getOutputBasePath() + "_geneMinSnpPvalues");
+		geneMinSnpPvaluesNullGwas.save(options.getOutputBasePath() + "_geneMinSnpPvaluesNullGwas");
+		
 		if (LOGGER.isDebugEnabled()) {
 			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
 			gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
@@ -289,7 +303,7 @@ public class Depict2 {
 		if (options.getPathwayDatabases().isEmpty()) {
 			LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode RUN2 and exactly the same output path and genes file to continue");
 		} else {
-			run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount);
+			run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount, geneMinSnpPvalues, geneMinSnpPvaluesNullGwas);
 		}
 	}
 
@@ -302,7 +316,7 @@ public class Depict2 {
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount) throws IOException, Exception {
+	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount, DoubleMatrixDataset<String, String> geneMinSnpPvalues, DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas) throws IOException, Exception {
 
 		options.getIntermediateFolder().mkdir();
 
@@ -311,10 +325,6 @@ public class Depict2 {
 			if (new File(options.getOutputBasePath() + "_genePvalues.dat").exists()) {
 				genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvalues");
 				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvaluesNullGwas");
-			} else if (new File(options.getOutputBasePath() + "_genePvalues.txt").exists()) {
-				//This is for some legacy results. New versions of DEPICT2 will not create these files
-				genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvalues.txt", '\t');
-				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_genePvaluesNullGwas.txt", '\t');
 			} else {
 				LOGGER.fatal("Could not find gene pvalues at: " + options.getOutputBasePath() + "_genePvalues.dat");
 				LOGGER.fatal("First use --mode RUN to calculate gene p-values");
@@ -322,7 +332,7 @@ public class Depict2 {
 			}
 			geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
 			LOGGER.info("Gene p-values loaded");
-			genes = readGenes(options.getGeneInfoFile());
+			genes = IoUtils.readGenes(options.getGeneInfoFile());
 			LOGGER.info("Loaded " + genes.size() + " genes");
 		}
 
@@ -338,7 +348,7 @@ public class Depict2 {
 
 		final DoubleMatrix2D matrix = genePvalues.getMatrix();
 
-		//Inplace convert gene p-values to z-scores
+		// Inplace convert gene p-values to z-scores
 		IntStream.range(0, matrix.rows()).parallel().forEach(r -> {
 			for (int c = 0; c < matrix.columns(); ++c) {
 				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
@@ -393,6 +403,7 @@ public class Depict2 {
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation = genePvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas = genePvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
 
+		// TODO Gene-gene correlations are calculated for each pathway again, yes, correlations done on metagenes
 		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
 			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow(), options.getDebugFolder(), options.getIntermediateFolder(), options.isQuantileNormalizePermutations()));
@@ -408,109 +419,6 @@ public class Depict2 {
 		}
 
 		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
-
-	}
-
-	private static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
-		final RandomAccessGenotypeData referenceGenotypeData;
-
-		final SampleFilter sampleFilter;
-		if (options.getGenotypeSamplesFile() != null) {
-			sampleFilter = readSampleFile(options.getGenotypeSamplesFile());
-		} else {
-			sampleFilter = null;
-		}
-
-		VariantFilter variantFilter;
-		if (variantsToInclude == null) {
-			variantFilter = null;
-		} else {
-			variantFilter = new VariantIdIncludeFilter(new HashSet<>(variantsToInclude));
-		}
-
-		if (options.getMafFilter() != 0) {
-			VariantFilter mafFilter = new VariantFilterMaf(options.getMafFilter());
-			if (variantFilter == null) {
-				variantFilter = mafFilter;
-			} else {
-				variantFilter = new VariantCombinedFilter(variantFilter, mafFilter);
-			}
-		}
-
-		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, variantFilter, sampleFilter, null, 0.34f);
-
-		return referenceGenotypeData;
-	}
-
-	protected static final List<String> readMatrixAnnotations(File file) throws IOException {
-
-		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(file))).withCSVParser(parser).build();
-
-		ArrayList<String> identifiers = new ArrayList<>();
-
-		String[] nextLine;
-		while ((nextLine = reader.readNext()) != null) {
-
-			identifiers.add(nextLine[0]);
-
-		}
-
-		return identifiers;
-
-	}
-
-	private static List<Gene> readGenes(File geneFile) throws IOException {
-
-		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
-
-		final ArrayList<Gene> genes = new ArrayList<>();
-
-		String[] nextLine;
-		while ((nextLine = reader.readNext()) != null) {
-
-			genes.add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5]));
-
-		}
-
-		return genes;
-
-	}
-
-	private static SampleIdIncludeFilter readSampleFile(File sampleFile) throws IOException {
-
-		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withCSVParser(parser).withSkipLines(0).build();
-
-		final HashSet<String> samples = new HashSet<>();
-
-		String[] nextLine;
-		while ((nextLine = reader.readNext()) != null) {
-
-			samples.add(nextLine[0]);
-
-		}
-
-		return new SampleIdIncludeFilter(samples);
-
-	}
-
-	private static HashSet<String> readVariantFilterFile(File variantFilterFile) throws IOException {
-
-		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantFilterFile))).withCSVParser(parser).withSkipLines(0).build();
-
-		final HashSet<String> variants = new HashSet<>();
-
-		String[] nextLine;
-		while ((nextLine = reader.readNext()) != null) {
-
-			variants.add(nextLine[0]);
-
-		}
-
-		return variants;
 
 	}
 
@@ -636,7 +544,7 @@ public class Depict2 {
 		}
 
 		if (options.getConversionColumnIncludeFilter() != null) {
-			List<String> colsToSelect = readMatrixAnnotations(options.getConversionColumnIncludeFilter());
+			List<String> colsToSelect = IoUtils.readMatrixAnnotations(options.getConversionColumnIncludeFilter());
 			LOGGER.info("Number of selected columns: " + colsToSelect.size());
 			matrix = matrix.viewColSelection(colsToSelect);
 		}
@@ -672,7 +580,7 @@ public class Depict2 {
 		}
 
 		if (options.getConversionColumnIncludeFilter() != null) {
-			List<String> colsToSelect = readMatrixAnnotations(options.getConversionColumnIncludeFilter());
+			List<String> colsToSelect = IoUtils.readMatrixAnnotations(options.getConversionColumnIncludeFilter());
 			LOGGER.info("Number of selected columns: " + colsToSelect.size());
 			matrix = matrix.viewColSelection(colsToSelect);
 		}
@@ -950,7 +858,7 @@ public class Depict2 {
 			outputLine[1] = "Updated";
 			updatedVariantWriter.writeNext(outputLine);
 
-			RandomAccessGenotypeData genotoypes = loadGenotypes(options, null);
+			RandomAccessGenotypeData genotoypes = IoUtils.loadGenotypes(options, null);
 
 			LinkedHashMap<String, Integer> originalRowHash = finalMergedPvalueMatrix.getHashRows();
 			LinkedHashMap<String, Integer> updatedRowHash = new LinkedHashMap<>(originalRowHash.size());
@@ -1052,11 +960,6 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadTransEqtlExpressionMatrix(options.getGwasZscoreMatrixPath());
 		matrix.saveBinary(options.getOutputBasePath());
 
-	}
-
-	public static String formatMsForLog(long ms) {
-		//return LOG_TIME_FORMAT.format(new Date(ms));
-		return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
 	}
 
 	private static double[] generateRandomChi2(long numberOfPermutations, int numberOfVariantPerGeneToExpect) {
@@ -1172,7 +1075,35 @@ public class Depict2 {
 
 	}
 
-	protected static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
+	/**
+	 * Quick util that converts a txt matrix of pvalues to zscores using ZScores.pToZTwoTailed(pvalue)
+	 *
+	 * @param options
+	 * @throws Exception
+	 */
+	private static void convertPvalueToZscore(Depict2Options options) throws Exception {
+
+		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+
+		DoubleMatrix2D matrixContent = matrix.getMatrix();
+		LOGGER.info("Read data, converting matrix to zscores");
+
+		// Inplace convert to zscores
+		IntStream.range(0, matrix.rows()).parallel().forEach(r -> {
+			for (int c = 0; c < matrixContent.columns(); ++c) {
+				matrixContent.setQuick(r, c, -ZScores.pToZTwoTailed(matrixContent.getQuick(r, c)));
+			}
+		});
+		LOGGER.info("Done converting matrix to zscores, writing results");
+
+		// Write output
+		matrix.save(options.getOutputBasePath() + ".txt");
+
+		LOGGER.info("Done");
+
+	}
+
+	public static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
 
 		private final String errorSource;
 
@@ -1193,5 +1124,11 @@ public class Depict2 {
 			System.exit(1);
 		}
 	}
+
+	public static String formatMsForLog(long ms) {
+		//return LOG_TIME_FORMAT.format(new Date(ms));
+		return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
+	}
+
 
 }

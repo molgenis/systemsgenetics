@@ -226,6 +226,11 @@ public class ReadOnlyGeneticVariant extends AbstractGeneticVariant {
 	}
 
 	@Override
+	public boolean hasPhasedProbabilities() {
+		return sampleVariantsProvider.arePhasedProbabilitiesPresent(this);
+	}
+
+	@Override
 	public float[][] getSampleGenotypeProbilities() {
 		return sampleVariantsProvider.getSampleProbilities(this);
 	}

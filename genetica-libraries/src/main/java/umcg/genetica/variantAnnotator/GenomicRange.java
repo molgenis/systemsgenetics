@@ -10,7 +10,7 @@ import umcg.genetica.collections.intervaltree.Range;
  *
  * @author Patrick Deelen
  */
-public interface GenomicRange extends Range{
+public interface GenomicRange extends Range {
 	
 	String getSeqname();
 	
