@@ -292,6 +292,10 @@ public class Strings {
 
     private static Map<String, String> cache;
 
+    public synchronized static boolean cacheContains(String s) {
+        return cache.containsKey(s);
+    }
+
     public synchronized static String cache(String s) {
         if (cache == null) {
             cache = new Object2ObjectOpenHashMap<>(1000000);
@@ -321,6 +325,7 @@ public class Strings {
 
         return concat(elems, tab, includeelem, null);
     }
+
     public static String concat(String[] s, Pattern t, boolean[] includeElem, String replaceNull) {
 
         if (s == null) {

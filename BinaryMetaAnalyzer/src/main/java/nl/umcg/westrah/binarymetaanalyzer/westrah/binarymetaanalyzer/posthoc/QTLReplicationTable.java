@@ -431,9 +431,10 @@ public class QTLReplicationTable {
 								nrOverlapSignificant++;
 							}
 
+							// edit: 2020-04-02: it said (rp * rp)
 							ln += "\t" + z
 									+ "\t" + rother
-									+ "\t" + (rp * rp)
+									+ "\t" + (rother * rother)
 									+ "\t" + other.getPvalue()
 									+ "\t" + other.getFDR();
 						}

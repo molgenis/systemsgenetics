@@ -35,6 +35,7 @@ public class ConditionalAnalysisConsoleGUI {
 		boolean skipinitialsnpmap = false;
 		boolean skipalleqtlmap = false;
 		boolean runSNPCentric = false;
+		boolean limitConseqcutiveIterationsOnSignificantGenes = true;
 		Integer startiter = 1;
 
 		for (int i = 0; i < args.length; i++) {
@@ -93,6 +94,8 @@ public class ConditionalAnalysisConsoleGUI {
 				runSNPCentric = true;
 			} else if (arg.equals("--iterative")) {
 				iterativeConditional = true;
+			} else if (arg.equals("--dontlimitgenes")) {
+				limitConseqcutiveIterationsOnSignificantGenes = false;
 			} else if (arg.equals("--startiter")) {
 				try {
 					startiter = Integer.parseInt(val);
@@ -111,6 +114,7 @@ public class ConditionalAnalysisConsoleGUI {
 				if (iterativeConditional) {
 					IterativeConditionalAnalysis m = new IterativeConditionalAnalysis();
 					m.setStartIter(startiter);
+					m.setLimitConsecutiveIterationsToSignificantGenes(limitConseqcutiveIterationsOnSignificantGenes);
 					m.run(settingsfile, settingstexttoreplace, settingstexttoreplacewith, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads);
 				} else {
 					ConditionalAnalysis m = new ConditionalAnalysis();

@@ -32,6 +32,8 @@ import java.util.stream.IntStream;
 public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 
+	private boolean limitConseqcutiveIterationsOnSignificantGenes = true;
+
 	public static void main(String[] args) {
 
 //		Normalizer z = new Normalizer();
@@ -74,6 +76,8 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 		int iteration = startIter;
 
 		boolean saveIntermediateResiduals = m_settings.regressOutEQTLEffectsSaveOutput;
+
+		THashSet<String> originalProbeConfine = m_settings.tsProbesConfine;
 
 		EQTLRegression eqr = new EQTLRegression();
 
@@ -125,11 +129,14 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 					ArrayList<Pair<String, String>> toRegress = collectEQTLs(origOutputDir, iteration, fdrthreshold);
 
 					// get the significant probes from the previous run
-					m_settings.tsProbesConfine = collectEQTLProbes(origOutputDir, iteration, fdrthreshold);
-
-					if (m_settings.tsProbesConfine == null || m_settings.tsProbesConfine.isEmpty()) {
-						System.out.println("No significant probes found.");
-						System.exit(-1);
+					if (limitConseqcutiveIterationsOnSignificantGenes) {
+						m_settings.tsProbesConfine = collectEQTLProbes(origOutputDir, iteration, fdrthreshold);
+						if (m_settings.tsProbesConfine == null || m_settings.tsProbesConfine.isEmpty()) {
+							System.out.println("No significant probes found.");
+							System.exit(-1);
+						}
+					} else {
+						m_settings.tsProbesConfine = originalProbeConfine;
 					}
 
 					// reset the datasets
@@ -137,7 +144,6 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 					// regress significant eQTLs
 					try {
-
 						eqr.setLog(m_settings.outputReportsDir, iteration);
 						eqr.regressOutEQTLEffects(toRegress, m_gg, useOLS);
 					} catch (Exception e) {
@@ -381,5 +387,10 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 	public void setStartIter(Integer startiter) {
 
 		this.startIter = startiter;
+	}
+
+	public void setLimitConsecutiveIterationsToSignificantGenes(boolean limitConseqcutiveIterationsOnSignificantGenes) {
+		this.limitConseqcutiveIterationsOnSignificantGenes = limitConseqcutiveIterationsOnSignificantGenes;
+
 	}
 }
