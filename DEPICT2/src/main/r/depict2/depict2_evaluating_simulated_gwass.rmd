@@ -1,0 +1,24 @@
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(readxl)
+library(pheatmap)
+library(RColorBrewer)
+library(gridExtra)
+library(data.table)
+
+source("depict2_functions.r")
+
+path <- "/home/work/Desktop/depict2/output/simulated_gwas//"
+
+files <- list.files(path, pattern="*merged_pvalues.txt", full.names = T)
+curstats <- fread(files[1], data.table=F)
+
+```
+
+
+# Pvalue evaluation
+```{r}
+
+```
+

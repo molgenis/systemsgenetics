@@ -364,7 +364,6 @@ public class Depict2 {
 		});
 
 		LOGGER.info("Number of genes with atleast one variant in specified window: " + LARGE_INT_FORMAT.format(selectedGenes.size()));
-
 		final HashSet<String> hlaGenes;
 		if (options.isExcludeHla()) {
 			hlaGenes = new HashSet<>();
@@ -374,12 +373,12 @@ public class Depict2 {
 				}
 			}
 			LOGGER.info("Excluding " + hlaGenes.size() + " genes");
+
 		} else {
 			hlaGenes = null;
 		}
 
 		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
-
 		final int nrSampleToUseForCorrelation = options.getPermutationGeneCorrelations();
 		final int nrSamplesToUseForNullBetas = options.getPermutationPathwayEnrichment();
 

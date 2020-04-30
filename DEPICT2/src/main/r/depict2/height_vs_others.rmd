@@ -47,18 +47,20 @@ genep <- -log10(genep)
 cors <- cor(genep, use="pairwise.complete.obs")
 hm(cors, main="geneP")
 
-ol <- intersect(rownames(genep), rownames(genep))
+ol <- intersect(rownames(coreg), rownames(ensembl))
 genel <- t(apply(genep[ol,], 2, function(x){
   #return(cor(x, log10(ensembl[ol, "gene.length"]), use="pairwise.complete.obs"))
   return(summary(lm(x ~ log10(ensembl[ol, "gene.length"])))$coefficients)
 
 }))
-genel2 <- t(apply(genep[ol,], 2, function(x){
-  #return(cor(x, log10(ensembl[ol, "gene.length"]), use="pairwise.complete.obs"))
-  return(summary(lm(x ~ ensembl[ol, "gene.length"]))$coefficients)
+genel2 <- t(apply(coreg[ol,], 2, function(x){
+  return(cor(x, log10(ensembl[ol, "gene.length"]), use="pairwise.complete.obs"))
+  #return(summary(lm(x ~ ensembl[ol, "gene.length"]))$coefficients)
 
 }))
 
+plot(coreg[ol,"educational_attainment_2018_30038396"],log10(ensembl[ol, "gene.length"]))
+  
 plot(genep[ol,], ensembl[ol, "gene.length"])
 hm(genel)
 

@@ -134,6 +134,25 @@ read.enrichments <- function(files, column=1) {
 }
 
 # ------------------------------------------------------ 
+read.enrichments.fread <- function(files, column=1) {
+  out <- matrix()
+  i=0
+  for (dataset in files) {
+    tmp <- fread(dataset, stringsAsFactors = F, header=T, sep="\t", data.table=F)
+    rownames(tmp) <- make.names(tmp[,1], unique=T)
+    tmp <- tmp[,-1]
+    if (i==0) {
+      out <- as.matrix(tmp[,column, drop=F])
+    } else {
+      out <- cbind(out, tmp[rownames(out), column, drop=F])
+    }
+    i <- i+1
+  }
+  colnames(out) <- basename(files)
+  
+  return(out)
+}
+# ------------------------------------------------------ 
 cor.test.p <- function(x, method){
   FUN <- function(x, y) cor.test(x, y, method=method, use="complete.obs")[["p.value"]]
   z <- outer(

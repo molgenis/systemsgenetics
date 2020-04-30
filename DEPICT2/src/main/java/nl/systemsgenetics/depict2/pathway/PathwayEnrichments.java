@@ -23,6 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
@@ -35,6 +36,7 @@ import org.apache.log4j.Logger;
 import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
+import umcg.genetica.math.stats.ZScores;
 
 /**
  * @author patri
@@ -60,7 +62,23 @@ public class PathwayEnrichments {
     private final List<Gene> genes;
     private final String outputBasePath;
 
-    public PathwayEnrichments(final PathwayDatabase pathwayDatabase, final HashSet<String> genesWithPvalue, final List<Gene> genes, final boolean forceNormalPathwayPvalues, final boolean forceNormalGenePvalues, final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation, final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final boolean ignoreGeneCorrelations, final double genePruningR, final int geneCorrelationWindow, final File debugFolder, final File intermediateFolder, final boolean quantileNormalizePermutations) throws Exception {
+    public PathwayEnrichments(final PathwayDatabase pathwayDatabase,
+                              final HashSet<String> genesWithPvalue,
+                              final List<Gene> genes,
+                              final boolean forceNormalPathwayPvalues,
+                              final boolean forceNormalGenePvalues,
+                              final DoubleMatrixDataset<String, String> geneZscores,
+                              final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation,
+                              final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas,
+                              final String outputBasePath,
+                              final HashSet<String> hlaGenesToExclude,
+                              final boolean ignoreGeneCorrelations,
+                              final double genePruningR,
+                              final int geneCorrelationWindow,
+                              final File debugFolder,
+                              final File intermediateFolder,
+                              final boolean quantileNormalizePermutations) throws Exception {
+
         this.pathwayDatabase = pathwayDatabase;
         this.genes = genes;
         this.outputBasePath = outputBasePath;
@@ -76,6 +94,7 @@ public class PathwayEnrichments {
             excludeGenes = this.hlaGenesToExclude;
         }
 
+        // Determine final set of genes to analyze
         Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
         sharedGenes = new LinkedHashSet<>();
 
@@ -85,6 +104,31 @@ public class PathwayEnrichments {
             }
         }
 
+
+        // TODO: with a little cleanup, this can be moved to Depict2.java, saves doing this each time for each pathway enrichment
+        // Determine (log10) gene lengths
+        LOGGER.info("Determining gene lengths");
+        final double[] geneLengths = new double[geneZscores.getRowObjects().size()];
+        int i = 0;
+        // TODO: very ugly
+        // Ensures the geneLength vector is in the same order as the matrices
+        for (String geneInZscoreMatrix : geneZscores.getRowObjects()) {
+            for (Gene geneInfo : genes) {
+                if (geneInfo.getGene().equals(geneInZscoreMatrix)) {
+                    geneLengths[i] = Math.log(geneInfo.getLength()) / Math.log(10);
+                    i++;
+                    break;
+                }
+            }
+        }
+
+        // Do the regression with gene lengths and zscores
+        LOGGER.info("Regressing gene lengths and determining residuals");
+        inplaceDetermineGeneLengthRegressionResiduals(geneZscores, geneLengths);
+        inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasCorrelation, geneLengths);
+        inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasNullBetas, geneLengths);
+        LOGGER.info("Done regressing gene lengths and determining residuals");
+
         final HashMap<String, HashSet<MetaGene>> metaGenesPerArm;
         {
             DoubleMatrixDataset<String, String> tmp = geneZscoresNullGwasCorrelation.viewRowSelection(sharedGenes).duplicate();
@@ -93,9 +137,6 @@ public class PathwayEnrichments {
         }
 
         try (ProgressBar pb = new ProgressBar(pathwayDatabase.getName() + " enrichment analysis", metaGenesPerArm.size() + 2, ProgressBarStyle.ASCII)) {
-            // LinkedHashSet<String> sharedUncorrelatedGenes = findUncorrelatedGenes(tmp, sharedGenes, genes, genePruningR);
-            // LOGGER.debug("Number of uncorrelated genes: " + sharedUncorrelatedGenes.size());
-
             // Collapse genes that are highly correlated and merge them to meta-genes
             final DoubleMatrixDataset<String, String> genePathwayZscores;
             if (forceNormalPathwayPvalues) {
@@ -372,6 +413,23 @@ public class PathwayEnrichments {
 
             pb.step();
         }
+    }
+
+
+    private static void inplaceDetermineGeneLengthRegressionResiduals(DoubleMatrixDataset<String, String> geneZscores, double[] geneLengths) {
+        IntStream.range(0, geneZscores.getMatrix().columns()).parallel().forEach(c -> {
+            // Build the regression model
+            SimpleRegression regression = new SimpleRegression();
+            for (int r = 0; r < geneZscores.rows(); ++r) {
+                regression.addData(geneLengths[r], geneZscores.getElement(r, c));
+            }
+
+            // Apply model and inplace convert to residuals
+            for (int r = 0; r < geneZscores.rows(); ++r) {
+                double predictedY = regression.predict(geneLengths[r]);
+                geneZscores.setElementQuick(r, c, geneZscores.getElement(r, c) - predictedY);
+            }
+        });
     }
 
 

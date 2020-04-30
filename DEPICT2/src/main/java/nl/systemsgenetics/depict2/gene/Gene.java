@@ -58,6 +58,10 @@ public class Gene {
 
 	}
 
+	public int getLength() {
+		return getStop() - getStart();
+	}
+
 	@Override
 	public int hashCode() {
 		int hash = 7;
