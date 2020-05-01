@@ -402,10 +402,26 @@ public class Depict2 {
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation = genePvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas = genePvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
 
-		// TODO Gene-gene correlations are calculated for each pathway again, yes, correlations done on metagenes
 		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow(), options.getDebugFolder(), options.getIntermediateFolder(), options.isQuantileNormalizePermutations()));
+			pathwayEnrichments.add(new PathwayEnrichments(
+					pathwayDatabase,
+					selectedGenes,
+					genes,
+					options.isForceNormalPathwayPvalues(),
+					options.isForceNormalGenePvalues(),
+					genePvalues,
+					geneZscoresNullGwasCorrelation,
+					geneZscoresNullGwasNullBetas,
+					options.getOutputBasePath(),
+					hlaGenes,
+					options.isIgnoreGeneCorrelations(),
+					options.getGenePruningR(),
+					options.getGeneCorrelationWindow(),
+					options.getDebugFolder(),
+					options.getIntermediateFolder(),
+					options.isQuantileNormalizePermutations(),
+					options.isRegressGeneLengths()));
 		}
 
 		if (options.isSaveOuputAsExcelFiles()) {

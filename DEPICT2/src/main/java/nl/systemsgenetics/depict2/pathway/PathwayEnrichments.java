@@ -67,9 +67,9 @@ public class PathwayEnrichments {
                               final List<Gene> genes,
                               final boolean forceNormalPathwayPvalues,
                               final boolean forceNormalGenePvalues,
-                               DoubleMatrixDataset<String, String> geneZscores,
-                               DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation,
-                               DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas,
+                              DoubleMatrixDataset<String, String> geneZscores,
+                              DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation,
+                              DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas,
                               final String outputBasePath,
                               final HashSet<String> hlaGenesToExclude,
                               final boolean ignoreGeneCorrelations,
@@ -77,7 +77,8 @@ public class PathwayEnrichments {
                               final int geneCorrelationWindow,
                               final File debugFolder,
                               final File intermediateFolder,
-                              final boolean quantileNormalizePermutations) throws Exception {
+                              final boolean quantileNormalizePermutations,
+                              final boolean regressGeneLengths) throws Exception {
 
         this.pathwayDatabase = pathwayDatabase;
         this.genes = genes;
@@ -104,57 +105,64 @@ public class PathwayEnrichments {
             }
         }
 
-        // TODO: with a little cleanup, this can be moved to Depict2.java, saves doing this each time for each pathway enrichment
-        // Determine (log10) gene lengths
-        LOGGER.info("Determining gene lengths");
-        final double[] geneLengths = new double[sharedGenes.size()];
-        int i = 0;
-        // TODO: very ugly
-        // Ensures the geneLength vector is in the same order as the matrices
-        for (String geneInZscoreMatrix : sharedGenes) {
-            for (Gene geneInfo : genes) {
-                if (geneInfo.getGene().equals(geneInZscoreMatrix)) {
-                    geneLengths[i] = Math.log(geneInfo.getLength()) / Math.log(10);
-                    i++;
-                    break;
-                }
-            }
-        }
-
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("geneZscores: " + geneZscores.rows() + " x " + geneZscores.columns());
-            LOGGER.debug("geneZscoresNullGwasCorrelation: " + geneZscoresNullGwasCorrelation.rows() + " x " + geneZscoresNullGwasCorrelation.columns());
-            LOGGER.debug("geneZscoresNullGwasNullBetas: " + geneZscoresNullGwasNullBetas.rows() + " x " + geneZscoresNullGwasNullBetas.columns());
-        }
-
+        // Subset the gene zscores to all overlapping, non NA genes
         geneZscores = geneZscores.viewRowSelection(sharedGenes);
         geneZscoresNullGwasCorrelation = geneZscoresNullGwasCorrelation.viewRowSelection(sharedGenes);
         geneZscoresNullGwasNullBetas = geneZscoresNullGwasNullBetas.viewRowSelection(sharedGenes);
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("geneZscores: " + geneZscores.rows() + " x " + geneZscores.columns());
-            LOGGER.debug("geneZscoresNullGwasCorrelation: " + geneZscoresNullGwasCorrelation.rows() + " x " + geneZscoresNullGwasCorrelation.columns());
-            LOGGER.debug("geneZscoresNullGwasNullBetas: " + geneZscoresNullGwasNullBetas.rows() + " x " + geneZscoresNullGwasNullBetas.columns());
-
+        // Force normal gene p-values y/n
+        if (forceNormalGenePvalues) {
+            LOGGER.info("Force normalizing gene p-values / z-scores");
+            geneZscores = geneZscores.createColumnForceNormalDuplicate();
+            geneZscoresNullGwasCorrelation = geneZscoresNullGwasCorrelation.createColumnForceNormalDuplicate();
+            geneZscoresNullGwasNullBetas = geneZscoresNullGwasNullBetas.createColumnForceNormalDuplicate();
         }
 
-        // TODO: matrix contains NA's which messes with the regression
-        // Do the regression with gene lengths and zscores
-        LOGGER.info("Regressing gene lengths and determining residuals");
-        inplaceDetermineGeneLengthRegressionResiduals(geneZscores, geneLengths);
-        inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasCorrelation, geneLengths);
-        inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasNullBetas, geneLengths);
-        LOGGER.info("Done regressing gene lengths and determining residuals");
+        // Do the regression with gene lengths and z-scores y/n
+        if (regressGeneLengths) {
+            LOGGER.info("Regressing gene lengths and determining residuals");
 
+            // Determine (log10) gene lengths
+            LOGGER.info("Determining gene lengths");
+            final double[] geneLengths = new double[sharedGenes.size()];
+            int i = 0;
+            // Ensures the geneLength vector is in the same order as the matrices
+            for (String geneInZscoreMatrix : sharedGenes) {
+                for (Gene geneInfo : genes) {
+                    if (geneInfo.getGene().equals(geneInZscoreMatrix)) {
+                        geneLengths[i] = Math.log(geneInfo.getLength()) / Math.log(10);
+                        i++;
+                        break;
+                    }
+                }
+            }
+
+            // Determine residuals
+            inplaceDetermineGeneLengthRegressionResiduals(geneZscores, geneLengths);
+            inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasCorrelation, geneLengths);
+            inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasNullBetas, geneLengths);
+        }
+
+        // Determine which genes will be merged to metagenes based on their genetic correlation
         final HashMap<String, HashSet<MetaGene>> metaGenesPerArm;
         {
-            DoubleMatrixDataset<String, String> tmp = geneZscoresNullGwasCorrelation.viewRowSelection(sharedGenes).duplicate();
+            DoubleMatrixDataset<String, String> tmp = geneZscoresNullGwasCorrelation.duplicate();
             tmp.normalizeColumns();
             metaGenesPerArm = groupCorrelatedGenesPerChrArm(tmp, genePruningR, genes, sharedGenes);
         }
 
         try (ProgressBar pb = new ProgressBar(pathwayDatabase.getName() + " enrichment analysis", metaGenesPerArm.size() + 2, ProgressBarStyle.ASCII)) {
-            // Collapse genes that are highly correlated and merge them to meta-genes
+
+            // Collapse the gene p-values to these predefined metagenes
+            final DoubleMatrixDataset<String, String> geneZscoresPathwayMatched;
+            final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelationPathwayMatched;
+            final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetasPathwayMatched;
+
+            geneZscoresPathwayMatched = collapseDatasetToMetaGenes(geneZscores, false, metaGenesPerArm.values());
+            geneZscoresNullGwasCorrelationPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasCorrelation, false, metaGenesPerArm.values());
+            geneZscoresNullGwasNullBetasPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasNullBetas, false, metaGenesPerArm.values());
+
+            // Collapse the pathways to meta-genes
             final DoubleMatrixDataset<String, String> genePathwayZscores;
             if (forceNormalPathwayPvalues) {
                 LOGGER.debug("Doing force normal pathway scores");
@@ -168,23 +176,7 @@ public class PathwayEnrichments {
                 LOGGER.debug("Center and scale pathway scores");
             }
 
-            final DoubleMatrixDataset<String, String> geneZscoresPathwayMatched;
-            final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelationPathwayMatched;
-            final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetasPathwayMatched;
-
-            if (forceNormalGenePvalues) {
-                LOGGER.debug("Doing force normal gene p-values");
-                geneZscoresPathwayMatched = collapseDatasetToMetaGenes(geneZscores, false, metaGenesPerArm.values()).createColumnForceNormalDuplicate();
-                geneZscoresNullGwasCorrelationPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasCorrelation, false, metaGenesPerArm.values()).createColumnForceNormalDuplicate();
-                geneZscoresNullGwasNullBetasPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasNullBetas, false, metaGenesPerArm.values()).createColumnForceNormalDuplicate();
-            } else {
-                geneZscoresPathwayMatched = collapseDatasetToMetaGenes(geneZscores, false, metaGenesPerArm.values());
-                geneZscoresNullGwasCorrelationPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasCorrelation, false, metaGenesPerArm.values());
-                geneZscoresNullGwasNullBetasPathwayMatched = collapseDatasetToMetaGenes(geneZscoresNullGwasNullBetas, false, metaGenesPerArm.values());
-            }
-
-            //TODO: Is this appropriate on the this type of half normal dist?
-            //TODO: also this double normalizes if forceNormalGenePvalues is true
+            // Center and scale pathway scores and gene z-scores so the GLS implementation is valid
             genePathwayZscores.normalizeColumns();
             geneZscoresPathwayMatched.normalizeColumns();
             geneZscoresNullGwasCorrelationPathwayMatched.normalizeColumns();
@@ -373,19 +365,13 @@ public class PathwayEnrichments {
                 LOGGER.debug("numberOfPathways: " + numberOfPathways);
             }
 
-
             // Should be eq to geneZscoresPathwayMatched.columns();
             final int numberTraits = geneZscores.columns();
 
             // Betas for actual data
-            LOGGER.info("Calculating model coefficients for " + numberTraits);
+            LOGGER.debug("Calculating model coefficients for " + numberTraits);
 
             for (int traitI = 0; traitI < numberTraits; ++traitI) {
-
-                if (traitI % 1000 == 0 && LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("ping");
-                }
-
                 final double b1Trait = b1.getElementQuick(traitI, 0);
 
                 for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
@@ -407,10 +393,10 @@ public class PathwayEnrichments {
                 }
             }
 
-            LOGGER.info("Done calculating model coefficients");
+            LOGGER.debug("Done calculating model coefficients");
 
             // Betas for null
-            LOGGER.info("Calculating null beta's");
+            LOGGER.debug("Calculating null beta's");
             final int numberTraitsNull = geneZscoresNullGwasNullBetas.columns();
 
             for (int traitI = 0; traitI < numberTraitsNull; ++traitI) {
@@ -422,7 +408,7 @@ public class PathwayEnrichments {
 
                 }
             }
-            LOGGER.info("Done calculating null beta's");
+            LOGGER.debug("Done calculating null beta's");
 
             // Write output
             betas.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
