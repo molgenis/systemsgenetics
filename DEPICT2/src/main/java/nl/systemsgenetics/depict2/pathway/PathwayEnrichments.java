@@ -67,9 +67,9 @@ public class PathwayEnrichments {
                               final List<Gene> genes,
                               final boolean forceNormalPathwayPvalues,
                               final boolean forceNormalGenePvalues,
-                              final DoubleMatrixDataset<String, String> geneZscores,
-                              final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation,
-                              final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas,
+                               DoubleMatrixDataset<String, String> geneZscores,
+                               DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation,
+                               DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas,
                               final String outputBasePath,
                               final HashSet<String> hlaGenesToExclude,
                               final boolean ignoreGeneCorrelations,
@@ -94,7 +94,7 @@ public class PathwayEnrichments {
             excludeGenes = this.hlaGenesToExclude;
         }
 
-        // Determine final set of genes to analyze
+        // Determine final set of genes to analyze and overlap with genes in pathway matrix
         Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
         sharedGenes = new LinkedHashSet<>();
 
@@ -104,15 +104,14 @@ public class PathwayEnrichments {
             }
         }
 
-
         // TODO: with a little cleanup, this can be moved to Depict2.java, saves doing this each time for each pathway enrichment
         // Determine (log10) gene lengths
         LOGGER.info("Determining gene lengths");
-        final double[] geneLengths = new double[geneZscores.getRowObjects().size()];
+        final double[] geneLengths = new double[sharedGenes.size()];
         int i = 0;
         // TODO: very ugly
         // Ensures the geneLength vector is in the same order as the matrices
-        for (String geneInZscoreMatrix : geneZscores.getRowObjects()) {
+        for (String geneInZscoreMatrix : sharedGenes) {
             for (Gene geneInfo : genes) {
                 if (geneInfo.getGene().equals(geneInZscoreMatrix)) {
                     geneLengths[i] = Math.log(geneInfo.getLength()) / Math.log(10);
@@ -122,6 +121,24 @@ public class PathwayEnrichments {
             }
         }
 
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("geneZscores: " + geneZscores.rows() + " x " + geneZscores.columns());
+            LOGGER.debug("geneZscoresNullGwasCorrelation: " + geneZscoresNullGwasCorrelation.rows() + " x " + geneZscoresNullGwasCorrelation.columns());
+            LOGGER.debug("geneZscoresNullGwasNullBetas: " + geneZscoresNullGwasNullBetas.rows() + " x " + geneZscoresNullGwasNullBetas.columns());
+        }
+
+        geneZscores = geneZscores.viewRowSelection(sharedGenes);
+        geneZscoresNullGwasCorrelation = geneZscoresNullGwasCorrelation.viewRowSelection(sharedGenes);
+        geneZscoresNullGwasNullBetas = geneZscoresNullGwasNullBetas.viewRowSelection(sharedGenes);
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("geneZscores: " + geneZscores.rows() + " x " + geneZscores.columns());
+            LOGGER.debug("geneZscoresNullGwasCorrelation: " + geneZscoresNullGwasCorrelation.rows() + " x " + geneZscoresNullGwasCorrelation.columns());
+            LOGGER.debug("geneZscoresNullGwasNullBetas: " + geneZscoresNullGwasNullBetas.rows() + " x " + geneZscoresNullGwasNullBetas.columns());
+
+        }
+
+        // TODO: matrix contains NA's which messes with the regression
         // Do the regression with gene lengths and zscores
         LOGGER.info("Regressing gene lengths and determining residuals");
         inplaceDetermineGeneLengthRegressionResiduals(geneZscores, geneLengths);
@@ -347,12 +364,28 @@ public class PathwayEnrichments {
             betasNull = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscoresNullGwasNullBetas.getHashColsCopy());
             numberOfPathways = genePathwayZscores.columns();
 
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("betas: " + betas.rows() + " x " + betas.columns());
+                LOGGER.debug("standardErrors: " + standardErrors.rows() + " x " + standardErrors.columns());
+                LOGGER.debug("tStatistics: " + tStatistics.rows() + " x " + tStatistics.columns());
+                LOGGER.debug("pValues: " + pValues.rows() + " x " + pValues.columns());
+                LOGGER.debug("betasNull: " + betasNull.rows() + " x " + betasNull.columns());
+                LOGGER.debug("numberOfPathways: " + numberOfPathways);
+            }
+
+
             // Should be eq to geneZscoresPathwayMatched.columns();
             final int numberTraits = geneZscores.columns();
 
             // Betas for actual data
-            LOGGER.info("Calculating model coefficients");
+            LOGGER.info("Calculating model coefficients for " + numberTraits);
+
             for (int traitI = 0; traitI < numberTraits; ++traitI) {
+
+                if (traitI % 1000 == 0 && LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("ping");
+                }
+
                 final double b1Trait = b1.getElementQuick(traitI, 0);
 
                 for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
@@ -417,7 +450,22 @@ public class PathwayEnrichments {
 
 
     private static void inplaceDetermineGeneLengthRegressionResiduals(DoubleMatrixDataset<String, String> geneZscores, double[] geneLengths) {
-        IntStream.range(0, geneZscores.getMatrix().columns()).parallel().forEach(c -> {
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Gene length vector: " + geneLengths.length);
+            LOGGER.debug("Determining residuals for matrix of size: " + geneZscores.rows() + " x " + geneZscores.columns());
+
+            int maxColIdx = geneZscores.columns();
+            if (maxColIdx > 10) {
+                maxColIdx = 10;
+            }
+            geneZscores.viewSelection(
+                    geneZscores.getRowObjects().subList(0, 10),
+                    geneZscores.getColObjects().subList(0, maxColIdx)).printMatrix();
+        }
+
+
+        IntStream.range(0, geneZscores.columns()).parallel().forEach(c -> {
             // Build the regression model
             SimpleRegression regression = new SimpleRegression();
             for (int r = 0; r < geneZscores.rows(); ++r) {
@@ -427,9 +475,21 @@ public class PathwayEnrichments {
             // Apply model and inplace convert to residuals
             for (int r = 0; r < geneZscores.rows(); ++r) {
                 double predictedY = regression.predict(geneLengths[r]);
-                geneZscores.setElementQuick(r, c, geneZscores.getElement(r, c) - predictedY);
+                geneZscores.setElementQuick(r, c, (geneZscores.getElement(r, c) - predictedY));
             }
         });
+
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Determined residuals for matrix of size: " + geneZscores.rows() + " x " + geneZscores.columns());
+            int maxColIdx = geneZscores.columns();
+            if (maxColIdx > 10) {
+                maxColIdx = 10;
+            }
+            geneZscores.viewSelection(
+                    geneZscores.getRowObjects().subList(0, 10),
+                    geneZscores.getColObjects().subList(0, maxColIdx)).printMatrix();
+        }
     }
 
 
