@@ -582,7 +582,7 @@ public class GenePvalueCalculator {
 		}
 
 		if (correctForLambdaInflation) {
-			DoubleMatrix2D geneVariantPhenotypeMatrixInternal = geneVariantPhenotypeMatrix.getMatrix();
+			final DoubleMatrix2D geneVariantPhenotypeMatrixInternal = geneVariantPhenotypeMatrix.getMatrix();
 			for (int v = 0; v < geneVariantPhenotypeMatrix.rows(); ++v) {
 				for (int p = 0; p < geneVariantPhenotypeMatrix.columns(); ++p) {
 					geneVariantPhenotypeMatrixInternal.setQuick(v, p, Math.sqrt((geneVariantPhenotypeMatrixInternal.getQuick(v, p) * geneVariantPhenotypeMatrixInternal.getQuick(v, p)) / lambdaInflations[p]));
@@ -780,9 +780,9 @@ public class GenePvalueCalculator {
 				DoubleMatrix1D phenoPvalues = nullGwasZscores.getCol(nullPhenoI);
 				
 				final double geneChi2Sum = phenoPvalues.aggregate(DoubleFunctions.plus, DoubleFunctions.square);
-				final double geneMinPvalue = phenoPvalues.aggregate(DoubleFunctions.min, DoubleFunctions.identity);
+				final double geneMaxZscore = phenoPvalues.aggregate(DoubleFunctions.max, DoubleFunctions.abs);
 							
-				geneMinSnpPvaluesNullGwas.setElementQuick(geneI, nullPhenoI, geneMinPvalue);
+				geneMinSnpPvaluesNullGwas.setElementQuick(geneI, nullPhenoI, geneMaxZscore);
 				
 			
 				timeStop = System.currentTimeMillis();
