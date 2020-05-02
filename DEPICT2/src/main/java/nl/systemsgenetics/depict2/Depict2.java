@@ -285,14 +285,14 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
-		DoubleMatrixDataset<String, String> geneMinSnpPvalues = gpc.getGeneMinSnpPvalues();
-		DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas = gpc.getGeneMinSnpPvaluesNullGwas();
+		DoubleMatrixDataset<String, String> geneMinSnpPvalues = gpc.getGeneMaxSnpZscore();
+		DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas = gpc.getGeneMaxSnpZscoreNullGwas();
 		
 		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
 		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
-		geneMinSnpPvalues.save(options.getOutputBasePath() + "_geneMinSnpPvalues");
-		geneMinSnpPvaluesNullGwas.save(options.getOutputBasePath() + "_geneMinSnpPvaluesNullGwas");
+		geneMinSnpPvalues.save(options.getOutputBasePath() + "_geneMaxSnpScores");
+		geneMinSnpPvaluesNullGwas.save(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
 		
 		if (LOGGER.isDebugEnabled()) {
 			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
