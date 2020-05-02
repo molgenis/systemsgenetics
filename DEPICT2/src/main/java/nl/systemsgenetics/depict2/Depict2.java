@@ -336,7 +336,7 @@ public class Depict2 {
 			LOGGER.info("Loaded " + genes.size() + " genes");
 		}
 
-		//Identify genes with atleast one variant in window
+		// Identify genes with at least one variant in window
 		final HashSet<String> selectedGenes = new HashSet<>();
 		final ArrayList<String> allGenes = geneVariantCount.getRowObjects();
 		final int totalGeneCount = allGenes.size();
@@ -364,7 +364,6 @@ public class Depict2 {
 		});
 
 		LOGGER.info("Number of genes with atleast one variant in specified window: " + LARGE_INT_FORMAT.format(selectedGenes.size()));
-
 		final HashSet<String> hlaGenes;
 		if (options.isExcludeHla()) {
 			hlaGenes = new HashSet<>();
@@ -374,12 +373,12 @@ public class Depict2 {
 				}
 			}
 			LOGGER.info("Excluding " + hlaGenes.size() + " genes");
+
 		} else {
 			hlaGenes = null;
 		}
 
 		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
-
 		final int nrSampleToUseForCorrelation = options.getPermutationGeneCorrelations();
 		final int nrSamplesToUseForNullBetas = options.getPermutationPathwayEnrichment();
 
@@ -403,10 +402,26 @@ public class Depict2 {
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation = genePvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas = genePvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
 
-		// TODO Gene-gene correlations are calculated for each pathway again, yes, correlations done on metagenes
 		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, selectedGenes, genes, options.isForceNormalPathwayPvalues(), options.isForceNormalGenePvalues(), genePvalues, geneZscoresNullGwasCorrelation, geneZscoresNullGwasNullBetas, options.getOutputBasePath(), hlaGenes, options.isIgnoreGeneCorrelations(), options.getGenePruningR(), options.getGeneCorrelationWindow(), options.getDebugFolder(), options.getIntermediateFolder(), options.isQuantileNormalizePermutations()));
+			pathwayEnrichments.add(new PathwayEnrichments(
+					pathwayDatabase,
+					selectedGenes,
+					genes,
+					options.isForceNormalPathwayPvalues(),
+					options.isForceNormalGenePvalues(),
+					genePvalues,
+					geneZscoresNullGwasCorrelation,
+					geneZscoresNullGwasNullBetas,
+					options.getOutputBasePath(),
+					hlaGenes,
+					options.isIgnoreGeneCorrelations(),
+					options.getGenePruningR(),
+					options.getGeneCorrelationWindow(),
+					options.getDebugFolder(),
+					options.getIntermediateFolder(),
+					options.isQuantileNormalizePermutations(),
+					options.isRegressGeneLengths()));
 		}
 
 		if (options.isSaveOuputAsExcelFiles()) {

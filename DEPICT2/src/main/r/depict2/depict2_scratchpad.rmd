@@ -1,0 +1,66 @@
+# Comparing simgwas and height
+```{r}
+library(readxl)
+a <- read.depict2("~/Desktop/depict2/output/simulated_gwas/run_05_enrichtments_exHla.xlsx")
+b <- read.depict2("~/Desktop/depict2/output/height_paper/height_2018_30124842_hg19_enrichtments_exHla.xlsx")
+
+
+ol <- intersect(rownames(a$Coregulation), rownames(b$Coregulation))
+plot(a$Coregulation[ol,]$Enrichment.Z.score, b$Coregulation[ol,]$Enrichment.Z.score, xlab='Simulated GWAS coregulation zscores', ylab="Height coregulation Zscores")
+
+tmp <- read.table("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_53/height_2018_30124842_hg19_geneMinSnpPvalues", row.names=1, header=T)
+hist(tmp[tmp[,1] < 11,1], breaks=1000, main="gene pvalues height", xlab="Gene zscores??")
+
+library(data.table)
+tmp2 <- fread("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_53/height_2018_30124842_hg19_geneMinSnpPvaluesNullGwas.gz", data.table=F)
+
+hist(tmp2[,2], breaks=1000, main="gene pvalues height", xlab="Gene zscores??")
+hist(tmp2[,1000], breaks=1000, main="gene pvalues height", xlab="Gene zscores??")
+
+```
+
+# Gls tests
+```{r}
+
+
+glsStep1(geneZscoresSubset, geneInvCorMatrixSubsetMatrix, genePathwayZscoresSubset, b1Arm, b2Arm);
+
+geneZscoresSubset = y
+genePathwayZscoresMatrix = x
+geneInvCorMatrix = Sigi
+
+# Calculate Beta
+x <- t(x) %*% Sigi %*% x
+b2Row <- t(x) %*% Sigi %*% y
+
+beta <-  x / b2Row
+
+b1 <- t(x) %*% Sigi %*% x
+b2 <- t(x) %*% Sigi %*% y
+
+
+
+# Model matrix, intercept + coregulation
+x     <- cbind(rep(1, nrow(gwas)), coreg[,"ENSG00000075420"])
+# Gene pvalues / zscores
+y     <- gwas[,1]
+# Gene gene correlation matrix
+Sigma <- gene.cor
+
+
+# Calculate Beta
+Sigi <- solve(Sigma)
+xtxi <- solve(t(x) %*% Sigi %*% x )
+beta <- xtxi %*% t(x) %*% Sigi %*% y
+
+# Calculate SE
+res <- y - x %*% beta
+sig <- sqrt(sum(res^2) / 7711)
+se  <- sqrt(diag(xtxi))*sig
+
+# Calculate p
+tstats <- abs(beta / se)
+2 * pt(tstats[2], df=nrow(x), lower=F)
+
+```
+

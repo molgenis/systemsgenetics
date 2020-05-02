@@ -1,0 +1,122 @@
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(readxl)
+library(pheatmap)
+library(RColorBrewer)
+library(gridExtra)
+
+source("depict2_functions.r")
+
+ensembl <- read.table("~/Documents/data/reference/ensembl/ensembl_gene_position_b37_biotype.txt",sep="\t", header=T, row.names = 1, stringsAsFactors = F)
+ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
+
+path <- "/home/work/Desktop/depict2/output/height_paper/"
+files <- list.files(path, pattern="*.xlsx")
+
+datasets <- list()
+for (file in files) {
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\.xlsx", "", file)
+  datasets[[name]] <- read.depict2(paste0(path, file))
+}
+
+coreg <- make.zscore.matrix(datasets)
+
+files <- list.files(path, pattern="*_genePvalues.txt", full.names = T)
+genep <- read.enrichments(files)
+
+files <- list.files(path, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T)
+hpo.auc <- read.enrichments(files)
+
+files <- list.files(path, pattern="*_genePvalue_hpoAUC_hpo.txt", full.names = T)
+genep.auc <- read.enrichments(files)
+```
+
+# Correlation heatmap
+```{r}
+pdf("output/plots/height_vs_others_corrheatmap.pdf", width=10, height = 10)
+
+cors <- cor(coreg)
+hm(cors, main="coregualtion")
+
+hpo.auc[hpo.auc==0] <- NA
+cors <- cor(hpo.auc, use="pairwise.complete.obs")
+hm(cors, main="coregulation HPO AUC")
+
+genep <- -log10(genep)
+cors <- cor(genep, use="pairwise.complete.obs")
+hm(cors, main="geneP")
+
+ol <- intersect(rownames(coreg), rownames(ensembl))
+genel <- t(apply(genep[ol,], 2, function(x){
+  #return(cor(x, log10(ensembl[ol, "gene.length"]), use="pairwise.complete.obs"))
+  return(summary(lm(x ~ log10(ensembl[ol, "gene.length"])))$coefficients)
+
+}))
+genel2 <- t(apply(coreg[ol,], 2, function(x){
+  return(cor(x, log10(ensembl[ol, "gene.length"]), use="pairwise.complete.obs"))
+  #return(summary(lm(x ~ ensembl[ol, "gene.length"]))$coefficients)
+
+}))
+
+plot(coreg[ol,"educational_attainment_2018_30038396"],log10(ensembl[ol, "gene.length"]))
+  
+plot(genep[ol,], ensembl[ol, "gene.length"])
+hm(genel)
+
+#genep.auc[genep.auc==0] <- NA
+#cors <- cor(genep.auc, use="pairwise.complete.obs")
+#hm(cors, main="geneP HPO AUC")
+dev.off()
+```
+
+# AUC histograms
+```{r}
+pdf("output/plots/AUC_histograms.pdf", width=20, height = 10)
+
+par(mfrow=c(4,4))
+sapply(colnames(hpo.auc), function(x){
+  hist(hpo.auc[,x], main=x, breaks=20, xlim=c(0,1), ylim=c(0,1500))
+})
+par(mfrow=c(1,1))
+
+dev.off()
+
+apply(hpo.auc,2, median, na.rm = T)
+
+
+pdf("output/plots/HPO_AUC_density.pdf", width=10, height = 5)
+
+plot(density(hpo.auc[,1], na.rm = T), ylim=c(0,12), col="white", main="HPO AUC distribution comparrison")
+sapply(grep("run", colnames(hpo.auc), value=T), function(x){
+  lines(density(hpo.auc[,x], na.rm=T), col="lightblue")
+})
+
+sapply(grep("run", colnames(hpo.auc), value=T, invert = T), function(x){
+  lines(density(hpo.auc[,x], na.rm=T), col="red", lwd=2)
+})
+abline(v=0.5, col="grey", lwd=2, lty=2)
+dev.off()
+
+
+
+pdf("output/plots/coreg_density.pdf", width=10, height = 5)
+
+plot(density(coreg[,1], na.rm = T), ylim=c(0,0.4), col="white", main="Coreg Z distribution comparrison")
+sapply(grep("run", colnames(coreg), value=T), function(x){
+  lines(density(coreg[,x], na.rm=T), col="lightblue")
+})
+
+sapply(grep("run", colnames(coreg), value=T, invert = T), function(x){
+  lines(density(coreg[,x], na.rm=T), col="red", lwd=2)
+})
+abline(v=0.5, col="grey", lwd=2, lty=2)
+dev.off()
+
+
+hist(genep$run_01_genePvalues.txt)
+hist(genep$educational_attainment_2018_30038396_hg19_genePvalues.txt)
+hist(genep$schizophrenia_2018_29906448_hg19_genePvalues.txt)
+
+```
+

@@ -74,6 +74,7 @@ public class Depict2Options {
 	private final boolean saveUsedVariantsPerGene;
 	private final double mafFilter;
 	private final boolean quantileNormalizePermutations;
+	private final boolean regressGeneLengths;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -310,6 +311,11 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("qnorm");
 		OPTIONS.addOption(OptionBuilder.create("qn"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Linearly correct for the effect of gene lengths on gene p-values");
+		OptionBuilder.withLongOpt("regress-gene-lengths");
+		OPTIONS.addOption(OptionBuilder.create("rgl"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -341,6 +347,7 @@ public class Depict2Options {
 		saveOuputAsExcelFiles = commandLine.hasOption("se");
 		saveUsedVariantsPerGene = commandLine.hasOption("uvg");
 		quantileNormalizePermutations = commandLine.hasOption("qn");
+		regressGeneLengths = commandLine.hasOption("rgl");
 		
 		if(quantileNormalizePermutations && forceNormalGenePvalues){
 			throw new ParseException("Can't combine -qn with -fngp");
@@ -972,4 +979,7 @@ public class Depict2Options {
 		return quantileNormalizePermutations;
 	}
 
+	public boolean isRegressGeneLengths() {
+		return regressGeneLengths;
+	}
 }

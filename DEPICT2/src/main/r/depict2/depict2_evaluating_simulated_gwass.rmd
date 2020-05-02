@@ -1,0 +1,54 @@
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(readxl)
+library(pheatmap)
+library(RColorBrewer)
+library(gridExtra)
+library(data.table)
+library(qqman)
+source("depict2_functions.r")
+
+path <- "/home/work/Desktop/depict2/output/simulated_gwas//"
+
+#files <- list.files(path, pattern="*merged_pvalues.txt", full.names = T)
+#curstats <- fread(files[1], data.table=F)
+
+files <- list.files(path, pattern="*merged_assoc.txt", full.names = T)
+curstats <- fread(files[1], data.table=F)
+rownames(curstats) <- make.names(curstats$rs, unique=T)
+
+height <- fread("zcat ~/Desktop/depict2/Meta-analysis_Wood_et_al+UKBiobank_2018_formatted.txt.gz", data.table=F)
+```
+
+# Pvalue evaluation
+```{r}
+par(mfrow=c(2,2))
+hist(curstats[,"simulated_pval_1"])
+hist(height[,2])
+
+hist(-log10(curstats[,2]), breaks=100)
+hist(-log10(height[,2]), breaks=100)
+
+```
+
+# Manhattan plot
+```{r}
+curstats[-log10(curstats$simulated_pval_1) > 300, "simulated_pval_1"] <- 300
+png(width=10000, height=3000, file="output/plots/run_22_manhattanplot.png")
+manhattan(curstats, chr="chr", bp="position", snp="rs", p="simulated_pval_1")
+dev.off()
+
+rownames(height) <- height[,1]
+ol <- intersect(rownames(height), curstats$rs)
+h <- cbind(curstats[ol,c("rs", "chr", "position")], height[ol,2])
+colnames(h) <- c("rs", "chr", "position", "simulated_pval_1")
+
+h[-log10(h$simulated_pval_1) > 300, "simulated_pval_1"] <- 300
+png(width=10000, height=3000, file="output/plots/height_manhattanplot.png")
+manhattan(h, chr="chr", bp="position", snp="rs", p="simulated_pval_1")
+dev.off()
+
+```
+
+
