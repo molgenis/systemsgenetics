@@ -191,7 +191,7 @@ public class Depict2 {
 					break;
 				case CORE_GENE_AUC:
 					TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
-					break;	
+					break;
 				case INVESTIGATE_NETWORK:
 					NetworkProperties.investigateNetwork(options);
 					break;
@@ -287,13 +287,13 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
 		DoubleMatrixDataset<String, String> geneMinSnpPvalues = gpc.getGeneMaxSnpZscore();
 		DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas = gpc.getGeneMaxSnpZscoreNullGwas();
-		
+
 		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
 		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
-		geneMinSnpPvalues.save(options.getOutputBasePath() + "_geneMaxSnpScores");
-		geneMinSnpPvaluesNullGwas.save(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
-		
+		geneMinSnpPvalues.saveBinary(options.getOutputBasePath() + "_geneMaxSnpScores");
+		geneMinSnpPvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
+
 		if (LOGGER.isDebugEnabled()) {
 			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
 			gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
@@ -325,6 +325,10 @@ public class Depict2 {
 			if (new File(options.getOutputBasePath() + "_genePvalues.dat").exists()) {
 				genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvalues");
 				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvaluesNullGwas");
+				if (options.isForceNormalPathwayPvalues()) {
+					geneMinSnpPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_geneMaxSnpScores");
+					geneMinSnpPvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
+				}
 			} else {
 				LOGGER.fatal("Could not find gene pvalues at: " + options.getOutputBasePath() + "_genePvalues.dat");
 				LOGGER.fatal("First use --mode RUN to calculate gene p-values");
@@ -402,6 +406,9 @@ public class Depict2 {
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation = genePvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas = genePvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
 
+		final DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwasCorrelation = geneMinSnpPvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
+		final DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwasBetas = geneMinSnpPvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
+
 		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
 			pathwayEnrichments.add(new PathwayEnrichments(
@@ -421,7 +428,11 @@ public class Depict2 {
 					options.getDebugFolder(),
 					options.getIntermediateFolder(),
 					options.isQuantileNormalizePermutations(),
-					options.isRegressGeneLengths()));
+					options.isRegressGeneLengths(),
+					geneMinSnpPvalues,
+					geneMinSnpPvaluesNullGwasCorrelation,
+					geneMinSnpPvaluesNullGwasBetas
+			));
 		}
 
 		if (options.isSaveOuputAsExcelFiles()) {
@@ -1084,14 +1095,15 @@ public class Depict2 {
 		pcaRes.getEigenvectors().save(options.getOutputBasePath() + "_eigenVectors.txt");
 		pcaRes.getEigenValues().save(options.getOutputBasePath() + "_eigenValues.txt");
 		pcaRes.getPcs().save(options.getOutputBasePath() + "_pcs.txt");
-		if(LOGGER.isDebugEnabled()){
+		if (LOGGER.isDebugEnabled()) {
 			pcaRes.getCovMatrix().save(options.getOutputBasePath() + "_correlationMatrix.txt");
 		}
 
 	}
 
 	/**
-	 * Quick util that converts a txt matrix of pvalues to zscores using ZScores.pToZTwoTailed(pvalue)
+	 * Quick util that converts a txt matrix of pvalues to zscores using
+	 * ZScores.pToZTwoTailed(pvalue)
 	 *
 	 * @param options
 	 * @throws Exception
@@ -1144,6 +1156,5 @@ public class Depict2 {
 		//return LOG_TIME_FORMAT.format(new Date(ms));
 		return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
 	}
-
 
 }
