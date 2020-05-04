@@ -11,24 +11,37 @@ source("depict2_functions.r")
 ensembl <- read.table("~/Documents/data/reference/ensembl/ensembl_gene_position_b37_biotype.txt",sep="\t", header=T, row.names = 1, stringsAsFactors = F)
 ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
 
-path <- "/home/work/Desktop/depict2/output/height_paper/"
-files <- list.files(path, pattern="*.xlsx")
+path.54 <- "/home/work/Desktop/depict2/output/height_paper/v54/"
+path.55 <- "/home/work/Desktop/depict2/output/height_paper/v55/"
+
+files <- list.files(path.54, pattern="*.xlsx", full.names = T)
+files <- c(files, list.files(path.55, pattern="*.xlsx", full.names = T))
 
 datasets <- list()
 for (file in files) {
-  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\.xlsx", "", file)
-  datasets[[name]] <- read.depict2(paste0(path, file))
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\.xlsx", "", basename(file))
+  if (length(grep("v55", file)) > 0) {
+    name <- paste0(name, "_v55")
+  }
+  
+  datasets[[name]] <- read.depict2(file)
 }
 
 coreg <- make.zscore.matrix(datasets)
 
-files <- list.files(path, pattern="*_genePvalues.txt", full.names = T)
+files <- list.files(path.54, pattern="*_genePvalues.txt", full.names = T)
+files <- c(files, list.files(path.55, pattern="*_genePvalues.txt", full.names = T))
+
 genep <- read.enrichments(files)
 
-files <- list.files(path, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T)
+files <- list.files(path.54, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T)
+files <- c(files, list.files(path.55, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T))
+
 hpo.auc <- read.enrichments(files)
 
-files <- list.files(path, pattern="*_genePvalue_hpoAUC_hpo.txt", full.names = T)
+files <- list.files(path.54, pattern="*_genePvalue_hpoAUC_hpo.txt", full.names = T)
+files <- c(files,  list.files(path.55, pattern="*_genePvalue_hpoAUC_hpo.txt", full.names = T))
+
 genep.auc <- read.enrichments(files)
 ```
 
@@ -42,15 +55,19 @@ hm(cors, main="coregualtion")
 hpo.auc[hpo.auc==0] <- NA
 cors <- cor(hpo.auc, use="pairwise.complete.obs")
 hm(cors, main="coregulation HPO AUC")
-
+  
 genep <- -log10(genep)
 cors <- cor(genep, use="pairwise.complete.obs")
 hm(cors, main="geneP")
 
+
+dev.off()
+
+
 ol <- intersect(rownames(coreg), rownames(ensembl))
 genel <- t(apply(genep[ol,], 2, function(x){
-  #return(cor(x, log10(ensembl[ol, "gene.length"]), use="pairwise.complete.obs"))
-  return(summary(lm(x ~ log10(ensembl[ol, "gene.length"])))$coefficients)
+  return(cor(x, log10(ensembl[ol, "gene.length"]), use="pairwise.complete.obs"))
+  #return(summary(lm(x ~ log10(ensembl[ol, "gene.length"])))$coefficients)
 
 }))
 genel2 <- t(apply(coreg[ol,], 2, function(x){
@@ -58,6 +75,10 @@ genel2 <- t(apply(coreg[ol,], 2, function(x){
   #return(summary(lm(x ~ ensembl[ol, "gene.length"]))$coefficients)
 
 }))
+
+par(mar=c(25,5,5,5))
+barplot(genel2, las=2, ylab="pearson R", main="Coreg vs gene length")
+
 
 plot(coreg[ol,"educational_attainment_2018_30038396"],log10(ensembl[ol, "gene.length"]))
   
@@ -67,7 +88,6 @@ hm(genel)
 #genep.auc[genep.auc==0] <- NA
 #cors <- cor(genep.auc, use="pairwise.complete.obs")
 #hm(cors, main="geneP HPO AUC")
-dev.off()
 ```
 
 # AUC histograms
