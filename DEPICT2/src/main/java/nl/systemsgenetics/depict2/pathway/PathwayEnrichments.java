@@ -121,8 +121,8 @@ public class PathwayEnrichments {
 		if (forceNormalGenePvalues) {
 			LOGGER.info("Force normalizing gene p-values / z-scores");
 			geneZscores = createColumnForceNormalDuplicate(geneZscores, geneMaxSnpZscore);
-			geneZscoresNullGwasCorrelation = geneZscoresNullGwasCorrelation.createColumnForceNormalDuplicate();
-			geneZscoresNullGwasNullBetas = geneZscoresNullGwasNullBetas.createColumnForceNormalDuplicate();
+			geneZscoresNullGwasCorrelation = createColumnForceNormalDuplicate(geneZscoresNullGwasCorrelation, geneMaxSnpZscoreNullGwasCorrelation);
+			geneZscoresNullGwasNullBetas = createColumnForceNormalDuplicate(geneZscoresNullGwasNullBetas, geneMaxSnpZscoreNullGwasBetas);
 		}
 
 		// Do the regression with gene lengths and z-scores y/n
@@ -987,7 +987,7 @@ public class PathwayEnrichments {
 		return fullCorrelationMatrix;
 	}
 
-	public DoubleMatrixDataset<String, String> createColumnForceNormalDuplicate(DoubleMatrixDataset<String, String> matrix, DoubleMatrixDataset<String, String> tieBreaker) {
+	private final DoubleMatrixDataset<String, String> createColumnForceNormalDuplicate(DoubleMatrixDataset<String, String> matrix, DoubleMatrixDataset<String, String> tieBreaker) {
 
 		DoubleMatrixDataset<String, String> newDataset = new DoubleMatrixDataset<>(matrix.getHashRows(), matrix.getHashCols());
 
