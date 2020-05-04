@@ -31,6 +31,9 @@ import nl.systemsgenetics.depict2.Depict2;
 import nl.systemsgenetics.depict2.gene.Gene;
 import nl.systemsgenetics.depict2.gene.GenePathwayAssociationStatistic;
 import org.apache.commons.math3.distribution.TDistribution;
+import org.apache.commons.math3.stat.ranking.NaNStrategy;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import umcg.genetica.graphics.panels.HistogramPanel;
@@ -79,9 +82,9 @@ public class PathwayEnrichments {
 			final File intermediateFolder,
 			final boolean quantileNormalizePermutations,
 			final boolean regressGeneLengths,
-			DoubleMatrixDataset<String, String> geneMinSnpPvalues,
-			DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwasCorrelation,
-			DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwasBetas
+			DoubleMatrixDataset<String, String> geneMaxSnpZscore,
+			DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasCorrelation,
+			DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasBetas
 	) throws Exception {
 
 		this.pathwayDatabase = pathwayDatabase;
@@ -117,7 +120,7 @@ public class PathwayEnrichments {
 		// Force normal gene p-values y/n
 		if (forceNormalGenePvalues) {
 			LOGGER.info("Force normalizing gene p-values / z-scores");
-			geneZscores = geneZscores.createColumnForceNormalDuplicate();
+			geneZscores = createColumnForceNormalDuplicate(geneZscores, geneMaxSnpZscore);
 			geneZscoresNullGwasCorrelation = geneZscoresNullGwasCorrelation.createColumnForceNormalDuplicate();
 			geneZscoresNullGwasNullBetas = geneZscoresNullGwasNullBetas.createColumnForceNormalDuplicate();
 		}
@@ -984,4 +987,33 @@ public class PathwayEnrichments {
 		return fullCorrelationMatrix;
 	}
 
+	public DoubleMatrixDataset<String, String> createColumnForceNormalDuplicate(DoubleMatrixDataset<String, String> matrix, DoubleMatrixDataset<String, String> tieBreaker) {
+
+		DoubleMatrixDataset<String, String> newDataset = new DoubleMatrixDataset<>(matrix.getHashRows(), matrix.getHashCols());
+
+		NaturalRankingTieFighter ranking = new NaturalRankingTieFighter(NaNStrategy.FAILED,
+				TiesStrategy.AVERAGE);
+
+		for (int c = 0; c < matrix.columns(); ++c) {
+
+			double[] col = matrix.getCol(c).toArray();
+			double[] colTie = tieBreaker.getCol(c).toArray();
+
+			double mean = JSci.maths.ArrayMath.mean(col);
+			double stdev = JSci.maths.ArrayMath.standardDeviation(col);
+
+			double[] rankedValues = ranking.rank(col, colTie);
+
+			for (int s = 0; s < matrix.rows(); s++) {
+				double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
+
+				newDataset.setElementQuick(s, c, mean + cern.jet.stat.Probability.normalInverse(pValue) * stdev);
+			}
+
+		}
+
+		return newDataset;
+
+	}
+	
 }
