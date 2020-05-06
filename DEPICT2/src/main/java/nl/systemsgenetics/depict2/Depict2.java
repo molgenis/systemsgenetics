@@ -285,14 +285,14 @@ public class Depict2 {
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
-		DoubleMatrixDataset<String, String> geneMinSnpPvalues = gpc.getGeneMaxSnpZscore();
-		DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas = gpc.getGeneMaxSnpZscoreNullGwas();
+		DoubleMatrixDataset<String, String> geneMaxSnpZscore = gpc.getGeneMaxSnpZscore();
+		DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = gpc.getGeneMaxSnpZscoreNullGwas();
 
 		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
 		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
-		geneMinSnpPvalues.saveBinary(options.getOutputBasePath() + "_geneMaxSnpScores");
-		geneMinSnpPvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
+		geneMaxSnpZscore.saveBinary(options.getOutputBasePath() + "_geneMaxSnpScores");
+		geneMaxSnpZscoreNullGwas.saveBinary(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
 
 		if (LOGGER.isDebugEnabled()) {
 			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
@@ -303,7 +303,7 @@ public class Depict2 {
 		if (options.getPathwayDatabases().isEmpty()) {
 			LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode RUN2 and exactly the same output path and genes file to continue");
 		} else {
-			run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount, geneMinSnpPvalues, geneMinSnpPvaluesNullGwas);
+			run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
 		}
 	}
 
@@ -316,7 +316,7 @@ public class Depict2 {
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount, DoubleMatrixDataset<String, String> geneMinSnpPvalues, DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwas) throws IOException, Exception {
+	private static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount, DoubleMatrixDataset<String, String> geneMaxSnpZscore, DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas) throws IOException, Exception {
 
 		options.getIntermediateFolder().mkdir();
 
@@ -326,8 +326,8 @@ public class Depict2 {
 				genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvalues");
 				genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvaluesNullGwas");
 				if (options.isForceNormalPathwayPvalues()) {
-					geneMinSnpPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_geneMaxSnpScores");
-					geneMinSnpPvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
+					geneMaxSnpZscore = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_geneMaxSnpScores");
+					geneMaxSnpZscoreNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
 				}
 			} else {
 				LOGGER.fatal("Could not find gene pvalues at: " + options.getOutputBasePath() + "_genePvalues.dat");
@@ -406,8 +406,8 @@ public class Depict2 {
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation = genePvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
 		final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas = genePvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
 
-		final DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwasCorrelation = geneMinSnpPvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
-		final DoubleMatrixDataset<String, String> geneMinSnpPvaluesNullGwasBetas = geneMinSnpPvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
+		final DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasCorrelation = geneMaxSnpZscoreNullGwas.viewColSelection(sampleToUseForCorrelation);
+		final DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasBetas = geneMaxSnpZscoreNullGwas.viewColSelection(samplesToUseForNullBetas);
 
 		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
@@ -429,9 +429,9 @@ public class Depict2 {
 					options.getIntermediateFolder(),
 					options.isQuantileNormalizePermutations(),
 					options.isRegressGeneLengths(),
-					geneMinSnpPvalues,
-					geneMinSnpPvaluesNullGwasCorrelation,
-					geneMinSnpPvaluesNullGwasBetas
+					geneMaxSnpZscore,
+					geneMaxSnpZscoreNullGwasCorrelation,
+					geneMaxSnpZscoreNullGwasBetas
 			));
 		}
 
