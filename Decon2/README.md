@@ -9,6 +9,7 @@ deconvolution of expression quantitative trait loci ([Decon-eQTL](Decon-eQTL)) i
 # Installation
 
 ## Decon-cell
+
 In R do
 
 ```
@@ -21,6 +22,7 @@ install_github("molgenis/systemsgenetics/Decon2/DeconCell")
 ```
 
 ##Decon-eQTL
+
 Download ```Decon-eQTL-v*.*.*-jar-with-dependencies.jar```.  
 Latest build can be found here: [Decon-eQTL/lastBuild](http://molgenis50.gcc.rug.nl/jenkins/job/systemsgenetics/Decon-eQTL$Decon-eQTL/lastBuild/).
 
