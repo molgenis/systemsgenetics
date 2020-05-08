@@ -551,7 +551,8 @@ public class PathwayEnrichments {
 		double pvalue = new TDistribution(df).cumulativeProbability(-tstatistic) * 2;
 		double zscore =  ZScores.pToZTwoTailed(pvalue);
 
-		if (beta < 0 ) {
+		// The zscore returned by pToZTwoTailed is always negative, therefore, match direction on beta
+		if (beta > 0 ) {
 			zscore = (double)-1 * zscore;
 		}
 
