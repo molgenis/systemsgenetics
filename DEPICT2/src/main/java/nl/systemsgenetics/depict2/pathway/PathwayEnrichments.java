@@ -125,7 +125,7 @@ public class PathwayEnrichments {
 			geneZscoresNullGwasCorrelation = createColumnForceNormalDuplicate(geneZscoresNullGwasCorrelation, geneMaxSnpZscoreNullGwasCorrelation);
 			geneZscoresNullGwasNullBetas = createColumnForceNormalDuplicate(geneZscoresNullGwasNullBetas, geneMaxSnpZscoreNullGwasBetas);
 		} else {
-			//Do this because the regression is in place.
+			// Do this because the regression is in place.
 			geneZscores = geneZscores.duplicate();
 			geneZscoresNullGwasCorrelation = geneZscoresNullGwasCorrelation.duplicate();
 			geneZscoresNullGwasNullBetas = geneZscoresNullGwasNullBetas.duplicate();
