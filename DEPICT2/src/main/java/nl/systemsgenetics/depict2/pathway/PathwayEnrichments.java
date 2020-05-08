@@ -553,7 +553,7 @@ public class PathwayEnrichments {
 
 		// The zscore returned by pToZTwoTailed is always negative, therefore, match direction on beta
 		if (beta > 0 ) {
-			zscore = (double)-1 * zscore;
+			zscore = ((double)-1) * zscore;
 		}
 
 		return new GenePathwayAssociationStatistic(beta, standardError, tstatistic, zscore, pvalue);
