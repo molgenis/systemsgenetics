@@ -97,16 +97,16 @@ read.depict2 <- function(path) {
 }
 
 # ------------------------------------------------------ 
-make.zscore.matrix <- function(datasets, trait="Coregulation") {
+make.zscore.matrix <- function(datasets, trait="Coregulation", collumn="Enrichment.Z.score") {
   out <- matrix()
   i=0
   for (dataset in names(datasets)) {
     tmp <- datasets[[dataset]][[trait]]
     if (i==0) {
-      out <- matrix(tmp$Enrichment.Z.score)
+      out <- matrix(tmp[,collumn])
       rownames(out) <- tmp[,1]
     } else {
-      out <- cbind(out, tmp[rownames(out),]$Enrichment.Z.score)
+      out <- cbind(out, tmp[rownames(out), collumn])
     }
     i <- i+1
   }
@@ -128,7 +128,7 @@ read.enrichments <- function(files, column=1) {
     }
     i <- i+1
   }
-  colnames(out) <- basename(files)
+  colnames(out) <- make.names(basename(files), unique=T)
   
   return(out)
 }
@@ -186,3 +186,8 @@ hm <- function(data, cellwidth=12, cellheight=12, limit=NULL, ...) {
 }
 
 # ------------------------------------------------------ 
+simple.qq.plot <- function (observedPValues) {
+  plot(-log10(1:length(observedPValues)/length(observedPValues)), 
+       -log10(sort(observedPValues)))
+  abline(0, 1, col = "red")
+}

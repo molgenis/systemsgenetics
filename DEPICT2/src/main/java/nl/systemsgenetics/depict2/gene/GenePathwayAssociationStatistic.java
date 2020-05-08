@@ -6,27 +6,30 @@ public class GenePathwayAssociationStatistic {
     private double beta;
     private double standardError;
     private double tStatistic;
+    private double zscore;
     private double analyticalPvalue;
     private double empiricalPvalue;
 
 
-    public GenePathwayAssociationStatistic(double beta, double standardError, double tStatistic, double analyticalPvalue) {
+    public GenePathwayAssociationStatistic(double beta, double standardError, double tStatistic, double zscore, double analyticalPvalue) {
         this.beta = beta;
         this.standardError = standardError;
         this.tStatistic = tStatistic;
         this.analyticalPvalue = analyticalPvalue;
+        this.zscore = zscore;
     }
 
-    public GenePathwayAssociationStatistic(String pathway, String gene, double beta, double standardError, double tStatistic, double analyticalPvalue) {
+    public GenePathwayAssociationStatistic(String pathway, String gene, double beta, double standardError, double tStatistic, double zscore, double analyticalPvalue) {
         this.pathway = pathway;
         this.gene = gene;
         this.beta = beta;
         this.standardError = standardError;
         this.tStatistic = tStatistic;
+        this.zscore = zscore;
         this.analyticalPvalue = analyticalPvalue;
     }
 
-    public GenePathwayAssociationStatistic(String pathway, String gene, double beta, double standardError, double tStatistic, double analyticalPvalue, double empiricalPvalue) {
+/*    public GenePathwayAssociationStatistic(String pathway, String gene, double beta, double standardError, double tStatistic, double analyticalPvalue, double empiricalPvalue) {
         this.pathway = pathway;
         this.gene = gene;
         this.beta = beta;
@@ -34,7 +37,7 @@ public class GenePathwayAssociationStatistic {
         this.tStatistic = tStatistic;
         this.analyticalPvalue = analyticalPvalue;
         this.empiricalPvalue = empiricalPvalue;
-    }
+    }*/
 
     public String getPathway() {
         return pathway;
@@ -74,6 +77,14 @@ public class GenePathwayAssociationStatistic {
 
     public void settStatistic(double tStatistic) {
         this.tStatistic = tStatistic;
+    }
+
+    public double getZscore() {
+        return zscore;
+    }
+
+    public void setZscore(double zscore) {
+        this.zscore = zscore;
     }
 
     public double getAnalyticalPvalue() {

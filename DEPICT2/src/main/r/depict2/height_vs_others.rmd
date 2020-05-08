@@ -11,9 +11,10 @@ source("depict2_functions.r")
 ensembl <- read.table("~/Documents/data/reference/ensembl/ensembl_gene_position_b37_biotype.txt",sep="\t", header=T, row.names = 1, stringsAsFactors = F)
 ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
 
-path.54 <- "/home/work/Desktop/depict2/output/height_paper/v54/"
-path.55 <- "/home/work/Desktop/depict2/output/height_paper/v55/"
+path.54 <- "/home/work/Desktop/depict2/output/height_paper/v55/"
+path.55 <- "/home/work/Desktop/depict2/output/height_paper/v56/"
 
+files <- c()
 files <- list.files(path.54, pattern="*.xlsx", full.names = T)
 files <- c(files, list.files(path.55, pattern="*.xlsx", full.names = T))
 
@@ -28,12 +29,15 @@ for (file in files) {
 }
 
 coreg <- make.zscore.matrix(datasets)
+pvals <- make.zscore.matrix(datasets, collumn="Enrichment.P.value")
 
+files <- c()
 files <- list.files(path.54, pattern="*_genePvalues.txt", full.names = T)
 files <- c(files, list.files(path.55, pattern="*_genePvalues.txt", full.names = T))
 
 genep <- read.enrichments(files)
 
+files <- c()
 files <- list.files(path.54, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T)
 files <- c(files, list.files(path.55, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T))
 
@@ -88,6 +92,10 @@ hm(genel)
 #genep.auc[genep.auc==0] <- NA
 #cors <- cor(genep.auc, use="pairwise.complete.obs")
 #hm(cors, main="geneP HPO AUC")
+
+simple.qq.plot(pvals[,"height_2018_30124842_v55"])
+simple.qq.plot(pvals[,"glomerular_filtration_rate_EUR_2019_31152163"])
+
 ```
 
 # AUC histograms
@@ -138,5 +146,49 @@ hist(genep$run_01_genePvalues.txt)
 hist(genep$educational_attainment_2018_30038396_hg19_genePvalues.txt)
 hist(genep$schizophrenia_2018_29906448_hg19_genePvalues.txt)
 
+```
+
+# Analytical vs permutation
+```{r}
+a55 <- tmp <- read.table("~/Desktop/depict2/output/height_paper/v55/height_Coregulation_Enrichment_analyticalPvalsExHla.txt", row.names=1, header=T)
+
+a56 <- tmp <- read.table("~/Desktop/depict2/output/height_paper/v56/height_Coregulation_Enrichment_analyticalPvalsExHla.txt", row.names=1, header=T)
+
+p55 <- pvals[,"height_2018_30124842_v55", drop=F]
+p56 <- pvals[,"height_2018_30124842", drop=F]
+
+par(mfrow=c(2,2))
+
+plot(-log10(p55[,1]), -log10(a55[rownames(p55), 1]))
+abline(a=0, b=1, col="red")
+
+plot(-log10(p56[,1]), -log10(a56[rownames(p56), 1]))
+abline(a=0, b=1, col="red")
+
+plot(-log10(p55[,1]), -log10(p56[rownames(p55), 1]))
+abline(a=0, b=1, col="red")
+
+plot(-log10(a55[,1]), -log10(a56[rownames(a55), 1]))
+abline(a=0, b=1, col="red")
+
+
+simple.qq.plot(p55[,1])
+simple.qq.plot(p56[,1])
+
+simple.qq.plot(a55[,1])
+simple.qq.plot(a56[,1])
+
+
+```
+
+
+#Simulated comparrison
+```{r}
+tmp <- read.table("~/Desktop/depict2/output/height_paper/v55/run_37_Coregulation_Enrichment_analyticalPvalsExHla.txt", row.names=1, header=T)
+par(mfrow=c(1,3))
+simple.qq.plot(pvals[,"run_37_enrichtments_exHla.xlsx_v55"])
+simple.qq.plot(tmp[,1])
+plot(-log10(tmp[rownames(pvals),1]), -log10(pvals[,"run_37_enrichtments_exHla.xlsx_v55"]))
+abline(a=0, b=1, col="blue")
 ```
 

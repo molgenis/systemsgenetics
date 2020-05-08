@@ -261,7 +261,6 @@ public class Depict2 {
 				if (!variantsToInclude.contains(variant)) {
 					variantsInZscoreMatrixIt.remove();
 				}
-
 			}
 			LOGGER.info("Number of variants after filtering on selected variants: " + LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
 		}

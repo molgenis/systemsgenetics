@@ -55,6 +55,7 @@ public class PathwayEnrichments {
 	private final DoubleMatrixDataset<String, String> standardErrors;
 	private final DoubleMatrixDataset<String, String> tStatistics;
 	private final DoubleMatrixDataset<String, String> pValues;
+	private final DoubleMatrixDataset<String, String> zscores;
 	private final DoubleMatrixDataset<String, String> betasNull;
 	private DoubleMatrixDataset<String, String> enrichmentPvalues = null;
 	private final int numberOfPathways;
@@ -188,6 +189,9 @@ public class PathwayEnrichments {
 			geneZscoresPathwayMatched.normalizeColumns();
 			geneZscoresNullGwasCorrelationPathwayMatched.normalizeColumns();
 			geneZscoresNullGwasNullBetasPathwayMatched.normalizeColumns();
+
+			// Save normalized gene scores to file, to check distribution later on
+			geneZscoresPathwayMatched.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
 
 			if (LOGGER.isDebugEnabled()) {
 				genePathwayZscores.saveBinary(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla")).getAbsolutePath());
@@ -360,6 +364,7 @@ public class PathwayEnrichments {
 			standardErrors = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
 			tStatistics = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
 			pValues = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
+			zscores = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
 			betasNull = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscoresNullGwasNullBetas.getHashColsCopy());
 			numberOfPathways = genePathwayZscores.columns();
 
@@ -368,6 +373,7 @@ public class PathwayEnrichments {
 				LOGGER.debug("standardErrors: " + standardErrors.rows() + " x " + standardErrors.columns());
 				LOGGER.debug("tStatistics: " + tStatistics.rows() + " x " + tStatistics.columns());
 				LOGGER.debug("pValues: " + pValues.rows() + " x " + pValues.columns());
+				LOGGER.debug("pValues: " + zscores.rows() + " x " + zscores.columns());
 				LOGGER.debug("betasNull: " + betasNull.rows() + " x " + betasNull.columns());
 				LOGGER.debug("numberOfPathways: " + numberOfPathways);
 			}
@@ -397,6 +403,7 @@ public class PathwayEnrichments {
 					standardErrors.setElementQuick(pathwayI, traitI, curStat.getStandardError());
 					tStatistics.setElementQuick(pathwayI, traitI, curStat.gettStatistic());
 					pValues.setElementQuick(pathwayI, traitI, curStat.getAnalyticalPvalue());
+					zscores.setElementQuick(pathwayI, traitI, curStat.getZscore());
 				}
 			}
 
@@ -419,15 +426,15 @@ public class PathwayEnrichments {
 
 			// Write output
 			betas.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
-			standardErrors.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_se" : "_seExHla"));
-			pValues.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_analyticalPvals" : "_analyticalPvalsExHla"));
-			betasNull.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+			//standardErrors.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_se" : "_seExHla"));
+			//pValues.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_analyticalPvals" : "_analyticalPvalsExHla"));
+			//betasNull.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
+			betas.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas.txt" : "_betasExHla.txt"));
+			standardErrors.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_se.txt" : "_seExHla.txt"));
+			pValues.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_analyticalPvals.txt" : "_analyticalPvalsExHla.txt"));
 
 			// Save as txt to avoid having to convert them later
 			if (LOGGER.isDebugEnabled()) {
-				betas.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas.txt" : "_betasExHla.txt"));
-				standardErrors.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_se.txt" : "_seExHla.txt"));
-				pValues.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_analyticalPvals.txt" : "_analyticalPvalsExHla.txt"));
 				fullInverseCorrelationMatrix.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_inverseCorrelationMatrix.txt" : "_inverseCorrelationMatrixExHla.txt"));
 				geneZscoresPathwayMatched.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_geneZscoresPathwayMatched.txt" : "_geneZscoresPathwayMatchedExHla.txt"));
 				genePathwayZscores.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_genePathwayZscores.txt" : "_genePathwayZscoresExHla.txt"));
@@ -542,11 +549,22 @@ public class PathwayEnrichments {
 		// Determine pvalue
 		double tstatistic = Math.abs(beta / standardError);
 		double pvalue = new TDistribution(df).cumulativeProbability(-tstatistic) * 2;
+		double zscore =  ZScores.pToZTwoTailed(pvalue);
 
-		return new GenePathwayAssociationStatistic(beta, standardError, tstatistic, pvalue);
+		if (beta < 0 ) {
+			zscore = (double)-1 * zscore;
+		}
+
+		return new GenePathwayAssociationStatistic(beta, standardError, tstatistic, zscore, pvalue);
 	}
 
+
 	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
+		zscores.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla"));
+		return zscores;
+	}
+
+	public final DoubleMatrixDataset<String, String> getEmpericalEnrichmentZscores() throws IOException {
 
 		if (enrichmentPvalues == null) {
 
