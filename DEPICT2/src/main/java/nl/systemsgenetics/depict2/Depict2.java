@@ -565,7 +565,7 @@ public class Depict2 {
             HashSet<String> variantsToInclude = new HashSet<>(allVariants);
             variantsToInclude.removeAll(variantsToExclude);
 
-            matrix = matrix.viewRowSelection(variantsToExclude);
+            matrix = matrix.viewRowSelection(variantsToInclude);
 
         }
 
