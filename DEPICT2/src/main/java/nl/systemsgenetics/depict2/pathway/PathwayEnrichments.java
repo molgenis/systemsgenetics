@@ -564,12 +564,12 @@ public class PathwayEnrichments {
 		return new GenePathwayAssociationStatistic(beta, standardError, tstatistic, zscore, pvalue);
 	}
 
-
 	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
 		zscores.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla"));
 		return zscores;
 	}
 
+	@Deprecated
 	public final DoubleMatrixDataset<String, String> getEmpericalEnrichmentZscores() throws IOException {
 
 		if (enrichmentPvalues == null) {
@@ -1011,7 +1011,7 @@ public class PathwayEnrichments {
 		return fullCorrelationMatrix;
 	}
 
-	private final DoubleMatrixDataset<String, String> createColumnForceNormalDuplicate(DoubleMatrixDataset<String, String> matrix, DoubleMatrixDataset<String, String> tieBreaker) {
+	public static DoubleMatrixDataset<String, String> createColumnForceNormalDuplicate(DoubleMatrixDataset<String, String> matrix, DoubleMatrixDataset<String, String> tieBreaker) {
 
 		DoubleMatrixDataset<String, String> newDataset = new DoubleMatrixDataset<>(matrix.getHashRows(), matrix.getHashCols());
 
@@ -1037,7 +1037,6 @@ public class PathwayEnrichments {
 		}
 
 		return newDataset;
-
 	}
 	
 }
