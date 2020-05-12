@@ -31,7 +31,6 @@ public class Depict2Utilities {
 
     private static final Logger LOGGER = Logger.getLogger(Depict2Utilities.class);
 
-
     /**
      * Create a gene gene correlation matrix based on a (eigenvector) matrix.
      * @param options
@@ -84,6 +83,12 @@ public class Depict2Utilities {
 
     }
 
+
+    /**
+     * Run PCA analysis on a binary matrix using PcaColt.
+     * @param options
+     * @throws IOException
+     */
     public static void doPcaOnBinMatrix(Depict2Options options) throws IOException {
 
         final DoubleMatrixDataset<String, String> dataset = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
@@ -124,6 +129,7 @@ public class Depict2Utilities {
             LOGGER.fatal("First use --mode RUN to calculate gene p-values");
             return;
         }
+
         geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
         LOGGER.info("Gene p-values loaded");
         genes = IoUtils.readGenes(options.getGeneInfoFile());
@@ -141,7 +147,6 @@ public class Depict2Utilities {
 
         // Select genes that have a gene pvalue, to avoid issues with the normalization, and to keep consistency
         // with the PathwayEnrichments.
-
         genePvalues.viewRowSelection(selectedGenes);
         final DoubleMatrix2D matrix = genePvalues.getMatrix();
 
@@ -160,6 +165,4 @@ public class Depict2Utilities {
         LOGGER.info("Done");
 
     }
-
-
 }
