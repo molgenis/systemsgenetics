@@ -23,6 +23,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.IntStream;
 
+/**
+ * Collection of runners that handle pre-processing steps for Depict 2 analysis.
+ *
+ */
 public class Depict2Utilities {
 
     private static final Logger LOGGER = Logger.getLogger(Depict2Utilities.class);

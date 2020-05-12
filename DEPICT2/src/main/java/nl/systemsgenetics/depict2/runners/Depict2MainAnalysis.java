@@ -22,6 +22,11 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
+
+/**
+ * Runners for the main Depict 2 analysis.
+ *
+ */
 public class Depict2MainAnalysis {
     
     private static final Logger LOGGER = Logger.getLogger(Depict2MainAnalysis.class);

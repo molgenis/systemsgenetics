@@ -22,6 +22,8 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 
 /**
+ * Entry point and error handler for Depict 2
+ *
  * @author Patrick Deelen
  */
 public class Depict2 {
@@ -38,6 +40,8 @@ public class Depict2 {
             + "  \\---------------------------------------/";
 
     /**
+     * Main function for Depict 2 analysis, specific tasks are implemented in respective runner classes.
+     *
      * @param args the command line arguments
      * @throws java.lang.InterruptedException
      */
@@ -161,7 +165,8 @@ public class Depict2 {
                     NetworkProperties.investigateNetwork(options);
                     break;
                 case GET_NORMALIZED_GENEP:
-
+                    Depict2Utilities.getNormalizedGwasGenePvalues(options);
+                    break;
                 case SPECIAL:
                     ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
             }

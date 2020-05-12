@@ -21,6 +21,10 @@ import java.util.*;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 
+/**
+ * Collection of runners that handle conversion of Depict 2 related files.
+ *
+ */
 public class Depict2Converters {
 
     private static final Logger LOGGER = Logger.getLogger(Depict2Converters.class);
@@ -142,7 +146,7 @@ public class Depict2Converters {
             HashSet<String> variantsToInclude = new HashSet<>(allVariants);
             variantsToInclude.removeAll(variantsToExclude);
 
-            matrix = matrix.viewRowSelection(variantsToExclude);
+            matrix = matrix.viewRowSelection(variantsToInclude);
 
         }
 
