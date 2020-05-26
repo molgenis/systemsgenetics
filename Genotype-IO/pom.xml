@@ -92,9 +92,16 @@
             <version>1.4.4-3</version>
         </dependency>
         <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>aircompressor</artifactId>
+            <version>0.16</version>
+            <type>jar</type>
+        </dependency>
+
+        <!--        <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-orc</artifactId>
-            <version>0.188-SNAPSHOT</version>
+            <version>0.234.2</version>
             <type>jar</type>
             <exclusions>
                 <exclusion>
@@ -102,7 +109,7 @@
                     <artifactId>hive-apache</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
+        </dependency>-->
     </dependencies>
     <build>
         <plugins>

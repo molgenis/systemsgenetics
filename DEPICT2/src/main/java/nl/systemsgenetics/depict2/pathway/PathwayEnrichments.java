@@ -554,11 +554,11 @@ public class PathwayEnrichments {
 		// Determine pvalue
 		double tstatistic = Math.abs(beta / standardError);
 		double pvalue = new TDistribution(df).cumulativeProbability(-tstatistic) * 2;
-		double zscore =  ZScores.pToZTwoTailed(pvalue);
+		double zscore = ZScores.pToZTwoTailed(pvalue);
 
 		// The zscore returned by pToZTwoTailed is always negative, therefore, match direction on beta
-		if (beta > 0 ) {
-			zscore = ((double)-1) * zscore;
+		if (beta > 0) {
+			zscore = ((double) -1) * zscore;
 		}
 
 		return new GenePathwayAssociationStatistic(beta, standardError, tstatistic, zscore, pvalue);
@@ -1037,6 +1037,7 @@ public class PathwayEnrichments {
 		}
 
 		return newDataset;
+
 	}
-	
+
 }

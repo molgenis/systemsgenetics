@@ -4,8 +4,8 @@
  */
 package org.molgenis.genotype.bgen;
 
-import com.facebook.presto.orc.zstd.ZstdDecompressor;
 import com.google.common.math.IntMath;
+import io.airlift.compress.zstd.ZstdDecompressor;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.*;
 import org.molgenis.genotype.annotation.Annotation;
