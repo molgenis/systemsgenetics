@@ -147,7 +147,9 @@ public class Depict2Utilities {
 
         // Select genes that have a gene pvalue, to avoid issues with the normalization, and to keep consistency
         // with the PathwayEnrichments.
-        genePvalues.viewRowSelection(selectedGenes);
+        genePvalues = genePvalues.viewRowSelection(selectedGenes);
+
+        LOGGER.info(genePvalues.rows() + " have a gene pvalue");
         final DoubleMatrix2D matrix = genePvalues.getMatrix();
 
         // Inplace convert gene p-values to z-scores

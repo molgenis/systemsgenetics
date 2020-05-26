@@ -223,9 +223,19 @@ public class Depict2Converters {
 
         DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 
-        String[] columnsToExtract = options.getColumnsToExtract();
+        String[] cols = options.getColumnsToExtract();
 
-        if (columnsToExtract != null) {
+        if (cols != null) {
+            Set<String> columnsToExtract = new HashSet<>();
+
+            for (String colname: cols) {
+                if (matrix.getColObjects().contains(colname)) {
+                    columnsToExtract.add(colname);
+                } else {
+                    LOGGER.warn(colname + " is missing in input matrix, ommiting col in output");
+                }
+            }
+
             matrix = matrix.viewColSelection(columnsToExtract);
         }
 

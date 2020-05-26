@@ -451,7 +451,7 @@ public class Depict2Options {
                 geneCorrelationWindow = 0;
                 break;
             case GET_NORMALIZED_GENEP:
-                if (!commandLine.hasOption("ge")) {
+                if (commandLine.hasOption("ge")) {
                     geneInfoFile = new File(commandLine.getOptionValue("ge"));
                 } else {
                     throw new ParseException("--genes not specified");
