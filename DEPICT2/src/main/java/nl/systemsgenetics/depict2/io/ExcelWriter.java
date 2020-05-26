@@ -90,6 +90,7 @@ public class ExcelWriter {
 				final PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayDatabase.getLocation() + ".colAnnotations.txt"));
 				final int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 				final DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
+				final DoubleMatrixDataset<String, String> databaseEnrichmentQvalues = pathwayEnrichment.getqValues();
 				//pathwayEnrichment object will does not need to keep a copy of the zscore matrix
 				pathwayEnrichment.clearZscoreCache();
 				final ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
@@ -98,10 +99,11 @@ public class ExcelWriter {
 				final double bonferroniCutoff = 0.05 / pathwayEnrichment.getNumberOfPathways();
 
 				final DoubleMatrix1D traitEnrichment = databaseEnrichmentZscores.getCol(trait);
+				final DoubleMatrix1D traitQvalue = databaseEnrichmentQvalues.getCol(trait);
 				int[] order = DoubleMatrix1dOrder.sortIndexReverse(traitEnrichment);
 				XSSFSheet databaseSheet = (XSSFSheet) enrichmentWorkbook.createSheet(pathwayDatabase.getName());
 
-				XSSFTable table = databaseSheet.createTable(new AreaReference(new CellReference(0, 0), new CellReference(databaseEnrichmentZscores.rows(), 3 + maxAnnotations), SpreadsheetVersion.EXCEL2007));
+				XSSFTable table = databaseSheet.createTable(new AreaReference(new CellReference(0, 0), new CellReference(databaseEnrichmentZscores.rows(), 4 + maxAnnotations), SpreadsheetVersion.EXCEL2007));
 				table.setName(pathwayDatabase.getName() + "_res");
 				table.setDisplayName(pathwayDatabase.getName());
 
@@ -119,6 +121,7 @@ public class ExcelWriter {
 				}
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Enrichment Z-score");
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Enrichment P-value");
+				headerRow.createCell(hc++, CellType.STRING).setCellValue("Enrichment Q-value");
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Bonferroni significant");
 
 				for (int r = 0; r < databaseEnrichmentZscores.rows(); ++r) {
@@ -157,6 +160,7 @@ public class ExcelWriter {
 					}
 
 					double zscore = traitEnrichment.getQuick(order[r]);
+					double qvalue = traitQvalue.getQuick(order[r]);
 
 					XSSFCell zscoreCell = row.createCell(1 + maxAnnotations, CellType.NUMERIC);
 					zscoreCell.setCellValue(zscore);
@@ -168,12 +172,17 @@ public class ExcelWriter {
 					pvalueCell.setCellValue(pvalue);
 					pvalueCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
 					
-					XSSFCell bonferroniCell = row.createCell(3 + maxAnnotations, CellType.BOOLEAN);
+					XSSFCell qvalueCell = row.createCell(3 + maxAnnotations, CellType.NUMERIC);
+					qvalueCell.setCellValue(qvalue);
+					qvalueCell.setCellStyle(qvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+					
+					
+					XSSFCell bonferroniCell = row.createCell(4 + maxAnnotations, CellType.BOOLEAN);
 					bonferroniCell.setCellValue(pvalue <= bonferroniCutoff);
 
 				}
 
-				for (int c = 0; c < (3 + maxAnnotations); ++c) {
+				for (int c = 0; c < (4 + maxAnnotations); ++c) {
 					databaseSheet.autoSizeColumn(c);
 					databaseSheet.setColumnWidth(c, databaseSheet.getColumnWidth(c) + 1500);//compensate for with auto filter and inaccuracies
 				}
