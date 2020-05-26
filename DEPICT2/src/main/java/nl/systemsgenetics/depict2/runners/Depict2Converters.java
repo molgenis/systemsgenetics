@@ -146,6 +146,8 @@ public class Depict2Converters {
             HashSet<String> variantsToInclude = new HashSet<>(allVariants);
             variantsToInclude.removeAll(variantsToExclude);
 
+            LOGGER.info("Included variants: " + variantsToInclude.size());
+
             matrix = matrix.viewRowSelection(variantsToInclude);
 
         }
