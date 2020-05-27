@@ -366,6 +366,10 @@ public class PathwayEnrichments {
 				b1.save(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_b1.txt"));
 				b2.save(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_b2.txt"));
 			}
+			
+			LOGGER.debug("Merged b1 and b2");
+			
+			pb.step();
 
 			// Determine final betas and p values
 			betas = new DoubleMatrixDataset<>(genePathwayZscores.getHashColsCopy(), geneZscores.getHashColsCopy());
