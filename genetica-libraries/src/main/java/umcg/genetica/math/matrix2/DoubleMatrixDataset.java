@@ -1396,6 +1396,30 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return new DoubleMatrixDataset<>(matrix.viewSelection(rowNrs, null), newHashRows, this.hashCols);
 
 	}
+	
+		/**
+	 * Creates a new view to this dataset with a subset of rows.
+	 *
+	 * New order of rows is based on input order.
+	 *
+	 * @param rowsToView
+	 * @return
+	 */
+	public DoubleMatrix2D viewRowSelectionMatrix(Collection<R> rowsToView) {
+
+		int[] rowNrs = new int[rowsToView.size()];
+
+		int i = 0;
+		for (R row : rowsToView) {
+
+			//Null pointer below probabli indicates looking for non existing row
+			rowNrs[i] = hashRows.get(row);
+
+		}
+
+		return matrix.viewSelection(rowNrs, null);
+
+	}
 
 	/**
 	 * Creates a new view to this dataset with a subset of cools.
