@@ -196,7 +196,7 @@ public class PathwayEnrichments {
 			genePathwayZscores.normalizeColumns();
 			geneZscoresPathwayMatched.normalizeColumns();
 			geneZscoresNullGwasCorrelationPathwayMatched.normalizeColumns();
-			geneZscoresNullGwasNullBetasPathwayMatched.normalizeColumns();
+			geneZscoresNullGwasNullBetasPathwayMatched.normalizeColumns();	
 
 			// Save normalized gene scores to file, to check distribution later on
 			geneZscoresPathwayMatched.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
@@ -394,8 +394,8 @@ public class PathwayEnrichments {
 			}
 
 			//Now calculate beta's and residuals		
-			final int numberTraits = geneZscores.columns();
-			final int df = geneZscores.rows() - 1;
+			final int numberTraits = geneZscoresPathwayMatched.columns();
+			final int df = geneZscoresPathwayMatched.rows() - 1;
 			for (int traitI = 0; traitI < numberTraits; ++traitI) {
 				
 				final double b1Trait = b1.getElementQuick(traitI, 0);
