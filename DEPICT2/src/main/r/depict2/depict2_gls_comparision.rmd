@@ -38,7 +38,7 @@ custom.gls <- function(x, y, Sigi) {
   return(c(beta, se, pval))
 }
 
-custom.gls.intercept <- function(x, y, Sigi) {
+custom.gls.intercept <- function(x, y, Sigi) {ized
   # Add intercept
   x <- cbind(rep(1, length(x)), x)
 
