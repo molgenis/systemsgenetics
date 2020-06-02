@@ -70,26 +70,48 @@ public class PathwayEnrichments {
 	private final List<Gene> genes;
 	private final String outputBasePath;
 
+	/**
+	 * Needed for extension of CholeskyBasedPathwayEnrichments, extension needed so that conforms to type PathwayErichement.
+	 * Interface would be better in this case, but cant be bothererd right now to implement this in testing fase.
+	 */
+	public PathwayEnrichments() {
+		pathwayDatabase = null;
+		hlaGenesToExclude = null;
+		betas =null;
+		standardErrors = null;
+		tStatistics = null;
+		pValues = null;
+		qValues = null;
+		zscores = null;
+		pValuesNull = null;
+		ignoreGeneCorrelations = false;
+		numberOfPathways = 0;
+		intermediateFolder = null;
+		excludeGenes = null;
+		genes = null;
+		outputBasePath = null;
+	}
+
 	public PathwayEnrichments(final PathwayDatabase pathwayDatabase,
-			final HashSet<String> genesWithPvalue,
-			final List<Gene> genes,
-			final boolean forceNormalPathwayPvalues,
-			final boolean forceNormalGenePvalues,
-			DoubleMatrixDataset<String, String> geneZscores,
-			DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation,
-			DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas,
-			final String outputBasePath,
-			final HashSet<String> hlaGenesToExclude,
-			final boolean ignoreGeneCorrelations,
-			final double genePruningR,
-			final int geneCorrelationWindow,
-			final File debugFolder,
-			final File intermediateFolder,
-			final boolean quantileNormalizePermutations,
-			final boolean regressGeneLengths,
-			DoubleMatrixDataset<String, String> geneMaxSnpZscore,
-			DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasCorrelation,
-			DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasBetas
+							  final HashSet<String> genesWithPvalue,
+							  final List<Gene> genes,
+							  final boolean forceNormalPathwayPvalues,
+							  final boolean forceNormalGenePvalues,
+							  DoubleMatrixDataset<String, String> geneZscores,
+							  DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation,
+							  DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas,
+							  final String outputBasePath,
+							  final HashSet<String> hlaGenesToExclude,
+							  final boolean ignoreGeneCorrelations,
+							  final double genePruningR,
+							  final int geneCorrelationWindow,
+							  final File debugFolder,
+							  final File intermediateFolder,
+							  final boolean quantileNormalizePermutations,
+							  final boolean regressGeneLengths,
+							  DoubleMatrixDataset<String, String> geneMaxSnpZscore,
+							  DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasCorrelation,
+							  DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasBetas
 	) throws Exception {
 
 		this.pathwayDatabase = pathwayDatabase;
@@ -542,10 +564,12 @@ public class PathwayEnrichments {
 					final String chrArm = chrArmInvCor.getKey();
 					DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = chrArmInvCor.getValue();
 
-					DoubleMatrix2D residualsSubset = residuals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
-					DoubleMatrix2D invCorXResidualsSubset = invCorXResiduals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
+					//TODO: commented this because it gave a compilation error, probabably changes not pushed to
+					// patricks git?
+					//DoubleMatrix2D residualsSubset = residuals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
+					//DoubleMatrix2D invCorXResidualsSubset = invCorXResiduals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
 
-					geneInvCorMatrixSubset.getMatrix().zMult(residualsSubset, invCorXResidualsSubset);
+					///geneInvCorMatrixSubset.getMatrix().zMult(residualsSubset, invCorXResidualsSubset);
 
 				});
 
@@ -750,7 +774,7 @@ public class PathwayEnrichments {
 		return new GenePathwayAssociationStatistic(beta, standardError, tstatistic, zscore, pvalue);
 	}
 
-	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
+	public DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
 		zscores.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla"));
 		return zscores;
 	}
@@ -817,7 +841,7 @@ public class PathwayEnrichments {
 //		return enrichmentPvalues;
 	}
 
-	public final void clearZscoreCache() {
+	public void clearZscoreCache() {
 		enrichmentPvalues = null;
 	}
 

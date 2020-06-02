@@ -88,6 +88,26 @@ pdf(width=7, height=5, file="~/Desktop/depict2/plots/ibd_transgenes_coreg.pdf")
 dev.off()
 ```
 
+# Cholesky inverse tests
+Check if taking the inverse of the cholsky decomp is the same as first inverting then cholsky on that inverted matrix
+```{r}
+set.seed(12345)
+
+m <- cor(matrix(rnorm(10000), nrow=100, ncol=100))
+
+diag(m) <- 0 
+mi <- solve(m)
+
+diag(m) <- 1
+diag(mi) <- 0
+
+cm <- chol(m)
+cmi <- chol(mi)
+
+
+
+ ```
+
 
 # Old and new height coregulations
 ```{r}
