@@ -101,7 +101,7 @@ public class ExcelWriter {
 				int[] order = DoubleMatrix1dOrder.sortIndexReverse(traitEnrichment);
 				XSSFSheet databaseSheet = (XSSFSheet) enrichmentWorkbook.createSheet(pathwayDatabase.getName());
 
-				XSSFTable table = databaseSheet.createTable(new AreaReference(new CellReference(0, 0), new CellReference(databaseEnrichmentZscores.rows(), 4 + maxAnnotations), SpreadsheetVersion.EXCEL2007));
+				XSSFTable table = databaseSheet.createTable(new AreaReference(new CellReference(0, 0), new CellReference(databaseEnrichmentZscores.rows(), 5 + maxAnnotations), SpreadsheetVersion.EXCEL2007));
 				table.setName(pathwayDatabase.getName() + "_res");
 				table.setDisplayName(pathwayDatabase.getName());
 
@@ -121,6 +121,7 @@ public class ExcelWriter {
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Enrichment P-value");
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Enrichment Q-value");
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Bonferroni significant");
+				headerRow.createCell(hc++, CellType.STRING).setCellValue("FDR 5% significant");
 
 				for (int r = 0; r < databaseEnrichmentZscores.rows(); ++r) {
 					XSSFRow row = databaseSheet.createRow(r + 1);//+1 for header
@@ -177,10 +178,13 @@ public class ExcelWriter {
 					
 					XSSFCell bonferroniCell = row.createCell(4 + maxAnnotations, CellType.BOOLEAN);
 					bonferroniCell.setCellValue(pvalue <= bonferroniCutoff);
+					
+					XSSFCell fdrCell = row.createCell(5 + maxAnnotations, CellType.BOOLEAN);
+					fdrCell.setCellValue(qvalue <= 0.05);
 
 				}
 
-				for (int c = 0; c < (4 + maxAnnotations); ++c) {
+				for (int c = 0; c < (5 + maxAnnotations); ++c) {
 					databaseSheet.autoSizeColumn(c);
 					databaseSheet.setColumnWidth(c, databaseSheet.getColumnWidth(c) + 1500);//compensate for with auto filter and inaccuracies
 				}
@@ -202,7 +206,7 @@ public class ExcelWriter {
 
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
-			cell.setCellValue("Generated using DEPICT" + Depict2.VERSION);
+			cell.setCellValue("Generated using Downstreamer" + Depict2.VERSION);
 			cell.setCellStyle(boldStyle);
 
 			overviewSheet.createRow(r++);
