@@ -173,7 +173,7 @@ public class ExcelWriter {
 					
 					XSSFCell qvalueCell = row.createCell(3 + maxAnnotations, CellType.NUMERIC);
 					qvalueCell.setCellValue(qvalue);
-					qvalueCell.setCellStyle(qvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+					qvalueCell.setCellStyle(qvalue > 0 && qvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
 					
 					
 					XSSFCell bonferroniCell = row.createCell(4 + maxAnnotations, CellType.BOOLEAN);

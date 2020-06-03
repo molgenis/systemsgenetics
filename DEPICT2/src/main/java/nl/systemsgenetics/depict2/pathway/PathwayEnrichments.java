@@ -527,6 +527,7 @@ public class PathwayEnrichments {
 
 			qValues = pValues.duplicate();
 			final DoubleMatrix1D sortedNullPvalues = pValuesNull.getMatrix().vectorize().viewSorted();
+			final long permutedPvalues = sortedNullPvalues.size();
 			final double numberTraitsNullD = (double) numberTraitsNull;
 
 			for (int traitI = 0; traitI < numberTraits; ++traitI) {
@@ -540,7 +541,7 @@ public class PathwayEnrichments {
 					//initially qvalue matrix contains the pvaluess
 					final double currentP = qValuesTraitSorted.get(i);
 
-					while (indexNullPvalues <= sortedNullPvalues.size() && sortedNullPvalues.get(indexNullPvalues) <= currentP) {
+					while (indexNullPvalues <= permutedPvalues && sortedNullPvalues.get(indexNullPvalues+1) <= currentP) {
 						indexNullPvalues++;
 					}
 
@@ -550,6 +551,12 @@ public class PathwayEnrichments {
 					//now overwrite this p-value with q-value
 					qValuesTraitSorted.setQuick(i, qvalue);
 
+				}
+				
+				for(int i = (int) qValuesTraitSorted.size() - 2 ; i >=0 ; --i){
+					if(qValuesTraitSorted.get(i) > qValuesTraitSorted.get(i+1)){
+						qValuesTraitSorted.set(i, qValuesTraitSorted.get(i+1));
+					}
 				}
 				
 				pb.step();
@@ -976,7 +983,7 @@ public class PathwayEnrichments {
 
 				String currentGene = armGenesIds.get(r);
 
-				MetaGene currentMetaGene = new MetaGene(armGenesIds.get(r));
+				MetaGene currentMetaGene = new MetaGene(currentGene);
 				metaGenesArm.put(currentGene, currentMetaGene);
 
 				cols:
@@ -984,7 +991,7 @@ public class PathwayEnrichments {
 					if (Math.abs(correlationOfCorrelations.getElementQuick(r, c)) >= maxCorrelationBetweenGenes) {
 
 						//Never null because c < r
-						MetaGene otherMetaGene = metaGenesArm.get(armGenesIds.get(0));
+						MetaGene otherMetaGene = metaGenesArm.get(armGenesIds.get(c));
 						currentMetaGene.addOtherMetaGene(otherMetaGene);
 
 						for (String otherGene : otherMetaGene.getGenes()) {
