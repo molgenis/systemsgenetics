@@ -1413,7 +1413,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		for (R row : rowsToView) {
 
 			//Null pointer below probabli indicates looking for non existing row
-			rowNrs[i] = hashRows.get(row);
+			rowNrs[i++] = hashRows.get(row);
 
 		}
 

@@ -8,7 +8,6 @@ import nl.systemsgenetics.depict2.gene.Gene;
 import nl.systemsgenetics.depict2.gene.GenePvalueCalculator;
 import nl.systemsgenetics.depict2.io.ExcelWriter;
 import nl.systemsgenetics.depict2.io.IoUtils;
-import nl.systemsgenetics.depict2.pathway.CholeskyBasedPathwayEnrichments;
 import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
 import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
 import org.apache.log4j.Logger;
@@ -203,7 +202,7 @@ public class Depict2MainAnalysis {
 
         ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
         for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-            pathwayEnrichments.add(new CholeskyBasedPathwayEnrichments(
+            pathwayEnrichments.add(new PathwayEnrichments(
                     pathwayDatabase,
                     selectedGenes,
                     genes,

@@ -35,10 +35,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.IntStream;
 
-/**
- * @author patri
- */
-public class CholeskyBasedPathwayEnrichments extends PathwayEnrichments {
+
+@Deprecated
+public class CholeskyBasedPathwayEnrichments  { //extends PathwayEnrichments
 
     private static final Logger LOGGER = Logger.getLogger(Depict2.class);
 
@@ -82,7 +81,7 @@ public class CholeskyBasedPathwayEnrichments extends PathwayEnrichments {
                                            DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasCorrelation,
                                            DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasBetas
     ) throws Exception {
-        super();
+       // super();
 
         this.pathwayDatabase = pathwayDatabase;
         this.genes = genes;
@@ -379,29 +378,24 @@ public class CholeskyBasedPathwayEnrichments extends PathwayEnrichments {
     }
 
 
-    @Override
     public DoubleMatrixDataset<String, String> getqValues() {
         throw new NotImplementedException();
     }
 
-    @Override
     public DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
         zscores.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore" : "_zscoreExHla"));
         return zscores;
     }
 
 
-    @Override
     public void clearZscoreCache() {
         enrichmentPvalues = null;
     }
 
-    @Override
     public PathwayDatabase getPathwayDatabase() {
         return pathwayDatabase;
     }
 
-    @Override
     public int getNumberOfPathways() {
         return numberOfPathways;
     }

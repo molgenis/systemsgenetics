@@ -91,8 +91,6 @@ public class ExcelWriter {
 				final int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 				final DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
 				final DoubleMatrixDataset<String, String> databaseEnrichmentQvalues = pathwayEnrichment.getqValues();
-				//pathwayEnrichment object will does not need to keep a copy of the zscore matrix
-				pathwayEnrichment.clearZscoreCache();
 				final ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
 				//final int currentTraitCol = databaseEnrichment.getColIndex(trait);
 				
