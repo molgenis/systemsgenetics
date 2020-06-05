@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nl.systemsgenetics.depict2.Depict2;
+import nl.systemsgenetics.depict2.Depict2Options;
 import nl.systemsgenetics.depict2.pathway.PathwayAnnotations;
 import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
 import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
@@ -52,7 +53,7 @@ public class ExcelWriter {
 	 * @param hlaExcluded
 	 * @throws java.io.FileNotFoundException
 	 */
-	public static void saveEnrichmentsToExcel(final List<PathwayEnrichments> pathwayEnrichments, final String outputBasePath, List<String> traits, final boolean hlaExcluded) throws FileNotFoundException, IOException {
+	public static void saveEnrichmentsToExcel(final List<PathwayEnrichments> pathwayEnrichments, final String outputBasePath, List<String> traits, final boolean hlaExcluded, Depict2Options options) throws FileNotFoundException, IOException {
 
 		System.setProperty(" java.awt.headless", "true");
 
@@ -206,7 +207,7 @@ public class ExcelWriter {
 
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
-			cell.setCellValue("Generated using Downstreamer" + Depict2.VERSION);
+			cell.setCellValue("Generated using Downstreamer " + Depict2.VERSION);
 			cell.setCellStyle(boldStyle);
 
 			overviewSheet.createRow(r++);
@@ -236,8 +237,37 @@ public class ExcelWriter {
 				overviewSheet.autoSizeColumn(c);
 				overviewSheet.setColumnWidth(c, overviewSheet.getColumnWidth(c) + 1500);//compensate for with auto filter and inaccuracies
 			}
+			
+			overviewSheet.createRow(r++);
+			
+			row = overviewSheet.createRow(r++);
+			cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Used settings");
+			cell.setCellStyle(boldStyle);
+			
+			row = overviewSheet.createRow(r++);
+			cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Number of permutations used for FDR: " + options.getPermutationPathwayEnrichment());
+			
+			row = overviewSheet.createRow(r++);
+			cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Gene pruning r: " + options.getGenePruningR());
+			
+			row = overviewSheet.createRow(r++);
+			cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Force normal pathway scores: " + options.isForceNormalPathwayPvalues());
+			
+			row = overviewSheet.createRow(r++);
+			cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Force normal GWAS gene z-scores: " + options.isForceNormalGenePvalues());
+			
+			row = overviewSheet.createRow(r++);
+			cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Regress out gene lengths from GWAS gene z-scores: " + options.isRegressGeneLengths());
+			
 
 			enrichmentWorkbook.write(new FileOutputStream(excelFile));
+			
 
 //			System.err.println("WARNING ONLY SAVING FIRST TRAIT TO EXCEL FOR DEBUGING");
 //			break;

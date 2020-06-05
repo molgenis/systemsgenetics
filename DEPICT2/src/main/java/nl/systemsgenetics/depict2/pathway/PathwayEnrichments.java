@@ -138,7 +138,6 @@ public class PathwayEnrichments {
 			LOGGER.info("Regressing gene lengths and determining residuals");
 
 			// Determine (log10) gene lengths
-			LOGGER.info("Determining gene lengths");
 			final double[] geneLengths = new double[sharedGenes.size()];
 			int i = 0;
 			// Ensures the geneLength vector is in the same order as the matrices
@@ -559,7 +558,7 @@ public class PathwayEnrichments {
 					//initially qvalue matrix contains the pvaluess
 					final double currentP = qValuesTraitSorted.get(i);
 
-					while (indexNullPvalues <= permutedPvalues && sortedNullPvalues.get(indexNullPvalues + 1) <= currentP) {
+					while (indexNullPvalues < permutedPvalues && sortedNullPvalues.get(indexNullPvalues + 1) <= currentP) {
 						indexNullPvalues++;
 					}
 

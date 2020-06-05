@@ -226,7 +226,7 @@ public class Depict2MainAnalysis {
         }
 
         if (options.isSaveOuputAsExcelFiles()) {
-            ExcelWriter.saveEnrichmentsToExcel(pathwayEnrichments, options.getOutputBasePath(), genePvalues.getColObjects(), hlaGenes != null);
+            ExcelWriter.saveEnrichmentsToExcel(pathwayEnrichments, options.getOutputBasePath(), genePvalues.getColObjects(), hlaGenes != null,options);
         } else {
             for (PathwayEnrichments pathwayEnrichment : pathwayEnrichments) {
                 //this will make sure z-scores are saved even if make excel is off
