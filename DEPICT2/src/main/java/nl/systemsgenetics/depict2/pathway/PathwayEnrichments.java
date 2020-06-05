@@ -544,6 +544,7 @@ public class PathwayEnrichments {
 			qValues = pValues.duplicate();
 			final DoubleMatrix1D sortedNullPvalues = pValuesNull.getMatrix().vectorize().viewSorted();
 			final long permutedPvalues = sortedNullPvalues.size();
+			final long permutedPvaluesMin1 = permutedPvalues - 1; 
 			final double numberTraitsNullD = (double) numberTraitsNull;
 
 			IntStream.range(0, numberTraits).parallel().forEach(traitI -> {
@@ -558,7 +559,7 @@ public class PathwayEnrichments {
 					//initially qvalue matrix contains the pvaluess
 					final double currentP = qValuesTraitSorted.get(i);
 
-					while (indexNullPvalues < permutedPvalues && sortedNullPvalues.get(indexNullPvalues + 1) <= currentP) {
+					while (indexNullPvalues < permutedPvaluesMin1 && sortedNullPvalues.get(indexNullPvalues + 1) <= currentP) {
 						indexNullPvalues++;
 					}
 
