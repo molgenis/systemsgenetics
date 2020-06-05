@@ -43,6 +43,7 @@ public class Depict2Options {
     private final RandomAccessGenotypeDataReaderFormats genotypeType;
     private final File genotypeSamplesFile;
     private final File outputBasePath;
+	private final File run1BasePath;
     private final File geneInfoFile;
     private final File gwasZscoreMatrixPath;
     private final int numberOfPermutations;
@@ -87,8 +88,8 @@ public class Depict2Options {
         OptionBuilder.withArgName("string");
         OptionBuilder.hasArgs();
         OptionBuilder.withDescription("On of the following modes:\n"
-                + "* RUN - Run the DEPICT2 prioritization.\n"
-                + "* RUN2 - Run the DEPICT2 prioritization starting at stage 2.\n"
+                + "* STEP1 - Run the DEPICT2 prioritization.\n"
+                + "* STEP2 - Run the DEPICT2 prioritization starting at stage 2.\n"
                 + "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
                 + "* CONVERT_TXT_MERGE - Merge multiple txt pvalue files into one matrix containing only overlapping snps"
                 + "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output optionally --columnsToExtract\n"
@@ -146,6 +147,12 @@ public class Depict2Options {
         OptionBuilder.withLongOpt("output");
         OptionBuilder.isRequired();
         OPTIONS.addOption(OptionBuilder.create("o"));
+		
+		OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("The output path of STEP1");
+        OptionBuilder.withLongOpt("stepOneOutput");
+        OPTIONS.addOption(OptionBuilder.create("soo"));
 
         OptionBuilder.withArgName("int");
         OptionBuilder.hasArg();
@@ -348,18 +355,29 @@ public class Depict2Options {
         saveUsedVariantsPerGene = commandLine.hasOption("uvg");
         quantileNormalizePermutations = commandLine.hasOption("qn");
         regressGeneLengths = commandLine.hasOption("rgl");
+		
+		run1BasePath = commandLine.hasOption("soo") ? new File(commandLine.getOptionValue("soo")) : outputBasePath;
 
         if (quantileNormalizePermutations && forceNormalGenePvalues) {
             throw new ParseException("Can't combine -qn with -fngp");
         }
 
         try {
-            mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
+			
+			String modeString = commandLine.getOptionValue("m").toUpperCase();
+			
+			if(modeString.equals("RUN")){
+				modeString = "STEP1";
+			} else if(modeString.equals("RUN2")){
+				modeString = "STEP2";
+			}
+			
+            mode = Depict2Mode.valueOf(modeString);
         } catch (IllegalArgumentException e) {
             throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
         }
 
-        if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE) {
+        if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE) {
 
             if (!commandLine.hasOption("g")) {
                 throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -384,8 +402,8 @@ public class Depict2Options {
         }
 
         switch (mode) {
-            case RUN:
-            case RUN2:
+            case STEP1:
+            case STEP2:
                 if (!commandLine.hasOption("pgc")) {
                     throw new ParseException("--permutationGeneCorrelations not specified");
                 } else {
@@ -478,7 +496,7 @@ public class Depict2Options {
         }
 
         switch (mode) {
-            case RUN:
+            case STEP1:
 
                 //variantFilter
                 if (commandLine.hasOption("vf")) {
@@ -590,9 +608,9 @@ public class Depict2Options {
 
                 }
                 break;
-            case RUN2:
+            case STEP2:
                 if (pathwayDatabases.isEmpty()) {
-                    throw new ParseException("The option --pathwayDatabase is needed for mode=RUN2");
+                    throw new ParseException("The option --pathwayDatabase is needed for mode=STEP2");
                 }
                 genotypeBasePath = null;
                 genotypeType = null;
@@ -773,7 +791,7 @@ public class Depict2Options {
                     LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
                 }
                 break;
-            case RUN:
+            case STEP1:
                 LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 
                 if (genotypeBasePath != null) {
@@ -803,7 +821,8 @@ public class Depict2Options {
                 logSharedRun1Run2();
 
                 break;
-            case RUN2:
+            case STEP2:
+				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
                 logSharedRun1Run2();
 
                 break;
@@ -994,4 +1013,10 @@ public class Depict2Options {
     public boolean isRegressGeneLengths() {
         return regressGeneLengths;
     }
+
+	public String getRun1BasePath() {
+		return run1BasePath.getPath();
+	}
+	
+	
 }

@@ -110,22 +110,22 @@ public class Depict2MainAnalysis {
 
         options.getIntermediateFolder().mkdir();
 
-        if (options.getMode() == Depict2Mode.RUN2) {
+        if (options.getMode() == Depict2Mode.STEP2) {
             LOGGER.info("Continuing previous analysis by loading gene p-values");
-            if (new File(options.getOutputBasePath() + "_genePvalues.dat").exists()) {
-                genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvalues");
-                genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvaluesNullGwas");
+            if (new File(options.getRun1BasePath()+ "_genePvalues.dat").exists()) {
+                genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
+                genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvaluesNullGwas");
 
                 // Always load to avoid nullpointers
-                geneMaxSnpZscore = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_geneMaxSnpScores");
-                geneMaxSnpZscoreNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
+                geneMaxSnpZscore = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_geneMaxSnpScores");
+                geneMaxSnpZscoreNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_geneMaxSnpZscoresNullGwas");
 
             } else {
-                LOGGER.fatal("Could not find gene pvalues at: " + options.getOutputBasePath() + "_genePvalues.dat");
+                LOGGER.fatal("Could not find gene pvalues at: " + options.getRun1BasePath() + "_genePvalues.dat");
                 LOGGER.fatal("First use --mode RUN to calculate gene p-values");
                 return;
             }
-            geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
+            geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getRun1BasePath() + "_geneVariantCount.txt", '\t');
             LOGGER.info("Gene p-values loaded");
             genes = IoUtils.readGenes(options.getGeneInfoFile());
             LOGGER.info("Loaded " + genes.size() + " genes");

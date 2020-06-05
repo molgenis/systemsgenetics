@@ -10,8 +10,8 @@ package nl.systemsgenetics.depict2;
  * @author patri
  */
 public enum Depict2Mode {
-	RUN,
-	RUN2,
+	STEP1,
+	STEP2,
 	CONVERT_TXT,
 	CONVERT_BIN,
 	CONVERT_EQTL,

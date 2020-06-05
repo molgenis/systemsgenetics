@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -163,7 +164,7 @@ public class PathwayEnrichments {
 		{
 			DoubleMatrixDataset<String, String> tmp = geneZscoresNullGwasCorrelation.duplicate();
 			tmp.normalizeColumns();
-			metaGenesPerArm = groupCorrelatedGenesPerChrArm(tmp, genePruningR, genes, sharedGenes,debugFolder, pathwayDatabase, hlaGenesToExclude);
+			metaGenesPerArm = groupCorrelatedGenesPerChrArm(tmp, genePruningR, genes, sharedGenes, debugFolder, pathwayDatabase, hlaGenesToExclude);
 		}
 
 		if (LOGGER.isDebugEnabled()) {
@@ -992,7 +993,6 @@ public class PathwayEnrichments {
 			//(2) identifie genes that have correlated correlation
 			//(3) prune gene correlation matrix
 			//DoubleMatrixDataset<String, String> correlationOfCorrelations = genePvaluesNullGwasGeneArmCorrelation.calculateCorrelationMatrix();
-
 			if (LOGGER.isDebugEnabled()) {
 				try {
 					genePvaluesNullGwasGeneArmCorrelation.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneCorrelationsForMetaGenes" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
@@ -1028,6 +1028,13 @@ public class PathwayEnrichments {
 			}
 
 			HashSet<MetaGene> metaGenesArmUnique = new HashSet<>(metaGenesArm.values());
+
+//			Iterator<MetaGene> iterator = metaGenesArmUnique.iterator();
+//			while (iterator.hasNext()) {
+//				if (iterator.next().getGeneCount() > 1) {
+//					iterator.remove();
+//				}
+//			}
 
 			synchronized (metaGenes) {
 				metaGenes.put(chrArm, metaGenesArmUnique);
