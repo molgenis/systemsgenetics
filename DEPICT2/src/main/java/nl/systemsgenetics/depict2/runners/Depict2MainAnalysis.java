@@ -215,7 +215,6 @@ public class Depict2MainAnalysis {
                     hlaGenes,
                     options.isIgnoreGeneCorrelations(),
                     options.getGenePruningR(),
-                    options.getGeneCorrelationWindow(),
                     options.getDebugFolder(),
                     options.getIntermediateFolder(),
                     options.isQuantileNormalizePermutations(),

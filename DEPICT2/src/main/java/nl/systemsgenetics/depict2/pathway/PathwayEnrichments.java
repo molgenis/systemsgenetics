@@ -81,7 +81,6 @@ public class PathwayEnrichments {
 			final HashSet<String> hlaGenesToExclude,
 			final boolean ignoreGeneCorrelations,
 			final double genePruningR,
-			final int geneCorrelationWindow,
 			final File debugFolder,
 			final File intermediateFolder,
 			final boolean quantileNormalizePermutations,
