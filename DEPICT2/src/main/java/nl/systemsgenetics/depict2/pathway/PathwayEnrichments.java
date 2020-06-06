@@ -310,7 +310,7 @@ public class PathwayEnrichments {
 					try {
 						if (this.ignoreGeneCorrelations) {
 							// Identity matrix, i.e. OLS
-							LOGGER.debug("Ignoring geOLSne correlations");
+							LOGGER.info("Ignoring geOLSne correlations");
 							geneInvCorMatrixSubsetMatrix = DoubleFactory2D.dense.identity(geneZscoresNullGwasSubsetGeneCorrelations.rows());
 						} else {
 							LOGGER.debug("Calculating correlation inverse");

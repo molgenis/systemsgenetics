@@ -43,7 +43,7 @@ import umcg.genetica.math.stats.ZScores;
  * @author patri
  */
 public class ExcelWriter {
-	
+
 	/**
 	 *
 	 * @param pathwayEnrichments
@@ -85,16 +85,16 @@ public class ExcelWriter {
 			XSSFSheet overviewSheet = (XSSFSheet) enrichmentWorkbook.createSheet("Overview");
 
 			for (PathwayEnrichments pathwayEnrichment : pathwayEnrichments) {
-				
+
 				PathwayDatabase pathwayDatabase = pathwayEnrichment.getPathwayDatabase();
-				
+
 				final PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayDatabase.getLocation() + ".colAnnotations.txt"));
 				final int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 				final DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
 				final DoubleMatrixDataset<String, String> databaseEnrichmentQvalues = pathwayEnrichment.getqValues();
 				final ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
 				//final int currentTraitCol = databaseEnrichment.getColIndex(trait);
-				
+
 				final double bonferroniCutoff = 0.05 / pathwayEnrichment.getNumberOfPathways();
 
 				final DoubleMatrix1D traitEnrichment = databaseEnrichmentZscores.getCol(trait);
@@ -171,15 +171,14 @@ public class ExcelWriter {
 					XSSFCell pvalueCell = row.createCell(2 + maxAnnotations, CellType.NUMERIC);
 					pvalueCell.setCellValue(pvalue);
 					pvalueCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
-					
+
 					XSSFCell qvalueCell = row.createCell(3 + maxAnnotations, CellType.NUMERIC);
 					qvalueCell.setCellValue(qvalue);
 					qvalueCell.setCellStyle(qvalue > 0 && qvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
-					
-					
+
 					XSSFCell bonferroniCell = row.createCell(4 + maxAnnotations, CellType.BOOLEAN);
 					bonferroniCell.setCellValue(pvalue <= bonferroniCutoff);
-					
+
 					XSSFCell fdrCell = row.createCell(5 + maxAnnotations, CellType.BOOLEAN);
 					fdrCell.setCellValue(qvalue <= 0.05);
 
@@ -237,42 +236,45 @@ public class ExcelWriter {
 				overviewSheet.autoSizeColumn(c);
 				overviewSheet.setColumnWidth(c, overviewSheet.getColumnWidth(c) + 1500);//compensate for with auto filter and inaccuracies
 			}
-			
+
 			overviewSheet.createRow(r++);
-			
+
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue("Used settings");
 			cell.setCellStyle(boldStyle);
-			
+
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue("Number of permutations used for FDR: " + options.getPermutationPathwayEnrichment());
-			
+
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue("Gene pruning r: " + options.getGenePruningR());
-			
+
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue("Force normal pathway scores: " + options.isForceNormalPathwayPvalues());
-			
+
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue("Force normal GWAS gene z-scores: " + options.isForceNormalGenePvalues());
-			
+
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue("Regress out gene lengths from GWAS gene z-scores: " + options.isRegressGeneLengths());
-			
+
+			if (options.isIgnoreGeneCorrelations()) {
+				row = overviewSheet.createRow(r++);
+				cell = row.createCell(0, CellType.STRING);
+				cell.setCellValue("Ignoring gene correlations: " + options.isRegressGeneLengths());
+			}
 
 			enrichmentWorkbook.write(new FileOutputStream(excelFile));
-			
 
 //			System.err.println("WARNING ONLY SAVING FIRST TRAIT TO EXCEL FOR DEBUGING");
 //			break;
-
 		}
 	}
-	
+
 }
