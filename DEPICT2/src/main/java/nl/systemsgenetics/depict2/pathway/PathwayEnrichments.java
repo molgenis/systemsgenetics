@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.IntStream;
@@ -162,7 +164,7 @@ public class PathwayEnrichments {
 		{
 			DoubleMatrixDataset<String, String> tmp = geneZscoresNullGwasCorrelation.duplicate();
 			tmp.normalizeColumns();
-			metaGenesPerArm = groupCorrelatedGenesPerChrArm(tmp, genePruningR, genes, sharedGenes, debugFolder, pathwayDatabase, hlaGenesToExclude);
+			metaGenesPerArm = groupCorrelatedGenesPerChrArm(tmp, genePruningR, genes, sharedGenes, debugFolder, pathwayDatabase.getName(), hlaGenesToExclude);
 		}
 
 		if (LOGGER.isDebugEnabled()) {
@@ -965,7 +967,7 @@ public class PathwayEnrichments {
 
 	}
 
-	private static HashMap<String, HashSet<MetaGene>> groupCorrelatedGenesPerChrArm(final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final double maxCorrelationBetweenGenes, final List<Gene> genes, final Set<String> includedGenes, final File debugFolder, final PathwayDatabase pathwayDatabase, final HashSet<String> hlaGenesToExclude) {
+		protected static HashMap<String, HashSet<MetaGene>> groupCorrelatedGenesPerChrArm(final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final double maxCorrelationBetweenGenes, final List<Gene> genes, final Set<String> includedGenes, final File debugFolder, final String pathwayDatabaseName, final HashSet<String> hlaGenesToExclude) {
 
 		HashMap<String, HashSet<MetaGene>> metaGenes = new HashMap<>();
 
@@ -994,7 +996,7 @@ public class PathwayEnrichments {
 			//DoubleMatrixDataset<String, String> correlationOfCorrelations = genePvaluesNullGwasGeneArmCorrelation.calculateCorrelationMatrix();
 			if (LOGGER.isDebugEnabled()) {
 				try {
-					genePvaluesNullGwasGeneArmCorrelation.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneCorrelationsForMetaGenes" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+					genePvaluesNullGwasGeneArmCorrelation.save(new File(debugFolder, pathwayDatabaseName + "_" + chrArm + "_Enrichment_geneCorrelationsForMetaGenes" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
 					//correlationOfCorrelations.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneCorrelationsOfCorrelationsForMetaGenes" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
 				} catch (IOException ex) {
 					throw new RuntimeException(ex);
@@ -1044,12 +1046,16 @@ public class PathwayEnrichments {
 		return metaGenes;
 	}
 
-	private static class MetaGene {
+	protected static class MetaGene {
 
 		final HashSet<String> genes = new HashSet<>();
 
 		public MetaGene(String gene) {
 			genes.add(gene);
+		}
+		
+		public MetaGene(String... genes) {
+			this.genes.addAll(Arrays.asList(genes));
 		}
 
 		public HashSet<String> getGenes() {
@@ -1072,12 +1078,36 @@ public class PathwayEnrichments {
 			return String.join("_", genes);
 		}
 
+		@Override
+		public int hashCode() {
+			return this.genes.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			final MetaGene other = (MetaGene) obj;
+			if (!Objects.equals(this.genes, other.genes)) {
+				return false;
+			}
+			return true;
+		}
+
+
 	}
 
 	/**
 	 * @param dataset with genes on rows
 	 */
-	private static DoubleMatrixDataset<String, String> collapseDatasetToMetaGenes(final DoubleMatrixDataset<String, String> dataset, final boolean zscoreSum, final Collection<HashSet<MetaGene>> metaGenes) {
+	protected static DoubleMatrixDataset<String, String> collapseDatasetToMetaGenes(final DoubleMatrixDataset<String, String> dataset, final boolean zscoreSum, final Collection<HashSet<MetaGene>> metaGenes) {
 
 		LinkedHashMap<String, Integer> metaGenesRows = new LinkedHashMap<>();
 
