@@ -103,4 +103,4 @@ collapse2[3,] <- apply(geneZscoresNullGwas[c(5,8),], 2, function(x){sum(x)/sqrt(
 collapse2[4,] <- apply(geneZscoresNullGwas[c(6,7),], 2, function(x){sum(x)/sqrt(length(x))})
 
   
-write.table(collapse1, file = "C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\DEPICT2\\src\\test\\resources\\mergedMetaGenes1.txt", quote = F, sep = "\t", col.names = NA)
+write.table(collapse2, file = "C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\DEPICT2\\src\\test\\resources\\mergedMetaGenes2.txt", quote = F, sep = "\t", col.names = NA)

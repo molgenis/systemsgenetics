@@ -221,7 +221,8 @@ public class Depict2MainAnalysis {
                     options.isRegressGeneLengths(),
                     geneMaxSnpZscore,
                     geneMaxSnpZscoreNullGwasCorrelation,
-                    geneMaxSnpZscoreNullGwasBetas
+                    geneMaxSnpZscoreNullGwasBetas,
+					options.getGeneCorrelationWindow()
             ));
         }
 
