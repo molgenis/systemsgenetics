@@ -9,16 +9,18 @@ import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
-import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
+import com.opencsv.CSVWriter;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -34,11 +36,9 @@ import nl.systemsgenetics.depict2.gene.Gene;
 import nl.systemsgenetics.depict2.gene.GenePathwayAssociationStatistic;
 import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
-import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
-import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
@@ -81,7 +81,6 @@ public class PathwayEnrichments {
 			final HashSet<String> hlaGenesToExclude,
 			final boolean ignoreGeneCorrelations,
 			final double genePruningR,
-			final int geneCorrelationWindow,
 			final File debugFolder,
 			final File intermediateFolder,
 			final boolean quantileNormalizePermutations,
@@ -139,7 +138,6 @@ public class PathwayEnrichments {
 			LOGGER.info("Regressing gene lengths and determining residuals");
 
 			// Determine (log10) gene lengths
-			LOGGER.info("Determining gene lengths");
 			final double[] geneLengths = new double[sharedGenes.size()];
 			int i = 0;
 			// Ensures the geneLength vector is in the same order as the matrices
@@ -164,10 +162,37 @@ public class PathwayEnrichments {
 		{
 			DoubleMatrixDataset<String, String> tmp = geneZscoresNullGwasCorrelation.duplicate();
 			tmp.normalizeColumns();
-			metaGenesPerArm = groupCorrelatedGenesPerChrArm(tmp, genePruningR, genes, sharedGenes);
+			metaGenesPerArm = groupCorrelatedGenesPerChrArm(tmp, genePruningR, genes, sharedGenes, debugFolder, pathwayDatabase, hlaGenesToExclude);
 		}
 
-		try (ProgressBar pb = new ProgressBar(pathwayDatabase.getName() + " enrichment analysis", metaGenesPerArm.size() + 6, ProgressBarStyle.ASCII)) {
+		if (LOGGER.isDebugEnabled()) {
+			final CSVWriter metaGeneWriter = new CSVWriter(new FileWriter(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_metaGenes.txt")), '\t', '\0', '\0', "\n");
+			final String[] outputLine = new String[3];
+			int c = 0;
+			outputLine[c++] = "MetaGeneId";
+			outputLine[c++] = "ChrArm";
+			outputLine[c++] = "Number of genes";
+			metaGeneWriter.writeNext(outputLine);
+
+			for (Map.Entry<String, HashSet<MetaGene>> metaGenesEntry : metaGenesPerArm.entrySet()) {
+				final String chrArm = metaGenesEntry.getKey();
+				final HashSet<MetaGene> metaGenes = metaGenesEntry.getValue();
+				for (MetaGene metaGene : metaGenes) {
+					c = 0;
+					outputLine[c++] = metaGene.getMetaGeneId();
+					outputLine[c++] = chrArm;
+					outputLine[c++] = String.valueOf(metaGene.getGeneCount());
+					metaGeneWriter.writeNext(outputLine);
+
+				}
+			}
+			metaGeneWriter.close();
+		}
+
+		final int numberTraits = geneZscores.columns();
+		final int numberTraitsNull = geneZscoresNullGwasNullBetas.columns();
+
+		try (ProgressBar pb = new ProgressBar(pathwayDatabase.getName() + " enrichment analysis", metaGenesPerArm.size() + numberTraits + numberTraits + numberTraitsNull + 3, ProgressBarStyle.ASCII)) {
 
 			// Collapse the gene p-values to these predefined metagenes
 			final DoubleMatrixDataset<String, String> geneZscoresPathwayMatched;
@@ -285,7 +310,7 @@ public class PathwayEnrichments {
 					try {
 						if (this.ignoreGeneCorrelations) {
 							// Identity matrix, i.e. OLS
-							LOGGER.debug("Ignoring geOLSne correlations");
+							LOGGER.info("Ignoring geOLSne correlations");
 							geneInvCorMatrixSubsetMatrix = DoubleFactory2D.dense.identity(geneZscoresNullGwasSubsetGeneCorrelations.rows());
 						} else {
 							LOGGER.debug("Calculating correlation inverse");
@@ -339,13 +364,11 @@ public class PathwayEnrichments {
 			final DoubleMatrixDataset<String, String> b2NullGwas = new DoubleMatrixDataset<>(geneZscoresNullGwasNullBetas.getHashCols(), genePathwayZscores.getHashCols());
 
 			// Combine the inverse gene-gene correlation matrix into one matrix
-			final DoubleMatrixDataset<String, String> fullInverseCorrelationMatrix = mergeCorrelationMatrices(inverseCorrelationMatrices.values());
-
+//			final DoubleMatrixDataset<String, String> fullInverseCorrelationMatrix = mergeCorrelationMatrices(inverseCorrelationMatrices.values());
 			// Make sure the oder of metagenes is the same
 			//TODO check if needed
-			fullInverseCorrelationMatrix.reorderRows(geneZscoresPathwayMatched.getHashRows());
-			fullInverseCorrelationMatrix.reorderCols(geneZscoresPathwayMatched.getHashRows());
-
+//			fullInverseCorrelationMatrix.reorderRows(geneZscoresPathwayMatched.getHashRows());
+//			fullInverseCorrelationMatrix.reorderCols(geneZscoresPathwayMatched.getHashRows());
 			// Combine the results per arm can be done in parallel over the 4 different matrices
 			for (DoubleMatrixDataset<String, String> b1Arm : b1PerArm) {
 				b1.getMatrix().assign(b1Arm.getMatrix(), cern.jet.math.tdouble.DoubleFunctions.plus);
@@ -396,98 +419,51 @@ public class PathwayEnrichments {
 			}
 
 			//Now calculate beta's and residuals		
-			final int numberTraits = geneZscoresPathwayMatched.columns();
 			final int df = geneZscoresPathwayMatched.rows() - 1;
 			final TDistribution tdist = new TDistribution(df);
 
 			for (int traitI = 0; traitI < numberTraits; ++traitI) {
 
-				final double b1Trait = b1.getElementQuick(traitI, 0);
+				final int traitIb = traitI;//to allow use in parralle loop it must be final
+				final double b1Trait = b1.getElementQuick(traitIb, 0);
 
 				final DoubleMatrixDataset<String, String> residuals = genePathwayZscores.duplicate();
 
-				for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
-					double beta = b2.getElementQuick(traitI, pathwayI) / b1Trait;
+				IntStream.range(0, numberOfPathways).parallel().forEach(pathwayI -> {
+					double beta = b2.getElementQuick(traitIb, pathwayI) / b1Trait;
 
-					betas.setElementQuick(pathwayI, traitI, beta);
+					betas.setElementQuick(pathwayI, traitIb, beta);
 
-					DoubleMatrix1D betaX = geneZscoresPathwayMatched.getCol(traitI).copy();
+					DoubleMatrix1D betaX = geneZscoresPathwayMatched.getCol(traitIb).copy();
 					betaX.assign(DoubleFunctions.mult(beta));
 
 					residuals.getCol(pathwayI).assign(betaX, DoubleFunctions.minus);
 
-				}
-
-				residuals.save(outputBasePath + "_residuals.txt");
-				betas.save(outputBasePath + "_betas.txt");
+				});
 
 				DoubleMatrixDataset<String, String> invCorXResiduals = new DoubleMatrixDataset<>(residuals.getHashRows(), residuals.getHashCols());
 
-				inverseCorrelationMatrices.entrySet().parallelStream().forEach((Map.Entry<String, DoubleMatrixDataset<String, String>> chrArmInvCor) -> {
+				inverseCorrelationMatrices.values().parallelStream().forEach((DoubleMatrixDataset<String, String> geneInvCorMatrixSubset) -> {
 
-					final String chrArm = chrArmInvCor.getKey();
-					DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = chrArmInvCor.getValue();
+					DoubleMatrix2D residualsSubset = residuals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
+					DoubleMatrix2D invCorXResidualsSubset = invCorXResiduals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
 
-					System.out.println("geneInvCorMatrixSubset " + geneInvCorMatrixSubset.rows() + " x " + geneInvCorMatrixSubset.columns());
-
-					DoubleMatrixDataset<String, String> residualsSubset = residuals.viewRowSelection(geneInvCorMatrixSubset.getRowObjects());
-					DoubleMatrixDataset<String, String> invCorXResidualsSubset = invCorXResiduals.viewRowSelection(geneInvCorMatrixSubset.getRowObjects());
-
-					geneInvCorMatrixSubset.getMatrix().zMult(residualsSubset.getMatrix(), invCorXResidualsSubset.getMatrix());
-
-					try {
-						geneInvCorMatrixSubset.save(debugFolder + chrArm + "geneInvCorMatrixSubset.txt");
-						residualsSubset.save(debugFolder + chrArm + "residualsSubset.txt");
-						invCorXResidualsSubset.save(debugFolder + chrArm + "invCorXResidualsSubset.txt");
-					} catch (IOException ex) {
-						throw new RuntimeException(ex);
-					}
+					geneInvCorMatrixSubset.getMatrix().zMult(residualsSubset, invCorXResidualsSubset);
 
 				});
 
-				invCorXResiduals.save(outputBasePath + "_invCorXResiduals.txt");
-
-				for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) { 
+				IntStream.range(0, numberOfPathways).parallel().forEach(pathwayI -> {
 
 					DoubleMatrix1D residualsPathway = residuals.getCol(pathwayI);
 					DoubleMatrix1D invCorXResiddualsPathway = invCorXResiduals.getCol(pathwayI);
 
-					
-					
-					
-
 					double sigmaSqr = (residualsPathway.zDotProduct(invCorXResiddualsPathway)) / df;
-
-					
 
 					double seBeta = Math.sqrt(sigmaSqr / b1Trait);
 
-					
-
 					// Determine pvalue
-					double beta = betas.getElementQuick(pathwayI, traitI);
+					double beta = betas.getElementQuick(pathwayI, traitIb);
 
-					
-
-					if(pathwayI == 0){
-						
-						System.out.println("beta: " + beta);
-						System.out.println("seBeta: " + seBeta);
-						System.out.println("df: " + df);
-						System.out.println("b1Trait: " + b1Trait);
-						System.out.println("sigmaSqr: " + sigmaSqr);
-						System.out.println("residuals length: " + residualsPathway.size());
-						System.out.println("invCorXResiddualsPathway length: " + invCorXResiddualsPathway.size());
-						
-						System.out.println();
-						System.out.println(residualsPathway.toString());
-						
-						
-						System.out.println("---------------");
-						System.out.println(invCorXResiddualsPathway.toString());
-								
-					}
-					
 					double tstatistic = Math.abs(beta) / seBeta;
 					double pvalue = tdist.cumulativeProbability(-tstatistic) * 2;
 					double zscore = ZScores.pToZTwoTailed(pvalue);
@@ -499,79 +475,50 @@ public class PathwayEnrichments {
 
 //					standardErrors.setElementQuick(pathwayI, traitI, seBeta);
 //					tStatistics.setElementQuick(pathwayI, traitI, tstatistic);
-					pValues.setElementQuick(pathwayI, traitI, pvalue);
-					zscores.setElementQuick(pathwayI, traitI, zscore);
+					pValues.setElementQuick(pathwayI, traitIb, pvalue);
+					zscores.setElementQuick(pathwayI, traitIb, zscore);
 
-				}
+				});
+
+				pb.step();
 
 			}
 
-			pb.step();
-
-//			// Betas for actual data
-//			LOGGER.debug("Calculating model coefficients for " + numberTraits);
-//
-//			for (int traitI = 0; traitI < numberTraits; ++traitI) {
-//				final double b1Trait = b1.getElementQuick(traitI, 0);
-//
-//				for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
-//					// Determine beta
-//					double beta = b2.getElementQuick(traitI, pathwayI) / b1Trait;
-//
-//					// Determine analytical pvalues
-//					GenePathwayAssociationStatistic curStat = determineGlsAnalyticalPvalues(beta,
-//							b1Trait,
-//							fullInverseCorrelationMatrix.getMatrix(),
-//							geneZscoresPathwayMatched.getCol(traitI),
-//							genePathwayZscores.getCol(pathwayI));
-//
-//					// TODO: Just make this one DoubleMatrixDataset
-//					betas.setElementQuick(pathwayI, traitI, beta);
-//					standardErrors.setElementQuick(pathwayI, traitI, curStat.getStandardError());
-//					tStatistics.setElementQuick(pathwayI, traitI, curStat.gettStatistic());
-//					pValues.setElementQuick(pathwayI, traitI, curStat.getAnalyticalPvalue());
-//					zscores.setElementQuick(pathwayI, traitI, curStat.getZscore());
-//				}
-//			}
 			LOGGER.debug("Done calculating model coefficients");
-
-			pb.step();
 
 			// Betas for null
 			LOGGER.debug("Calculating null beta's");
-			final int numberTraitsNull = geneZscoresNullGwasNullBetas.columns();
 
 			for (int traitI = 0; traitI < numberTraitsNull; ++traitI) {
+				final int traitIb = traitI;//to allow use in parralle loop it must be final
 				final double b1Trait = b1NullGwas.getElementQuick(traitI, 0);
 				final DoubleMatrixDataset<String, String> residuals = genePathwayZscores.duplicate();
 
-				for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
-					
-					double beta = b2NullGwas.getElementQuick(traitI, pathwayI) / b1Trait;
-					betasNull.setElementQuick(pathwayI, traitI, beta);
-					
-					DoubleMatrix1D betaX = geneZscoresNullGwasNullBetasPathwayMatched.getCol(traitI).copy();
+				IntStream.range(0, numberOfPathways).parallel().forEach(pathwayI -> {
+					//for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
+
+					double beta = b2NullGwas.getElementQuick(traitIb, pathwayI) / b1Trait;
+					betasNull.setElementQuick(pathwayI, traitIb, beta);
+
+					DoubleMatrix1D betaX = geneZscoresNullGwasNullBetasPathwayMatched.getCol(traitIb).copy();
 					betaX.assign(DoubleFunctions.mult(beta));
 
 					residuals.getCol(pathwayI).assign(betaX, DoubleFunctions.minus);
 
-				}
+				});
 
 				DoubleMatrixDataset<String, String> invCorXResiduals = new DoubleMatrixDataset<>(residuals.getHashRows(), residuals.getHashCols());
 
-				inverseCorrelationMatrices.entrySet().parallelStream().forEach((Map.Entry<String, DoubleMatrixDataset<String, String>> chrArmInvCor) -> {
+				inverseCorrelationMatrices.values().parallelStream().forEach((DoubleMatrixDataset<String, String> geneInvCorMatrixSubset) -> {
 
-					final String chrArm = chrArmInvCor.getKey();
-					DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = chrArmInvCor.getValue();
-					
-					DoubleMatrixDataset<String, String> residualsSubset = residuals.viewRowSelection(geneInvCorMatrixSubset.getRowObjects());
-					DoubleMatrixDataset<String, String> invCorXResidualsSubset = invCorXResiduals.viewRowSelection(geneInvCorMatrixSubset.getRowObjects());
+					DoubleMatrix2D residualsSubset = residuals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
+					DoubleMatrix2D invCorXResidualsSubset = invCorXResiduals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
 
-					geneInvCorMatrixSubset.getMatrix().zMult(residualsSubset.getMatrix(), invCorXResidualsSubset.getMatrix());
+					geneInvCorMatrixSubset.getMatrix().zMult(residualsSubset, invCorXResidualsSubset);
 
 				});
 
-				for (int pathwayI = 0; pathwayI < numberOfPathways; ++pathwayI) {
+				IntStream.range(0, numberOfPathways).parallel().forEach(pathwayI -> {
 
 					DoubleMatrix1D residualsPathway = residuals.getCol(pathwayI);
 					DoubleMatrix1D invCorXResiddualsPathway = invCorXResiduals.getCol(pathwayI);
@@ -581,29 +528,27 @@ public class PathwayEnrichments {
 					double seBeta = Math.sqrt(sigmaSqrt / b1Trait);
 
 					// Determine pvalue
-					double beta = betasNull.getElementQuick(pathwayI, traitI);
+					double beta = betasNull.getElementQuick(pathwayI, traitIb);
 					double tstatistic = Math.abs(beta) / seBeta;
 					double pvalue = tdist.cumulativeProbability(-tstatistic) * 2;
-//					double zscore = ZScores.pToZTwoTailed(pvalue);
 
-					// The zscore returned by pToZTwoTailed is always negative, therefore, match direction on beta
-//					if (beta > 0) {
-//						zscore = -zscore;
-//					}
-					pValuesNull.setElementQuick(pathwayI, traitI, pvalue);
+					pValuesNull.setElementQuick(pathwayI, traitIb, pvalue);
 
-				}
+				});
+
+				pb.step();
 
 			}
 			LOGGER.debug("Done calculating null pvalues");
 
-			pb.step();
-
 			qValues = pValues.duplicate();
 			final DoubleMatrix1D sortedNullPvalues = pValuesNull.getMatrix().vectorize().viewSorted();
+			final long permutedPvalues = sortedNullPvalues.size();
+			final long permutedPvaluesMin1 = permutedPvalues - 1; 
 			final double numberTraitsNullD = (double) numberTraitsNull;
 
-			for (int traitI = 0; traitI < numberTraits; ++traitI) {
+			IntStream.range(0, numberTraits).parallel().forEach(traitI -> {
+				//for (int traitI = 0; traitI < numberTraits; ++traitI) {
 
 				DoubleMatrix1D qValuesTraitSorted = qValues.viewCol(traitI).viewSorted();
 
@@ -614,7 +559,7 @@ public class PathwayEnrichments {
 					//initially qvalue matrix contains the pvaluess
 					final double currentP = qValuesTraitSorted.get(i);
 
-					while (indexNullPvalues <= sortedNullPvalues.size() && sortedNullPvalues.get(indexNullPvalues) <= currentP) {
+					while (indexNullPvalues < permutedPvaluesMin1 && sortedNullPvalues.get(indexNullPvalues + 1) <= currentP) {
 						indexNullPvalues++;
 					}
 
@@ -626,9 +571,15 @@ public class PathwayEnrichments {
 
 				}
 
-			}
+				for (int i = (int) qValuesTraitSorted.size() - 2; i >= 0; --i) {
+					if (qValuesTraitSorted.get(i) > qValuesTraitSorted.get(i + 1)) {
+						qValuesTraitSorted.set(i, qValuesTraitSorted.get(i + 1));
+					}
+				}
 
-			pb.step();
+				pb.step();
+
+			});
 
 			// Write output
 			betas.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
@@ -643,7 +594,7 @@ public class PathwayEnrichments {
 
 			// Save as txt to avoid having to convert them later
 			if (LOGGER.isDebugEnabled()) {
-				fullInverseCorrelationMatrix.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_inverseCorrelationMatrix.txt" : "_inverseCorrelationMatrixExHla.txt"));
+				//fullInverseCorrelationMatrix.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_inverseCorrelationMatrix.txt" : "_inverseCorrelationMatrixExHla.txt"));
 				geneZscoresPathwayMatched.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_geneZscoresPathwayMatched.txt" : "_geneZscoresPathwayMatchedExHla.txt"));
 				genePathwayZscores.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_genePathwayZscores.txt" : "_genePathwayZscoresExHla.txt"));
 			}
@@ -660,14 +611,14 @@ public class PathwayEnrichments {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("Gene length vector: " + geneLengths.length);
 			LOGGER.debug("Determining residuals for matrix of size: " + geneZscores.rows() + " x " + geneZscores.columns());
-
-			int maxColIdx = geneZscores.columns();
-			if (maxColIdx > 6) {
-				maxColIdx = 6;
-			}
-			geneZscores.viewSelection(
-					geneZscores.getRowObjects().subList(0, 10),
-					geneZscores.getColObjects().subList(0, maxColIdx)).printMatrix();
+//
+//			int maxColIdx = geneZscores.columns();
+//			if (maxColIdx > 6) {
+//				maxColIdx = 6;
+//			}
+//			geneZscores.viewSelection(
+//					geneZscores.getRowObjects().subList(0, 10),
+//					geneZscores.getColObjects().subList(0, maxColIdx)).printMatrix();
 		}
 
 		final DoubleMatrix2D geneZscoresMatrix = geneZscores.getMatrix();
@@ -689,16 +640,16 @@ public class PathwayEnrichments {
 			}
 		});
 
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("Determined residuals for matrix of size: " + geneZscores.rows() + " x " + geneZscores.columns());
-			int maxColIdx = geneZscores.columns();
-			if (maxColIdx > 6) {
-				maxColIdx = 6;
-			}
-			geneZscores.viewSelection(
-					geneZscores.getRowObjects().subList(0, 10),
-					geneZscores.getColObjects().subList(0, maxColIdx)).printMatrix();
-		}
+//		if (LOGGER.isDebugEnabled()) {
+//			LOGGER.debug("Determined residuals for matrix of size: " + geneZscores.rows() + " x " + geneZscores.columns());
+//			int maxColIdx = geneZscores.columns();
+//			if (maxColIdx > 6) {
+//				maxColIdx = 6;
+//			}
+//			geneZscores.viewSelection(
+//					geneZscores.getRowObjects().subList(0, 10),
+//					geneZscores.getColObjects().subList(0, maxColIdx)).printMatrix();
+//		}
 	}
 
 	/**
@@ -841,7 +792,6 @@ public class PathwayEnrichments {
 //	public final void clearZscoreCache() {
 //		enrichmentPvalues = null;
 //	}
-
 	private static void glsStep1(DoubleMatrixDataset<String, String> geneZscoresSubset, DoubleMatrix2D geneInvCorMatrix, DoubleMatrixDataset<String, String> genePathwayZscoresSubset, DoubleMatrixDataset<String, String> b1, DoubleMatrixDataset<String, String> b2) {
 
 		final int numberOfGenes = geneZscoresSubset.rows();
@@ -1015,7 +965,7 @@ public class PathwayEnrichments {
 
 	}
 
-	private static HashMap<String, HashSet<MetaGene>> groupCorrelatedGenesPerChrArm(final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final double maxCorrelationBetweenGenes, final List<Gene> genes, final Set<String> includedGenes) {
+	private static HashMap<String, HashSet<MetaGene>> groupCorrelatedGenesPerChrArm(final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final double maxCorrelationBetweenGenes, final List<Gene> genes, final Set<String> includedGenes, final File debugFolder, final PathwayDatabase pathwayDatabase, final HashSet<String> hlaGenesToExclude) {
 
 		HashMap<String, HashSet<MetaGene>> metaGenes = new HashMap<>();
 
@@ -1041,22 +991,30 @@ public class PathwayEnrichments {
 			//(1) create correlation matrix of correlations
 			//(2) identifie genes that have correlated correlation
 			//(3) prune gene correlation matrix
-			DoubleMatrixDataset<String, String> correlationOfCorrelations = genePvaluesNullGwasGeneArmCorrelation.calculateCorrelationMatrix();
+			//DoubleMatrixDataset<String, String> correlationOfCorrelations = genePvaluesNullGwasGeneArmCorrelation.calculateCorrelationMatrix();
+			if (LOGGER.isDebugEnabled()) {
+				try {
+					genePvaluesNullGwasGeneArmCorrelation.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneCorrelationsForMetaGenes" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+					//correlationOfCorrelations.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneCorrelationsOfCorrelationsForMetaGenes" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
+			}
 
 			rows:
-			for (int r = 0; r < correlationOfCorrelations.rows(); ++r) {
+			for (int r = 0; r < genePvaluesNullGwasGeneArmCorrelation.rows(); ++r) {
 
 				String currentGene = armGenesIds.get(r);
 
-				MetaGene currentMetaGene = new MetaGene(armGenesIds.get(r));
+				MetaGene currentMetaGene = new MetaGene(currentGene);
 				metaGenesArm.put(currentGene, currentMetaGene);
 
 				cols:
 				for (int c = 0; c < r; ++c) {
-					if (Math.abs(correlationOfCorrelations.getElementQuick(r, c)) >= maxCorrelationBetweenGenes) {
+					if (Math.abs(genePvaluesNullGwasGeneArmCorrelation.getElementQuick(r, c)) >= maxCorrelationBetweenGenes) {
 
 						//Never null because c < r
-						MetaGene otherMetaGene = metaGenesArm.get(armGenesIds.get(0));
+						MetaGene otherMetaGene = metaGenesArm.get(armGenesIds.get(c));
 						currentMetaGene.addOtherMetaGene(otherMetaGene);
 
 						for (String otherGene : otherMetaGene.getGenes()) {
@@ -1069,6 +1027,13 @@ public class PathwayEnrichments {
 			}
 
 			HashSet<MetaGene> metaGenesArmUnique = new HashSet<>(metaGenesArm.values());
+
+//			Iterator<MetaGene> iterator = metaGenesArmUnique.iterator();
+//			while (iterator.hasNext()) {
+//				if (iterator.next().getGeneCount() > 1) {
+//					iterator.remove();
+//				}
+//			}
 
 			synchronized (metaGenes) {
 				metaGenes.put(chrArm, metaGenesArmUnique);

@@ -90,7 +90,7 @@ public class Depict2 {
         }
 
         try {
-            FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() == Depict2Mode.RUN2);
+            FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() == Depict2Mode.STEP2);
             ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
             Logger.getRootLogger().removeAllAppenders();
             Logger.getRootLogger().addAppender(logFileAppender);
@@ -143,10 +143,10 @@ public class Depict2 {
                 case PTOZSCORE:
                     Depict2Converters.convertPvalueToZscore(options);
                     break;
-                case RUN:
+                case STEP1:
                     Depict2MainAnalysis.run(options);
                     break;
-                case RUN2:
+                case STEP2:
                     Depict2MainAnalysis.run2(options, null, null, null, null, null, null);
                     break;
                 case CORRELATE_GENES:
