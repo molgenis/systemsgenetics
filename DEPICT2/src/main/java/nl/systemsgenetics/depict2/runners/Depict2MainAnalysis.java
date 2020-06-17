@@ -118,8 +118,10 @@ public class Depict2MainAnalysis {
 		DoubleMatrixDataset<String, String> geneMaxSnpZscore = step1Res.getGeneMaxSnpZscore();
 		DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = step1Res.getGeneMaxSnpZscoreNullGwas();
 
-		List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
+		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
 		LOGGER.info("Loaded " + genes.size() + " genes");
+		
+		
 
 		// Identify genes with at least one variant in window
 		final HashSet<String> selectedGenes = new HashSet<>();
@@ -152,7 +154,7 @@ public class Depict2MainAnalysis {
 		final HashSet<String> hlaGenes;
 		if (options.isExcludeHla()) {
 			hlaGenes = new HashSet<>();
-			for (Gene gene : genes) {
+			for (Gene gene : genes.values()) {
 				if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
 					hlaGenes.add(gene.getGene());
 				}
