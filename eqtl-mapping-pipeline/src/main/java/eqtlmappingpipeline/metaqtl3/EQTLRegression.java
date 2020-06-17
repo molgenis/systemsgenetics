@@ -27,7 +27,7 @@ import java.util.stream.IntStream;
 public class EQTLRegression {
 
     public void regressOutEQTLEffects(ArrayList<Pair<String, String>> eqtls, TriTyperGeneticalGenomicsDataset[] gg) throws Exception {
-        regressOutEQTLEffects(eqtls, gg, false);
+        regressOutEQTLEffects(eqtls, gg, true);
     }
 
     public void regressOutEQTLEffects(ArrayList<Pair<String, String>> eqtls, TriTyperGeneticalGenomicsDataset[] gg, boolean useOLS) throws IOException {
@@ -49,7 +49,7 @@ public class EQTLRegression {
     }
 
     public void regressOutEQTLEffects(EQTL[] eqtls, TriTyperGeneticalGenomicsDataset[] gg) throws IOException {
-        regressOutEQTLEffects(eqtls, gg, false);
+        regressOutEQTLEffects(eqtls, gg, true);
     }
 
     public void regressOutEQTLEffects(EQTL[] eqtlsToRegressOut, TriTyperGeneticalGenomicsDataset[] gg, boolean useOLS) throws IOException {
@@ -63,15 +63,43 @@ public class EQTLRegression {
     }
 
     public void regressOutEQTLEffects(String regressOutEQTLEffectFileName, boolean outputfiles, TriTyperGeneticalGenomicsDataset[] gg) throws Exception {
-        regressOutEQTLEffects(regressOutEQTLEffectFileName, outputfiles, gg, false);
+        regressOutEQTLEffects(regressOutEQTLEffectFileName, outputfiles, gg, true);
     }
 
     public void regressOutEQTLEffects(String regressOutEQTLEffectFileName, boolean outputfiles, TriTyperGeneticalGenomicsDataset[] gg, boolean useOLS) throws Exception {
 
         System.out.println("\n\n\nRemoving eQTL effects from the following eQTL file: '" + regressOutEQTLEffectFileName);
-        QTLTextFile in = new QTLTextFile(regressOutEQTLEffectFileName, QTLTextFile.R);
-        EQTL[] eqtlsToRegressOut = in.read();
-        in.close();
+
+        // determine whether we're looking at an eQTL file or at a SNP/gene combo file
+        TextFile tf = new TextFile(regressOutEQTLEffectFileName, TextFile.R);
+        String[] elems = tf.readLineElems(TextFile.tab);
+        EQTL[] eqtlsToRegressOut = null;
+        if (elems != null && elems.length == 2) {
+            ArrayList<EQTL> toRegress = new ArrayList<>();
+            while (elems != null) {
+                EQTL e = new EQTL();
+                e.setProbe(elems[1]);
+                e.setRsName(elems[0]);
+                toRegress.add(e);
+                elems = tf.readLineElems(TextFile.tab);
+            }
+            eqtlsToRegressOut = toRegress.toArray(new EQTL[0]);
+        } else if (elems != null && elems.length > 2) {
+            // assume eqtl file
+            elems = tf.readLineElems(TextFile.tab); // skip header
+            ArrayList<EQTL> toRegress = new ArrayList<>();
+            while (elems != null) {
+                EQTL e = new EQTL();
+                e.setProbe(elems[4]);
+                e.setRsName(elems[1]);
+                toRegress.add(e);
+                elems = tf.readLineElems(TextFile.tab);
+            }
+            eqtlsToRegressOut = toRegress.toArray(new EQTL[0]);
+        }
+        tf.close();
+
+
         System.out.println("Number of eQTLs to regress out found in file:\t" + eqtlsToRegressOut.length);
         if (useOLS) {
             regressOLS(eqtlsToRegressOut, gg);

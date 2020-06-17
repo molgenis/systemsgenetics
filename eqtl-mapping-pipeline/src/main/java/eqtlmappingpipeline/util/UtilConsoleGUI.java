@@ -85,6 +85,7 @@ public class UtilConsoleGUI {
         boolean createLargeFdrFile = true;
         boolean stringentFDR = false;
         boolean sortsnps = true;
+        boolean vcf = false;
         String sources = null;
         String keyValuePairs = null;
         String annotationIds = null;
@@ -233,6 +234,8 @@ public class UtilConsoleGUI {
                 createLargeFdrFile = false;
             } else if (args[i].equals("--snpselectionlist")) {
                 snpfile = val;
+            } else if (args[i].equals("--vcf")) {
+                vcf = true;
             } else if (args[i].equals("--probeselectionlist")) {
                 probeselectionlist = val;
             } else if (args[i].equals("--snpprobeselectionlist")) {
@@ -265,10 +268,10 @@ public class UtilConsoleGUI {
                 switch (run) {
                     case CONVERTTRITYPERTOMATRIX:
                         if (settingsfile == null) {
-                            System.out.println("Usage: --tritypertomatrix --settings settings.xml");
+                            System.out.println("Usage: --tritypertomatrix --settings settings.xml [--vcf]");
                         } else {
                             TriTyperToDosageMatrix ttd = new TriTyperToDosageMatrix();
-                            ttd.run(settingsfile);
+                            ttd.run(settingsfile, vcf);
                         }
                         break;
                     case CONVERTBINARYMATRIX:

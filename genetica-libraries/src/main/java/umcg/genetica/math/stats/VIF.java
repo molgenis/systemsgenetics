@@ -12,10 +12,10 @@ public class VIF {
 	// assume covariates are on the columns!
 	public DoubleMatrixDataset<String, String> vifCorrect(DoubleMatrixDataset<String, String> finalCovariates, double threshold) throws Exception {
 
-		System.out.println("VIF: " + finalCovariates.rows() + " x " + finalCovariates.columns());
+//		System.out.println("VIF: " + finalCovariates.rows() + " x " + finalCovariates.columns());
 
 		// determine variance inflation factor
-		System.out.println("Checking variance inflation factor...");
+//		System.out.println("Checking variance inflation factor...");
 		HashSet<Integer> skipCol = new HashSet<>();
 		boolean inflated = true;
 		int iter = 0;
@@ -62,9 +62,9 @@ public class VIF {
 
 		iter = 1;
 		finalCovariates = excludeCols(finalCovariates, skipCol);
-		if (!skipCol.isEmpty()) {
-			System.out.println("There were problematic covariates. " + skipCol.size() + " covariates have been removed, " + (finalCovariates.columns()) + " remain.");
-		}
+//		if (!skipCol.isEmpty()) {
+//			System.out.println("There were problematic covariates. " + skipCol.size() + " covariates have been removed, " + (finalCovariates.columns()) + " remain.");
+//		}
 
 		while (inflated) {
 			skipCol = new HashSet<>();
@@ -96,10 +96,10 @@ public class VIF {
 					if (rsq > threshold) {
 						alias = true;
 						skipCol.add(col);
-						System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getColObjects().get(col) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
+						System.out.println("VIF check: Iteration: " + iter + "\tCovariate: " + finalCovariates.getColObjects().get(col) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
 						break;
 					} else {
-						System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getColObjects().get(col) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
+//						System.out.println("Iteration: " + iter + "\tCovariate: " + finalCovariates.getColObjects().get(col) + "\tRSq: " + rsq + "\tVIF: " + vif + "\tAliased: " + alias);
 					}
 				} catch (SingularMatrixException e) {
 					System.out.println("Iteration: " + iter + "\tVIF correction produces singular matrix, when evaluating: " + finalCovariates.getColObjects().get(col) + "\tIgnoring covariate for now.");
@@ -110,7 +110,7 @@ public class VIF {
 			}
 
 			if (skipCol.isEmpty()) {
-				System.out.println("There are no more collinear covariates. " + skipCol.size() + " covariates will be removed, " + (finalCovariates.columns() - skipCol.size()) + " remain.");
+				// System.out.println("There are no more collinear covariates. " + skipCol.size() + " covariates will be removed, " + (finalCovariates.columns() - skipCol.size()) + " remain.");
 				inflated = false;
 			} else {
 

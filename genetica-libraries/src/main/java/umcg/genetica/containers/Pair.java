@@ -5,7 +5,6 @@
 package umcg.genetica.containers;
 
 /**
- *
  * @author harm-jan taken from :
  * http://stackoverflow.com/questions/521171/a-java-collection-of-value-pairs-tuples
  */
@@ -44,6 +43,10 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
         this.sep = sep;
     }
 
+    public void setSorter(SORTBY s) {
+        this.sorter = s;
+    }
+
     public L getLeft() {
         return left;
     }
@@ -59,7 +62,13 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
 
     @Override
     public int hashCode() {
-        return left.hashCode() ^ right.hashCode();
+        if (sorter.equals(SORTBY.BOTH)) {
+            return left.hashCode() ^ right.hashCode();
+        } else if (sorter.equals(SORTBY.LEFT)) {
+            return this.left.hashCode();
+        } else {
+            return this.right.hashCode();
+        }
     }
 
     @Override
@@ -71,8 +80,15 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
             return false;
         }
         Pair pairo = (Pair) o;
-        return this.left.equals(pairo.getLeft())
-                && this.right.equals(pairo.getRight());
+        if (sorter.equals(SORTBY.BOTH)) {
+            return this.left.equals(pairo.getLeft())
+                    && this.right.equals(pairo.getRight());
+        } else if (sorter.equals(SORTBY.LEFT)) {
+            return this.left.equals(pairo.getLeft());
+        } else {
+            return this.right.equals(pairo.getRight());
+        }
+
     }
 
     @Override
