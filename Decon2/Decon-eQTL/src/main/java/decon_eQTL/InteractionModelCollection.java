@@ -273,10 +273,12 @@ public class InteractionModelCollection {
 				genotypeConfiguration.setCharAt(i, '1');
 				this.genotypeConfigurationsFullModel.add(genotypeConfiguration.toString());
 			}
-			for(int i = 0; i < celltypes.size(); ++i){
-				StringBuilder genotypeConfiguration = new StringBuilder(String.join("", Collections.nCopies(celltypes.size(), "1")));
-				genotypeConfiguration.setCharAt(i, '0');
-				this.genotypeConfigurationsFullModel.add(genotypeConfiguration.toString());
+			if(celltypes.size() > 2) {
+				for (int i = 0; i < celltypes.size(); ++i) {
+					StringBuilder genotypeConfiguration = new StringBuilder(String.join("", Collections.nCopies(celltypes.size(), "1")));
+					genotypeConfiguration.setCharAt(i, '0');
+					this.genotypeConfigurationsFullModel.add(genotypeConfiguration.toString());
+				}
 			}
 			
 			
