@@ -21,7 +21,7 @@ library('devtools')
 install_github("molgenis/systemsgenetics/Decon2/DeconCell")
 ```
 
-##Decon-eQTL
+## Decon-eQTL
 
 Download ```Decon-eQTL-v*.*.*-jar-with-dependencies.jar```.  
 Releases can be found here: [https://github.com/molgenis/systemsgenetics/releases/](https://github.com/molgenis/systemsgenetics/releases/)
