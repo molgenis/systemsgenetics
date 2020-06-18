@@ -176,10 +176,11 @@ heatmap3(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor, scale= "none", Rowv =
 
 tmp<-geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor
 diag(tmp) <- 0
-hist(tmp[tmp!=0], breaks = 100)
 range(tmp)
 
-det(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor)
+tmp2 <- cor(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor)
+diag(tmp) <- 0
+range(tmp)
 
 geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor[abs(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor) <= 0.01] <- 0
 
@@ -200,14 +201,3 @@ range(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor[rownames(ds_geneZscoresFo
 plot(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv[rownames(ds_invCorMatrix),colnames(ds_invCorMatrix)], ds_invCorMatrix)
 
 range(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv[rownames(ds_invCorMatrix_B),colnames(ds_invCorMatrix_B)] - ds_invCorMatrix_B)
-
-
-
-
-
-
-
-
-
-
-
