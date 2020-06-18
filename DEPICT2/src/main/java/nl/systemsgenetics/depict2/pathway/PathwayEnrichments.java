@@ -210,11 +210,11 @@ public class PathwayEnrichments {
 			if (forceNormalPathwayPvalues) {
 				LOGGER.debug("Doing force normal pathway scores");
 				genePathwayZscores = collapseDatasetToMetaGenes(pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes),
-						true,
+						false,
 						metaGenesPerArm.values()).createColumnForceNormalDuplicate();
 			} else {
 				genePathwayZscores = collapseDatasetToMetaGenes(pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes),
-						true,
+						false,
 						metaGenesPerArm.values());
 				LOGGER.debug("Center and scale pathway scores");
 			}
