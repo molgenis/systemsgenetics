@@ -324,6 +324,7 @@ public class PathwayEnrichments {
 					DenseDoubleAlgebra alg = new cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra();
 					LOGGER.info("Determinant: " + alg.det(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix()));
 					
+					//Set all values near 0 to zero
 					geneZscoresNullGwasSubsetGeneCorrelations.getMatrix().assign(new DoubleFunction() {
 						@Override
 						public double apply(double argument) {
