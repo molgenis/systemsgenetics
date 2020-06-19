@@ -43,7 +43,7 @@ rownames(ds_geneZscoresForCor) <- table_tmp[,1][[1]]
 rm(table_tmp)
 
 
-table_tmp <- read_delim("pheno_9_66/pheno_9_B_debugFiles/random_12_q_Enrichment_geneCor.txt", delim = "\t", quote = "")
+table_tmp <- read_delim("pheno_9_66/pheno_9_C_debugFiles/random_12_q_Enrichment_geneCor.txt", delim = "\t", quote = "")
 ds_random_12_q_Enrichment_geneCor <- as.matrix(table_tmp[,-1])
 rownames(ds_random_12_q_Enrichment_geneCor) <- table_tmp[,1][[1]]
 rm(table_tmp)
@@ -63,6 +63,9 @@ table_tmp <- read_delim("pheno_9_66/pheno_9_B_debugFiles/random_Enrichment_invCo
 ds_invCorMatrix_B <- as.matrix(table_tmp[,-1])
 rownames(ds_invCorMatrix_B) <- table_tmp[,1][[1]]
 rm(table_tmp)
+
+metaGenes <- read.delim(file = "pheno_9_66/pheno_9_C_debugFiles/random_Enrichment_metaGenes.txt", stringsAsFactors = F)
+metaGenes <- metaGenes[order(metaGenes$Start),]
 
 geneZscores <- qnorm((genePvalues/2))
 geneZscoresNullGwas <- qnorm((genePvaluesNullGwas/2))
@@ -90,7 +93,7 @@ rownames(geneMaxSnpZscoresNullGwasCorrScaled) <- rownames(geneZscoreNullGwasCorr
 geneMaxSnpZscoresNullGwasCorrCor <- cor(t(geneMaxSnpZscoresNullGwasCorrScaled))
 
 
-rThres <- 0.5
+rThres <- 0.8
 
 
 
@@ -170,30 +173,42 @@ range(geneMaxSnpZscoresNullGwasCorrScaledMetaScaled[rownames(ds_normalizedNullGw
 geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor <- cor(t(geneMaxSnpZscoresNullGwasCorrScaledMetaScaled))
 str(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor)
 
+det(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor)
+
 library(heatmap3)
 library(RColorBrewer)
-heatmap3(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+heatmap3(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor[metaGenes$MetaGeneId,metaGenes$MetaGeneId], scale= "none", Rowv = NA, Colv = NA, col = c("#FFFFFF", colorRampPalette( brewer.pal(9, "YlOrBr"))(79), rep("#000000", 20)))
+
 
 tmp<-geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor
 diag(tmp) <- 0
 hist(tmp[tmp!=0], breaks = 100)
 range(tmp)
 
+
+geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor[abs(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor) <= 0.1] <- 0
+ds_random_12_q_Enrichment_geneCor2 <- ds_random_12_q_Enrichment_geneCor
+ds_random_12_q_Enrichment_geneCor2[abs(ds_random_12_q_Enrichment_geneCor) <= 0.1] <- 0 
+
 det(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor)
+det(ds_random_12_q_Enrichment_geneCor)
+det(ds_random_12_q_Enrichment_geneCor2)
 
-geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor[abs(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor) <= 0.01] <- 0
 
-str(ds_random_12_q_Enrichment_geneCor)
+ str(ds_random_12_q_Enrichment_geneCor)
 str(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor)
 
 plot(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor[rownames(ds_random_12_q_Enrichment_geneCor), colnames(ds_random_12_q_Enrichment_geneCor)], ds_random_12_q_Enrichment_geneCor)
 range(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor[rownames(ds_random_12_q_Enrichment_geneCor), colnames(ds_random_12_q_Enrichment_geneCor)] - ds_random_12_q_Enrichment_geneCor)
 
-heatmap3(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+
+geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv <- solve(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor)
+
+heatmap3(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv[metaGenes$MetaGeneId,metaGenes$MetaGeneId], scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+
 heatmap3(ds_invCorMatrix[rownames(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv), colnames(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv)], scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
 heatmap3(ds_invCorMatrix_B[rownames(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv), colnames(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv)], scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
 
-geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv <- solve(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor)
 
 range(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCor[rownames(ds_geneZscoresForCor),colnames(ds_geneZscoresForCor)] - ds_random_12_q_Enrichment_geneCor)
 
@@ -206,8 +221,65 @@ range(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv[rownames(ds_invCorMatr
 
 
 
+numberRandomGwas=10000
+genesInArm=1000
+data <- matrix(rnorm(genesInArm*numberRandomGwas), ncol = genesInArm)
+corData <- cor(data)
+dim(corData)
+heatmap3(corData, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData)
+corDataInv <- solve(corData)
+
+
+
+corDataIdent <- diag(x=1, nrow = genesInArm)
+
+numberRandomGwas=50000
+genesInArm=100
+data <- matrix(rnorm(genesInArm*numberRandomGwas), ncol = genesInArm)
+corData <- cor(data)
+heatmap3(corData, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData)
+
+res3 <- solve(corData)
+heatmap3(res, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+
+corData2 <- corData
+corData2[corData <= 0.1] <- 0 
+heatmap3(corData2, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData2)
+
+res2 <- solve(corData2)
+
+resIdent <- solve(corDataIdent)
+
+plot(diag(res), diag(res2))
+plot(diag(resIdent), diag(res))
+plot(diag(resIdent), diag(res2))
+plot(diag(resIdent), diag(res3))
+cor.test(diag(res), diag(res2))
+
+hist(res)
+hist(res2)
+heatmap3(res2, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
 
 
 
 
 
+
+str(ds_random_12_q_Enrichment_geneCor)
+hist(ds_random_12_q_Enrichment_geneCor, breaks = 100)
+
+
+heatmap3(ds_random_12_q_Enrichment_geneCor, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+
+sum(diag(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv) <0)
+
+hist(diag(geneMaxSnpZscoresNullGwasCorrScaledMetaScaledCorInv))
+
+hist(ds_random_12_q_Enrichment_geneCor[ds_random_12_q_Enrichment_geneCor > 0.01], breaks = 100)
+
+det(ds_random_12_q_Enrichment_geneCor)
+
+sum(ds_random_12_q_Enrichment_geneCor[ds_random_12_q_Enrichment_geneCor <= 0.1] > 0)

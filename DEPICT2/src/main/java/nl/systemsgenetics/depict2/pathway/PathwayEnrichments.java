@@ -322,7 +322,7 @@ public class PathwayEnrichments {
 					}
 					// geneZscoresNullGwasSubsetGeneCorrelations = geneZscoresNullGwasCorrelationSubset.viewDice().calculateCorrelationMatrix();
 					DenseDoubleAlgebra alg = new cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra();
-					LOGGER.info("Determinant: " + alg.det(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix()));
+					LOGGER.info("Determinant: " + alg.det(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix()) + " " + chrArm);
 					
 					//Set all values near 0 to zero
 					geneZscoresNullGwasSubsetGeneCorrelations.getMatrix().assign(new DoubleFunction() {
@@ -337,7 +337,7 @@ public class PathwayEnrichments {
 					}
 					);
 					
-					LOGGER.info("Determinant after fix : " + alg.det(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix()));
+					LOGGER.info("Determinant after fix : " + alg.det(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix()) + " " + chrArm);
 					
 					
 					if (LOGGER.isDebugEnabled()) {
@@ -349,7 +349,7 @@ public class PathwayEnrichments {
 					// Make the inverse of the gene-gene correlation matrix
 					final DoubleMatrix2D geneInvCorMatrixSubsetMatrix;
 					try {
-						if (this.ignoreGeneCorrelations) {
+						if (this.ignoreGeneCorrelations ) {//|| chrArm.equals("11_q") || chrArm.equals("11_p")
 							// Identity matrix, i.e. OLS
 							LOGGER.info("Ignoring gene correlations and performing OLS");
 							geneInvCorMatrixSubsetMatrix = DoubleFactory2D.dense.identity(geneZscoresNullGwasSubsetGeneCorrelations.rows());
@@ -371,7 +371,7 @@ public class PathwayEnrichments {
 					inverseCorrelationMatrices.put(chrArm, geneInvCorMatrixSubset);
 
 					if (LOGGER.isDebugEnabled()) {
-						geneInvCorMatrixSubset.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor.txt").getAbsolutePath());
+							geneInvCorMatrixSubset.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor.txt").getAbsolutePath());
 					}
 					//final DoubleMatrixDataset<String, String> geneInvCorMatrixSubset = new DoubleMatrixDataset<>(geneInvCorMatrixSubsetMatrix, geneZscoresNullGwasNullBetasSubset.getHashRows(), geneZscoresNullGwasNullBetasSubset.getHashRows());
 					//geneInvCorMatrixSubset.save(outputBasePath + "_" + pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneInvCor.txt");
@@ -626,7 +626,6 @@ public class PathwayEnrichments {
 			});
 
 			// Write output
-			betas.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
 			//standardErrors.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_se" : "_seExHla"));
 			//pValues.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_analyticalPvals" : "_analyticalPvalsExHla"));
 			//betasNull.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_betas" : "_betasExHla"));
