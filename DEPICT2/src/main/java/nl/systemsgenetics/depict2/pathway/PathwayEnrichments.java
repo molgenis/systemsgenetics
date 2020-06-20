@@ -1097,7 +1097,7 @@ public class PathwayEnrichments {
 				minEigenValue = e.getRealEigenvalues().aggregate(DoubleFunctions.min, DoubleFunctions.identity);
 
 				
-			} while (minEigenValue <= 0.05 && (currentMaxCorrelationBetweenGenes -= 0.1) > 0);
+			} while (minEigenValue <= 0.5 && (currentMaxCorrelationBetweenGenes -= 0.05) > 0.00001);
 			
 			LOGGER.info("Min e: " + minEigenValue + " chr arm: " + chrArm + " current r" + currentMaxCorrelationBetweenGenes);
 			
