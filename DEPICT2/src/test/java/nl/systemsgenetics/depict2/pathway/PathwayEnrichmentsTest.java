@@ -105,7 +105,7 @@ public class PathwayEnrichmentsTest {
 			includedGenes.add(String.valueOf(g));
 		}
 
-		HashMap<String, HashSet<PathwayEnrichments.MetaGene>> metagenes = PathwayEnrichments.groupCorrelatedGenesPerChrArm(geneZscoresNullGwas, 0.9, genes, includedGenes, debugFolder, "NA", null);
+		HashMap<String, ArrayList<PathwayEnrichments.MetaGene>> metagenes = PathwayEnrichments.groupCorrelatedGenesPerChrArm(geneZscoresNullGwas, 0.9, genes, includedGenes, debugFolder, "NA", null);
 
 		Assert.assertTrue(metagenes.containsKey("1_q"));
 		Assert.assertTrue(metagenes.containsKey("1_p"));
@@ -113,10 +113,10 @@ public class PathwayEnrichmentsTest {
 		Assert.assertEquals(metagenes.get("1_q").size(), 2);
 		Assert.assertEquals(metagenes.get("1_p").size(), 2);
 
-		Assert.assertTrue(metagenes.get("1_q").contains(new MetaGene("1", "2", "4")));
-		Assert.assertTrue(metagenes.get("1_q").contains(new MetaGene("3")));
-		Assert.assertTrue(metagenes.get("1_p").contains(new MetaGene("5", "8")));
-		Assert.assertTrue(metagenes.get("1_p").contains(new MetaGene("6", "7")));
+		Assert.assertTrue(metagenes.get("1_q").contains(new MetaGene(0,0,"1", "2", "4")));
+		Assert.assertTrue(metagenes.get("1_q").contains(new MetaGene(0,0,"3")));
+		Assert.assertTrue(metagenes.get("1_p").contains(new MetaGene(0,0,"5", "8")));
+		Assert.assertTrue(metagenes.get("1_p").contains(new MetaGene(0,0,"6", "7")));
 
 		//Meta genes are okay, now test collapse
 		DoubleMatrixDataset<String, String> mergedMean = PathwayEnrichments.collapseDatasetToMetaGenes(geneZscoresNullGwas, false, metagenes.values());
@@ -128,7 +128,7 @@ public class PathwayEnrichmentsTest {
 		DoubleMatrixDataset<String, String> mergedZsum = PathwayEnrichments.collapseDatasetToMetaGenes(geneZscoresNullGwas, true, metagenes.values());
 
 		//view row to make sure order is the same
-		compareTwoMatrices(mergedZsum, mergedMetaGenesZscoreSumRef.viewRowSelection(mergedMean.getRowObjects()), 0.00001);
+		compareTwoMatrices(mergedZsum, mergedMetaGenesZscoreSumRef.viewRowSelection(mergedMean.getRowObjects()));
 		
 	}
 

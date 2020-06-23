@@ -21,258 +21,250 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
-
+import nl.systemsgenetics.depict2.Depict2Step1Results;
 
 /**
  * Runners for the main Depict 2 analysis.
  *
  */
 public class Depict2MainAnalysis {
-    
-    private static final Logger LOGGER = Logger.getLogger(Depict2MainAnalysis.class);
 
-    public static void run(Depict2Options options) throws IOException, Exception {
+	private static final Logger LOGGER = Logger.getLogger(Depict2MainAnalysis.class);
 
-        //Test here to prevent chrash after running for a while
-        if (!new File(options.getGwasZscoreMatrixPath() + ".dat").exists()) {
-            throw new FileNotFoundException("GWAS matrix does not exist at: " + options.getGwasZscoreMatrixPath() + ".dat");
-        }
+	public static Depict2Step1Results run(Depict2Options options) throws IOException, Exception {
 
-        final List<String> variantsInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
-        final List<String> phenotypesInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
+		//Test here to prevent chrash after running for a while
+		if (!new File(options.getGwasZscoreMatrixPath() + ".dat").exists()) {
+			throw new FileNotFoundException("GWAS matrix does not exist at: " + options.getGwasZscoreMatrixPath() + ".dat");
+		}
 
-        LOGGER.info("Number of phenotypes in GWAS matrix: " + Depict2.LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
-        LOGGER.info("Number of variants in GWAS matrix: " + Depict2.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
+		final List<String> variantsInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
+		final List<String> phenotypesInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
-        if (options.getVariantFilterFile() != null) {
-            HashSet<String> variantsToInclude = IoUtils.readVariantFilterFile(options.getVariantFilterFile());
+		LOGGER.info("Number of phenotypes in GWAS matrix: " + Depict2.LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
+		LOGGER.info("Number of variants in GWAS matrix: " + Depict2.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
 
-            Iterator<String> variantsInZscoreMatrixIt = variantsInZscoreMatrix.iterator();
-            while (variantsInZscoreMatrixIt.hasNext()) {
-                String variant = variantsInZscoreMatrixIt.next();
-                if (!variantsToInclude.contains(variant)) {
-                    variantsInZscoreMatrixIt.remove();
-                }
-            }
-            LOGGER.info("Number of variants after filtering on selected variants: " + Depict2.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
-        }
+		if (options.getVariantFilterFile() != null) {
+			HashSet<String> variantsToInclude = IoUtils.readVariantFilterFile(options.getVariantFilterFile());
 
-        RandomAccessGenotypeData referenceGenotypeData = IoUtils.loadGenotypes(options, variantsInZscoreMatrix);
+			Iterator<String> variantsInZscoreMatrixIt = variantsInZscoreMatrix.iterator();
+			while (variantsInZscoreMatrixIt.hasNext()) {
+				String variant = variantsInZscoreMatrixIt.next();
+				if (!variantsToInclude.contains(variant)) {
+					variantsInZscoreMatrixIt.remove();
+				}
+			}
+			LOGGER.info("Number of variants after filtering on selected variants: " + Depict2.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
+		}
 
-        LOGGER.info("Done loading genotype data");
+		RandomAccessGenotypeData referenceGenotypeData = IoUtils.loadGenotypes(options, variantsInZscoreMatrix);
 
-        List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
+		LOGGER.info("Done loading genotype data");
 
-        LOGGER.info("Loaded " + genes.size() + " genes");
+		List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
 
-        double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutationsRescue(), 500);
+		LOGGER.info("Loaded " + genes.size() + " genes");
 
-        LOGGER.info("Prepared reference null distribution with " + Depict2.LARGE_INT_FORMAT.format(randomChi2.length) + " values");
+		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutationsRescue(), 500);
 
-        File usedVariantsPerGeneFile = options.isSaveUsedVariantsPerGene() ? new File(options.getOutputBasePath() + "_usedVariantsPerGene.txt") : null;
+		LOGGER.info("Prepared reference null distribution with " + Depict2.LARGE_INT_FORMAT.format(randomChi2.length) + " values");
 
-        GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getNumberOfPermutationsRescue(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation(), options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getDebugFolder(), options.getVariantGeneLinkingFile(), usedVariantsPerGeneFile);
+		File usedVariantsPerGeneFile = options.isSaveUsedVariantsPerGene() ? new File(options.getOutputBasePath() + "_usedVariantsPerGene.txt") : null;
 
-        DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
-        DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
-        DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
-        DoubleMatrixDataset<String, String> geneMaxSnpZscore = gpc.getGeneMaxSnpZscore();
-        DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = gpc.getGeneMaxSnpZscoreNullGwas();
+		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getNumberOfPermutationsRescue(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation(), options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getDebugFolder(), options.getVariantGeneLinkingFile(), usedVariantsPerGeneFile);
 
-        genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
-        genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
-        geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
-        geneMaxSnpZscore.saveBinary(options.getOutputBasePath() + "_geneMaxSnpScores");
-        geneMaxSnpZscoreNullGwas.saveBinary(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
+		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
+		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
+		DoubleMatrixDataset<String, String> geneVariantCount = gpc.getGeneVariantCount();
+		DoubleMatrixDataset<String, String> geneMaxSnpZscore = gpc.getGeneMaxSnpZscore();
+		DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = gpc.getGeneMaxSnpZscoreNullGwas();
 
-        if (LOGGER.isDebugEnabled()) {
-            gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
-            gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
-        }
-        LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode RUN2 and exactly the same output path and genes file");
+		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
+		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
+		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+		geneMaxSnpZscore.saveBinary(options.getOutputBasePath() + "_geneMaxSnpScores");
+		geneMaxSnpZscoreNullGwas.saveBinary(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
 
-        if (options.getPathwayDatabases().isEmpty()) {
-            LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode RUN2 and exactly the same output path and genes file to continue");
-        } else {
-            run2(options, genePvalues, genePvaluesNullGwas, genes, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
-        }
-    }
+		if (LOGGER.isDebugEnabled()) {
+			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
+			gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
+		}
+		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode STEP2 and exactly the same output path and genes file");
 
-    /**
-     * @param options
-     * @param genePvalues
-     * @param genePvaluesNullGwas
-     * @param genes
-     * @throws IOException
-     * @throws Exception
-     */
-    public static void run2(Depict2Options options, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DoubleMatrixDataset<String, String> geneVariantCount, DoubleMatrixDataset<String, String> geneMaxSnpZscore, DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas) throws IOException, Exception {
+		return new Depict2Step1Results(genePvalues, genePvaluesNullGwas, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
+	}
 
-        options.getIntermediateFolder().mkdir();
+	/**
+	 * @param options
+	 * @param step1Res
+	 * @throws IOException
+	 * @throws Exception
+	 */
+	public static void run2(Depict2Options options, Depict2Step1Results step1Res) throws IOException, Exception {
 
-        if (options.getMode() == Depict2Mode.STEP2) {
-            LOGGER.info("Continuing previous analysis by loading gene p-values");
-            if (new File(options.getRun1BasePath()+ "_genePvalues.dat").exists()) {
-                genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
-                genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvaluesNullGwas");
+		options.getIntermediateFolder().mkdir();
 
-                // Always load to avoid nullpointers
-                geneMaxSnpZscore = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_geneMaxSnpScores");
-                geneMaxSnpZscoreNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_geneMaxSnpZscoresNullGwas");
+		if (options.getMode() == Depict2Mode.STEP2) {
+			LOGGER.info("Continuing previous analysis by loading gene p-values");
+			step1Res = Depict2Step1Results.loadFromDisk(options.getRun1BasePath());
+			LOGGER.info("Gene p-values loaded");
 
-            } else {
-                LOGGER.fatal("Could not find gene pvalues at: " + options.getRun1BasePath() + "_genePvalues.dat");
-                LOGGER.fatal("First use --mode RUN to calculate gene p-values");
-                return;
-            }
-            geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getRun1BasePath() + "_geneVariantCount.txt", '\t');
-            LOGGER.info("Gene p-values loaded");
-            genes = IoUtils.readGenes(options.getGeneInfoFile());
-            LOGGER.info("Loaded " + genes.size() + " genes");
-        }
+		}
 
-        // Identify genes with at least one variant in window
-        final HashSet<String> selectedGenes = new HashSet<>();
-        final ArrayList<String> allGenes = geneVariantCount.getRowObjects();
-        final int totalGeneCount = allGenes.size();
-        for (int g = 0; g < totalGeneCount; ++g) {
-            if (geneVariantCount.getElementQuick(g, 0) > 0) {
-                selectedGenes.add(allGenes.get(g));
-            }
-        }
+		DoubleMatrixDataset<String, String> genePvalues = step1Res.getGenePvalues();
+		DoubleMatrixDataset<String, String> genePvaluesNullGwas = step1Res.getGenePvaluesNullGwas();
+		DoubleMatrixDataset<String, String> geneVariantCount = step1Res.getGeneVariantCount();
+		DoubleMatrixDataset<String, String> geneMaxSnpZscore = step1Res.getGeneMaxSnpZscore();
+		DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = step1Res.getGeneMaxSnpZscoreNullGwas();
 
-        final DoubleMatrix2D matrix = genePvalues.getMatrix();
+		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+		LOGGER.info("Loaded " + genes.size() + " genes");
+		
+		
 
-        // Inplace convert gene p-values to z-scores
-        IntStream.range(0, matrix.rows()).parallel().forEach(r -> {
-            for (int c = 0; c < matrix.columns(); ++c) {
-                matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
-            }
-        });
+		// Identify genes with at least one variant in window
+		final HashSet<String> selectedGenes = new HashSet<>();
+		final ArrayList<String> allGenes = geneVariantCount.getRowObjects();
+		final int totalGeneCount = allGenes.size();
+		for (int g = 0; g < totalGeneCount; ++g) {
+			if (geneVariantCount.getElementQuick(g, 0) > 0) {
+				selectedGenes.add(allGenes.get(g));
+			}
+		}
 
-        DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
+		final DoubleMatrix2D matrix = genePvalues.getMatrix();
 
-        IntStream.range(0, matrixNull.rows()).parallel().forEach(r -> {
-            for (int c = 0; c < matrixNull.columns(); ++c) {
-                matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
-            }
-        });
+		// Inplace convert gene p-values to z-scores
+		IntStream.range(0, matrix.rows()).parallel().forEach(r -> {
+			for (int c = 0; c < matrix.columns(); ++c) {
+				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
+			}
+		});
 
-        LOGGER.info("Number of genes with atleast one variant in specified window: " + Depict2.LARGE_INT_FORMAT.format(selectedGenes.size()));
-        final HashSet<String> hlaGenes;
-        if (options.isExcludeHla()) {
-            hlaGenes = new HashSet<>();
-            for (Gene gene : genes) {
-                if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
-                    hlaGenes.add(gene.getGene());
-                }
-            }
-            LOGGER.info("Excluding " + hlaGenes.size() + " genes");
+		DoubleMatrix2D matrixNull = genePvaluesNullGwas.getMatrix();
 
-        } else {
-            hlaGenes = null;
-        }
+		IntStream.range(0, matrixNull.rows()).parallel().forEach(r -> {
+			for (int c = 0; c < matrixNull.columns(); ++c) {
+				matrixNull.setQuick(r, c, -ZScores.pToZTwoTailed(matrixNull.getQuick(r, c)));
+			}
+		});
 
-        final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
-        final int nrSampleToUseForCorrelation = options.getPermutationGeneCorrelations();
-        final int nrSamplesToUseForNullBetas = options.getPermutationPathwayEnrichment();
+		LOGGER.info("Number of genes with atleast one variant in specified window: " + Depict2.LARGE_INT_FORMAT.format(selectedGenes.size()));
+		final HashSet<String> hlaGenes;
+		if (options.isExcludeHla()) {
+			hlaGenes = new HashSet<>();
+			for (Gene gene : genes.values()) {
+				if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getStop() > 20000000 && gene.getStop() < 40000000))) {
+					hlaGenes.add(gene.getGene());
+				}
+			}
+			LOGGER.info("Excluding " + hlaGenes.size() + " genes");
 
-        final Set<String> nullGwasRuns = genePvaluesNullGwas.getHashCols().keySet();
-        if (nullGwasRuns.size() < (nrSampleToUseForCorrelation + nrSamplesToUseForNullBetas)) {
-            throw new Exception("Not enough null gwas runs: " + nullGwasRuns.size() + " < " + nrSampleToUseForCorrelation + " + " + nrSamplesToUseForNullBetas);
-        }
+		} else {
+			hlaGenes = null;
+		}
 
-        Iterator<String> nullGwasRunIterator = nullGwasRuns.iterator();
+		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+		final int nrSampleToUseForCorrelation = options.getPermutationGeneCorrelations();
+		final int nrSamplesToUseForNullBetas = options.getPermutationPathwayEnrichment();
 
-        final LinkedHashSet<String> sampleToUseForCorrelation = new LinkedHashSet<>(nrSampleToUseForCorrelation);
-        for (int i = 0; i < nrSampleToUseForCorrelation; ++i) {
-            sampleToUseForCorrelation.add(nullGwasRunIterator.next());
-        }
+		final Set<String> nullGwasRuns = genePvaluesNullGwas.getHashCols().keySet();
+		if (nullGwasRuns.size() < (nrSampleToUseForCorrelation + nrSamplesToUseForNullBetas)) {
+			throw new Exception("Not enough null gwas runs: " + nullGwasRuns.size() + " < " + nrSampleToUseForCorrelation + " + " + nrSamplesToUseForNullBetas);
+		}
 
-        final LinkedHashSet<String> samplesToUseForNullBetas = new LinkedHashSet<>(nrSamplesToUseForNullBetas);
-        for (int i = 0; i < nrSamplesToUseForNullBetas; ++i) {
-            samplesToUseForNullBetas.add(nullGwasRunIterator.next());
-        }
+		Iterator<String> nullGwasRunIterator = nullGwasRuns.iterator();
 
-        final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation = genePvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
-        final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas = genePvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
+		final LinkedHashSet<String> sampleToUseForCorrelation = new LinkedHashSet<>(nrSampleToUseForCorrelation);
+		for (int i = 0; i < nrSampleToUseForCorrelation; ++i) {
+			sampleToUseForCorrelation.add(nullGwasRunIterator.next());
+		}
 
-        final DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasCorrelation = geneMaxSnpZscoreNullGwas.viewColSelection(sampleToUseForCorrelation);
-        final DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasBetas = geneMaxSnpZscoreNullGwas.viewColSelection(samplesToUseForNullBetas);
+		final LinkedHashSet<String> samplesToUseForNullBetas = new LinkedHashSet<>(nrSamplesToUseForNullBetas);
+		for (int i = 0; i < nrSamplesToUseForNullBetas; ++i) {
+			samplesToUseForNullBetas.add(nullGwasRunIterator.next());
+		}
 
-        ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
-        for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-            pathwayEnrichments.add(new PathwayEnrichments(
-                    pathwayDatabase,
-                    selectedGenes,
-                    genes,
-                    options.isForceNormalPathwayPvalues(),
-                    options.isForceNormalGenePvalues(),
-                    genePvalues,
-                    geneZscoresNullGwasCorrelation,
-                    geneZscoresNullGwasNullBetas,
-                    options.getOutputBasePath(),
-                    hlaGenes,
-                    options.isIgnoreGeneCorrelations(),
-                    options.getGenePruningR(),
-                    options.getDebugFolder(),
-                    options.getIntermediateFolder(),
-                    options.isQuantileNormalizePermutations(),
-                    options.isRegressGeneLengths(),
-                    geneMaxSnpZscore,
-                    geneMaxSnpZscoreNullGwasCorrelation,
-                    geneMaxSnpZscoreNullGwasBetas
-            ));
-        }
+		final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelation = genePvaluesNullGwas.viewColSelection(sampleToUseForCorrelation);
+		final DoubleMatrixDataset<String, String> geneZscoresNullGwasNullBetas = genePvaluesNullGwas.viewColSelection(samplesToUseForNullBetas);
 
-        if (options.isSaveOuputAsExcelFiles()) {
-            ExcelWriter.saveEnrichmentsToExcel(pathwayEnrichments, options.getOutputBasePath(), genePvalues.getColObjects(), hlaGenes != null,options);
-        } else {
-            for (PathwayEnrichments pathwayEnrichment : pathwayEnrichments) {
-                //this will make sure z-scores are saved even if make excel is off
-                pathwayEnrichment.getEnrichmentZscores();
-            }
-        }
+		final DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasCorrelation = geneMaxSnpZscoreNullGwas.viewColSelection(sampleToUseForCorrelation);
+		final DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasBetas = geneMaxSnpZscoreNullGwas.viewColSelection(samplesToUseForNullBetas);
 
-        LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
+		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
+		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
+			pathwayEnrichments.add(new PathwayEnrichments(
+					pathwayDatabase,
+					selectedGenes,
+					genes,
+					options.isForceNormalPathwayPvalues(),
+					options.isForceNormalGenePvalues(),
+					genePvalues,
+					geneZscoresNullGwasCorrelation,
+					geneZscoresNullGwasNullBetas,
+					options.getOutputBasePath(),
+					hlaGenes,
+					options.isIgnoreGeneCorrelations(),
+					options.getGenePruningR(),
+					options.getDebugFolder(),
+					options.getIntermediateFolder(),
+					options.isQuantileNormalizePermutations(),
+					options.isRegressGeneLengths(),
+					geneMaxSnpZscore,
+					geneMaxSnpZscoreNullGwasCorrelation,
+					geneMaxSnpZscoreNullGwasBetas,
+					options.getGeneCorrelationWindow()
+			));
+		}
 
-    }
+		if (options.isSaveOuputAsExcelFiles()) {
+			ExcelWriter.saveEnrichmentsToExcel(pathwayEnrichments, options.getOutputBasePath(), genePvalues.getColObjects(), hlaGenes != null, options);
+		} else {
+			for (PathwayEnrichments pathwayEnrichment : pathwayEnrichments) {
+				//this will make sure z-scores are saved even if make excel is off
+				pathwayEnrichment.getEnrichmentZscores();
+			}
+		}
 
-    private static double[] generateRandomChi2(long numberOfPermutations, int numberOfVariantPerGeneToExpect) {
+		LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
 
-        final double[] randomChi2;
-        if ((numberOfPermutations * numberOfVariantPerGeneToExpect) > Integer.MAX_VALUE - 10) {
-            randomChi2 = new double[Integer.MAX_VALUE - 10];
-        } else {
-            randomChi2 = new double[numberOfVariantPerGeneToExpect * (int) numberOfPermutations];
-        }
+	}
 
-        final int randomChi2Size = randomChi2.length;
-        final int nrThreads = Depict2Options.getNumberOfThreadsToUse();
-        final int permPerThread = randomChi2Size / nrThreads;
-        final int leftoverPerm = randomChi2Size % nrThreads;
+	private static double[] generateRandomChi2(long numberOfPermutations, int numberOfVariantPerGeneToExpect) {
 
-        IntStream.range(0, nrThreads).parallel().forEach(task -> {
+		final double[] randomChi2;
+		if ((numberOfPermutations * numberOfVariantPerGeneToExpect) > Integer.MAX_VALUE - 10) {
+			randomChi2 = new double[Integer.MAX_VALUE - 10];
+		} else {
+			randomChi2 = new double[numberOfVariantPerGeneToExpect * (int) numberOfPermutations];
+		}
 
-            final ThreadLocalRandom rnd = ThreadLocalRandom.current();
-            double z;
-            for (int p = 0; p < permPerThread; ++p) {
-                z = rnd.nextGaussian();
-                randomChi2[(task * permPerThread) + p] = z * z;
-            }
+		final int randomChi2Size = randomChi2.length;
+		final int nrThreads = Depict2Options.getNumberOfThreadsToUse();
+		final int permPerThread = randomChi2Size / nrThreads;
+		final int leftoverPerm = randomChi2Size % nrThreads;
 
-        });
+		IntStream.range(0, nrThreads).parallel().forEach(task -> {
 
-        if (leftoverPerm > 0) {
-            final ThreadLocalRandom rnd = ThreadLocalRandom.current();
-            double z;
-            for (int p = 0; p < leftoverPerm; ++p) {
-                z = rnd.nextGaussian();
-                randomChi2[(nrThreads * permPerThread) + p] = z * z;
-            }
-        }
+			final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+			double z;
+			for (int p = 0; p < permPerThread; ++p) {
+				z = rnd.nextGaussian();
+				randomChi2[(task * permPerThread) + p] = z * z;
+			}
 
-        return randomChi2;
+		});
 
-    }
+		if (leftoverPerm > 0) {
+			final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+			double z;
+			for (int p = 0; p < leftoverPerm; ++p) {
+				z = rnd.nextGaussian();
+				randomChi2[(nrThreads * permPerThread) + p] = z * z;
+			}
+		}
+
+		return randomChi2;
+
+	}
 }

@@ -8,7 +8,7 @@ rotate <- function(x) t(apply(x, 2, rev))
 
 custom.gls <- function(x, y, Sigi) {
   x <- as.matrix(x, ncol=1)
-
+  
   # Calculated beta on pre-computed inverse matrix
   # xtxi = b1
   xtxi <- solve(t(x) %*% Sigi %*% x)
@@ -18,6 +18,7 @@ custom.gls <- function(x, y, Sigi) {
   # Calculate SE
   res       <- y - (x %*% beta)
   sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
+  #sigma.sqr <- (t(res) %*% res) / (nrow(x) - ncol(x))
   se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
 
   # Below commented code is uncorrect, does not scale the residuals to the correlation matrix
@@ -32,6 +33,26 @@ custom.gls <- function(x, y, Sigi) {
   #vcov      <- c(sigma.sqr) * solve(t(x) %*% xtxi %*% x )
   #se        <- sqrt(diag(vcov))
   
+  # Calculate p
+  tstats <- abs(beta / se)
+  pval <- 2 * pt(tstats, df=nrow(x)-1, lower=F)
+  return(c(beta, se, pval))
+}
+
+custom.gls.2 <- function(x, y, Sigi) {
+  x <- as.matrix(x, ncol=1)
+  
+  # Calculated beta on pre-computed inverse matrix
+  # xtxi = b1
+  xtxi <- solve(t(x) %*% Sigi %*% x)
+  #  part between brackets is b2
+  beta <- xtxi %*% (t(x) %*% Sigi %*% y)
+  
+  # Calculate SE
+  res       <- y - (x %*% beta)
+  #sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
+  sigma.sqr <- (sum(res^2)) / (nrow(x) - ncol(x))
+  se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
   # Calculate p
   tstats <- abs(beta / se)
   pval <- 2 * pt(tstats, df=nrow(x)-1, lower=F)
@@ -54,7 +75,7 @@ custom.gls.intercept <- function(x, y, Sigi) {ized
   # Below commented code is uncorrect, does not scale the residuals to the correlation matrix
   # Calculate p
   tstats <- abs(beta[2] / se[2])
-  pval <- 2 * pt(tstats, df=nrow(x)-2, lower=F)
+  pval <- 2 * pt(tstats, df=nrow(x)-1, lower=F)
   
   return(c(beta[1], se[1], beta[2], se[2], pval))
 }
@@ -65,6 +86,135 @@ custom.gls.per.arm <- function(x, y, Sigi) {
   return(c(b1, b2))
 }
 ```
+
+# LOADING: Gene gene correlation matrix
+```{r}
+path <- "~/Desktop/depict_gls_test/pheno_9_r0.8/"
+path <- "~/Desktop/depict_gls_test/pheno_9_r0.5/"
+
+path <- "~/Desktop/depict_gls_test/ibd/"
+trait <- "Coregulation"
+
+# Transformed gwas zscores (centered and scaled) for aggregated genes
+gwas <- data.frame(fread(paste0(path, trait, "_Enrichment_normalizedGwasGeneScores_ExHla.txt"), data.table = F), row.names = 1)
+
+# Cene coregulation zscores
+coreg <- data.frame(fread(paste0(path, trait, "_Enrichment_genePathwayZscoresExHla.txt"), data.table = F), row.names = 1)
+
+betas <- read.table(paste0(path, trait, "_Enrichment_betasExHla.txt"), row.names=1, header=T)
+
+#gene.cor.inv <- matrix(rep(0, nrow(gwas)^2), ncol=nrow(gwas), nrow=nrow(gwas))
+gene.cor <- matrix(rep(0, nrow(gwas)^2), ncol=nrow(gwas), nrow=nrow(gwas))
+gene.names <- c()
+#ident <- matrix(rep(0, nrow(gwas)^2), ncol=nrow(gwas), nrow=nrow(gwas))
+#diag(ident) <- 1
+index <- 1
+for (chr in 1:22) {
+  tmp.mat.q <- data.frame(fread(paste0(path, trait, "_", chr, "_q_Enrichment_geneCor.txt"), data.table = F), row.names = 1)
+
+  tmp.mat.p <- tryCatch({
+          tmp <- as.data.frame(fread(paste0(path, trait, "_", chr, "_p_Enrichment_geneCor.txt"), data.table = F))
+          rownames(tmp) <- tmp[,1]
+          tmp <- tmp[,-1, drop=F]
+          tmp
+        },
+        error=function(cond) {
+            return(NA)
+        })
+  tmp <- NULL
+
+  if (class(tmp.mat.p) == "data.frame") {
+      tmp.range <- index:((index + nrow(tmp.mat.p))-1)
+      gene.cor[tmp.range, tmp.range] <- as.matrix(tmp.mat.p)
+      #gene.cor.inv[tmp.range, tmp.range] <- solve(as.matrix(tmp.mat.p))
+
+      index <- index + nrow(tmp.mat.p)
+      gene.names <- c(gene.names, rownames(tmp.mat.p))
+  }
+  
+  tmp.range <- index:((index + nrow(tmp.mat.q))-1)
+  gene.cor[tmp.range, tmp.range] <- as.matrix(tmp.mat.q)
+  #gene.cor.inv[tmp.range, tmp.range] <- solve(as.matrix(tmp.mat.q))
+
+  index <- index + nrow(tmp.mat.q)
+  gene.names <- c(gene.names, rownames(tmp.mat.q))
+}
+
+rownames(gene.cor) <- gene.names
+colnames(gene.cor) <- gene.names
+#rownames(gene.cor.inv) <- gene.names
+#colnames(gene.cor.inv) <- gene.names
+gene.cor.inv <- solve(gene.cor)
+```
+
+# GLS
+```{r}
+gene.cor.inv <- gene.cor.inv[rownames(coreg), rownames(coreg)]
+
+results <- apply(coreg, 2, function(y){
+  custom.gls(gwas, y, gene.cor.inv)
+})
+
+results <- t(results)
+
+ol <- intersect(rownames(results), rownames(betas))
+plot(results[ol, 1], betas[ol, 1])
+
+# V2 without applying correlation matrix to residuals
+results.2 <- apply(coreg, 2, function(y){
+  custom.gls.2(gwas, y, gene.cor.inv)
+})
+
+results.2 <- t(results.2)
+hist(results[,3])
+
+actual <- custom.gls(gwas, coreg[,"randPheno8"], gene.cor.inv)
+rando <- custom.gls(gwas, coreg[,"randPheno9"], gene.cor.inv)
+
+# Linear model for reference
+results.lm <- apply(coreg, 2, function(y){
+  summary(lm(y ~ gwas[,1]))$coefficients[2,]
+})
+results.lm <- t(results.lm)
+
+
+# Cholesky
+x <- gwas[,1]
+y <- coreg[,"randPheno8"]
+c <- gene.cor[rownames(coreg), rownames(coreg)]
+
+C  <- chol(c)
+Ci <- solve(C)
+xi <- Ci %*% x
+
+
+# Linear model for reference
+results.chol <- apply(coreg, 2, function(y){
+  yi <- Ci %*% y
+  summary(lm(yi ~ xi))$coefficients[2,]
+})
+results.chol <- t(results.chol)
+
+
+m <- lm(yi ~ xi -1)
+summary(m)$coefficients
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# LEGACY code
+
 
 # LOADING: Data loading
 ```{r}
