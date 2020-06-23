@@ -248,9 +248,9 @@ public class ExcelWriter {
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue("Number of permutations used for FDR: " + options.getPermutationPathwayEnrichment());
 
-			row = overviewSheet.createRow(r++);
-			cell = row.createCell(0, CellType.STRING);
-			cell.setCellValue("Gene pruning r: " + options.getGenePruningR());
+//			row = overviewSheet.createRow(r++);
+//			cell = row.createCell(0, CellType.STRING);
+//			cell.setCellValue("Gene pruning r: " + options.getGenePruningR());
 
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
