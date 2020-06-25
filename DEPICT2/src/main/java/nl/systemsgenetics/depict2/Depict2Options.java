@@ -76,6 +76,7 @@ public class Depict2Options {
 	private final double mafFilter;
 	private final boolean quantileNormalizePermutations;
 	private final boolean regressGeneLengths;
+	private final boolean calculateEmpericalPvalues;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -323,6 +324,11 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("regress-gene-lengths");
 		OPTIONS.addOption(OptionBuilder.create("rgl"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Calculate emperical pvalues instead of FDR. ONLY FOR DEBUGGING");
+		OptionBuilder.withLongOpt("calculate-emperical-vpvalues");
+		OPTIONS.addOption(OptionBuilder.create("cep"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -355,6 +361,7 @@ public class Depict2Options {
 		saveUsedVariantsPerGene = commandLine.hasOption("uvg");
 		quantileNormalizePermutations = commandLine.hasOption("qn");
 		regressGeneLengths = commandLine.hasOption("rgl");
+		calculateEmpericalPvalues = commandLine.hasOption("cep");
 
 		run1BasePath = commandLine.hasOption("soo") ? new File(commandLine.getOptionValue("soo")) : outputBasePath;
 
@@ -1018,4 +1025,7 @@ public class Depict2Options {
 		return run1BasePath.getPath();
 	}
 
+	public boolean isCalculateEmpericalPvalues() {
+		return calculateEmpericalPvalues;
+	}
 }

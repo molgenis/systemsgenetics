@@ -213,7 +213,8 @@ public class Depict2MainAnalysis {
 					geneMaxSnpZscore,
 					geneMaxSnpZscoreNullGwasCorrelation,
 					geneMaxSnpZscoreNullGwasBetas,
-					options.getGeneCorrelationWindow()
+					options.getGeneCorrelationWindow(),
+					options.isCalculateEmpericalPvalues()
 			));
 		}
 
