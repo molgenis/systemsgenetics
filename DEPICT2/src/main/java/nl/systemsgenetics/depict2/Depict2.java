@@ -163,6 +163,9 @@ public class Depict2 {
 				case CORRELATE_GENES:
 					Depict2Utilities.correlateGenes(options);
 					break;
+				case R_2_Z_SCORE:
+					Depict2Utilities.convertRtoZscore(options);
+					break;
 				case TRANSPOSE:
 					Depict2Converters.tranposeBinMatrix(options);
 					break;

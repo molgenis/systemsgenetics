@@ -27,5 +27,6 @@ public enum Depict2Mode {
 	MERGE_BIN,
 	CORE_GENE_AUC,
 	INVESTIGATE_NETWORK,
+	R_2_Z_SCORE,
 	SPECIAL;
 }

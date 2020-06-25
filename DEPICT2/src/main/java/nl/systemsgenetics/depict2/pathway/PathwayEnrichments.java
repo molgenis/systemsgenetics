@@ -12,6 +12,7 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleSingularValueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
 import com.opencsv.CSVWriter;
 
@@ -327,8 +328,7 @@ public class PathwayEnrichments {
 					LOGGER.debug("Determinant: " + alg.det(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix()) + " " + chrArm);
 
 					//Set all values near 0 to zero
-					geneZscoresNullGwasSubsetGeneCorrelations.getMatrix().assign(new setNearZeroToZero(0.01));
-
+					//geneZscoresNullGwasSubsetGeneCorrelations.getMatrix().assign(new setNearZeroToZero(0.01));
 					LOGGER.debug("Determinant after fix : " + alg.det(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix()) + " " + chrArm);
 
 					if (LOGGER.isDebugEnabled()) {
@@ -346,7 +346,8 @@ public class PathwayEnrichments {
 							geneInvCorMatrixSubsetMatrix = DoubleFactory2D.dense.identity(geneZscoresNullGwasSubsetGeneCorrelations.rows());
 						} else {
 							LOGGER.debug("Calculating correlation inverse");
-							geneInvCorMatrixSubsetMatrix = new DenseDoubleAlgebra().inverse(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix());
+							geneInvCorMatrixSubsetMatrix = getPseudoInverseOfSquareMatrix(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix());
+							//geneInvCorMatrixSubsetMatrix = new DenseDoubleAlgebra().inverse(geneZscoresNullGwasSubsetGeneCorrelations.getMatrix());
 						}
 					} catch (Exception ex) {
 						LOGGER.fatal(pathwayDatabase.getName() + " " + chrArm + " number of genes: " + geneZscoresNullGwasSubsetGeneCorrelations.rows());
@@ -1045,62 +1046,59 @@ public class PathwayEnrichments {
 			HashSet<MetaGene> metaGenesArmUnique;
 			double currentMaxCorrelationBetweenGenes = maxCorrelationBetweenGenes;
 
-			do {
+			//do {
+			metaGenesArm.clear();
 
-				metaGenesArm.clear();
-				
-				rows:
-				for (int r = 0; r < genePvaluesNullGwasGeneArmCorrelation.rows(); ++r) {
+			rows:
+			for (int r = 0; r < genePvaluesNullGwasGeneArmCorrelation.rows(); ++r) {
 
-					String currentGene = armGenesIds.get(r);
+				String currentGene = armGenesIds.get(r);
 
-					if (!currentGene.equals(armGenes.get(r).getGene())) {
-						throw new RuntimeException("Internal error");
-					}
+				if (!currentGene.equals(armGenes.get(r).getGene())) {
+					throw new RuntimeException("Internal error");
+				}
 
-					MetaGene currentMetaGene = new MetaGene(currentGene, armGenes.get(r).getStart(), armGenes.get(r).getStop());
-					metaGenesArm.put(currentGene, currentMetaGene);
+				MetaGene currentMetaGene = new MetaGene(currentGene, armGenes.get(r).getStart(), armGenes.get(r).getStop());
+				metaGenesArm.put(currentGene, currentMetaGene);
 
-					cols:
-					for (int c = 0; c < r; ++c) {
-						if (Math.abs(genePvaluesNullGwasGeneArmCorrelation.getElementQuick(r, c)) >= currentMaxCorrelationBetweenGenes) {
+				cols:
+				for (int c = 0; c < r; ++c) {
+					if (Math.abs(genePvaluesNullGwasGeneArmCorrelation.getElementQuick(r, c)) >= currentMaxCorrelationBetweenGenes) {
 
-							//Never null because c < r
-							MetaGene otherMetaGene = metaGenesArm.get(armGenesIds.get(c));
-							currentMetaGene.addOtherMetaGene(otherMetaGene);
+						//Never null because c < r
+						MetaGene otherMetaGene = metaGenesArm.get(armGenesIds.get(c));
+						currentMetaGene.addOtherMetaGene(otherMetaGene);
 
-							for (String otherGene : otherMetaGene.getGenes()) {
-								metaGenesArm.put(otherGene, currentMetaGene);
-							}
-
+						for (String otherGene : otherMetaGene.getGenes()) {
+							metaGenesArm.put(otherGene, currentMetaGene);
 						}
+
 					}
-
 				}
 
-				metaGenesArmUnique = new HashSet<>(metaGenesArm.values());
+			}
 
-				ArrayList<ArrayList<MetaGene>> tmp = new ArrayList<>(1);
-				tmp.add(new ArrayList<>(metaGenesArmUnique));
+			metaGenesArmUnique = new HashSet<>(metaGenesArm.values());
 
-				DoubleMatrixDataset<String, String> x = collapseDatasetToMetaGenes(geneZscoresNullGwas.viewRowSelection(armGenesIds), false, tmp).viewDice().calculateCorrelationMatrix();
-				x.getMatrix().assign(new setNearZeroToZero(0.01));
+			ArrayList<ArrayList<MetaGene>> tmp = new ArrayList<>(1);
+			tmp.add(new ArrayList<>(metaGenesArmUnique));
 
-				try {
-					x.save(new File(debugFolder, pathwayDatabaseName + "_" + chrArm + "_Enrichment_test" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
-				} catch (IOException ex) {
-					throw new RuntimeException();
-				}
+			DoubleMatrixDataset<String, String> x = collapseDatasetToMetaGenes(geneZscoresNullGwas.viewRowSelection(armGenesIds), false, tmp).viewDice().calculateCorrelationMatrix();
+			//x.getMatrix().assign(new setNearZeroToZero(0.01));
 
-				DenseDoubleEigenvalueDecomposition e = new DenseDoubleEigenvalueDecomposition(x.getMatrix());
+			try {
+				x.save(new File(debugFolder, pathwayDatabaseName + "_" + chrArm + "_Enrichment_test" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+			} catch (IOException ex) {
+				throw new RuntimeException();
+			}
 
-				minEigenValue = e.getRealEigenvalues().aggregate(DoubleFunctions.min, DoubleFunctions.identity);
+			DenseDoubleEigenvalueDecomposition e = new DenseDoubleEigenvalueDecomposition(x.getMatrix());
 
-				
-			} while (minEigenValue <= 0.5 && (currentMaxCorrelationBetweenGenes -= 0.05) > 0.00001);
-			
-			LOGGER.info("Min e: " + minEigenValue + " chr arm: " + chrArm + " current r" + currentMaxCorrelationBetweenGenes);
-			
+			minEigenValue = e.getRealEigenvalues().aggregate(DoubleFunctions.min, DoubleFunctions.identity);
+
+			//} while (minEigenValue <= 0.5 && (currentMaxCorrelationBetweenGenes -= 0.05) > 0.00001);
+			LOGGER.info("Min e: " + minEigenValue + " chr arm: " + chrArm + " current r: " + currentMaxCorrelationBetweenGenes + " meta genes: " + metaGenesArmUnique.size());
+
 			synchronized (metaGenes) {
 				metaGenes.put(chrArm, new ArrayList<>(metaGenesArmUnique));
 			}
@@ -1357,6 +1355,36 @@ public class PathwayEnrichments {
 				return argument;
 			}
 		}
+	}
+
+	private static DoubleMatrix2D getPseudoInverseOfSquareMatrix(DoubleMatrix2D a) {
+
+		final DenseDoubleSingularValueDecomposition svd = new DenseDoubleSingularValueDecomposition(a, true, true);
+
+		double[] s = svd.getSingularValues();
+		final int numberOfComponents = s.length;
+
+		int firstNonPositive;
+		for (firstNonPositive = 0; firstNonPositive < numberOfComponents; ++firstNonPositive) {
+			if (s[firstNonPositive] < .5) {
+				break;
+			}
+		}
+
+		s = Arrays.copyOfRange(s, 0, firstNonPositive);
+
+		final DoubleMatrix2D v = svd.getV().viewPart(0, 0, numberOfComponents, firstNonPositive);
+		final DoubleMatrix2D ut = svd.getU().viewPart(0, 0, numberOfComponents, firstNonPositive).viewDice();
+
+		for (int r = 0; r < s.length; r++) {
+			final double x = 1 / s[r];
+			for (int c = 0; c < firstNonPositive; c++) {
+				ut.setQuick(r, c, x * ut.getQuick(r, c));
+			}
+		}
+
+		return v.zMult(ut, null);
+
 	}
 
 }
