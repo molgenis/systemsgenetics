@@ -77,6 +77,7 @@ public class Depict2Options {
 	private final boolean quantileNormalizePermutations;
 	private final boolean regressGeneLengths;
 	private final boolean calculateEmpericalPvalues;
+	private final int numberSamplesUsedForCor;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -99,6 +100,8 @@ public class Depict2Options {
 				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
 				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output"
 				+ "* CORRELATE_GENES - Create gene correlation matrix with 0 on diagnonal. Use --gwas as input matrix (genes on row, tab sepperated), --output and --genes. Optionally use --corZscore to create Z-score matrix"
+				+ "* R_2_Z_SCORE - Convert correlation matrix with r values to Z-score matrix. Must be used together with -ns"
+				+ "* MERGE_BIN - Merge multiple bin matrix on overlapping rows"
 		);
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
@@ -324,6 +327,12 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("regress-gene-lengths");
 		OPTIONS.addOption(OptionBuilder.create("rgl"));
 
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Only relevant for MODE: R_2_Z_SCORE to specify the number of samples used to create the correlation matrix");
+		OptionBuilder.withLongOpt("numberSamplesUsedForCor");
+		OPTIONS.addOption(OptionBuilder.create("ns"));
+
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Calculate emperical pvalues instead of FDR. ONLY FOR DEBUGGING");
 		OptionBuilder.withLongOpt("calculate-emperical-vpvalues");
@@ -384,7 +393,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE || mode == Depict2Mode.R_2_Z_SCORE) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -682,6 +691,20 @@ public class Depict2Options {
 				variantGeneLinkingFile = null;
 				mafFilter = 0;
 				break;
+		}
+
+		if(mode == Depict2Mode.R_2_Z_SCORE){
+			if (!commandLine.hasOption("ns")) {
+					throw new ParseException("--numberSamplesUsedForCor not specified");
+				} else {
+					try {
+						numberSamplesUsedForCor = Integer.parseInt(commandLine.getOptionValue("ns"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --numberSamplesUsedForCor \"" + commandLine.getOptionValue("ns") + "\" is not an int");
+					}
+				}
+		} else {
+			numberSamplesUsedForCor = 0;
 		}
 
 	}
@@ -1028,4 +1051,8 @@ public class Depict2Options {
 	public boolean isCalculateEmpericalPvalues() {
 		return calculateEmpericalPvalues;
 	}
+	public int getNumberSamplesUsedForCor() {
+		return numberSamplesUsedForCor;
+	}
+
 }

@@ -359,10 +359,11 @@ public class Depict2Converters {
 
     }
 
+	@SuppressWarnings("empty-statement")
     public static void mergeBinMatrix(Depict2Options options) throws IOException, Exception {
 
         BufferedReader inputReader = new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()));
-        LinkedHashSet<DoubleMatrixDatasetFastSubsetLoader> binMatrices = new LinkedHashSet();
+        ArrayList<DoubleMatrixDatasetFastSubsetLoader> binMatrices = new ArrayList();
         String line;
         while ((line = inputReader.readLine()) != null) {
             if (line.endsWith(".dat")) {
@@ -374,6 +375,8 @@ public class Depict2Converters {
         LinkedHashSet<String> mergedColNames = new LinkedHashSet<>(binMatrices.size());
         LinkedHashSet<String> rowNameIntersection = new LinkedHashSet<>();
 
+		int duplicateColNamesDetected = 0; 
+		
         for (DoubleMatrixDatasetFastSubsetLoader datasetLoader : binMatrices) {
             // Put the variant set in memory to avoid having to loop it later on
             if (rowNameIntersection.isEmpty()) {
@@ -386,19 +389,23 @@ public class Depict2Converters {
 
                 if (mergedColNames.contains(newCol)) {
                     int i = 1;
-                    while (mergedColNames.contains(newCol + "_" + ++i)) ;
+					duplicateColNamesDetected++;
+					//intentional empty while loop.
+                    while (mergedColNames.contains(newCol + "_" + ++i));
                     newCol = newCol + "_" + i;
                 }
                 mergedColNames.add(newCol);
             }
 
         }
+		
+		LOGGER.info("Duplicated col names: " + duplicateColNamesDetected + ". They are included in output file but with a suffix");
 
-        DoubleMatrixDataset<String, String> mergedData = new DoubleMatrixDataset<>(rowNameIntersection, mergedColNames);
+        final DoubleMatrixDataset<String, String> mergedData = new DoubleMatrixDataset<>(rowNameIntersection, mergedColNames);
 
         int mergedCol = 0;
         for (DoubleMatrixDatasetFastSubsetLoader datasetLoader : binMatrices) {
-            DoubleMatrixDataset<String, String> dataset = datasetLoader.loadSubsetOfRowsBinaryDoubleData(rowNameIntersection);
+            final DoubleMatrixDataset<String, String> dataset = datasetLoader.loadSubsetOfRowsBinaryDoubleData(rowNameIntersection);
 
             for (int c = 0; c < dataset.columns(); ++c) {
 
