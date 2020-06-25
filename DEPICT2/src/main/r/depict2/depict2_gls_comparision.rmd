@@ -283,14 +283,16 @@ betas <- read.table(paste0(path, trait, "_Enrichment_betasExHla.txt"), row.names
 
 a.pval <- read.table(paste0(path, trait, "_Enrichment_analyticalPvalsExHla.txt"), row.names=1, header=T)
 e.pval <- read.table(paste0(path, trait, "_Enrichment_empericalPvalesExHla.txt"), row.names=1, header=T)
-
+e.pval[e.pval > 0.5] <- NA
+e.pval <- e.pval * 2
 
 plot(-log10(a.pval[,1]), -log10(abs(e.pval[,1])), 
      xlim=c(0,6),
      ylim=c(0,6),
      xlab="Analytical pvalue",
      ylab="Emperical pvalue")
-abline(a=0, b=1, col="red")
+abline(a=0, b=1, col="red", lwd=2)
+abline(lm(-log10(abs(e.pval[,1])) ~ (-log10(a.pval[,1]))), col="blue", lwd=2)
 
 plot(-log10(a.pval[,1]), -log10(e.pval))
 
