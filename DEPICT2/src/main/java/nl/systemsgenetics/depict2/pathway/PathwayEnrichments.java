@@ -1086,10 +1086,12 @@ public class PathwayEnrichments {
 			DoubleMatrixDataset<String, String> x = collapseDatasetToMetaGenes(geneZscoresNullGwas.viewRowSelection(armGenesIds), false, tmp).viewDice().calculateCorrelationMatrix();
 			//x.getMatrix().assign(new setNearZeroToZero(0.01));
 
-			try {
-				x.save(new File(debugFolder, pathwayDatabaseName + "_" + chrArm + "_Enrichment_test" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
-			} catch (IOException ex) {
-				throw new RuntimeException();
+			if (LOGGER.isDebugEnabled()) {
+				try {
+					x.save(new File(debugFolder, pathwayDatabaseName + "_" + chrArm + "_Enrichment_test" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+				} catch (IOException ex) {
+					throw new RuntimeException();
+				}
 			}
 
 			DenseDoubleEigenvalueDecomposition e = new DenseDoubleEigenvalueDecomposition(x.getMatrix());
