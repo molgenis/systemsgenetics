@@ -92,7 +92,7 @@ path <- "~/Desktop/depict_gls_test/pheno_9_r0.8/"
 path <- "~/Desktop/depict_gls_test/pheno_9_r0.5/"
 
 path <- "~/Desktop/depict_gls_test/ibd_69/"
-path <- "~/Desktop/depict_gls_test/ibd_70/"
+path <- "~/Desktop/depict_gls_test/ibd_v70/"
 path <- "~/Desktop/depict_gls_test/pheno_9_v70//"
 
 trait <- "Coregulation"
@@ -101,7 +101,7 @@ trait <- "rando"
 # Transformed gwas zscores (centered and scaled) for aggregated genes
 gwas <- data.frame(fread(paste0(path, trait, "_Enrichment_normalizedGwasGeneScores_ExHla.txt"), data.table = F), row.names = 1)
 
-e.pval <- read.table(paste0(path, trait, "_Enrichment_empericalPvalesExHla.txt"), row.names=1, header=T)
+e.pvals <- read.table(paste0(path, trait, "_Enrichment_empericalPvalesExHla.txt"), row.names=1, header=T)
 
 a.pvals <- data.frame(fread(paste0(path, trait, "_Enrichment_analyticalPvalsExHla.txt"), data.table = F), row.names = 1)
 # Cene coregulation zscores
@@ -163,7 +163,7 @@ ibd.top50 <- colnames(coreg)
 gene.cor.inv <- gene.cor[rownames(coreg), rownames(coreg)]
 
 results <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
-  custom.gls(gwas, y, gene.cor.inv)
+  custom.gls(gwas, y, diag(length(y)))
 })
 
 results <- t(results)
@@ -182,6 +182,10 @@ results.2 <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
 
 results.2 <- t(results.2)
 
+#results.2 <- results.2[results.2[,3] > 1e-10,]
+#ol <- intersect(rownames(results.2), rownames(e.pvals))
+#plot(-log10(results.2[ol, 3]), -log10(e.pvals[ol, 1]))
+#abline(a=0, b=1)
 
 x <- -log10(results.2[ol, 3])
 y <- -log10(e.pval[ol, 1])
@@ -195,7 +199,6 @@ results.lm <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
   summary(lm(y ~ gwas[,1]))$coefficients[2,]
 })
 results.lm <- t(results.lm)
-
 
 x <- -log10(results.lm[ol, 4])
 y <- -log10(e.pval[ol, 1])
