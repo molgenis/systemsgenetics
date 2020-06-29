@@ -92,11 +92,18 @@ path <- "~/Desktop/depict_gls_test/pheno_9_r0.8/"
 path <- "~/Desktop/depict_gls_test/pheno_9_r0.5/"
 
 path <- "~/Desktop/depict_gls_test/ibd_69/"
+path <- "~/Desktop/depict_gls_test/ibd_70/"
+path <- "~/Desktop/depict_gls_test/pheno_9_v70//"
+
 trait <- "Coregulation"
+trait <- "rando"
 
 # Transformed gwas zscores (centered and scaled) for aggregated genes
 gwas <- data.frame(fread(paste0(path, trait, "_Enrichment_normalizedGwasGeneScores_ExHla.txt"), data.table = F), row.names = 1)
 
+e.pval <- read.table(paste0(path, trait, "_Enrichment_empericalPvalesExHla.txt"), row.names=1, header=T)
+
+a.pvals <- data.frame(fread(paste0(path, trait, "_Enrichment_analyticalPvalsExHla.txt"), data.table = F), row.names = 1)
 # Cene coregulation zscores
 coreg <- data.frame(fread(paste0(path, trait, "_Enrichment_genePathwayZscoresExHla.txt"), data.table = F), row.names = 1)
 
@@ -109,10 +116,10 @@ gene.names <- c()
 #diag(ident) <- 1
 index <- 1
 for (chr in 1:22) {
-  tmp.mat.q <- data.frame(fread(paste0(path, trait, "_", chr, "_q_Enrichment_geneCor.txt"), data.table = F), row.names = 1)
+  tmp.mat.q <- data.frame(fread(paste0(path, trait, "_", chr, "_q_Enrichment_geneInvCor.txt"), data.table = F), row.names = 1)
 
   tmp.mat.p <- tryCatch({
-          tmp <- as.data.frame(fread(paste0(path, trait, "_", chr, "_p_Enrichment_geneCor.txt"), data.table = F))
+          tmp <- as.data.frame(fread(paste0(path, trait, "_", chr, "_p_Enrichment_geneInvCor.txt"), data.table = F))
           rownames(tmp) <- tmp[,1]
           tmp <- tmp[,-1, drop=F]
           tmp
@@ -133,7 +140,7 @@ for (chr in 1:22) {
   
   tmp.range <- index:((index + nrow(tmp.mat.q))-1)
   gene.cor[tmp.range, tmp.range] <- as.matrix(tmp.mat.q)
-  #gene.cor.inv[tmp.range, tmp.range] <- solve(as.matrix(tmp.mat.q))
+ # gene.cor.inv[tmp.range, tmp.range] <- solve(as.matrix(tmp.mat.q))
 
   index <- index + nrow(tmp.mat.q)
   gene.names <- c(gene.names, rownames(tmp.mat.q))
@@ -143,14 +150,17 @@ rownames(gene.cor) <- gene.names
 colnames(gene.cor) <- gene.names
 #rownames(gene.cor.inv) <- gene.names
 #colnames(gene.cor.inv) <- gene.names
-gene.cor.inv <- solve(gene.cor)
+#gene.cor.inv <- solve(gene.cor)
 ```
 
 # GLS
 ```{r}
 ibd.top50 <- c("ENSG00000113263","ENSG00000198851","ENSG00000130592","ENSG00000100906","ENSG00000110848","ENSG00000163599","ENSG00000116824","ENSG00000140368","ENSG00000167286","ENSG00000111537","ENSG00000178562","ENSG00000118503","ENSG00000197629","ENSG00000197329","ENSG00000162924","ENSG00000125735","ENSG00000125538","ENSG00000109471","ENSG00000079335","ENSG00000160593","ENSG00000175387","ENSG00000163600","ENSG00000181847","ENSG00000144655","ENSG00000107331","ENSG00000164691","ENSG00000169554","ENSG00000161405","ENSG00000163874","ENSG00000183813","ENSG00000091157","ENSG00000160654","ENSG00000117091","ENSG00000155926","ENSG00000155307","ENSG00000198821","ENSG00000160185","ENSG00000174946","ENSG00000131669","ENSG00000145779","ENSG00000213809","ENSG00000172578","ENSG00000049249","ENSG00000138964","ENSG00000102879","ENSG00000134516","ENSG00000110448","ENSG00000164674","ENSG00000184588","ENSG00000169508")
 
-gene.cor.inv <- gene.cor.inv[rownames(coreg), rownames(coreg)]
+ibd.top50 <- colnames(coreg)
+
+#gene.cor.inv <- gene.cor.inv[rownames(coreg), rownames(coreg)]
+gene.cor.inv <- gene.cor[rownames(coreg), rownames(coreg)]
 
 results <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
   custom.gls(gwas, y, gene.cor.inv)
@@ -160,6 +170,10 @@ results <- t(results)
 
 ol <- intersect(rownames(results), rownames(betas))
 plot(results[ol, 1], betas[ol, 1])
+plot(-log10(results[ol, 3]), -log10(a.pvals[ol, 1]))
+
+plot(-log10(results[ol, 3]), -log10(e.pval[ol, 1]))
+abline(a=0, b=1)
 
 # V2 without applying correlation matrix to residuals
 results.2 <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
@@ -168,7 +182,13 @@ results.2 <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
 
 results.2 <- t(results.2)
 
-plot(results[, 3], results.2[, 3])
+
+x <- -log10(results.2[ol, 3])
+y <- -log10(e.pval[ol, 1])
+
+plot(x[x < 10],y[x < 10] )
+abline(a=0, b=1)
+abline(lm(y[x < 10] ~ x[x < 10]))
 
 # Linear model for reference
 results.lm <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
@@ -176,6 +196,13 @@ results.lm <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
 })
 results.lm <- t(results.lm)
 
+
+x <- -log10(results.lm[ol, 4])
+y <- -log10(e.pval[ol, 1])
+
+plot(x[x < 10],y[x < 10] )
+abline(a=0, b=1)
+abline(lm(y[x < 10] ~ x[x < 10]))
 
 # Cholesky
 x <- gwas[,1]
@@ -194,7 +221,7 @@ results.chol <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
 results.chol <- t(results.chol)
 
 
-par(mfrow=c(1,4))
+par(mfrow=c(1,2))
 plot(-log10(results[, 3]), -log10(results.2[, 3]), ylim=c(0,9), xlim=c(0,9),
      main="Current vs PDF method", xlab="Current impl", ylab="PDF method")
 abline(a=0, b=1)
@@ -226,6 +253,41 @@ abline(a=0, b=0, col="blue")
 abline(lm(y ~ x), col="red", lwd=2)
 
 ```
+
+
+# MASS test
+```{r}
+library(nlme)
+library(data.table)
+ibd.top50 <- "randPheno8"
+path <- "~/Desktop/depict_gls_test/pheno_9_v70//"
+
+trait <- "Coregulation"
+trait <- "rando"
+
+# Transformed gwas zscores (centered and scaled) for aggregated genes
+gwas <- data.frame(fread(paste0(path, trait, "_Enrichment_normalizedGwasGeneScores_ExHla.txt"), data.table = F), row.names = 1)
+
+e.pval <- read.table(paste0(path, trait, "_Enrichment_empericalPvalesExHla.txt"), row.names=1, header=T)
+
+a.pvals <- data.frame(fread(paste0(path, trait, "_Enrichment_analyticalPvalsExHla.txt"), data.table = F), row.names = 1)
+# Cene coregulation zscores
+coreg <- data.frame(fread(paste0(path, trait, "_Enrichment_genePathwayZscoresExHla.txt"), data.table = F), row.names = 1)
+
+betas <- read.table(paste0(path, trait, "_Enrichment_betasExHla.txt"), row.names=1, header=T)
+
+test <- coreg[,ibd.top50, drop=F]
+m <-   gls(yt ~ + xt, data=data.frame(yt=test[,1], xt=gwas[,1]), correlation=corSymm())
+
+results <- apply(coreg[,ibd.top50, drop=F], 2, function(y) {
+    summary(gls(y ~ x, data=data.frame(y=y[,1], x=gwas), correlation=corAR1()))
+})
+
+
+
+
+```
+
 
 
 # test
@@ -270,8 +332,12 @@ m.chol <- summary(lm(sy ~ sx-1))
 
 # Emperical vs analytical pvalues
 ```{r}
-path <- "~/Desktop/depict_gls_test/ibd_69/"
+path <- "~/Desktop/depict_gls_test/ibd_v70/"
 trait <- "Coregulation"
+trait <- "expression"
+
+path <- "~/Desktop/depict_gls_test/pheno_9_v70/"
+trait <- "rando"
 
 # Transformed gwas zscores (centered and scaled) for aggregated genes
 gwas <- data.frame(fread(paste0(path, trait, "_Enrichment_normalizedGwasGeneScores_ExHla.txt"), data.table = F), row.names = 1)
@@ -283,24 +349,33 @@ betas <- read.table(paste0(path, trait, "_Enrichment_betasExHla.txt"), row.names
 
 a.pval <- read.table(paste0(path, trait, "_Enrichment_analyticalPvalsExHla.txt"), row.names=1, header=T)
 e.pval <- read.table(paste0(path, trait, "_Enrichment_empericalPvalesExHla.txt"), row.names=1, header=T)
-e.pval[e.pval > 0.5] <- NA
-e.pval <- e.pval * 2
+re.pval <- read.table(paste0(path, trait, "_Enrichment_rankedEmpericalPvalesExHla.txt"), row.names=1, header=T)
+
 
 a.pval <- -log10(a.pval)
 e.pval <- -log10(e.pval)
+re.pval <- -log10(re.pval * 2)
+
 
 plot(a.pval[,1], e.pval[,1], 
-     xlim=c(0,6),
-     ylim=c(0,6),
+     xlim=c(0,10),
+     ylim=c(0,10),
      xlab="Analytical pvalue",
      ylab="Emperical pvalue")
 abline(a=0, b=1, col="red", lwd=2)
 abline(lm(e.pval[,1] ~ a.pval[,1]), col="blue", lwd=2)
 
-plot(-log10(a.pval[,1]), -log10(e.pval))
 
 
-  ```
+plot(re.pval[,1], e.pval[,1], 
+     xlim=c(0,10),
+     ylim=c(0,10),
+     xlab="Emperical pvalue",
+     ylab="Emperical pvalue normal dist")
+abline(a=0, b=1, col="red", lwd=2)
+abline(lm(e.pval[,1] ~ re.pval[,1]), col="blue", lwd=2)
+
+```
 
 
 

@@ -68,7 +68,6 @@ public class PathwayEnrichments {
     private final int numberOfPathways;
     private final File intermediateFolder;
 
-    // TODO: can be locals??
     private final Set<String> excludeGenes;
     //private final List<Gene> genes;
     private final String outputBasePath;
@@ -148,7 +147,6 @@ public class PathwayEnrichments {
             geneMaxSnpZscoreNullGwasBetas = geneMaxSnpZscoreNullGwasCorrelation.duplicate();
             LOGGER.warn("CURRENTLY USING CALCULATING EMPERICAL PVALS USING GENE CORRELATION SAMPLES. ONLY FOR DEBUGGING!!!");
             LOGGER.warn("ALL OUTPUT MARKED AS FDR WILL BE REPLACED WITH EMPERICAL PVALUES!!!");
-
         }
 
         if (LOGGER.isDebugEnabled()) {
@@ -533,8 +531,8 @@ public class PathwayEnrichments {
                         DoubleMatrix1D residualsPathway = residuals.getCol(pathwayI);
                         DoubleMatrix1D invCorXResiddualsPathway = invCorXResiduals.getCol(pathwayI);
 
-                        double sigmaSqrt = (residualsPathway.zDotProduct(invCorXResiddualsPathway)) / df;
-                        double seBeta = Math.sqrt(sigmaSqrt / b1Trait);
+                        double sigmaSqr = (residualsPathway.zDotProduct(invCorXResiddualsPathway)) / df;
+                        double seBeta = Math.sqrt(sigmaSqr / b1Trait);
 
                         // Determine pvalue
                         double beta = betasNull.getElementQuick(pathwayI, traitIb);
@@ -593,6 +591,8 @@ public class PathwayEnrichments {
                 });
             } else {
                 qValues = calculateEmpericalPvaluesUsingNull(betas, betasNull, false);
+                DoubleMatrixDataset<String, String> tmpEmpericalPvals = calculateEmpericalPvaluesUsingNull(betas, betasNull, true);
+                tmpEmpericalPvals.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_rankedEmpericalPvals.txt" : "_rankedEmpericalPvalesExHla.txt"));
             }
 
             // Write output
@@ -724,20 +724,15 @@ public class PathwayEnrichments {
         return new GenePathwayAssociationStatistic(beta, standardError, tstatistic, zscore, pvalue);
     }
 
-    public final DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
-        return zscores;
-    }
-
-    public DoubleMatrixDataset<String, String> getqValues() {
-        return qValues;
-    }
-
     /**
      * Calculates an emperical pvalue of a beta by estimating the mean and standard deviation from the null dist,
-     * and then using these parameters to estimate the pvalue for the true beta using a normal distribution
+     * and then using these parameters to estimate the pvalue for the true beta using a normal distribution or
+     * based on the rank of the real beta in the nullDist if rankBased = true. If so the max significance is
+     * the 0.5 / number of null permutations + 1
      *
-     * @param zscores
-     * @param nullBetas
+     * @param betas Matrix of actual betas to estimate pvalues from
+     * @param nullBetas Matrix of betas from null distribution
+     * @param rankBased Should pvalues be estimated using normal dist or using ranks directly
      * @return
      */
     private DoubleMatrixDataset<String, String> calculateEmpericalPvaluesUsingNull(DoubleMatrixDataset<String, String> betas,
@@ -797,14 +792,10 @@ public class PathwayEnrichments {
                     }
                     empericalPvalues.setElementQuick(r, c, (rank + 0.5) / (numberOfNullGwasPhenotypes + 1));
                 }
-
             }
-
         }
 
-
         return empericalPvalues;
-
     }
 
     @Deprecated
@@ -923,14 +914,6 @@ public class PathwayEnrichments {
 
         }
         return chrArmToGeneMapping;
-    }
-
-    public PathwayDatabase getPathwayDatabase() {
-        return pathwayDatabase;
-    }
-
-    public int getNumberOfPathways() {
-        return numberOfPathways;
     }
 
     private static LinkedHashSet<String> findUncorrelatedGenes(DoubleMatrixDataset<String, String> geneZscoresNullGwas, HashSet<String> genesWithPvalue, List<Gene> genes, double maxCorrelationBetweenGenes) {
@@ -1428,4 +1411,19 @@ public class PathwayEnrichments {
 
 	}
 
+    public PathwayDatabase getPathwayDatabase() {
+        return pathwayDatabase;
+    }
+
+    public int getNumberOfPathways() {
+        return numberOfPathways;
+    }
+
+    public final DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
+        return zscores;
+    }
+
+    public DoubleMatrixDataset<String, String> getqValues() {
+        return qValues;
+    }
 }
