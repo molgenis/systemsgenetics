@@ -9,6 +9,7 @@ deconvolution of expression quantitative trait loci ([Decon-eQTL](Decon-eQTL)) i
 # Installation
 
 ## Decon-cell
+
 In R do
 
 ```
@@ -20,10 +21,16 @@ library('devtools')
 install_github("molgenis/systemsgenetics/Decon2/DeconCell")
 ```
 
-##Decon-eQTL
-Download ```Decon-eQTL-v*.*.*-jar-with-dependencies.jar```.  
-Latest build can be found here: [Decon-eQTL/lastBuild](http://molgenis50.gcc.rug.nl/jenkins/job/systemsgenetics/Decon-eQTL$Decon-eQTL/lastBuild/).
+## Decon-eQTL
 
+Download ```Decon-eQTL-v*.*.*-jar-with-dependencies.jar```.  
+Releases can be found here: [https://github.com/molgenis/systemsgenetics/releases/](https://github.com/molgenis/systemsgenetics/releases/)
+
+Jar version that was used for the manuscript:
+
+Aguirre-Gamboa, Raúl, et al. "Deconvolution of bulk blood eQTL effects into immune cell subpopulations." BMC Bioinformatics 21.1 (2020): 1-23.
+
+can be found here: [https://github.com/molgenis/systemsgenetics/releases/download/v1.3/Decon-eQTL-v1.3.0-jar-with-dependencies.jar](https://github.com/molgenis/systemsgenetics/releases/download/v1.3/Decon-eQTL-v1.3.0-jar-with-dependencies.jar)
 
 # Example run
 
@@ -145,3 +152,6 @@ A file called ```deconvolutionResults.csv``` will be written to ```example_outpu
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
 ENSG00000103855\_snp_244	|0.8754	|1.0	|0.9855	|1.0	|0.8801	|1.0	|0.0	|0.0	|0.0	|0.0	|0.1954	|0.0	|-0.0083	|0.0	|-0.0014	|0.0	|0.0581	|0.0
 
+## Please cite the following article when using Decon2 (Decon-eQTL and/or Decon-cell): 
+
+Aguirre-Gamboa, Raúl, et al. "Deconvolution of bulk blood eQTL effects into immune cell subpopulations." BMC Bioinformatics 21.1 (2020): 1-23.
