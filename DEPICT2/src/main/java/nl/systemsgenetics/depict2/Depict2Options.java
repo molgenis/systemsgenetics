@@ -60,6 +60,7 @@ public class Depict2Options {
 	private final boolean correctForLambdaInflation;
 	private final int permutationPathwayEnrichment;
 	private final int permutationGeneCorrelations;
+	private final int permutationFDR;
 	private final boolean ignoreGeneCorrelations;
 	private final double genePruningR;
 	private final boolean forceNormalGenePvalues;
@@ -76,7 +77,6 @@ public class Depict2Options {
 	private final double mafFilter;
 	private final boolean quantileNormalizePermutations;
 	private final boolean regressGeneLengths;
-	private final boolean calculateEmpericalPvalues;
 	private final int numberSamplesUsedForCor;
 
 	public boolean isDebugMode() {
@@ -257,6 +257,12 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("permutationPathwayEnrichment");
 		OPTIONS.addOption(OptionBuilder.create("ppe"));
 
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Number of random phenotypes to use to determine null distribution for FDR calculation");
+		OptionBuilder.withLongOpt("permutationFDR");
+		OPTIONS.addOption(OptionBuilder.create("pfdr"));
+
 		OptionBuilder.withArgName("double");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Exclude correlated genes in pathway enrichments");
@@ -333,11 +339,6 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("numberSamplesUsedForCor");
 		OPTIONS.addOption(OptionBuilder.create("ns"));
 
-		OptionBuilder.withArgName("boolean");
-		OptionBuilder.withDescription("Calculate emperical pvalues instead of FDR. ONLY FOR DEBUGGING");
-		OptionBuilder.withLongOpt("calculate-emperical-vpvalues");
-		OPTIONS.addOption(OptionBuilder.create("cep"));
-
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -370,8 +371,6 @@ public class Depict2Options {
 		saveUsedVariantsPerGene = commandLine.hasOption("uvg");
 		quantileNormalizePermutations = commandLine.hasOption("qn");
 		regressGeneLengths = commandLine.hasOption("rgl");
-		calculateEmpericalPvalues = commandLine.hasOption("cep");
-
 		run1BasePath = commandLine.hasOption("soo") ? new File(commandLine.getOptionValue("soo")) : outputBasePath;
 
 		if (quantileNormalizePermutations && forceNormalGenePvalues) {
@@ -438,6 +437,15 @@ public class Depict2Options {
 						throw new ParseException("Error parsing --permutationPathwayEnrichment \"" + commandLine.getOptionValue("ppe") + "\" is not an int");
 					}
 				}
+				if (!commandLine.hasOption("pfdr")) {
+					throw new ParseException("--permutationFDR not specified");
+				} else {
+					try {
+						permutationFDR = Integer.parseInt(commandLine.getOptionValue("pfdr"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutationFDR \"" + commandLine.getOptionValue("pfdr") + "\" is not an int");
+					}
+				}
 				if (!commandLine.hasOption("gpr")) {
 					throw new ParseException("--genePruningR not specified");
 				} else {
@@ -473,6 +481,7 @@ public class Depict2Options {
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				break;
@@ -480,6 +489,7 @@ public class Depict2Options {
 				pathwayDatabases = parsePd(commandLine);
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneInfoFile = null;
 				geneCorrelationWindow = 0;
@@ -493,6 +503,7 @@ public class Depict2Options {
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				break;
@@ -505,6 +516,7 @@ public class Depict2Options {
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneInfoFile = null;
 				geneCorrelationWindow = 0;
@@ -1048,11 +1060,11 @@ public class Depict2Options {
 		return run1BasePath.getPath();
 	}
 
-	public boolean isCalculateEmpericalPvalues() {
-		return calculateEmpericalPvalues;
-	}
 	public int getNumberSamplesUsedForCor() {
 		return numberSamplesUsedForCor;
 	}
 
+	public int getPermutationFDR() {
+		return permutationFDR;
+	}
 }

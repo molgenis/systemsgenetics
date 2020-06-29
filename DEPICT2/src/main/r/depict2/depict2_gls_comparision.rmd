@@ -34,7 +34,7 @@ custom.gls <- function(x, y, Sigi) {
   
   # Calculate p
   tstats <- abs(beta / se)
-  pval <- 2 * pt(tstats, df=nrow(x)-1, lower=F)
+  pval <- 2 * pt(tstats, df=nrow(x) - 1, lower=F)
   return(c(beta, se, pval))
 }
 
@@ -172,7 +172,7 @@ ol <- intersect(rownames(results), rownames(betas))
 plot(results[ol, 1], betas[ol, 1])
 plot(-log10(results[ol, 3]), -log10(a.pvals[ol, 1]))
 
-plot(-log10(results[ol, 3]), -log10(e.pval[ol, 1]))
+plot(-log10(results[ol, 3]), -log10(e.pvals[ol, 1]))
 abline(a=0, b=1)
 
 # V2 without applying correlation matrix to residuals
