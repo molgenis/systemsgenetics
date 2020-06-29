@@ -271,7 +271,7 @@ public class UtilConsoleGUI {
                             System.out.println("Usage: --tritypertomatrix --settings settings.xml [--vcf]");
                         } else {
                             TriTyperToDosageMatrix ttd = new TriTyperToDosageMatrix();
-                            ttd.run(settingsfile, vcf);
+                            ttd.run(settingsfile, vcf, false);
                         }
                         break;
                     case CONVERTBINARYMATRIX:

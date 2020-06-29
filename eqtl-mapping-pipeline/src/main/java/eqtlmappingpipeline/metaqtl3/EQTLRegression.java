@@ -4,6 +4,8 @@
  */
 package eqtlmappingpipeline.metaqtl3;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import org.apache.commons.math3.linear.SingularMatrixException;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import umcg.genetica.console.MultiThreadProgressBar;
@@ -12,6 +14,7 @@ import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.*;
 import umcg.genetica.math.PCA;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
+import umcg.genetica.math.stats.Descriptives;
 import umcg.genetica.math.stats.Regression;
 import umcg.genetica.math.stats.VIF;
 import umcg.genetica.text.Strings;
@@ -783,12 +786,12 @@ public class EQTLRegression {
                 hashProbesCovariates.put(probe, eqtls);
             } else {
                 hashProbesCovariates.get(probe).add(current);
-                nrProbesWithMultipleCovariates++;
+
             }
         }
 
         if (nrProbesWithMultipleCovariates > 0) {
-            System.out.println("There are:\t" + nrProbesWithMultipleCovariates + "\tprobes for which we want to regress out multiple SNPs. This will be conducted through multiple regression employing OLS.");
+            System.out.println("There are:\t" + hashProbesCovariates.size() + "\tprobes with > 1 covariate. Regression will be conducted through multiple regression employing OLS.");
         }
 
         // remove the eqtl effects
@@ -819,7 +822,7 @@ public class EQTLRegression {
             TextFile logout = null;
             if (logdir != null) {
                 try {
-                    logout = new TextFile(logdir + currentDataset.getSettings().name + "-RegressionLog-Iteration" + logiter + ".txt", TextFile.W);
+                    logout = new TextFile(logdir + currentDataset.getSettings().name + "-RegressionLog-Iteration" + logiter + ".txt.gz", TextFile.W);
                     System.out.println("Logging dataset " + currentDataset.getSettings().name + " to " + logout.getFileName());
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -853,13 +856,15 @@ public class EQTLRegression {
                     // preload SNPs
                     for (EQTL e : covariatesForThisProbe) {
                         Integer snpId = currentDataset.getGenotypeData().getSnpToSNPId().get(e.getRsName());
-                        if (snpId == -9) {
-                            try {
-                                logout.writeln(gene + "\t" + e.getRsName() + "\tSNP not present");
-                            } catch (IOException ex) {
-                                ex.printStackTrace();
+                        if (snpId <= -1) {
+                            if (logout != null) {
+                                try {
+                                    logout.writeln(gene + "\t" + e.getRsName() + "\tSNP not present");
+                                } catch (IOException ex) {
+                                    ex.printStackTrace();
+                                }
                             }
-                        } else if (snpId != -9 && (snpPassesQC.get(snpId) == null || snpPassesQC.get(snpId))) {
+                        } else if (snpId >= 0 && (snpPassesQC.get(snpId) == null || snpPassesQC.get(snpId))) {
                             // load SNP, if we have not seen it before
                             SNP currentSNP = currentDataset.getGenotypeData().getSNPObject(snpId);
                             try {
@@ -983,14 +988,28 @@ public class EQTLRegression {
                         // transpose (samples should be on rows)
                         xcovars = xcovars.viewDice();
 
+                        // check whether there are more predictors than data rows
+                        if (xcovars.rows() < xcovars.columns()) {
+                            // remove the rows with lowest variance
+                            int toRemove = (xcovars.columns() - xcovars.rows()) + 1;
+                            System.out.println("\nWarning: " + gg[d].getSettings().name + " has more predictors than datapoints for gene " + gene + ": " + xcovars.rows() + "x" + xcovars.columns() + " removing " + toRemove + " lowest variance covars");
+                            xcovars = removeCovarWithLowestVariance(xcovars, toRemove);
+                            System.out.println("\nWarning: " + gg[d].getSettings().name + " gene had few covars for " + gene + ". Remaining covars: " + xcovars.rows() + "x" + xcovars.columns());
+                        }
 
                         try {
+                            // prevent aliasing; correct for variance inflation.
                             if (xcovars.columns() > 1) {
                                 VIF vif = new VIF();
+                                int prevCovars = xcovars.columns();
                                 xcovars = vif.vifCorrect(xcovars, (1 - 1E-4));
+                                int currentCovars = xcovars.columns();
+                                if (logout != null) {
+                                    logout.writeln(gene + "\t had " + prevCovars + " before VIF, and " + currentCovars + " after.");
+                                }
                             }
 
-                            // prevent aliasing; correct for variance inflation.
+
                             // prepare expression
                             int[] expressionToGenotypeId = currentDataset.getExpressionToGenotypeIdArray();
                             double[][] rawData = currentDataset.getExpressionData().getMatrix();
@@ -1017,38 +1036,84 @@ public class EQTLRegression {
                             //Normalize/center subset of data:
                             meanY = JSci.maths.ArrayMath.mean(y);
                             varianceY = JSci.maths.ArrayMath.variance(y);
+                            if (Double.isNaN(meanY) || Double.isNaN(varianceY)) {
+
+                                System.err.println("ERROR: variance " + varianceY + " mean " + meanY + " for gene " + gene);
+                                if (logout != null) {
+                                    logout.writeln("ERROR: variance " + varianceY + " mean " + meanY + " for gene " + gene);
+                                }
+                                System.exit(-1);
+                            }
+
                             for (int i = 0; i < y.length; i++) {
                                 y[i] -= meanY;
                             }
 
-                            // use OLS to determine regression coefficients
                             OLSMultipleLinearRegression ols = new OLSMultipleLinearRegression();
-                            ols.newSampleData(y, xcovars.getMatrixAs2dDoubleArray());
-
-                            double[] rawDataUpdated = ols.estimateResiduals();
-
-                            // debug: check whether residuals are correlated to genotype?
 
 
-                            double rsq = ols.calculateRSquared(); // I'm assuming this is an appropriate approximation of the explained variance.
-                            if (rsq < 0) {
-                                if (rsq < -1E-9) {
-                                    System.out.println("Warning: large negative r-squared: " + rsq + ". MeanY: " + meanY + ", varY" + varianceY + ", SumSqTotal: " + ols.calculateTotalSumOfSquares() + ", SumSqResid: " + ols.calculateResidualSumOfSquares());
+                            double[] rawDataUpdated = null;
+                            boolean singular = true;
+                            double rsq = 0;
+                            double[][] covars = xcovars.getMatrixAs2dDoubleArray();
+                            while (singular) {
+                                if (covars[0].length > 0) {
+                                    ols.newSampleData(y, covars);
+                                    try {
+                                        // use OLS to determine regression coefficients
+                                        rawDataUpdated = ols.estimateResiduals();
+                                        singular = false;
+                                        rsq = ols.calculateRSquared(); // I'm assuming this is an appropriate approximation of the explained variance.
+                                        // debug: check whether residuals are correlated to genotype?
+                                    } catch (SingularMatrixException e) {
+                                        // remove lowest variance covariate
+                                        // covars has samples on rows, covars on cols
+
+                                        System.err.println("WARNING: singular matrix exception when regressing eQTLs for: " + gene + " with " + covars[0].length + " covariates (variants). Removing lowest variance covariate.");
+
+                                        if (covars[0].length > 1) {
+                                            covars = removeCovarWithLowestVariance(covars, 1);
+
+                                        } else {
+                                            System.err.println("WARNING: could not resolve covariate issue for: " + gene + " keeping original data.");
+                                            if (logout != null) {
+                                                logout.writeln("WARNING: could not resolve covariate issue for: " + gene + " keeping original data.");
+                                            }
+                                            singular = false;
+                                            rsq = 0;
+                                        }
+                                    }
+                                } else {
+                                    // nothing more to do, all covariates have some issue or another
+                                    singular = false;
                                 }
-                                rsq = 0d;
-                            } else if (rsq > 1) {
-                                System.out.println("Warning: r-squared > 1.0: " + rsq + ". MeanY: " + meanY + ", varY" + varianceY + ", SumSqTotal: " + ols.calculateTotalSumOfSquares() + ", SumSqResid: " + ols.calculateResidualSumOfSquares());
-                                rsq = 1d;
                             }
 
-                            explainedVariancePerEQTLProbe[d][(int) Math.round(rsq * 100d)]++;
+                            if (covars[0].length > 0) {
+                                if (rsq < 0) {
+                                    if (rsq < -1E-9) {
+                                        System.out.println("Warning: large negative r-squared: " + rsq + ". MeanY: " + meanY + ", varY: " + varianceY + ", SumSqTotal: " + ols.calculateTotalSumOfSquares() + ", SumSqResid: " + ols.calculateResidualSumOfSquares());
+                                        if (logout != null) {
+                                            logout.writeln("Warning: large negative r-squared: " + rsq + ". MeanY: " + meanY + ", varY: " + varianceY + ", SumSqTotal: " + ols.calculateTotalSumOfSquares() + ", SumSqResid: " + ols.calculateResidualSumOfSquares());
+                                        }
+                                    }
+                                    rsq = 0d;
+                                } else if (rsq > 1) {
+                                    System.out.println("Warning: r-squared > 1.0: " + rsq + ". MeanY: " + meanY + ", varY" + varianceY + ", SumSqTotal: " + ols.calculateTotalSumOfSquares() + ", SumSqResid: " + ols.calculateResidualSumOfSquares());
+                                    if (logout != null) {
+                                        logout.writeln("Warning: r-squared > 1.0: " + rsq + ". MeanY: " + meanY + ", varY" + varianceY + ", SumSqTotal: " + ols.calculateTotalSumOfSquares() + ", SumSqResid: " + ols.calculateResidualSumOfSquares());
+                                    }
+                                    rsq = 1d;
+                                }
 
-                            if (logout != null) {
-                                SpearmansCorrelation sp = new SpearmansCorrelation();
+                                explainedVariancePerEQTLProbe[d][(int) Math.round(rsq * 100d)]++;
 
-                                RankDoubleArray rda = new RankDoubleArray();
-                                double[] ry = rda.rank(y);
-                                double[] correlcoeff = new double[xcovars.columns()];
+                                if (logout != null) {
+                                    SpearmansCorrelation sp = new SpearmansCorrelation();
+
+                                    RankDoubleArray rda = new RankDoubleArray();
+                                    double[] ry = rda.rank(y);
+                                    double[] correlcoeff = new double[xcovars.columns()];
 
 //								String[] indsY = currentDataset.getExpressionData().getIndividuals();
 //								String[] indsX = currentDataset.getGenotypeData().getIndividuals();
@@ -1060,28 +1125,37 @@ public class EQTLRegression {
 //									}
 //									System.out.println(q + "\t" + outln);
 //								}
-                                for (int c = 0; c < xcovars.columns(); c++) {
-                                    correlcoeff[c] = sp.correlation(xcovars.getCol(c).toArray(), ry);
-                                }
-                                String logln = gene + "\tNr SNPs: " + xcovars.columns() + "\tMeanY: " + meanY + "\tVarY: " + varianceY + "\trsq: " + rsq + "\tcorrel: " + Strings.concat(correlcoeff, Strings.tab);
-                                logout.writeln(gene + "\tNr SNPs: " + xcovars.columns() + "\tMeanY: " + meanY + "\tVarY: " + varianceY + "\trsq: " + rsq + "\tcorrel: " + Strings.concat(correlcoeff, Strings.tab));
+                                    for (int c = 0; c < xcovars.columns(); c++) {
+                                        correlcoeff[c] = sp.correlation(xcovars.getCol(c).toArray(), ry);
+                                    }
+                                    String logln = gene + "\tNr SNPs: " + xcovars.columns() + "\tMeanY: " + meanY + "\tVarY: " + varianceY + "\trsq: " + rsq + "\tcorrel: " + Strings.concat(correlcoeff, Strings.tab);
+                                    logout.writeln(logln);
 //								System.out.println(logln);
-
 //								System.exit(-1);
+                                }
+
+
+                                //Make mean and standard deviation of residual gene expression identical to what it was before:
+                                double meanUpdated = JSci.maths.ArrayMath.mean(rawDataUpdated);
+                                double stdDevRatio = JSci.maths.ArrayMath.standardDeviation(rawDataUpdated) / Math.sqrt(varianceY);
+
+                                if (!Double.isNaN(meanUpdated) && !Double.isNaN(stdDevRatio) && stdDevRatio > 0) {
+                                    for (int s = 0; s < totalGGSamples; s++) {
+                                        rawDataUpdated[s] -= meanUpdated;
+                                        rawDataUpdated[s] /= stdDevRatio;
+                                        rawDataUpdated[s] += meanY;
+                                    }
+                                    System.arraycopy(rawDataUpdated, 0, rawData[geneId], 0, totalGGSamples);
+                                    nrEQTLsRegressedOut[d]++;
+                                } else {
+                                    String logln = "Error: " + gene + "\tNr SNPs: " + xcovars.columns() + "\tMeanY: " + meanY + "\tVarY: " + varianceY + "\trsq: " + rsq + "\tmeanUpdated: " + meanUpdated + "\tstdevRatio: " + stdDevRatio;
+                                    if (logout != null) {
+                                        logout.writeln(logln);
+                                    }
+                                }
                             }
 
 
-                            //Make mean and standard deviation of residual gene expression identical to what it was before:
-                            double meanUpdated = JSci.maths.ArrayMath.mean(rawDataUpdated);
-                            double stdDevRatio = JSci.maths.ArrayMath.standardDeviation(rawDataUpdated) / Math.sqrt(varianceY);
-                            for (int s = 0; s < totalGGSamples; s++) {
-                                rawDataUpdated[s] -= meanUpdated;
-                                rawDataUpdated[s] /= stdDevRatio;
-                                rawDataUpdated[s] += meanY;
-                            }
-
-                            System.arraycopy(rawDataUpdated, 0, rawData[geneId], 0, totalGGSamples);
-                            nrEQTLsRegressedOut[d]++;
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -1142,5 +1216,78 @@ public class EQTLRegression {
             }
             System.out.println(output);
         }
+    }
+
+    private DoubleMatrixDataset<String, String> removeCovarWithLowestVariance(DoubleMatrixDataset<String, String> covars, int nrToRemove) {
+        ArrayList<Pair<Integer, Double>> pairs = new ArrayList<>();
+        for (int col = 0; col < covars.columns(); col++) {
+            DoubleMatrix1D colobj = covars.getCol(col);
+            double var = Descriptives.variance(colobj.toArray());
+            pairs.add(new Pair<>(col, var, Pair.SORTBY.RIGHT));
+        }
+
+        // sort ascending
+        Collections.sort(pairs);
+        double[][] output = new double[covars.rows()][covars.columns() - nrToRemove];
+        for (int r = 0; r < covars.rows(); r++) {
+            int n = 0;
+            // start iterating from nrToRemove
+            for (int c = nrToRemove; c < pairs.size(); c++) {
+                output[r][n] = covars.getElement(r, pairs.get(c).getLeft());
+                n++;
+            }
+        }
+
+        ArrayList<String> newCols = new ArrayList<>();
+        for (int c = nrToRemove; c < pairs.size(); c++) {
+            newCols.add(covars.getColObjects().get(pairs.get(c).getLeft()));
+        }
+
+        DoubleMatrixDataset<String, String> ds = new DoubleMatrixDataset<>();
+        ds.setMatrix(output);
+        try {
+            ds.setRowObjects(covars.getRowObjects());
+            ds.setColObjects(newCols);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
+    private double[][] removeCovarWithLowestVariance(double[][] covars, int nrToRemove) {
+        int minCovar = -1;
+        double minVar = Double.MAX_VALUE;
+
+        int startlen = covars[0].length;
+        int endlen = startlen - nrToRemove;
+        if (endlen <= 1) {
+            return covars;
+        }
+        while (covars[0].length > endlen) {
+            for (int c = 0; c < covars[0].length; c++) {
+                double[] col = new double[covars.length];
+                for (int r = 0; r < covars[0].length; r++) {
+                    col[r] = covars[r][c];
+                }
+                double var = Descriptives.variance(col);
+                if (var < minVar) {
+                    minVar = var;
+                    minCovar = c;
+                }
+            }
+
+            double[][] tmpcovars = new double[covars.length][covars[0].length - 1];
+            int cctr = 0;
+            for (int c = 0; c < covars[0].length; c++) {
+                if (c != minCovar) {
+                    for (int r = 0; r < covars[0].length; r++) {
+                        tmpcovars[r][cctr] = covars[r][c];
+                    }
+                    cctr++;
+                }
+            }
+            covars = tmpcovars;
+        }
+        return covars;
     }
 }

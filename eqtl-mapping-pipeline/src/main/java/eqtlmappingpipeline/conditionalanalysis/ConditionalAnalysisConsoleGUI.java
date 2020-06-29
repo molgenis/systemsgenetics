@@ -30,7 +30,7 @@ public class ConditionalAnalysisConsoleGUI {
         Integer threads = null;
         boolean textout = false;
         boolean binout = false;
-
+        Integer takeEQTLsUpToIter = null;
         boolean iterativeConditional = false;
         boolean iterativeConditionalLeaveOneOut = false;
         boolean skipinitialsnpmap = false;
@@ -114,6 +114,12 @@ public class ConditionalAnalysisConsoleGUI {
                     System.err.println("Error --stopiter should be an integer");
                 }
 
+            } else if (arg.equals("--regressUpToIter")) {
+                try {
+                    takeEQTLsUpToIter = Integer.parseInt(val);
+                } catch (NumberFormatException e) {
+                    System.err.println("Error --regressUpToIter should be an integer");
+                }
             }
         }
 
@@ -129,6 +135,9 @@ public class ConditionalAnalysisConsoleGUI {
                     } else {
                         m.setStartIter(startiter);
                         m.setStopIter(stopiter);
+                        if (takeEQTLsUpToIter != null) {
+                            m.setTakeEQTLsUpToIter(takeEQTLsUpToIter);
+                        }
                         m.setLimitConsecutiveIterationsToSignificantGenes(limitConseqcutiveIterationsOnSignificantGenes);
                         m.run(settingsfile, settingstexttoreplace, settingstexttoreplacewith, in, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads);
                     }
@@ -173,7 +182,8 @@ public class ConditionalAnalysisConsoleGUI {
                 + "--iterative\t\tPerform conditional analysis in iterations.\n"
                 + "--iterativeleaveoneout\t\tDump all associations for significant genes, conditional on --startiter and --stopiter.\n"
                 + "--startiter\t\tint\t\tStart iterative analysis at this iteration\n"
-                + "--stoptiter\t\tint\t\tStop iterative analysis at this iteration\n");
+                + "--stoptiter\t\tint\t\tStop iterative analysis at this iteration\n"
+                + "--regressUpToIter\t\tint\t\tFor use with --iterativeleaveoneout: regress QTLs up to this iteration\n");
 
         System.out.println("");
     }

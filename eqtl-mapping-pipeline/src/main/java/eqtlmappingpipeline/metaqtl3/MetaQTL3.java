@@ -333,6 +333,7 @@ public class MetaQTL3 {
                 System.exit(0);
             }
             EQTLRegression eqr = new EQTLRegression();
+            eqr.setLog(m_settings.outputReportsDir, 0);
             eqr.regressOutEQTLEffects(m_settings.regressOutEQTLEffectFileName, m_settings.regressOutEQTLEffectsSaveOutput, m_gg);
             numAvailableInds = 0;
 
@@ -963,9 +964,9 @@ public class MetaQTL3 {
             }
 
             if (m_settings.confineToProbesThatMapToChromosome != null && chr == null) {
-				includeProbe = false;
-				mapToWrongChromosome++;
-				probeLog.writeln("Removing probe:\t" + probe + "\tmaps to wrong chromosome: " + mappingOutput);
+                includeProbe = false;
+                mapToWrongChromosome++;
+                probeLog.writeln("Removing probe:\t" + probe + "\tmaps to wrong chromosome: " + mappingOutput);
             } else if (m_settings.confineToProbesThatMapToChromosome != null && chr != null && !chr.equals(m_settings.confineToProbesThatMapToChromosome)) {
                 // check whether this chromosome was requested to be analysed
                 includeProbe = false;
@@ -1173,8 +1174,8 @@ public class MetaQTL3 {
                 pool[i] = null;
             }
 
-            // check whether there were results..
-            if (m_settings.createTEXTOutputFiles) {
+            if (!m_settings.dumpeverythingtodisk && m_settings.createTEXTOutputFiles) {
+                // check whether there were results..
                 String fileName;
                 if (permutationRound > 0) {
                     fileName = m_settings.outputReportsDir + "PermutedEQTLsPermutationRound" + permutationRound + ".txt.gz";
@@ -1205,38 +1206,38 @@ public class MetaQTL3 {
         }
 
 
-        if (!m_settings.skipFDRCalculation && hasResults) {
-            if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
-                System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
-                FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs,
-                        m_settings.fdrCutOff, m_settings.createQQPlot, null, null, m_settings.fdrType, m_settings.fullFdrOutput);
+        if(!m_settings.dumpeverythingtodisk) {
+            if (!m_settings.skipFDRCalculation && hasResults) {
+                if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
+                    System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
+                    FDR.calculateFDR(m_settings.outputReportsDir, m_settings.nrPermutationsFDR, m_settings.maxNrMostSignificantEQTLs,
+                            m_settings.fdrCutOff, m_settings.createQQPlot, null, null, m_settings.fdrType, m_settings.fullFdrOutput);
 
-                if (m_settings.createDotPlot) {
-                    EQTLDotPlot edp = new EQTLDotPlot();
-                    try {
-                        if (new File(m_settings.outputReportsDir + "/eQTLsFDR" + m_settings.fdrCutOff + ".txt.gz").exists()) {
-                            edp.draw(m_settings.outputReportsDir + "/eQTLsFDR" + m_settings.fdrCutOff + ".txt.gz", m_settings.outputReportsDir + "/DotPlot-FDR" + m_settings.fdrCutOff + ".pdf", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"
+                    if (m_settings.createDotPlot) {
+                        EQTLDotPlot edp = new EQTLDotPlot();
+                        try {
+                            if (new File(m_settings.outputReportsDir + "/eQTLsFDR" + m_settings.fdrCutOff + ".txt.gz").exists()) {
+                                edp.draw(m_settings.outputReportsDir + "/eQTLsFDR" + m_settings.fdrCutOff + ".txt.gz", m_settings.outputReportsDir + "/DotPlot-FDR" + m_settings.fdrCutOff + ".pdf", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"
+                            }
+                        } catch (DocumentException ex) {
+                            Logger.getLogger(MetaQTL3.class.getName()).log(Level.SEVERE, null, ex);
                         }
-                    } catch (DocumentException ex) {
-                        Logger.getLogger(MetaQTL3.class.getName()).log(Level.SEVERE, null, ex);
+                        edp = null;
                     }
-                    edp = null;
+
                 }
-
+            } else {
+                String reason = "";
+                if (m_settings.skipFDRCalculation) {
+                    reason = "Defined in settings.";
+                } else if (m_settings.runOnlyPermutations) {
+                    reason = "Only running permutations.";
+                } else if (!hasResults) {
+                    reason = "No results for QTL mapping.";
+                }
+                System.out.println("Skipping FDR calculation. Reason: " + reason);
             }
-        } else {
-            String reason = "";
-            if (m_settings.skipFDRCalculation) {
-                reason = "Defined in settings.";
-            } else if (m_settings.runOnlyPermutations) {
-                reason = "Only running permutations.";
-            } else if (!hasResults) {
-                reason = "No results for QTL mapping.";
-            }
-            System.out.println("Skipping FDR calculation. Reason: " + reason);
         }
-
-
         System.out.print(ConsoleGUIElems.DOUBLELINE);
 
         System.out.println("eQTL mapping elapsed:\t" + t.getTimeDesc() + "\n");

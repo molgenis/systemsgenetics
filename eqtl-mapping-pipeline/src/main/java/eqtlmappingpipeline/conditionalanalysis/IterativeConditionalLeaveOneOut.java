@@ -19,6 +19,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.text.Strings;
 import umcg.genetica.util.Primitives;
 
+import java.io.Console;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,16 +37,34 @@ public class IterativeConditionalLeaveOneOut extends MetaQTL3 {
 
     private int startIter = 1;
     private int stopIter = 2;
+    private int takeEQTLsUpToIter = 2;
     boolean useOLS = true;
+
+    public static void waitForEnter(String message, Object... args) {
+        Console c = System.console();
+        if (c != null) {
+            // printf-like arguments
+            if (message != null)
+                c.format(message, args);
+            c.format("\nPress ENTER to proceed.\n");
+            c.readLine();
+        }
+    }
 
     public void run(String xmlSettingsFile, String texttoreplace, String texttoreplacewith,
                     String ingt, String inexp, String inexpplatform, String inexpannot, String gte,
                     String out, boolean cis, boolean trans, int perm, boolean textout, boolean binout, String snpfile, Integer threads) throws IOException, Exception {
 
-        Settings settingstmp = new Settings();
-        settingstmp.load(xmlSettingsFile);
-        String origOutputDir = settingstmp.outputReportsDir;
-        double fdrthreshold = settingstmp.fdrCutOff;
+        System.out.println("Iterative leave one out analysis");
+        if (xmlSettingsFile == null) {
+            System.err.println("Sorry you have to supply a settings file.");
+            System.exit(-1);
+        }
+
+        m_settings = new Settings();
+        m_settings.load(xmlSettingsFile);
+        String origOutputDir = m_settings.outputReportsDir;
+        double fdrthreshold = m_settings.fdrCutOff;
 
         // check whether the needed files are there
         boolean filesOK = true;
@@ -69,7 +88,7 @@ public class IterativeConditionalLeaveOneOut extends MetaQTL3 {
             System.exit(-1);
         }
 
-        initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null, null, null);
+//        initialize(xmlSettingsFile, texttoreplace, texttoreplacewith, ingt, inexp, inexpplatform, inexpannot, gte, out, cis, trans, perm, textout, binout, snpfile, threads, null, null, null, true, true, null, null, null);
 
         m_settings.provideBetasAndStandardErrors = true;
         m_settings.provideFoldChangeData = true;
@@ -86,27 +105,33 @@ public class IterativeConditionalLeaveOneOut extends MetaQTL3 {
         m_settings.maxNrMostSignificantEQTLs = 10;
 
         for (int i = startIter; i < (stopIter + 1); i++) {
-
-
+            System.out.println("Starting iteration " + i);
             // determine probes to confine on; retest those genes that were significant in this iteration
             ArrayList<Integer> regressedIters = new ArrayList<>();
             m_settings.tsProbesConfine = collectEQTLProbes(origOutputDir, i, fdrthreshold);
             ArrayList<Pair<String, String>> toRegress = new ArrayList<>();
-            for (int j = startIter; j < (stopIter + 1); j++) {
+            for (int j = startIter; j < (takeEQTLsUpToIter + 1); j++) {
                 if (i != j) {
                     toRegress.addAll(collectEQTLs(origOutputDir, j, fdrthreshold));
                     regressedIters.add(j);
                 }
             }
 
+            System.out.println("Iteration: " + i + "\t" + m_settings.tsProbesConfine.size() + " genes to test, will regress out " + toRegress.size() + " QTLs");
+            if (m_settings.tsProbesConfine.isEmpty() || toRegress.isEmpty()) {
+                System.err.println("Error: no work remaining.");
+                System.exit(-1);
+            }
+
             String regressedItersStr = Strings.concat(Primitives.toPrimitiveArr(regressedIters.toArray(new Integer[0])), Strings.dash);
 
-            m_settings.outputReportsDir = origOutputDir + "/Iteration" + i + "-Iterations-" + regressedItersStr + "-Removed/";
-            m_settings.plotOutputDirectory = origOutputDir + "/Iteration" + i + "-Iterations-" + regressedItersStr + "-Removed/";
+            m_settings.outputReportsDir = origOutputDir + "/Iteration" + i + "-OtherIterationsRemoved/";
+            m_settings.plotOutputDirectory = origOutputDir + "/Iteration" + i + "-OtherIterationsRemoved/";
             Gpio.createDir(m_settings.plotOutputDirectory);
             Gpio.createDir(m_settings.outputReportsDir);
 
             // reset the datasets
+//            waitForEnter("Press enter to initialize");
             reinit();
 
             // regress significant eQTLs
@@ -286,13 +311,13 @@ public class IterativeConditionalLeaveOneOut extends MetaQTL3 {
     private THashSet<String> collectEQTLProbes(String origOutputDir, int currentIteration, double fdr) throws IOException {
 
         THashSet<String> output = new THashSet<String>();
-        String iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt.gz";
+        String iterationFile = origOutputDir + "/Iteration" + (currentIteration) + "/eQTLProbesFDR" + fdr + "-ProbeLevel.txt.gz";
         if (m_settings.fdrType.equals(FDR.FDRMethod.FULL)) {
-            iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + ".txt.gz";
+            iterationFile = origOutputDir + "/Iteration" + (currentIteration) + "/eQTLProbesFDR" + fdr + ".txt.gz";
         } else if (m_settings.fdrType.equals(FDR.FDRMethod.SNPLEVEL)) {
-            iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + "-SNPLevel.txt.gz";
+            iterationFile = origOutputDir + "/Iteration" + (currentIteration) + "/eQTLProbesFDR" + fdr + "-SNPLevel.txt.gz";
         } else if (m_settings.fdrType.equals(FDR.FDRMethod.GENELEVEL)) {
-            iterationFile = origOutputDir + "/Iteration" + (currentIteration - 1) + "/eQTLProbesFDR" + fdr + "-GeneLevel.txt.gz";
+            iterationFile = origOutputDir + "/Iteration" + (currentIteration) + "/eQTLProbesFDR" + fdr + "-GeneLevel.txt.gz";
         }
 
         System.out.println("Trying to collect genes/probes from: " + iterationFile);
@@ -317,8 +342,14 @@ public class IterativeConditionalLeaveOneOut extends MetaQTL3 {
     }
 
     public void setStopIter(Integer stopIter) {
-
         this.stopIter = stopIter;
+        if (this.takeEQTLsUpToIter < this.stopIter) {
+            this.takeEQTLsUpToIter = this.stopIter;
+        }
+    }
+
+    public void setTakeEQTLsUpToIter(Integer takeEQTLsUpToIter) {
+        this.takeEQTLsUpToIter = takeEQTLsUpToIter;
     }
 
     public void setLimitConsecutiveIterationsToSignificantGenes(boolean limitConseqcutiveIterationsOnSignificantGenes) {

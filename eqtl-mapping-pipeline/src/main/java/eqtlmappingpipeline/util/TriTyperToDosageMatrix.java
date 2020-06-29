@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 public class TriTyperToDosageMatrix {
 
 
-    public void run(String settingsfile, boolean vcf) throws IOException, ConfigurationException {
+    public void run(String settingsfile, boolean vcf, boolean trityper) throws IOException, ConfigurationException {
         System.out.println("TriTyper to dosagematrix converter.");
         Settings settings = new Settings();
         settings.load(settingsfile);
@@ -77,7 +77,9 @@ public class TriTyperToDosageMatrix {
 
 
         TextFile tf = null;
-        if (vcf) {
+        if (trityper) {
+
+        } else if (vcf) {
             tf = new TextFile(settings.outputReportsDir + "GenotypeData.vcf.gz", TextFile.W);
             tf.writeln("##fileformat=VCFv4.3");
             tf.writeln("##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Non phased Genotype\">");
@@ -193,7 +195,9 @@ public class TriTyperToDosageMatrix {
                 System.out.println("Excluding\t" + snp + "\tsince it has no values");
             } else {
 
-                if (vcf) {
+                if (trityper) {
+
+                } else if (vcf) {
                     // #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT
 
 

@@ -82,6 +82,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
         if (m_settings.regressOutEQTLEffectFileName != null) {
             originalToRegress = new ArrayList<>();
             HashSet<String> uniquePairs = new HashSet<String>();
+            System.out.println("Reading original list of eQTLs to regress: " + m_settings.regressOutEQTLEffectFileName);
             TextFile tf = new TextFile(m_settings.regressOutEQTLEffectFileName, TextFile.R);
             String[] elems = tf.readLineElems(TextFile.tab);
             while (elems != null) {
@@ -91,6 +92,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
                     originalToRegress.add(pair);
                     uniquePairs.add(combo);
                 }
+                elems = tf.readLineElems(TextFile.tab);
             }
             tf.close();
         }
@@ -143,15 +145,6 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
                     // get the list of eQTLs to regress out...
                     ArrayList<Pair<String, String>> toRegress = collectEQTLs(origOutputDir, originalToRegress, iteration, fdrthreshold);
 
-                    // add original set of eQTLs to regress to the list
-                    if (originalToRegress != null) {
-                        // make sure to only include unique combos
-                        HashSet<Pair<String, String>> toRegressset = new HashSet<>();
-                        toRegressset.addAll(originalToRegress);
-                        toRegressset.addAll(toRegress);
-                        toRegress = new ArrayList<>();
-                        toRegress.addAll(toRegressset);
-                    }
 
                     // get the significant probes from the previous run
                     if (limitConsecutiveIterationsOnSignificantGenes) {
@@ -208,7 +201,7 @@ public class IterativeConditionalAnalysis extends MetaQTL3 {
 
 
         // get the list of eQTLs to regress out...
-        ArrayList<Pair<String, String>> toRegress = collectEQTLs(origOutputDir, originalToRegress,iteration - 1, fdrthreshold);
+        ArrayList<Pair<String, String>> toRegress = collectEQTLs(origOutputDir, originalToRegress, iteration - 1, fdrthreshold);
 
 
         if (toRegress.isEmpty()) {
