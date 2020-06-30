@@ -47,19 +47,33 @@ public class PathwayEnrichments {
     private final HashSet<String> hlaGenesToExclude;
     private final boolean ignoreGeneCorrelations;
     private DoubleMatrixDataset<String, String> betas;
-    //private DoubleMatrixDataset<String, String> standardErrors;
     private DoubleMatrixDataset<String, String> pValues;
     private DoubleMatrixDataset<String, String> qValues;
+
+    //private DoubleMatrixDataset<String, String> standardErrors;
     //private DoubleMatrixDataset<String, String> zscores;
     //private final DoubleMatrixDataset<String, String> pValuesNull;
     //private final DoubleMatrixDataset<String, String> betasNull;
 
     private final int numberOfPathways;
     private final File intermediateFolder;
-
     private final Set<String> excludeGenes;
     //private final List<Gene> genes;
     private final String outputBasePath;
+
+    public PathwayEnrichments(final PathwayDatabase pathwayDatabase, File intermediateFolder, boolean excludeHLA) throws Exception {
+        this.pathwayDatabase = pathwayDatabase;
+        this.intermediateFolder = intermediateFolder;
+        this.betas = DoubleMatrixDataset.loadDoubleTextData(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (!excludeHLA ? "_betas.txt" : "_betasExHla.txt"), '\t');
+        this.pValues = DoubleMatrixDataset.loadDoubleTextData(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (!excludeHLA ? "_empericalPvals.txt" : "_empericalPvalsExHla.txt"), '\t');
+        this.qValues = DoubleMatrixDataset.loadDoubleTextData(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (!excludeHLA ? "_empericalQvals.txt" : "_empericalQvalsExHla.txt"), '\t');
+        this.numberOfPathways = pValues.rows();
+        this.excludeGenes = null;
+        this.hlaGenesToExclude = null;
+        this.ignoreGeneCorrelations = false;
+        this.outputBasePath = null;
+    }
+
 
     public PathwayEnrichments(final PathwayDatabase pathwayDatabase,
                               final HashSet<String> genesWithPvalue,
@@ -432,24 +446,25 @@ public class PathwayEnrichments {
             }
 
             // Now calculate beta's and residuals
-            final int df = geneZscoresPathwayMatched.rows() - 1;
-            final TDistribution tdist = new TDistribution(df);
+            //final int df = geneZscoresPathwayMatched.rows() - 1;
+            //final TDistribution tdist = new TDistribution(df);
 
             for (int traitI = 0; traitI < numberTraits; ++traitI) {
 
                 // To allow use in parallel loop it must be final
                 final int traitIb = traitI;
                 final double b1Trait = b1.getElementQuick(traitIb, 0);
-                final DoubleMatrixDataset<String, String> residuals = genePathwayZscores.duplicate();
+                //final DoubleMatrixDataset<String, String> residuals = genePathwayZscores.duplicate();
 
                 // Determine the beta and residuals for each pathway
                 IntStream.range(0, numberOfPathways).parallel().forEach(pathwayI -> {
                     double beta = b2.getElementQuick(traitIb, pathwayI) / b1Trait;
                     betas.setElementQuick(pathwayI, traitIb, beta);
-                    DoubleMatrix1D betaX = geneZscoresPathwayMatched.getCol(traitIb).copy();
-                    betaX.assign(DoubleFunctions.mult(beta));
-                    residuals.getCol(pathwayI).assign(betaX, DoubleFunctions.minus);
+                    //DoubleMatrix1D betaX = geneZscoresPathwayMatched.getCol(traitIb).copy();
+                    //betaX.assign(DoubleFunctions.mult(beta));
+                    //residuals.getCol(pathwayI).assign(betaX, DoubleFunctions.minus);
                 });
+                /*
 
                 // Multiply the inverse correlation matrix with the residuals
                 DoubleMatrixDataset<String, String> invCorXResiduals = new DoubleMatrixDataset<>(residuals.getHashRows(), residuals.getHashCols());
@@ -482,10 +497,12 @@ public class PathwayEnrichments {
                     pValues.setElementQuick(pathwayI, traitIb, pvalue);
                     //zscores.setElementQuick(pathwayI, traitIb, zscore);
                 });
+
+                 */
                 pb.step();
             }
 
-            pValues.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_analyticalPvals.txt" : "_analyticalPvalsExHla.txt"));
+            //pValues.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_analyticalPvals.txt" : "_analyticalPvalsExHla.txt"));
             //standardErrors.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_se.txt" : "_seExHla.txt"));
             //zscores.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_zscore.txt" : "_zscoreExHla.txt"));
 

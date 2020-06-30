@@ -418,6 +418,7 @@ public class Depict2Options {
 
 		switch (mode) {
 			case STEP1:
+			case CREATE_EXCEL:
 			case STEP2:
 				if (!commandLine.hasOption("pgc")) {
 					throw new ParseException("--permutationGeneCorrelations not specified");
@@ -525,7 +526,6 @@ public class Depict2Options {
 
 		switch (mode) {
 			case STEP1:
-
 				//variantFilter
 				if (commandLine.hasOption("vf")) {
 					variantFilterFile = new File(commandLine.getOptionValue("vf"));
@@ -763,7 +763,6 @@ public class Depict2Options {
 	public void printOptions() {
 
 		LOGGER.info("Supplied options:");
-
 		LOGGER.info(" * Mode: " + mode.name());
 		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
 
@@ -907,6 +906,8 @@ public class Depict2Options {
 			LOGGER.info(" * No pathway databases specified");
 		}
 	}
+
+
 
 	public String[] getGenotypeBasePath() {
 		return genotypeBasePath;

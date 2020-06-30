@@ -28,5 +28,6 @@ public enum Depict2Mode {
 	CORE_GENE_AUC,
 	INVESTIGATE_NETWORK,
 	R_2_Z_SCORE,
+	CREATE_EXCEL,
 	SPECIAL;
 }

@@ -122,7 +122,6 @@ public class Depict2MainAnalysis {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
 			step1Res = Depict2Step1Results.loadFromDisk(options.getRun1BasePath());
 			LOGGER.info("Gene p-values loaded");
-
 		}
 
 		DoubleMatrixDataset<String, String> genePvalues = step1Res.getGenePvalues();
@@ -130,8 +129,8 @@ public class Depict2MainAnalysis {
 		DoubleMatrixDataset<String, String> geneVariantCount = step1Res.getGeneVariantCount();
 		DoubleMatrixDataset<String, String> geneMaxSnpZscore = step1Res.getGeneMaxSnpZscore();
 		DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = step1Res.getGeneMaxSnpZscoreNullGwas();
-
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
 		// Identify genes with at least one variant in window
