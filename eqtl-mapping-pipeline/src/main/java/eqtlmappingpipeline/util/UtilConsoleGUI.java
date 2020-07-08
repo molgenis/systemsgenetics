@@ -86,6 +86,7 @@ public class UtilConsoleGUI {
         boolean stringentFDR = false;
         boolean sortsnps = true;
         boolean vcf = false;
+        boolean trityper = false;
         String sources = null;
         String keyValuePairs = null;
         String annotationIds = null;
@@ -236,6 +237,8 @@ public class UtilConsoleGUI {
                 snpfile = val;
             } else if (args[i].equals("--vcf")) {
                 vcf = true;
+            }  else if (args[i].equals("--trityper")) {
+                trityper = true;
             } else if (args[i].equals("--probeselectionlist")) {
                 probeselectionlist = val;
             } else if (args[i].equals("--snpprobeselectionlist")) {
@@ -268,10 +271,14 @@ public class UtilConsoleGUI {
                 switch (run) {
                     case CONVERTTRITYPERTOMATRIX:
                         if (settingsfile == null) {
-                            System.out.println("Usage: --tritypertomatrix --settings settings.xml [--vcf]");
+                            System.out.println("Usage: --tritypertomatrix --settings settings.xml [--vcf|--trityper] ");
                         } else {
                             TriTyperToDosageMatrix ttd = new TriTyperToDosageMatrix();
-                            ttd.run(settingsfile, vcf, false);
+                            if (trityper) {
+                                ttd.runTriTyper(settingsfile);
+                            } else {
+                                ttd.run(settingsfile, vcf);
+                            }
                         }
                         break;
                     case CONVERTBINARYMATRIX:
@@ -654,19 +661,8 @@ public class UtilConsoleGUI {
                 + "--eqtmlink\t\tLink eQTM and eQTL files based on probe/gene name\n"
                 + "--fdrmethod\t\tEither probe, gene, snp or full\n"
                 + "--converteqtlfiletosmr\t\tConvert eQTL file to SMR format\n"
-                + "--tritypertomatrix\t\tConvert (set of) TriTyper files to a text-based dosage matrix.");
+                + "--tritypertomatrix\t\tConvert (set of) TriTyper files to a text-based dosage matrix. Use --vcf or --trityper to output in vcf or TriTyper formats");
         System.out.println("");
 
-//        System.out.print("Command line options:\n" + ConsoleGUIElems.LINE);
-//        System.out.println("--in\t\t\tdir\t\tLocation of the genotype data\n"
-//                + "--out\t\t\tdir\t\tLocation where the output should be stored\n"
-//                + "--inexp\t\t\tstring\t\tLocation of expression data\n"
-//                + "--inexpplatform\t\tstring\t\tGene expression platform\n"
-//                + "--inexpannot\t\tstring\t\tLocation of annotation file for gene expression data\n"
-//                + "--gte\t\t\tstring\t\tLocation of genotype to expression coupling file\n"
-//                + "--snps\t\t\tstring\t\tLocation of snp file\n"
-//                + "--probes\t\tstring\t\tLocation of probe file\n");
-//
-//        System.out.println("");
     }
 }

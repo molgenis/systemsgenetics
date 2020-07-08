@@ -6,6 +6,7 @@ package umcg.genetica.io.trityper;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 import umcg.genetica.io.Gpio;
+import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
 import umcg.genetica.text.Strings;
@@ -482,6 +483,7 @@ public class TriTyperGenotypeData {
     }
 
     public SNPLoader createSNPLoader(int numberOfVariantsToBuffer) throws IOException {
+
         RandomAccessFile dosageHandle = null;
         RandomAccessFile genotypeHandle = new RandomAccessFile(genotypeFileName, "r");
         if (Gpio.exists(dosageFileName)) {

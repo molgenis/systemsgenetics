@@ -174,7 +174,7 @@ class CalculationThread extends Thread {
                 if (varianceX != 0) {
                     snpvariances[d] = varianceX;
 
-                    int inds[] = m_expressionToGenotypeIds[d];
+                    int[] inds = m_expressionToGenotypeIds[d];
                     int sampleCount = m_expressionToGenotypeIds[d].length;
                     includeExpressionSample[d] = new boolean[sampleCount];
                     byte[] genotypes = dSNP.getGenotypes();

@@ -1491,10 +1491,7 @@ public class MetaQTL3 {
         return (maxNrTestsToPerform);
     }
 
-    private void makeCombo() {
 
-
-    }
 
     protected void printSummary() {
 
