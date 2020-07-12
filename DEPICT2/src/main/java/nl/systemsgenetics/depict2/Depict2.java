@@ -145,6 +145,9 @@ public class Depict2 {
 				case PTOZSCORE:
 					Depict2Converters.convertPvalueToZscore(options);
 					break;
+				case CREATE_EXCEL:
+					Depict2Utilities.generateExcelFromIntermediates(options);
+					break;
 				case STEP1:
 
 					Depict2Step1Results step1Res = Depict2MainAnalysis.run(options);

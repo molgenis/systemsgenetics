@@ -88,6 +88,41 @@ pdf(width=7, height=5, file="~/Desktop/depict2/plots/ibd_transgenes_coreg.pdf")
 dev.off()
 ```
 
+# Scatterplot of HPO pathway
+```{r}
+library(data.table)
+x1 <- data.frame(fread("~/Desktop/depict2/tmp/height_hpo_for_scatterplot/HPO_Enrichment_forceNormalizedGwasGeneScores_ExHla.txt"), row.names=1)
+y1 <- data.frame(fread("~/Desktop/depict2/tmp/height_hpo_for_scatterplot/HPO_Enrichment_forceNormalizedGenePathwayZscoresExHla.txt"), row.names=1)
+
+
+x2 <-  data.frame(fread("~/Desktop/depict2/tmp/height_hpo_for_scatterplot/HPO_Enrichment_normalizedGwasGeneScores_ExHla.txt"), row.names=1)
+y2 <- data.frame(fread("~/Desktop/depict2/tmp/height_hpo_for_scatterplot/HPO_Enrichment_normalizedPathwayScores_ExHla.txt"), row.names=1)
+
+
+
+term <- "HP.0000925"
+
+
+plot(x1[,1], y1[,term],
+     ylab=paste0("GN HPO predictions: ", term),
+     xlab="Height normalized gene P",
+     main="Height (Abnormality of the vertebral column, p=3.17E-25)",col=adjustcolor("black", alpha.f = 0.2), pch=19)
+
+abline(a=0, b=0, col="blue", lwd=2)
+abline(lm(y1[,term] ~ x1[,1]), col="red", lwd=2)
+summary(lm(y1[,term] ~ x1[,1]))
+
+plot(x2[,1], y2[,term],
+     ylab=paste0("GN HPO predictions: ", term),
+     xlab="Height normalized gene P",
+     main="Height (Abnormality of the vertebral column, p=3.17E-25)",col=adjustcolor("black", alpha.f = 0.2), pch=19)
+
+abline(a=0, b=0, col="blue", lwd=2)
+abline(lm(y2[,term] ~ x2[,1]), col="red", lwd=2)
+summary(lm(y2[,term] ~ x2[,1]))
+
+  ```
+
 
 # Old and new height coregulations
 ```{r}

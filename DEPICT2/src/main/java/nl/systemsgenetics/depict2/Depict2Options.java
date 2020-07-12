@@ -60,6 +60,7 @@ public class Depict2Options {
 	private final boolean correctForLambdaInflation;
 	private final int permutationPathwayEnrichment;
 	private final int permutationGeneCorrelations;
+	private final int permutationFDR;
 	private final boolean ignoreGeneCorrelations;
 	private final double genePruningR;
 	private final boolean forceNormalGenePvalues;
@@ -258,6 +259,12 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("permutationPathwayEnrichment");
 		OPTIONS.addOption(OptionBuilder.create("ppe"));
 
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Number of random phenotypes to use to determine null distribution for FDR calculation");
+		OptionBuilder.withLongOpt("permutationFDR");
+		OPTIONS.addOption(OptionBuilder.create("pfdr"));
+
 		OptionBuilder.withArgName("double");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Exclude correlated genes in pathway enrichments");
@@ -376,7 +383,6 @@ public class Depict2Options {
 		saveUsedVariantsPerGene = commandLine.hasOption("uvg");
 		quantileNormalizePermutations = commandLine.hasOption("qn");
 		regressGeneLengths = commandLine.hasOption("rgl");
-
 		run1BasePath = commandLine.hasOption("soo") ? new File(commandLine.getOptionValue("soo")) : outputBasePath;
 
 		if (quantileNormalizePermutations && forceNormalGenePvalues) {
@@ -424,6 +430,7 @@ public class Depict2Options {
 
 		switch (mode) {
 			case STEP1:
+			case CREATE_EXCEL:
 			case STEP2:
 				if (!commandLine.hasOption("pgc")) {
 					throw new ParseException("--permutationGeneCorrelations not specified");
@@ -441,6 +448,15 @@ public class Depict2Options {
 						permutationPathwayEnrichment = Integer.parseInt(commandLine.getOptionValue("ppe"));
 					} catch (NumberFormatException e) {
 						throw new ParseException("Error parsing --permutationPathwayEnrichment \"" + commandLine.getOptionValue("ppe") + "\" is not an int");
+					}
+				}
+				if (!commandLine.hasOption("pfdr")) {
+					throw new ParseException("--permutationFDR not specified");
+				} else {
+					try {
+						permutationFDR = Integer.parseInt(commandLine.getOptionValue("pfdr"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutationFDR \"" + commandLine.getOptionValue("pfdr") + "\" is not an int");
 					}
 				}
 				if (!commandLine.hasOption("gpr")) {
@@ -478,6 +494,7 @@ public class Depict2Options {
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				break;
@@ -485,6 +502,7 @@ public class Depict2Options {
 				pathwayDatabases = parsePd(commandLine);
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneInfoFile = null;
 				geneCorrelationWindow = 0;
@@ -498,6 +516,7 @@ public class Depict2Options {
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				break;
@@ -510,6 +529,7 @@ public class Depict2Options {
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneInfoFile = null;
 				geneCorrelationWindow = 0;
@@ -518,7 +538,6 @@ public class Depict2Options {
 
 		switch (mode) {
 			case STEP1:
-
 				//variantFilter
 				if (commandLine.hasOption("vf")) {
 					variantFilterFile = new File(commandLine.getOptionValue("vf"));
@@ -698,7 +717,9 @@ public class Depict2Options {
 				break;
 		}
 
+
 		if (mode == Depict2Mode.R_2_Z_SCORE) {
+
 			if (!commandLine.hasOption("ns")) {
 				throw new ParseException("--numberSamplesUsedForCor not specified");
 			} else {
@@ -712,6 +733,7 @@ public class Depict2Options {
 			numberSamplesUsedForCor = 0;
 		}
 
+
 		if (commandLine.hasOption("x")) {
 			x = commandLine.getOptionValue("x");
 		} else {
@@ -723,6 +745,7 @@ public class Depict2Options {
 		} else {
 			y = null;
 		}
+
 
 	}
 
@@ -768,7 +791,6 @@ public class Depict2Options {
 	public void printOptions() {
 
 		LOGGER.info("Supplied options:");
-
 		LOGGER.info(" * Mode: " + mode.name());
 		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
 
@@ -916,6 +938,8 @@ public class Depict2Options {
 			LOGGER.info(" * No pathway databases specified");
 		}
 	}
+
+
 
 	public String[] getGenotypeBasePath() {
 		return genotypeBasePath;
@@ -1072,7 +1096,7 @@ public class Depict2Options {
 	public int getNumberSamplesUsedForCor() {
 		return numberSamplesUsedForCor;
 	}
-
+	
 	public String getX() {
 		return x;
 	}
@@ -1081,4 +1105,7 @@ public class Depict2Options {
 		return y;
 	}
 
+	public int getPermutationFDR() {
+		return permutationFDR;
+	}
 }

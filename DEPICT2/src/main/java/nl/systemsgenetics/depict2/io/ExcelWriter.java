@@ -53,7 +53,11 @@ public class ExcelWriter {
 	 * @param hlaExcluded
 	 * @throws java.io.FileNotFoundException
 	 */
-	public static void saveEnrichmentsToExcel(final List<PathwayEnrichments> pathwayEnrichments, final String outputBasePath, List<String> traits, final boolean hlaExcluded, Depict2Options options) throws FileNotFoundException, IOException {
+	public static void saveEnrichmentsToExcel(final List<PathwayEnrichments> pathwayEnrichments,
+											  final String outputBasePath,
+											  List<String> traits,
+											  final boolean hlaExcluded,
+											  Depict2Options options) throws FileNotFoundException, IOException {
 
 		System.setProperty(" java.awt.headless", "true");
 
@@ -234,7 +238,7 @@ public class ExcelWriter {
 
 			for (int c = 0; c < 2; ++c) {
 				overviewSheet.autoSizeColumn(c);
-				overviewSheet.setColumnWidth(c, overviewSheet.getColumnWidth(c) + 1500);//compensate for with auto filter and inaccuracies
+				overviewSheet.setColumnWidth(c, overviewSheet.getColumnWidth(c) + 500);//compensate for with auto filter and inaccuracies
 			}
 
 			overviewSheet.createRow(r++);
@@ -246,11 +250,15 @@ public class ExcelWriter {
 
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
-			cell.setCellValue("Number of permutations used for FDR: " + options.getPermutationPathwayEnrichment());
+			cell.setCellValue("Number of permutations used for p-values: " + options.getPermutationPathwayEnrichment());
 
-//			row = overviewSheet.createRow(r++);
-//			cell = row.createCell(0, CellType.STRING);
-//			cell.setCellValue("Gene pruning r: " + options.getGenePruningR());
+			row = overviewSheet.createRow(r++);
+			cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Number of permutations used for FDR: " + options.getPermutationFDR());
+
+			row = overviewSheet.createRow(r++);
+			cell = row.createCell(0, CellType.STRING);
+			cell.setCellValue("Gene pruning r: " + options.getGenePruningR());
 
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
@@ -263,6 +271,7 @@ public class ExcelWriter {
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue("Regress out gene lengths from GWAS gene z-scores: " + options.isRegressGeneLengths());
+
 
 			if (options.isIgnoreGeneCorrelations()) {
 				row = overviewSheet.createRow(r++);

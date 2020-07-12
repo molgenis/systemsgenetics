@@ -6,8 +6,11 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import nl.systemsgenetics.depict2.Depict2Options;
+import nl.systemsgenetics.depict2.Depict2Step1Results;
 import nl.systemsgenetics.depict2.gene.Gene;
+import nl.systemsgenetics.depict2.io.ExcelWriter;
 import nl.systemsgenetics.depict2.io.IoUtils;
+import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
 import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.PcaColt;
@@ -98,6 +101,12 @@ public class Depict2Utilities {
 
 	}
 
+	/**
+	 * Converts a matrix of Pearson R values to z-scores. Diagonal of this matrix is set to zero.
+	 * @param options
+	 * @throws FileNotFoundException
+	 * @throws Exception
+	 */
 	public static void convertRtoZscore(Depict2Options options) throws FileNotFoundException, Exception {
 		DoubleMatrixDataset<String, String> corMatrix;
 
@@ -208,4 +217,23 @@ public class Depict2Utilities {
 		LOGGER.info("Done");
 
 	}
+
+	/**
+	 * Re-generate the excel file from existing files in the intermediate folder.
+	 * @param options
+	 * @throws Exception
+	 */
+	public static void generateExcelFromIntermediates(Depict2Options options) throws Exception {
+		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+
+		DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
+
+		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
+		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
+			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, options.getIntermediateFolder(), options.isExcludeHla()));
+		}
+		ExcelWriter.saveEnrichmentsToExcel(pathwayEnrichments, options.getOutputBasePath(), genePvalues.getColObjects(), options.isExcludeHla(), options);
+
+	}
+
 }

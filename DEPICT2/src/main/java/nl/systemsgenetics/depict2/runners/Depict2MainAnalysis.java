@@ -71,7 +71,21 @@ public class Depict2MainAnalysis {
 
 		File usedVariantsPerGeneFile = options.isSaveUsedVariantsPerGene() ? new File(options.getOutputBasePath() + "_usedVariantsPerGene.txt") : null;
 
-		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(), referenceGenotypeData, genes, options.getWindowExtend(), options.getMaxRBetweenVariants(), options.getNumberOfPermutations(), options.getNumberOfPermutationsRescue(), options.getOutputBasePath(), randomChi2, options.correctForLambdaInflation(), options.getPermutationGeneCorrelations(), options.getPermutationPathwayEnrichment(), options.getDebugFolder(), options.getVariantGeneLinkingFile(), usedVariantsPerGeneFile);
+		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(),
+				referenceGenotypeData,
+				genes,
+				options.getWindowExtend(),
+				options.getMaxRBetweenVariants(),
+				options.getNumberOfPermutations(),
+				options.getNumberOfPermutationsRescue(),
+				options.getOutputBasePath(),
+				randomChi2,
+				options.correctForLambdaInflation(),
+				options.getPermutationGeneCorrelations(),
+				options.getPermutationPathwayEnrichment() + options.getPermutationFDR(),
+				options.getDebugFolder(),
+				options.getVariantGeneLinkingFile(),
+				usedVariantsPerGeneFile);
 
 		DoubleMatrixDataset<String, String> genePvalues = gpc.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = gpc.getGenePvaluesNullGwas();
@@ -92,7 +106,6 @@ public class Depict2MainAnalysis {
 		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode STEP2 and exactly the same output path and genes file");
 
 		return new Depict2Step1Results(genePvalues, genePvaluesNullGwas, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
-
 	}
 
 	/**
@@ -109,7 +122,6 @@ public class Depict2MainAnalysis {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
 			step1Res = Depict2Step1Results.loadFromDisk(options.getRun1BasePath());
 			LOGGER.info("Gene p-values loaded");
-
 		}
 
 		DoubleMatrixDataset<String, String> genePvalues = step1Res.getGenePvalues();
@@ -117,11 +129,9 @@ public class Depict2MainAnalysis {
 		DoubleMatrixDataset<String, String> geneVariantCount = step1Res.getGeneVariantCount();
 		DoubleMatrixDataset<String, String> geneMaxSnpZscore = step1Res.getGeneMaxSnpZscore();
 		DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = step1Res.getGeneMaxSnpZscoreNullGwas();
-
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+
 		LOGGER.info("Loaded " + genes.size() + " genes");
-		
-		
 
 		// Identify genes with at least one variant in window
 		final HashSet<String> selectedGenes = new HashSet<>();
@@ -165,13 +175,17 @@ public class Depict2MainAnalysis {
 			hlaGenes = null;
 		}
 
+
 		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+
+		// Split the null GWAS matrix into the parts used in pathway enrichment.
 		final int nrSampleToUseForCorrelation = options.getPermutationGeneCorrelations();
 		final int nrSamplesToUseForNullBetas = options.getPermutationPathwayEnrichment();
+		final int nrSamplesToUseForFDR = options.getPermutationFDR();
 
 		final Set<String> nullGwasRuns = genePvaluesNullGwas.getHashCols().keySet();
 		if (nullGwasRuns.size() < (nrSampleToUseForCorrelation + nrSamplesToUseForNullBetas)) {
-			throw new Exception("Not enough null gwas runs: " + nullGwasRuns.size() + " < " + nrSampleToUseForCorrelation + " + " + nrSamplesToUseForNullBetas);
+			throw new Exception("Not enough null gwas runs: " + nullGwasRuns.size() + " < " + nrSampleToUseForCorrelation + " + " + nrSamplesToUseForNullBetas + " + " + nrSamplesToUseForFDR);
 		}
 
 		Iterator<String> nullGwasRunIterator = nullGwasRuns.iterator();
@@ -181,8 +195,10 @@ public class Depict2MainAnalysis {
 			sampleToUseForCorrelation.add(nullGwasRunIterator.next());
 		}
 
-		final LinkedHashSet<String> samplesToUseForNullBetas = new LinkedHashSet<>(nrSamplesToUseForNullBetas);
-		for (int i = 0; i < nrSamplesToUseForNullBetas; ++i) {
+		// Null beta and FDR samples are combined in the same matrix and split later in PathwayEnrichments as
+		// beta calculation is independent of other columns
+		final LinkedHashSet<String> samplesToUseForNullBetas = new LinkedHashSet<>(nrSamplesToUseForNullBetas + nrSamplesToUseForFDR);
+		for (int i = 0; i < nrSamplesToUseForNullBetas + nrSamplesToUseForFDR; ++i) {
 			samplesToUseForNullBetas.add(nullGwasRunIterator.next());
 		}
 
@@ -214,7 +230,8 @@ public class Depict2MainAnalysis {
 					geneMaxSnpZscore,
 					geneMaxSnpZscoreNullGwasCorrelation,
 					geneMaxSnpZscoreNullGwasBetas,
-					options.getGeneCorrelationWindow()
+					options.getGeneCorrelationWindow(),
+					nrSamplesToUseForFDR
 			));
 		}
 
