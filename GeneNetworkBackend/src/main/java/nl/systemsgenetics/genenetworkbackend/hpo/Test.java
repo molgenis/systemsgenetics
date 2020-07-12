@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.genenetworkbackend.hpo;
 
+import umcg.genetica.io.hpo.HpoOntology;
 import java.io.File;
 import org.biojava.nbio.ontology.Term;
 

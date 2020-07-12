@@ -6,8 +6,8 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import nl.systemsgenetics.depict2.development.CorrelateExpressionToPredictions;
 
-import nl.systemsgenetics.depict2.development.ExtractCol;
 import nl.systemsgenetics.depict2.development.First1000qtl;
 import nl.systemsgenetics.depict2.runners.*;
 import static nl.systemsgenetics.depict2.runners.Depict2MainAnalysis.run2;
@@ -182,7 +182,7 @@ public class Depict2 {
 					Depict2Utilities.getNormalizedGwasGenePvalues(options);
 					break;
 				case SPECIAL:
-					ExtractCol.extract(options.getGwasZscoreMatrixPath(), "GO:0001501", options.getOutputBasePath());
+					CorrelateExpressionToPredictions.run(options);
 			}
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Problem running mode: " + options.getMode());

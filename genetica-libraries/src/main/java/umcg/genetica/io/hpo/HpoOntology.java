@@ -3,18 +3,23 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.systemsgenetics.genenetworkbackend.hpo;
+package umcg.genetica.io.hpo;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
 import org.biojava.nbio.ontology.Triple;
+import org.biojava.nbio.ontology.io.OboParser;
 
 /**
  *
@@ -27,9 +32,13 @@ public class HpoOntology {
 
 	public HpoOntology(File hpoOboFile) throws IOException, FileNotFoundException, ParseException {
 
-		hpoOntologyData = HpoFinder.loadHpoOntology(hpoOboFile);
+		hpoOntologyData = loadHpoOntology(hpoOboFile);
 		is_a = hpoOntologyData.getTerm("is_a");
 
+	}
+	
+	public Set<Term> getAllTerms(){
+		return hpoOntologyData.getTerms();
 	}
 
 	public List<Term> getChildern(Term queryHpoTerm) {
@@ -39,6 +48,19 @@ public class HpoOntology {
 			hpoChildern.add(t.getSubject());
 		}
 		return Collections.unmodifiableList(hpoChildern);
+	}
+	
+	public List<Term> getAllDescendants(Term queryHpoTerm){
+		
+		ArrayList<Term> descendants = new ArrayList<>();
+		
+		for (Triple t : hpoOntologyData.getTriples(null, queryHpoTerm, is_a)) {
+			Term child = t.getSubject();
+			descendants.add(child);
+			descendants.addAll(descendants);
+		}
+		
+		return Collections.unmodifiableList(descendants);
 	}
 
 	public List<Term> getParents(Term queryHpoTerm) {
@@ -78,6 +100,17 @@ public class HpoOntology {
 
 		return false;
 
+	}
+
+	public static Ontology loadHpoOntology(final File hpoOboFile) throws FileNotFoundException, IOException, ParseException {
+		OboParser parser = new OboParser();
+		BufferedReader oboFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(hpoOboFile)));
+		Ontology hpoOntology = parser.parseOBO(oboFileReader, "HPO", "HPO");
+		return hpoOntology;
+	}
+
+	public Ontology getHpoOntologyData() {
+		return hpoOntologyData;
 	}
 
 }

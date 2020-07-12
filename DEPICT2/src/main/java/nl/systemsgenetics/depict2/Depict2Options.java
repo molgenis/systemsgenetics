@@ -77,6 +77,8 @@ public class Depict2Options {
 	private final boolean quantileNormalizePermutations;
 	private final boolean regressGeneLengths;
 	private final int numberSamplesUsedForCor;
+	private final String x;
+	private final String y;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -325,12 +327,22 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Linearly correct for the effect of gene lengths on gene p-values");
 		OptionBuilder.withLongOpt("regress-gene-lengths");
 		OPTIONS.addOption(OptionBuilder.create("rgl"));
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Only relevant for MODE: R_2_Z_SCORE to specify the number of samples used to create the correlation matrix");
 		OptionBuilder.withLongOpt("numberSamplesUsedForCor");
 		OPTIONS.addOption(OptionBuilder.create("ns"));
+
+		OptionBuilder.withArgName("String");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Developtment only 1");
+		OPTIONS.addOption(OptionBuilder.create("x"));
+
+		OptionBuilder.withArgName("String");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Developtment only 2");
+		OPTIONS.addOption(OptionBuilder.create("y"));
 
 	}
 
@@ -686,20 +698,32 @@ public class Depict2Options {
 				break;
 		}
 
-		if(mode == Depict2Mode.R_2_Z_SCORE){	
+		if (mode == Depict2Mode.R_2_Z_SCORE) {
 			if (!commandLine.hasOption("ns")) {
-					throw new ParseException("--numberSamplesUsedForCor not specified");
-				} else {
-					try {
-						numberSamplesUsedForCor = Integer.parseInt(commandLine.getOptionValue("ns"));
-					} catch (NumberFormatException e) {
-						throw new ParseException("Error parsing --numberSamplesUsedForCor \"" + commandLine.getOptionValue("ns") + "\" is not an int");
-					}
+				throw new ParseException("--numberSamplesUsedForCor not specified");
+			} else {
+				try {
+					numberSamplesUsedForCor = Integer.parseInt(commandLine.getOptionValue("ns"));
+				} catch (NumberFormatException e) {
+					throw new ParseException("Error parsing --numberSamplesUsedForCor \"" + commandLine.getOptionValue("ns") + "\" is not an int");
 				}
+			}
 		} else {
 			numberSamplesUsedForCor = 0;
 		}
+
+		if (commandLine.hasOption("x")) {
+			x = commandLine.getOptionValue("x");
+		} else {
+			x = null;
+		}
 		
+		if (commandLine.hasOption("y")) {
+			y = commandLine.getOptionValue("y");
+		} else {
+			y = null;
+		}
+
 	}
 
 	private List<PathwayDatabase> parsePd(final CommandLine commandLine) throws ParseException {
@@ -813,6 +837,10 @@ public class Depict2Options {
 				if (geneInfoFile != null) {
 					LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
 				}
+				break;
+			case SPECIAL:
+				LOGGER.info(" * X: " + x);
+				LOGGER.info(" * Y: " + y);
 				break;
 			case STEP1:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -1043,6 +1071,14 @@ public class Depict2Options {
 
 	public int getNumberSamplesUsedForCor() {
 		return numberSamplesUsedForCor;
+	}
+
+	public String getX() {
+		return x;
+	}
+
+	public String getY() {
+		return y;
 	}
 
 }
