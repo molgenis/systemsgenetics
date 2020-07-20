@@ -1,3 +1,10 @@
+library(ggplot2)
+library(gridExtra)
+library(readxl)
+library(pheatmap)
+library(RColorBrewer)
+library(gridExtra)
+library(data.table)
 
 # Function definitions
 # ------------------------------------------------------ 
@@ -20,8 +27,17 @@ theme.nature <- function(p, base_size = 11, base_family = "ArialMT") {
 }
 # ------------------------------------------------------ 
 # Plot depict2 scatterplot by enrichment score
-make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour="Enrichment.Z.score") {
-  data <- data[order(abs(data[,colour])),]
+make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour="Enrichment.Z.score", limits=NA) {
+  data   <- data[order(abs(data[,colour])),]
+  
+  if (is.na(limits)) {
+    limits <- c(-max(abs(data[,colour])), max(abs(data[,colour])))
+  } else {
+    data[data[,colour] < limits[1]+0.0001 ,colour] <- limits[1]
+    data[data[,colour] > limits[2]-0.0001 ,colour] <- limits[2]
+    
+  }
+  
   # low  <- colorRampPalette(c('firebrick3', '#F6DCDC'))
   # mid  <- colorRampPalette(c("#F6DCDC", "#DDE6EE"))
   # high <- colorRampPalette(c('#DDE6EE', 'dodgerblue4'))
@@ -44,26 +60,26 @@ make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour
   #  legend("topright",legend=c("15", "0", "-15"),fill=c("dodgerblue4", "grey", "firebrick3"), title="Z-score", border=F, bty="n")
   # #legend.scale(c(-15, 15), col=cols)
   # 
-  # p <- ggplot(aes(x=as.numeric(data[,x]),
-  #                 y=as.numeric(data[,y]),
-  #                 fill=data[,colour]),
-  #             data=data) +
-  #   geom_point(color=cols) +
-  #   labs(title=trait) +
-  #   xlab(x) +
-  #   ylab(y) +
-  #   scale_fill_continuous(name="Z-score", limits=c(-15, 15), low="firebrick3", mid="grey", high="dodgerblue4")
+   p <- ggplot(aes(x=as.numeric(data[,x]),
+                   y=as.numeric(data[,y]),
+                   colour=data[,colour]),
+               data=data) +
+     geom_point() +
+     labs(title=trait) +
+     xlab(x) +
+     ylab(y) +
+     scale_colour_gradient2(name="Z-score", limits=limits, low="firebrick3", mid="white", high="dodgerblue4")
   
-  p <- ggplot(aes(x=as.numeric(data[,x]), y=as.numeric(data[,y])), data=data) +
-    labs(title=trait) + xlab(x) + ylab(y)
+  #p <- ggplot(aes(x=as.numeric(data[,x]), y=as.numeric(data[,y])), data=data) +
+  #  labs(title=trait) + xlab(x) + ylab(y)
   
-  p <- ggplot(aes(x=as.numeric(data[,x]), y=as.numeric(data[,y]), colour=data[,colour]), data=data) +
-    geom_point() +
-    labs(title=trait) + xlab(x) + ylab(y) +
-    scale_colour_gradient(low=adjustcolor("red", alpha.f = 0.5),
-                          high=adjustcolor("blue", alpha.f = 0.5),
-                          limits=c(-15, 15),
-                          name="Z-score")
+  #p <- ggplot(aes(x=as.numeric(data[,x]), y=as.numeric(data[,y]), colour=data[,colour]), data=data) +
+  #  geom_point() +
+  #  labs(title=trait) + xlab(x) + ylab(y) +
+  #  scale_colour_gradient(low=adjustcolor("red", alpha.f = 0.5),
+  #                        high=adjustcolor("blue", alpha.f = 0.5),
+  #                        limits=c(-15, 15),
+  #                        name="Z-score")
   
   p <- theme.nature(p)
   return(p)

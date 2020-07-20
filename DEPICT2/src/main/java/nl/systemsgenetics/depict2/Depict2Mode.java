@@ -10,13 +10,14 @@ package nl.systemsgenetics.depict2;
  * @author patri
  */
 public enum Depict2Mode {
-	RUN,
-	RUN2,
+	STEP1,
+	STEP2,
 	CONVERT_TXT,
 	CONVERT_BIN,
 	CONVERT_EQTL,
 	CONVERT_GTEX,
 	CONVERT_TXT_MERGE,
+	GET_NORMALIZED_GENEP,
 	PTOZSCORE,
 	PCA,
 	FIRST1000,
@@ -26,5 +27,7 @@ public enum Depict2Mode {
 	MERGE_BIN,
 	CORE_GENE_AUC,
 	INVESTIGATE_NETWORK,
+	R_2_Z_SCORE,
+	CREATE_EXCEL,
 	SPECIAL;
 }

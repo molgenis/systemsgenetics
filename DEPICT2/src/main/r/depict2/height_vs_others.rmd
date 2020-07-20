@@ -8,19 +8,30 @@ library(gridExtra)
 
 source("depict2_functions.r")
 
+# Read reference datasets
 ensembl <- read.table("~/Documents/data/reference/ensembl/ensembl_gene_position_b37_biotype.txt",sep="\t", header=T, row.names = 1, stringsAsFactors = F)
 ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
+rownames(ensembl) <- make.names(ensembl$Gene.name, unique=T)
 
-path.54 <- "/home/work/Desktop/depict2/output/height_paper/v55/"
-path.55 <- "/home/work/Desktop/depict2/output/height_paper/v56/"
+#Gnomad PLI
+gnomad <- read.table("~/Documents/data/reference/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt",sep="\t", header=T, stringsAsFactors = F)
+gnomad <- gnomad[!duplicated(gnomad$gene),]
+rownames(gnomad) <- make.names(gsub("\\.\\d+", "", ensembl[gnomad$gene, ]$Gene.stable.ID.version), unique=T)
+
+#path.54 <- "/home/work/Desktop/depict2/output/height_paper/v55/"
+path.55 <- "/home/work/Desktop/depict2/output/height_paper_v2/v56/"
 
 files <- c()
-files <- list.files(path.54, pattern="*.xlsx", full.names = T)
+#files <- list.files(path.54, pattern="*.xlsx", full.names = T)
 files <- c(files, list.files(path.55, pattern="*.xlsx", full.names = T))
 
 datasets <- list()
 for (file in files) {
   name <- gsub("\\_hg19\\_enrichtments\\_exHla\\.xlsx", "", basename(file))
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
+  name <- gsub("\\_hg19\\.txt\\_exHla\\.xlsx", "", name)
+  
   if (length(grep("v55", file)) > 0) {
     name <- paste0(name, "_v55")
   }
@@ -32,18 +43,19 @@ coreg <- make.zscore.matrix(datasets)
 pvals <- make.zscore.matrix(datasets, collumn="Enrichment.P.value")
 
 files <- c()
-files <- list.files(path.54, pattern="*_genePvalues.txt", full.names = T)
+#files <- list.files(path.54, pattern="*_genePvalues.txt", full.names = T)
 files <- c(files, list.files(path.55, pattern="*_genePvalues.txt", full.names = T))
 
 genep <- read.enrichments(files)
 
 files <- c()
-files <- list.files(path.54, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T)
+#files <- list.files(path.54, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T)
 files <- c(files, list.files(path.55, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T))
 
 hpo.auc <- read.enrichments(files)
 
-files <- list.files(path.54, pattern="*_genePvalue_hpoAUC_hpo.txt", full.names = T)
+#files <- list.files(path.54, pattern="*_genePvalue_hpoAUC_hpo.txt", full.names = T)
+files <- c()
 files <- c(files,  list.files(path.55, pattern="*_genePvalue_hpoAUC_hpo.txt", full.names = T))
 
 genep.auc <- read.enrichments(files)
@@ -51,10 +63,12 @@ genep.auc <- read.enrichments(files)
 
 # Correlation heatmap
 ```{r}
-pdf("output/plots/height_vs_others_corrheatmap.pdf", width=10, height = 10)
-
+pdf("output/plots/height_vs_others_corrheatmap.pdf", width=40, height = 40)
 cors <- cor(coreg)
+diag(cors) <- 0.5
 hm(cors, main="coregualtion")
+dev.off()
+
 
 hpo.auc[hpo.auc==0] <- NA
 cors <- cor(hpo.auc, use="pairwise.complete.obs")
@@ -109,7 +123,6 @@ sapply(colnames(hpo.auc), function(x){
 par(mfrow=c(1,1))
 
 dev.off()
-
 apply(hpo.auc,2, median, na.rm = T)
 
 
@@ -125,8 +138,6 @@ sapply(grep("run", colnames(hpo.auc), value=T, invert = T), function(x){
 })
 abline(v=0.5, col="grey", lwd=2, lty=2)
 dev.off()
-
-
 
 pdf("output/plots/coreg_density.pdf", width=10, height = 5)
 
@@ -177,10 +188,7 @@ simple.qq.plot(p56[,1])
 
 simple.qq.plot(a55[,1])
 simple.qq.plot(a56[,1])
-
-
 ```
-
 
 #Simulated comparrison
 ```{r}
@@ -191,4 +199,59 @@ simple.qq.plot(tmp[,1])
 plot(-log10(tmp[rownames(pvals),1]), -log10(pvals[,"run_37_enrichtments_exHla.xlsx_v55"]))
 abline(a=0, b=1, col="blue")
 ```
+
+# PLI vs Bonf significance
+```{r}
+genep[is.na(genep)] <- 1
+bonf.sig.gwas.genes <- rownames(genep)[rowSums(genep < (0.05 / (nrow(genep) * ncol(genep)))) >=1]
+
+bonf.sig.coreg.genes <- unique(unlist(lapply(datasets[grep("run", names(datasets), invert=T, value=T)], function(dataset){
+  coreg <- dataset$Coregulation
+  return(coreg$Gene.set[coreg$Bonferroni.significant])
+})))
+
+others <- unique(unlist(lapply(datasets, function(dataset){
+  coreg <- dataset$Coregulation
+  return(coreg$Gene.set[!coreg$Bonferroni.significant])
+})))
+
+bonf.sig.coreg.genes <- intersect(bonf.sig.coreg.genes, rownames(gnomad))
+others               <- intersect(others, rownames(gnomad))
+others               <- others[!others %in% bonf.sig.coreg.genes]
+
+
+df.plot <- data.frame(pli=c(gnomad[others,"pLI"],
+                            gnomad[bonf.sig.coreg.genes,"pLI"],
+                            gnomad[bonf.sig.gwas.genes, "pLI"]),
+                      annot=c(rep(paste0("Others N=", length(others)), length(others)), 
+                              rep(paste0("Core genes N=", length(bonf.sig.coreg.genes)), length(bonf.sig.coreg.genes)),
+                              rep(paste0("GWAS genes N=", length(bonf.sig.gwas.genes)), length(bonf.sig.gwas.genes))))
+
+pdf(width=10, height=7.5, file="~/Desktop/depict2/plots/PLI_bonfsig_vs_rest.pdf")
+p <- ggplot(df.plot, aes(y=pli, x=annot, fill=annot)) +
+geom_violin(color="white", scale="width") +
+  geom_boxplot(width=0.05, color="black") +
+  ylab("Gnomad Pli score (LoF intolerance)") +
+  xlab("")
+
+theme.nature(p)
+dev.off()
+
+#boxplot(gnomad[others,"pLI"], gnomad[bonf.sig.coreg.genes,"pLI"], names=c("~18k others", "164 bonf core genes"), ylab="pLI score")
+#boxplot(gnomad[others,"exac_pLI"], gnomad[bonf.sig.coreg.genes,"exac_pLI"], names=c("~18k others", "164 bonf core genes"), ylab="pLI score")
+
+#par(mfrow=c(1,3))
+#boxplot(gnomad[others,"syn_z"], gnomad[bonf.sig.coreg.genes,"syn_z"], names=c("~18k others", "164 bonf core genes"), ylab="Z score", main="Synonymous")
+#boxplot(gnomad[others,"mis_z"], gnomad[bonf.sig.coreg.genes,"mis_z"], names=c("~18k others", "164 bonf core genes"), ylab="Z score",
+#main="Missense")
+#boxplot(gnomad[others,"lof_z"], gnomad[bonf.sig.coreg.genes,"lof_z"], names=c("~18k others", "164 bonf core genes"), ylab="Z score",
+#main="LoF")
+
+#par(mfrow=c(1,1))
+
+#boxplot(gnomad[others,"oe_lof"], gnomad[bonf.sig.coreg.genes,"oe_lof"], names=c("~18k others", "164 bonf core genes"), ylab="pLI score")
+```
+
+
+
 

@@ -34,10 +34,10 @@ public class ConvertReactomeToMatrix {
 	 */
 	public static void main(String[] args) throws IOException, Exception {
 
-		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\Ensembl2Reactome_All_Levels.txt");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
-		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + pathwayFile.getName() + "_matrix.txt");
-		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + pathwayFile.getName() + "_genesInPathways.txt");
+		final File pathwayFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\Ensembl2Reactome_All_Levels_2020_07_18.txt");
+		final File geneOrderFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgncV98.txt");
+		final File outputFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\" + pathwayFile.getName() + "_matrix.txt.gz");
+		final File outputFile2 = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\" + pathwayFile.getName() + "_genesInPathways.txt");
 		
 		HashMap<String, HashSet<String>> pathwayToGenes = readPathwayFile(pathwayFile);
 

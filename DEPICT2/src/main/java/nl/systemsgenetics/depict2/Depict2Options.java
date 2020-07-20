@@ -43,6 +43,7 @@ public class Depict2Options {
 	private final RandomAccessGenotypeDataReaderFormats genotypeType;
 	private final File genotypeSamplesFile;
 	private final File outputBasePath;
+	private final File run1BasePath;
 	private final File geneInfoFile;
 	private final File gwasZscoreMatrixPath;
 	private final int numberOfPermutations;
@@ -59,6 +60,7 @@ public class Depict2Options {
 	private final boolean correctForLambdaInflation;
 	private final int permutationPathwayEnrichment;
 	private final int permutationGeneCorrelations;
+	private final int permutationFDR;
 	private final boolean ignoreGeneCorrelations;
 	private final double genePruningR;
 	private final boolean forceNormalGenePvalues;
@@ -75,6 +77,9 @@ public class Depict2Options {
 	private final double mafFilter;
 	private final boolean quantileNormalizePermutations;
 	private final boolean regressGeneLengths;
+	private final int numberSamplesUsedForCor;
+	private final String x;
+	private final String y;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -87,8 +92,8 @@ public class Depict2Options {
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("On of the following modes:\n"
-				+ "* RUN - Run the DEPICT2 prioritization.\n"
-				+ "* RUN2 - Run the DEPICT2 prioritization starting at stage 2.\n"
+				+ "* STEP1 - Run the DEPICT2 prioritization.\n"
+				+ "* STEP2 - Run the DEPICT2 prioritization starting at stage 2.\n"
 				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
 				+ "* CONVERT_TXT_MERGE - Merge multiple txt pvalue files into one matrix containing only overlapping snps"
 				+ "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output optionally --columnsToExtract\n"
@@ -97,6 +102,8 @@ public class Depict2Options {
 				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
 				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output"
 				+ "* CORRELATE_GENES - Create gene correlation matrix with 0 on diagnonal. Use --gwas as input matrix (genes on row, tab sepperated), --output and --genes. Optionally use --corZscore to create Z-score matrix"
+				+ "* R_2_Z_SCORE - Convert correlation matrix with r values to Z-score matrix. Must be used together with -ns"
+				+ "* MERGE_BIN - Merge multiple bin matrix on overlapping rows"
 		);
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
@@ -146,6 +153,12 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("output");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("o"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("The output path of STEP1");
+		OptionBuilder.withLongOpt("stepOneOutput");
+		OPTIONS.addOption(OptionBuilder.create("soo"));
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
@@ -246,6 +259,12 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("permutationPathwayEnrichment");
 		OPTIONS.addOption(OptionBuilder.create("ppe"));
 
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Number of random phenotypes to use to determine null distribution for FDR calculation");
+		OptionBuilder.withLongOpt("permutationFDR");
+		OPTIONS.addOption(OptionBuilder.create("pfdr"));
+
 		OptionBuilder.withArgName("double");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Exclude correlated genes in pathway enrichments");
@@ -316,6 +335,22 @@ public class Depict2Options {
 		OptionBuilder.withLongOpt("regress-gene-lengths");
 		OPTIONS.addOption(OptionBuilder.create("rgl"));
 
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Only relevant for MODE: R_2_Z_SCORE to specify the number of samples used to create the correlation matrix");
+		OptionBuilder.withLongOpt("numberSamplesUsedForCor");
+		OPTIONS.addOption(OptionBuilder.create("ns"));
+
+		OptionBuilder.withArgName("String");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Developtment only 1");
+		OPTIONS.addOption(OptionBuilder.create("x"));
+
+		OptionBuilder.withArgName("String");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Developtment only 2");
+		OPTIONS.addOption(OptionBuilder.create("y"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -348,18 +383,28 @@ public class Depict2Options {
 		saveUsedVariantsPerGene = commandLine.hasOption("uvg");
 		quantileNormalizePermutations = commandLine.hasOption("qn");
 		regressGeneLengths = commandLine.hasOption("rgl");
-		
-		if(quantileNormalizePermutations && forceNormalGenePvalues){
+		run1BasePath = commandLine.hasOption("soo") ? new File(commandLine.getOptionValue("soo")) : outputBasePath;
+
+		if (quantileNormalizePermutations && forceNormalGenePvalues) {
 			throw new ParseException("Can't combine -qn with -fngp");
 		}
 
 		try {
-			mode = Depict2Mode.valueOf(commandLine.getOptionValue("m").toUpperCase());
+
+			String modeString = commandLine.getOptionValue("m").toUpperCase();
+
+			if (modeString.equals("RUN")) {
+				modeString = "STEP1";
+			} else if (modeString.equals("RUN2")) {
+				modeString = "STEP2";
+			}
+
+			mode = Depict2Mode.valueOf(modeString);
 		} catch (IllegalArgumentException e) {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.RUN || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE || mode == Depict2Mode.R_2_Z_SCORE) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -384,8 +429,9 @@ public class Depict2Options {
 		}
 
 		switch (mode) {
-			case RUN:
-			case RUN2:
+			case STEP1:
+			case CREATE_EXCEL:
+			case STEP2:
 				if (!commandLine.hasOption("pgc")) {
 					throw new ParseException("--permutationGeneCorrelations not specified");
 				} else {
@@ -404,6 +450,15 @@ public class Depict2Options {
 						throw new ParseException("Error parsing --permutationPathwayEnrichment \"" + commandLine.getOptionValue("ppe") + "\" is not an int");
 					}
 				}
+				if (!commandLine.hasOption("pfdr")) {
+					throw new ParseException("--permutationFDR not specified");
+				} else {
+					try {
+						permutationFDR = Integer.parseInt(commandLine.getOptionValue("pfdr"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutationFDR \"" + commandLine.getOptionValue("pfdr") + "\" is not an int");
+					}
+				}
 				if (!commandLine.hasOption("gpr")) {
 					throw new ParseException("--genePruningR not specified");
 				} else {
@@ -419,7 +474,7 @@ public class Depict2Options {
 					geneInfoFile = new File(commandLine.getOptionValue("ge"));
 				}
 				if (!commandLine.hasOption("gcw")) {
-					throw new ParseException("--geneCorrelationWindow not specified");
+					geneCorrelationWindow = -1;
 				} else {
 					try {
 						geneCorrelationWindow = Integer.parseInt(commandLine.getOptionValue("gcw"));
@@ -439,6 +494,7 @@ public class Depict2Options {
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				break;
@@ -446,8 +502,22 @@ public class Depict2Options {
 				pathwayDatabases = parsePd(commandLine);
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneInfoFile = null;
+				geneCorrelationWindow = 0;
+				break;
+			case GET_NORMALIZED_GENEP:
+				if (commandLine.hasOption("ge")) {
+					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				} else {
+					throw new ParseException("--genes not specified");
+				}
+				pathwayDatabases = null;
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
+				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				break;
 			case CONVERT_BIN:
@@ -459,6 +529,7 @@ public class Depict2Options {
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
 				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
 				genePruningR = 0;
 				geneInfoFile = null;
 				geneCorrelationWindow = 0;
@@ -466,8 +537,7 @@ public class Depict2Options {
 		}
 
 		switch (mode) {
-			case RUN:
-
+			case STEP1:
 				//variantFilter
 				if (commandLine.hasOption("vf")) {
 					variantFilterFile = new File(commandLine.getOptionValue("vf"));
@@ -578,9 +648,9 @@ public class Depict2Options {
 
 				}
 				break;
-			case RUN2:
+			case STEP2:
 				if (pathwayDatabases.isEmpty()) {
-					throw new ParseException("The option --pathwayDatabase is needed for mode=RUN2");
+					throw new ParseException("The option --pathwayDatabase is needed for mode=STEP2");
 				}
 				genotypeBasePath = null;
 				genotypeType = null;
@@ -647,6 +717,36 @@ public class Depict2Options {
 				break;
 		}
 
+
+		if (mode == Depict2Mode.R_2_Z_SCORE) {
+
+			if (!commandLine.hasOption("ns")) {
+				throw new ParseException("--numberSamplesUsedForCor not specified");
+			} else {
+				try {
+					numberSamplesUsedForCor = Integer.parseInt(commandLine.getOptionValue("ns"));
+				} catch (NumberFormatException e) {
+					throw new ParseException("Error parsing --numberSamplesUsedForCor \"" + commandLine.getOptionValue("ns") + "\" is not an int");
+				}
+			}
+		} else {
+			numberSamplesUsedForCor = 0;
+		}
+
+
+		if (commandLine.hasOption("x")) {
+			x = commandLine.getOptionValue("x");
+		} else {
+			x = null;
+		}
+		
+		if (commandLine.hasOption("y")) {
+			y = commandLine.getOptionValue("y");
+		} else {
+			y = null;
+		}
+
+
 	}
 
 	private List<PathwayDatabase> parsePd(final CommandLine commandLine) throws ParseException {
@@ -691,7 +791,6 @@ public class Depict2Options {
 	public void printOptions() {
 
 		LOGGER.info("Supplied options:");
-
 		LOGGER.info(" * Mode: " + mode.name());
 		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
 
@@ -761,7 +860,11 @@ public class Depict2Options {
 					LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
 				}
 				break;
-			case RUN:
+			case SPECIAL:
+				LOGGER.info(" * X: " + x);
+				LOGGER.info(" * Y: " + y);
+				break;
+			case STEP1:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 
 				if (genotypeBasePath != null) {
@@ -791,7 +894,8 @@ public class Depict2Options {
 				logSharedRun1Run2();
 
 				break;
-			case RUN2:
+			case STEP2:
+				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
 				logSharedRun1Run2();
 
 				break;
@@ -834,6 +938,8 @@ public class Depict2Options {
 			LOGGER.info(" * No pathway databases specified");
 		}
 	}
+
+
 
 	public String[] getGenotypeBasePath() {
 		return genotypeBasePath;
@@ -981,5 +1087,25 @@ public class Depict2Options {
 
 	public boolean isRegressGeneLengths() {
 		return regressGeneLengths;
+	}
+
+	public String getRun1BasePath() {
+		return run1BasePath.getPath();
+	}
+
+	public int getNumberSamplesUsedForCor() {
+		return numberSamplesUsedForCor;
+	}
+	
+	public String getX() {
+		return x;
+	}
+
+	public String getY() {
+		return y;
+	}
+
+	public int getPermutationFDR() {
+		return permutationFDR;
 	}
 }

@@ -9,27 +9,32 @@ source("depict2_functions.r")
 
 path <- "/home/work/Desktop/depict2/maf_filtered/metabolites_2016_27005778_hg19_48/"
 
-path <- "/home/work/Desktop/depict2/output/maf_filtered/v51/"
-files <- list.files(path)
+path <- "/home/work/Desktop/depict2/output/height_paper_v2/v56/"
+files <- list.files(path, pattern="*.xlsx")
 
 datasets <- list()
 for (file in files) {
   name <- gsub("\\_hg19\\_enrichtments\\_exHla\\.xlsx", "", file)
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
+  name <- gsub("\\_hg19\\.txt\\_exHla\\.xlsx", "", name)
+  
   datasets[[name]] <- read.depict2(paste0(path, file))
 }
 
 # Manual 
-dataset <- "educational_attainment_2018_30038396"
-p1 <- make.tsne.plot(cur.dataset$expression, "Educational attainment", x="Annotation1", y="Annotation2") +
+dataset     <- "run_41_enrichtments_exHla.xlsx"
+cur.dataset <- datasets[[dataset]]
+p1          <- make.tsne.plot(cur.dataset$expression, dataset, x="Annotation1", y="Annotation2") +
   xlab("t-SNE component 1") +
   ylab("t-SNE component 2")
 
 p1
 
-pdf(width=10, height=10, file="/home/work/Desktop/depict2/plots/v51_tsne_plots_blood.pdf")
+pdf(width=10, height=10, file="/home/work/Desktop/depict2/plots/v56_tsne_plots_blood.pdf")
 for (dataset in 1:length(datasets)) {
   cur.dataset <- datasets[[dataset]]
-  p1 <- make.tsne.plot(cur.dataset$expression, paste0(names(datasets)[dataset], " expression"), x="Annotation1", y="Annotation2")
+  p1 <- make.tsne.plot(cur.dataset$expression, paste0(names(datasets)[dataset], " expression"), x="Annotation1", y="Annotation2", limits=c(-6, 6))
   #p2 <- make.tsne.plot(cur.dataset$expression_scP3, paste0(names(datasets)[dataset], " expression_scP3"), x="Annotation2", y="Annotation3")
   #p3 <- make.tsne.plot(cur.dataset$expression_brain,paste0(names(datasets)[dataset], " expression_brain"), x="Annotation6", y="Annotation7")
   plot(p1)
@@ -38,7 +43,7 @@ for (dataset in 1:length(datasets)) {
 dev.off()
 
 
-pdf(width=30, height=30, file="~/Desktop/depict2/plots/v51_correlation_heatmaps.pdf")
+pdf(width=30, height=30, file="~/Desktop/depict2/plots/v56_correlation_heatmaps.pdf")
 trait <- "Coregulation"
 bla <- make.zscore.matrix(datasets, trait=trait)
 make.correlation.heatmap(bla, trait)
