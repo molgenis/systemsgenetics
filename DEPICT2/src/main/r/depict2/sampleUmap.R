@@ -26,8 +26,8 @@ str(gnExp)
 library(umap)
 
 custom.settings = umap.defaults
-custom.settings$n_neighbors = 15
-custom.settings$min_dist = 0.01
+custom.settings$n_neighbors = 50
+custom.settings$min_dist = 0.5
 custom.settings$n_epochs = 100000
 gnExpUmap <- umap(t(gnExp), config = custom.settings)
 
