@@ -450,6 +450,10 @@ public class InteractionModelCollection {
                 addInteractionModel(ctModel, ctModel.getModelName(), false);
                 for (int sampleIndex = 0; sampleIndex <= numberOfSamples - 1; sampleIndex++) {
                     int configurationIndex = 0;
+                    if(genotypes[sampleIndex] == -1){
+                        // -1 is code for missing genotype
+                        continue;
+                    }
                     for (int celltypeIndex = 0; celltypeIndex < numberOfCelltypes; celltypeIndex++) {
                         // There is one fullModel including all celltypes add values for celltypePerc and interaction term of
                         // celltypePerc * genotypePerc so that you get [[0.3, 0.6], [0.4, 0.8], [0.2, 0.4], [0.1, 0.2]]
