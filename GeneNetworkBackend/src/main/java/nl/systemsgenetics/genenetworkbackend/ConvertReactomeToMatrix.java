@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -44,9 +45,14 @@ public class ConvertReactomeToMatrix {
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
 
 		System.out.println("Total genesets: " + pathwayToGenes.size());
-		System.out.println("Genes in order file: " + geneOrder.size());
+		
+		LinkedHashSet<String> geneOrder2 = new LinkedHashSet<>(geneOrder);
 
-		DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder, pathwayToGenes.keySet());
+		System.out.println("Genes in order file: " + geneOrder2.size());
+
+
+		DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder2, pathwayToGenes.keySet());
+		
 		
 		HashSet<String> genesWithPathway = new HashSet<>(10000);
 		BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));
@@ -56,7 +62,7 @@ public class ConvertReactomeToMatrix {
 			String pathway = pathwayToGenesEntry.getKey();
 
 			for (String gene : pathwayToGenesEntry.getValue()) {
-
+				
 				if (pathwayMatrix.containsRow(gene)) {
 					
 					if(genesWithPathway.add(gene)){

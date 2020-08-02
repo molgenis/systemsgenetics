@@ -102,7 +102,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		hashRows = new LinkedHashMap<R, Integer>(rowNames.size());
 		hashCols = new LinkedHashMap<C, Integer>(colNames.size());
-
+		
 		int i = 0;
 		for (R row : rowNames) {
 			hashRows.put(row, i);
@@ -115,11 +115,20 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			++i;
 		}
 
+		if(hashRows.size() != rowNames.size()){
+			throw new RuntimeException("Can't create matrix with duplicated rows");
+		}
+		
+		if(hashCols.size() != colNames.size()){
+			throw new RuntimeException("Can't create matrix with duplicated cols");
+		}
+		
 		if ((hashRows.size() * (long) hashCols.size()) < (Integer.MAX_VALUE - 2)) {
 			matrix = new DenseDoubleMatrix2D(hashRows.size(), hashCols.size());
 		} else {
 			matrix = new DenseLargeDoubleMatrix2D(hashRows.size(), hashCols.size());
 		}
+		
 
 	}
 
