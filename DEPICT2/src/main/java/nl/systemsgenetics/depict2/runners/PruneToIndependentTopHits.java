@@ -85,8 +85,9 @@ public class PruneToIndependentTopHits {
 		
 		if(referenceGenotypeData == null){
 			RandomAccessGenotypeData referenceGenotypeData2 = IoUtils.loadGenotypes(options, allSignificantVariants);
-			genotypeIdVariantMap = referenceGenotypeData2.getVariantIdMap();
+			genotypeIdVariantMap = referenceGenotypeData2.getVariantIdMap();//only significant variants are loaded so make map of all
 		} else {
+			//only make map of significant variants, we don't need any others.
 			genotypeIdVariantMap = referenceGenotypeData.getVariantIdMap(new VariantIdIncludeFilter(allSignificantVariants));
 		}
 		
