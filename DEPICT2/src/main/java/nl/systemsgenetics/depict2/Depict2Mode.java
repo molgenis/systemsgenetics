@@ -29,5 +29,6 @@ public enum Depict2Mode {
 	INVESTIGATE_NETWORK,
 	R_2_Z_SCORE,
 	CREATE_EXCEL,
+	TOP_HITS,
 	SPECIAL;
 }

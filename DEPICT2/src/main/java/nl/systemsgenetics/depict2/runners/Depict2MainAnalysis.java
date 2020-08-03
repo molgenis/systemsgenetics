@@ -105,6 +105,8 @@ public class Depict2MainAnalysis {
 		}
 		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode STEP2 and exactly the same output path and genes file");
 
+		PruneToIndependentTopHits.prune(options, referenceGenotypeData);
+		
 		return new Depict2Step1Results(genePvalues, genePvaluesNullGwas, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
 	}
 

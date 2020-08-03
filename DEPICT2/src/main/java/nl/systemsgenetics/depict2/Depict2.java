@@ -92,7 +92,7 @@ public class Depict2 {
 		}
 
 		try {
-			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() == Depict2Mode.STEP2);
+			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() == Depict2Mode.STEP2 || options.getMode() == Depict2Mode.TOP_HITS);
 			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
 			Logger.getRootLogger().removeAllAppenders();
 			Logger.getRootLogger().addAppender(logFileAppender);
@@ -148,10 +148,13 @@ public class Depict2 {
 				case CREATE_EXCEL:
 					Depict2Utilities.generateExcelFromIntermediates(options);
 					break;
+				case TOP_HITS:
+					PruneToIndependentTopHits.prune(options);
+					break;
 				case STEP1:
 
 					Depict2Step1Results step1Res = Depict2MainAnalysis.run(options);
-
+					
 					if (options.getPathwayDatabases().isEmpty()) {
 						LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode STEP2 and exactly the same output path and genes file to continue");
 					} else {

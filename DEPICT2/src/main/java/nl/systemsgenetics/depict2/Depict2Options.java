@@ -404,7 +404,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE || mode == Depict2Mode.R_2_Z_SCORE) {
+		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.CORE_GENE_AUC || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE || mode == Depict2Mode.R_2_Z_SCORE || mode == Depict2Mode.TOP_HITS) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -537,6 +537,56 @@ public class Depict2Options {
 		}
 
 		switch (mode) {
+			case TOP_HITS:
+				if (!commandLine.hasOption('r')) {
+
+					throw new ParseException("--referenceGenotypes not specified");
+
+				} else {
+
+					genotypeBasePath = commandLine.getOptionValues('r');
+
+					if (commandLine.hasOption("rs")) {
+						genotypeSamplesFile = new File(commandLine.getOptionValue("rs"));
+					} else {
+						genotypeSamplesFile = null;
+					}
+
+					try {
+						if (commandLine.hasOption('R')) {
+							genotypeType = RandomAccessGenotypeDataReaderFormats.valueOfSmart(commandLine.getOptionValue('R').toUpperCase());
+						} else {
+							if (genotypeBasePath[0].endsWith(".vcf")) {
+								throw new ParseException("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
+							}
+							try {
+								genotypeType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(genotypeBasePath);
+							} catch (GenotypeDataException e) {
+								throw new ParseException("Unable to determine reference type based on specified path. Please specify --refType");
+							}
+						}
+
+					} catch (IllegalArgumentException e) {
+						throw new ParseException("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
+					}
+
+				}
+				if (commandLine.hasOption("maf")) {
+					try {
+						mafFilter = Double.parseDouble(commandLine.getOptionValue("maf"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --maf \"" + commandLine.getOptionValue("maf") + "\" is not an double");
+					}
+				} else {
+					mafFilter = 0;
+				}
+				maxRBetweenVariants = 0d;
+				numberOfPermutations = 0;
+				numberOfPermutationsRescue = 0;
+				windowExtend = 0;
+				variantFilterFile = null;
+				variantGeneLinkingFile = null;
+				break;
 			case STEP1:
 				//variantFilter
 				if (commandLine.hasOption("vf")) {
@@ -864,6 +914,21 @@ public class Depict2Options {
 				LOGGER.info(" * X: " + x);
 				LOGGER.info(" * Y: " + y);
 				break;
+			case TOP_HITS:
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				if (genotypeBasePath != null) {
+					StringBuilder genotypeBasePaths = new StringBuilder();
+					for (String path : genotypeBasePath) {
+						genotypeBasePaths.append(new File(path).getAbsolutePath());
+						genotypeBasePaths.append(' ');
+					}
+					LOGGER.info(" * Reference genotype data: " + genotypeBasePaths);
+					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
+				}
+				if (mafFilter != 0) {
+					LOGGER.info(" * MAF filter: " + mafFilter);
+				}
+				break;
 			case STEP1:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 
@@ -1107,5 +1172,9 @@ public class Depict2Options {
 
 	public int getPermutationFDR() {
 		return permutationFDR;
+	}
+	
+	public File getGwasTopHitsFile(){
+		return new File(getOutputBasePath() + "_independentTopVariants.txt");
 	}
 }

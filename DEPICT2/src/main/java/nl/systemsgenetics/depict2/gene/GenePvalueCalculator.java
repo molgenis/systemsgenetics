@@ -213,7 +213,7 @@ public class GenePvalueCalculator {
 
 			this.lambdaInflations = new double[numberRealPheno];
 
-			double y = new ChiSquaredDistribution(1).inverseCumulativeProbability(0.5);
+			final double y = new ChiSquaredDistribution(1).inverseCumulativeProbability(0.5);
 
 			DoubleMatrixDatasetRowIterable gwasStreamer = new DoubleMatrixDatasetRowIterable(variantPhenotypeZscoreMatrixPath);
 

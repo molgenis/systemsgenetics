@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -112,7 +113,7 @@ public class IoUtils {
 
 	}
 
-	public static RandomAccessGenotypeData loadGenotypes(Depict2Options options, List<String> variantsToInclude) throws IOException {
+	public static RandomAccessGenotypeData loadGenotypes(Depict2Options options, Collection<String> variantsToInclude) throws IOException {
 		final RandomAccessGenotypeData referenceGenotypeData;
 
 		final SampleFilter sampleFilter;
