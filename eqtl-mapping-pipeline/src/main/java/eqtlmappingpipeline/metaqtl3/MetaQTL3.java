@@ -1114,11 +1114,20 @@ public class MetaQTL3 {
             ResultProcessorThread resultthread = new ResultProcessorThread(m_settings.nrThreads, resultQueue, m_settings.createBinaryOutputFiles,
                     m_gg, m_settings, m_probeTranslationTable, permuting, permutationRound, m_snpList, m_probeList, m_workPackages);
             resultthread.setName("ResultProcessorThread");
+            if (m_settings.createMetaAnalysisZScoreMatrix) {
+                System.out.println("-------------------------------------------");
+                System.out.println("WARNING: dumping all results Z-score matrix");
+                System.out.println("-------------------------------------------");
+                resultthread.setCreateMetaAnalysisZScoreMatrix();
+            }
             if (m_settings.dumpeverythingtodisk) {
                 System.out.println("-------------------------------------");
                 System.out.println("WARNING: dumping all results to disk!");
                 System.out.println("-------------------------------------");
                 resultthread.setDumpEverything();
+            }
+            if (m_settings.updateProgressBar) {
+                resultthread.setUpdateProgressBar();
             }
             resultthread.start();
 
@@ -1206,7 +1215,7 @@ public class MetaQTL3 {
         }
 
 
-        if(!m_settings.dumpeverythingtodisk) {
+        if (!m_settings.dumpeverythingtodisk) {
             if (!m_settings.skipFDRCalculation && hasResults) {
                 if (m_settings.createTEXTOutputFiles && m_settings.nrPermutationsFDR > 0) {
                     System.out.println("Calculating FDR:\n" + ConsoleGUIElems.LINE);
@@ -1490,7 +1499,6 @@ public class MetaQTL3 {
 
         return (maxNrTestsToPerform);
     }
-
 
 
     protected void printSummary() {

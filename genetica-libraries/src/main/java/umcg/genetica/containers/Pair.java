@@ -97,45 +97,43 @@ public class Pair<L, R> implements Comparable<Pair<L, R>> {
             return 0;
         } else if (sorter.equals(SORTBY.LEFT)) {
             if (toCompare.left instanceof Double && this.left instanceof Double) {
-                return (Double) toCompare.left > (Double) this.left ? 1 : -1;
+                return ((Double) this.left).compareTo((Double) toCompare.left);
             }
             if (toCompare.left instanceof Integer && this.left instanceof Integer) {
-                return (Integer) toCompare.left > (Integer) this.left ? 1 : -1;
+                return ((Integer) this.left).compareTo((Integer) toCompare.left);
             }
         } else if (sorter.equals(SORTBY.RIGHT)) {
             if (toCompare.right instanceof Double && this.right instanceof Double) {
-                return (Double) toCompare.right > (Double) this.right ? 1 : -1;
+                return ((Double) this.right).compareTo((Double) toCompare.right);
             }
             if (toCompare.right instanceof Integer && this.right instanceof Integer) {
-                return (Integer) toCompare.right > (Integer) this.right ? 1 : -1;
+                return ((Integer) this.right).compareTo((Integer) toCompare.right);
             }
         } else {
             if (toCompare.left instanceof Double && this.left instanceof Double) {
-                if ((Double) toCompare.left > (Double) this.left) {
-                    return 1;
-                } else if ((Double) toCompare.left < (Double) this.left) {
-                    return -1;
-                } else {
+                int comp = ((Double) this.left).compareTo((Double) toCompare.left);
+                if (comp == 0) {
                     if (toCompare.right instanceof Double && this.right instanceof Double) {
-                        return (Double) toCompare.right > (Double) this.right ? 1 : -1;
+                        return ((Double) this.right).compareTo((Double) toCompare.right);
                     }
                     if (toCompare.right instanceof Integer && this.right instanceof Integer) {
-                        return (Integer) toCompare.right > (Integer) this.right ? 1 : -1;
+                        return ((Integer) this.right).compareTo((Integer) toCompare.right);
                     }
+                } else {
+                    return comp;
                 }
             }
             if (toCompare.left instanceof Integer && this.left instanceof Integer) {
-                if ((Integer) toCompare.left > (Integer) this.left) {
-                    return 1;
-                } else if ((Integer) toCompare.left < (Integer) this.left) {
-                    return -1;
-                } else {
+                int comp = ((Integer) this.left).compareTo((Integer) toCompare.left);
+                if (comp == 0) {
                     if (toCompare.right instanceof Double && this.right instanceof Double) {
-                        return (Double) toCompare.right > (Double) this.right ? 1 : -1;
+                        return ((Double) this.right).compareTo((Double) toCompare.right);
                     }
                     if (toCompare.right instanceof Integer && this.right instanceof Integer) {
-                        return (Integer) toCompare.right > (Integer) this.right ? 1 : -1;
+                        return ((Integer) this.right).compareTo((Integer) toCompare.right);
                     }
+                } else {
+                    return comp;
                 }
             }
         }
