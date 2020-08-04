@@ -77,7 +77,7 @@ public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 		long timeStop = System.currentTimeMillis();
 		GenePvalueCalculator.timeInLoadingGenotypeDosages += (timeStop - timeStart);
 
-		LOGGER.debug(" * Variants found in region: " + variantsDosages.size());
+		LOGGER.debug(" * Variants found in locus: " + variantsDosages.size());
 
 		if (dosageDataset.rows() == 0) {
 			return EMPTY_DATASET;

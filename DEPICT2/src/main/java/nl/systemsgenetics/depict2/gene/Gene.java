@@ -5,25 +5,29 @@
  */
 package nl.systemsgenetics.depict2.gene;
 
+import nl.systemsgenetics.depict2.summarystatistic.LocusUtils;
+import nl.systemsgenetics.depict2.summarystatistic.OverlappableGenomicRange;
+import umcg.genetica.collections.intervaltree.Range;
+
 import java.util.Objects;
 
 /**
  *
  * @author patri
  */
-public class Gene {
+public class Gene  implements OverlappableGenomicRange {
 
 	private final String gene;
 	private final String chr;
 	private final int start;
-	private final int stop;
+	private final int end;
 	private final String band;
 
 	public Gene(String gene, String chr, int start, int stop, String band) {
 		this.gene = gene;
 		this.chr = chr.intern();
 		this.start = start;
-		this.stop = stop;
+		this.end = stop;
 		this.band = band;
 	}
 
@@ -39,8 +43,18 @@ public class Gene {
 		return start;
 	}
 
-	public int getStop() {
-		return stop;
+	public int getEnd() {
+		return end;
+	}
+
+	@Override
+	public String getSequenceName() {
+		return getChr();
+	}
+
+	@Override
+	public boolean isOverlapping(OverlappableGenomicRange other) {
+		return LocusUtils.partialGenomicRangeOverlap(this, other);
 	}
 
 	public String getBand() {
@@ -59,7 +73,7 @@ public class Gene {
 	}
 
 	public int getLength() {
-		return getStop() - getStart();
+		return getEnd() - getStart();
 	}
 
 	@Override
@@ -84,7 +98,7 @@ public class Gene {
 		if (this.start != other.start) {
 			return false;
 		}
-		if (this.stop != other.stop) {
+		if (this.end != other.end) {
 			return false;
 		}
 		if (!Objects.equals(this.gene, other.gene)) {

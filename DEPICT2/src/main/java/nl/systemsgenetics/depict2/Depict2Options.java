@@ -78,6 +78,7 @@ public class Depict2Options {
 	private final boolean quantileNormalizePermutations;
 	private final boolean regressGeneLengths;
 	private final int numberSamplesUsedForCor;
+	private final boolean assignPathwayGenesToCisWindow;
 	private final String x;
 	private final String y;
 
@@ -282,7 +283,7 @@ public class Depict2Options {
 		OPTIONS.addOption(OptionBuilder.create("fnpp"));
 
 		OptionBuilder.withArgName("boolean");
-		OptionBuilder.withDescription("Exclude HLA region during pathway enrichments (chr6 20mb - 40mb)");
+		OptionBuilder.withDescription("Exclude HLA locus during pathway enrichments (chr6 20mb - 40mb)");
 		OptionBuilder.withLongOpt("excludeHla");
 		OPTIONS.addOption(OptionBuilder.create("eh"));
 
@@ -367,6 +368,9 @@ public class Depict2Options {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");
 			}
 		}
+
+		//TODO: implement option
+		assignPathwayGenesToCisWindow = true;
 
 		outputBasePath = new File(commandLine.getOptionValue('o'));
 		logFile = new File(outputBasePath + ".log");
@@ -1176,5 +1180,9 @@ public class Depict2Options {
 	
 	public File getGwasTopHitsFile(){
 		return new File(getOutputBasePath() + "_independentTopVariants.txt");
+	}
+
+	public boolean isAssignPathwayGenesToCisWindow() {
+		return assignPathwayGenesToCisWindow;
 	}
 }
