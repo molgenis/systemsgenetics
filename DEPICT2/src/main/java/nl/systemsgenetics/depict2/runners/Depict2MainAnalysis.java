@@ -46,7 +46,7 @@ public class Depict2MainAnalysis {
             throw new FileNotFoundException("GWAS matrix does not exist at: " + options.getGwasZscoreMatrixPath() + ".dat");
         }
 
-        RandomAccessGenotypeData referenceGenotypeData = readReferenceGenotypeDataMatchingGwasSnps(options);
+        RandomAccessGenotypeData referenceGenotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options);
         LOGGER.info("Done loading genotype data");
 
         List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
@@ -251,7 +251,7 @@ public class Depict2MainAnalysis {
         // Filter variants on pvalue
         Set<String> significantVariants = new HashSet<>();
         for (String trait : gwasSnpZscores.getColObjects()) {
-            for (String variant : gwasSnpZscores.getColObjects()) {
+            for (String variant : gwasSnpZscores.getRowObjects()) {
                 double pvalue = ZScores.zToP(gwasSnpZscores.getElement(variant, trait));
                 if (pvalue < upperPvalThresh) {
                     significantVariants.add(variant);
@@ -259,10 +259,10 @@ public class Depict2MainAnalysis {
             }
         }
         gwasSnpZscores = gwasSnpZscores.viewRowSelection(significantVariants);
-        LOGGER.info("Done loading GWAS data, " + significantVariants + " variants at p < " + upperPvalThresh);
+        LOGGER.info("Done loading GWAS data, " + significantVariants.size() + " variants at p < " + upperPvalThresh);
 
         // Genotype data (for positions, not doing ld clumping here)
-        RandomAccessGenotypeData referenceGenotypeData = readReferenceGenotypeDataMatchingGwasSnps(options, significantVariants);
+        RandomAccessGenotypeData referenceGenotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, significantVariants);
         Map<String, GeneticVariant> variantMap = referenceGenotypeData.getVariantIdMap();
         LOGGER.info("Done loading genotype data");
 
@@ -271,14 +271,14 @@ public class Depict2MainAnalysis {
         LOGGER.info("Loaded " + genes.size() + " genes");
 
         // Independent variants, defined in step1
-        Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getOutputBasePath() + "_independentTopVariants.txt");
+        Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getGwasTopHitsFile());
 
         // Output store
         Depict2Step3Results output = new Depict2Step3Results();
 
         for (String trait : gwasSnpZscores.getColObjects()) {
             Map<String, SummaryStatisticRecord> records = new HashMap<>();
-            for (String variant : gwasSnpZscores.getColObjects()) {
+            for (String variant : variantMap.keySet()) {
                 double pvalue = ZScores.zToP(gwasSnpZscores.getElement(variant, trait));
                 if (pvalue < upperPvalThresh) {
                     records.put(variant, new SummaryStatisticRecord(variantMap.get(variant), pvalue));
@@ -309,54 +309,7 @@ public class Depict2MainAnalysis {
     }
 
 
-    /**
-     * Load genotype data matching GWAS matrix and MAF filter.
-     *
-     * @param options Depict options object
-     * @return RandomAccesGenotypeData for all SNPs in GWAS matrix and MAF
-     * @throws IOException
-     */
-    private static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(Depict2Options options) throws IOException {
-        return readReferenceGenotypeDataMatchingGwasSnps(options, null);
-    }
 
-
-    /**
-     * Load genotype data matching GWAS matrix and MAF filter.
-     *
-     * @param options Depict options object
-     * @return RandomAccesGenotypeData for all SNPs in GWAS matrix and MAF
-     * @throws IOException
-     */
-    private static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(Depict2Options options, Set<String> variantSubset) throws IOException {
-
-
-        final List<String> variantsInZscoreMatrix;
-        if (variantSubset == null) {
-            variantsInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
-        } else {
-            variantsInZscoreMatrix = new ArrayList<>(variantSubset);
-        }
-
-        final List<String> phenotypesInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
-
-        LOGGER.info("Number of phenotypes in GWAS matrix: " + Depict2.LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
-        LOGGER.info("Number of variants in GWAS matrix: " + Depict2.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
-
-        if (options.getVariantFilterFile() != null) {
-            HashSet<String> variantsToInclude = IoUtils.readVariantFilterFile(options.getVariantFilterFile());
-            Iterator<String> variantsInZscoreMatrixIt = variantsInZscoreMatrix.iterator();
-            while (variantsInZscoreMatrixIt.hasNext()) {
-                String variant = variantsInZscoreMatrixIt.next();
-                if (!variantsToInclude.contains(variant)) {
-                    variantsInZscoreMatrixIt.remove();
-                }
-            }
-            LOGGER.info("Number of variants after filtering on selected variants: " + Depict2.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
-        }
-
-        return IoUtils.loadGenotypes(options, variantsInZscoreMatrix);
-    }
 
 
     private static double[] generateRandomChi2(long numberOfPermutations, int numberOfVariantPerGeneToExpect) {

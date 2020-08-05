@@ -5,7 +5,7 @@ import java.io.Serializable;
 /**
  * The type Snp.
  */
-public class SNP implements Serializable {
+public class SNP implements Serializable, OverlappableGenomicRange {
 
     /**
      * The primary variant id.
@@ -128,12 +128,32 @@ public class SNP implements Serializable {
         this.sequenceName = sequenceName;
     }
 
+    @Override
+    public int getStart() {
+        return position;
+    }
+
+    @Override
+    public int getEnd() {
+        return position;
+    }
+
     /**
      * Get sequence name string.
      *
      * @return the string
      */
     public String getSequenceName(){return sequenceName;}
+
+    @Override
+    public boolean isOverlapping(OverlappableGenomicRange other) {
+        return LocusUtils.partialGenomicRangeOverlap(this, other);
+    }
+
+    @Override
+    public boolean isOverlapping(OverlappableGenomicRange other, int window) {
+        return LocusUtils.partialGenomicRangeOverlapWindow(this, other, window);
+    }
 
     /**
      * Is transition boolean.

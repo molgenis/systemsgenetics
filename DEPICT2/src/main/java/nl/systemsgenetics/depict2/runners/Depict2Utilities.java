@@ -5,8 +5,10 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import nl.systemsgenetics.depict2.Depict2;
 import nl.systemsgenetics.depict2.Depict2Options;
 import nl.systemsgenetics.depict2.Depict2Step2Results;
+import nl.systemsgenetics.depict2.Depict2Step3Results;
 import nl.systemsgenetics.depict2.gene.Gene;
 import nl.systemsgenetics.depict2.io.ExcelWriter;
 import nl.systemsgenetics.depict2.io.IoUtils;
@@ -233,8 +235,19 @@ public class Depict2Utilities {
 			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, options.getIntermediateFolder(), options.isExcludeHla()));
 		}
 
+
+		Depict2Step2Results step2 = new Depict2Step2Results(pathwayEnrichments, genePvalues);
 		ExcelWriter writer = new ExcelWriter(genePvalues.getColObjects(), options);
-		writer.saveStep2Excel(new Depict2Step2Results(pathwayEnrichments, genePvalues));
+
+		writer.saveStep2Excel(step2);
+		writer.saveGenePvalueExcel(genePvalues);
+
+		if (options.getPathwayDatabasesToAnnotateWithGwas().size() >= 1) {
+			Depict2Step3Results step3 = Depict2MainAnalysis.step3(options);
+			writer.saveStep3Excel(step2, step3);
+		}
+
+
 	}
 
 }

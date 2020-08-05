@@ -6,4 +6,6 @@ public interface OverlappableGenomicRange {
     int getEnd();
     String getSequenceName();
     boolean isOverlapping(OverlappableGenomicRange other);
+    boolean isOverlapping(OverlappableGenomicRange other, int window);
+
 }

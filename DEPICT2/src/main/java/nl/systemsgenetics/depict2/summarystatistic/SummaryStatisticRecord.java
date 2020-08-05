@@ -35,9 +35,9 @@ public class SummaryStatisticRecord extends SNP implements Comparable<SummarySta
      */
     public SummaryStatisticRecord(GeneticVariant variant, double pvalue) {
         this.pvalue = pvalue;
-        this.setPrimaryVariantId(variant.getPrimaryVariantId());
-        this.setPosition(variant.getStartPos());
-        this.setSequenceName(variant.getSequenceName());
+        this.primaryVariantId = variant.getPrimaryVariantId();
+        this.position = variant.getStartPos();
+        this.sequenceName = variant.getSequenceName();
     }
 
 

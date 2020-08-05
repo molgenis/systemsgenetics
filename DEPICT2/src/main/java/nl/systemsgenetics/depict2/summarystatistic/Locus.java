@@ -264,6 +264,11 @@ public class Locus implements OverlappableGenomicRange {
         return LocusUtils.partialGenomicRangeOverlap(this, other);
     }
 
+    @Override
+    public boolean isOverlapping(OverlappableGenomicRange other, int window) {
+        return LocusUtils.partialGenomicRangeOverlapWindow(this, other, window);
+    }
+
     public List<Gene> getGenes() {
         return genes;
     }

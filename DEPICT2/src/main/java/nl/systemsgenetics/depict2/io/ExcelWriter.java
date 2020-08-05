@@ -11,20 +11,18 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.IntStream;
 
 import hep.aida.tdouble.ref.DoubleVariableAxis;
-import nl.systemsgenetics.depict2.Depict2;
-import nl.systemsgenetics.depict2.Depict2Options;
-import nl.systemsgenetics.depict2.Depict2Step2Results;
-import nl.systemsgenetics.depict2.Depict2Step3Results;
+import nl.systemsgenetics.depict2.*;
 import nl.systemsgenetics.depict2.gene.Gene;
 import nl.systemsgenetics.depict2.pathway.PathwayAnnotations;
 import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
 import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
+import nl.systemsgenetics.depict2.summarystatistic.Locus;
+import nl.systemsgenetics.depict2.summarystatistic.SummaryStatisticRecord;
+import org.apache.log4j.Logger;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -41,7 +39,12 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFTable;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.molgenis.genotype.RandomAccessGenotypeData;
+import org.molgenis.genotype.variant.GeneticVariant;
 import sun.nio.ch.IOUtil;
+import sun.rmi.runtime.Log;
+import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
+import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.matrix2.DoubleMatrix1dOrder;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
@@ -50,6 +53,9 @@ import umcg.genetica.math.stats.ZScores;
  * @author patri
  */
 public class ExcelWriter {
+
+
+    private static final Logger LOGGER = Logger.getLogger(ExcelWriter.class);
 
     private CellStyle zscoreStyle;
     private CellStyle largePvalueStyle;
@@ -61,7 +67,6 @@ public class ExcelWriter {
     private boolean hlaExcluded;
     private List<String> traits;
     private Depict2Options options;
-
 
     public ExcelWriter(List<String> traits, Depict2Options options) {
         this.outputBasePath = options.getOutputBasePath();
@@ -78,10 +83,10 @@ public class ExcelWriter {
      * @param hlaExcluded
      * @throws java.io.FileNotFoundException
      */
-    public void saveStep2Excel(Depict2Step2Results results) throws FileNotFoundException, IOException {
+    public void saveStep2Excel(Depict2Step2Results results) throws Exception {
 
-        final DoubleMatrixDataset<String, String> genePvalues = results.getGenePvalues();
-        final List<PathwayEnrichments> pathwayEnrichments = results.getPathwayEnrichments();
+        DoubleMatrixDataset<String, String> genePvalues = results.getGenePvalues();
+        List<PathwayEnrichments> pathwayEnrichments = results.getPathwayEnrichments();
         System.setProperty(" java.awt.headless", "true");
 
         // Each trait gets its own sheet
@@ -95,11 +100,11 @@ public class ExcelWriter {
             populateOverviewSheet(enrichmentWorkbook, trait, pathwayEnrichments, createHelper);
 
             // Sheet for gene pvalues
-            populateGenePvalueSheet(enrichmentWorkbook, trait, genePvalues);
+            //populateGenePvalueSheet(enrichmentWorkbook, trait, genePvalues);
 
             // Sheet for each pathway database
             for (PathwayEnrichments pathwayEnrichment : pathwayEnrichments) {
-                populatePathwaySheet(enrichmentWorkbook, pathwayEnrichment, trait, createHelper);
+                populatePathwaySheet(enrichmentWorkbook, pathwayEnrichment, trait, createHelper, genePvalues);
             }
 
             // Save the file
@@ -115,6 +120,60 @@ public class ExcelWriter {
 
 
     public void saveStep3Excel(Depict2Step2Results step2, Depict2Step3Results step3) throws IOException {
+
+        Map<String, List<Locus>> lociPerTrait = step3.getLoci();
+        System.setProperty(" java.awt.headless", "true");
+
+
+        String pathwayDatabaseToScore = options.getPathwayDatabasesToAnnotateWithGwas().get(0);
+
+        PathwayEnrichments pathwayEnrichments = null;
+        for (PathwayEnrichments pathway : step2.getPathwayEnrichments()) {
+            if (pathway.getPathwayDatabase().getName().equals(pathwayDatabaseToScore)) {
+                pathwayEnrichments = pathway;
+            }
+        }
+
+        if (pathwayEnrichments == null) {
+            throw new IllegalArgumentException("Provided pathway database name not found. Please check if the pathway database names are correct in -pd and --annotDb");
+        }
+
+        // Each trait gets its own sheet
+        for (String trait : traits) {
+
+            Workbook enrichmentWorkbook = new XSSFWorkbook();
+            setStyles(enrichmentWorkbook);
+            CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
+
+            populateCisPrioSheet(enrichmentWorkbook, trait, lociPerTrait.get(trait), pathwayEnrichments);
+            // Save the file
+            File excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
+            int nr = 1;
+            while (excelFile.exists()) {
+                excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla" : "") + "_" + nr + ".xlsx");
+                nr++;
+            }
+            enrichmentWorkbook.write(new FileOutputStream(excelFile));
+        }
+    }
+
+
+    public void saveGenePvalueExcel(DoubleMatrixDataset<String, String> genePvalues) throws IOException {
+
+        System.setProperty(" java.awt.headless", "true");
+        Workbook enrichmentWorkbook = new XSSFWorkbook();
+        setStyles(enrichmentWorkbook);
+
+        populateGenePvalueSheet(enrichmentWorkbook, genePvalues);
+
+        // Save the file
+        File excelFile = new File(outputBasePath + "_genePvalues" + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
+        int nr = 1;
+        while (excelFile.exists()) {
+            excelFile = new File(outputBasePath + "_genePvalues" + (hlaExcluded ? "_exHla" : "") + "_" + nr + ".xlsx");
+            nr++;
+        }
+        enrichmentWorkbook.write(new FileOutputStream(excelFile));
 
     }
 
@@ -139,6 +198,107 @@ public class ExcelWriter {
         Font fontBold = enrichmentWorkbook.createFont();
         fontBold.setBold(true);
         boldStyle.setFont(fontBold);
+    }
+
+    private void populateCisPrioSheet(Workbook enrichmentWorkbook, String trait, List<Locus> loci, PathwayEnrichments databaseForScore) throws IOException {
+
+        int numberOfCols = 10;
+        int numberOfRows = 0;
+        for (Locus curLocus : loci) {
+            numberOfRows += curLocus.getGenes().size();
+        }
+
+        XSSFSheet locusOverview = (XSSFSheet) enrichmentWorkbook.createSheet("LocusOverview");
+        XSSFTable table = locusOverview.createTable(new AreaReference(new CellReference(0, 0),
+                new CellReference(numberOfRows, numberOfCols),
+                SpreadsheetVersion.EXCEL2007));
+
+        table.setName("LocusOverview");
+        table.setDisplayName("LocusOverview");
+        table.setStyleName("TableStyleLight9");
+        table.getCTTable().getTableStyleInfo().setShowRowStripes(true);
+        table.getCTTable().addNewAutoFilter();
+        XSSFRow headerRow = locusOverview.createRow(0);
+
+        int hc = 0;
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus id");
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus name");
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus chr");
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus start");
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus end");
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Index SNP");
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Index SNP P-value");
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene id");
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene name");
+        headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene score");
+
+        int i = 0;
+        int r = 0;
+        for (Locus curLocus : loci) {
+            XSSFRow row = locusOverview.createRow(r + 1); //+1 for header
+
+            // locus id
+            // is below
+
+            // locus  name
+            XSSFCell locusNameCell = row.createCell(1, CellType.STRING);
+            locusNameCell.setCellValue(curLocus.getSequenceName() + ":" + curLocus.getStart() + "-" + curLocus.getEnd());
+
+            // chromosome
+            XSSFCell chrCell = row.createCell(2, CellType.NUMERIC);
+            chrCell.setCellValue(curLocus.getSequenceName());
+
+            // start
+            XSSFCell startCell = row.createCell(3, CellType.NUMERIC);
+            startCell.setCellValue(curLocus.getStart());
+
+            // end
+            XSSFCell endCell = row.createCell(4, CellType.NUMERIC);
+            endCell.setCellValue(curLocus.getEnd());
+
+            // Topsnp id
+            XSSFCell snpCell = row.createCell(5, CellType.STRING);
+            snpCell.setCellValue(curLocus.getMinPval().getPrimaryVariantId());
+
+            // Topsnp pvalue
+            XSSFCell snpPvalCell = row.createCell(6, CellType.NUMERIC);
+            double pvalue = curLocus.getMinPval().getPvalue();
+            snpPvalCell.setCellValue(pvalue);
+            snpPvalCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+
+            for (Gene curGene : curLocus.getGenes()) {
+
+                XSSFCell locusIdCell = row.createCell(0, CellType.NUMERIC);
+                locusIdCell.setCellValue(i);
+
+                XSSFCell geneIdCell = row.createCell(7, CellType.STRING);
+                geneIdCell.setCellValue(curGene.getGene());
+
+                XSSFCell geneNameCell = row.createCell(8, CellType.STRING);
+                geneNameCell.setCellValue(curGene.getGeneSymbol());
+
+                if (databaseForScore.getEnrichmentZscores().getRowObjects().contains(curGene.getGene())) {
+                    XSSFCell scoreCell = row.createCell(9, CellType.NUMERIC);
+                    double zscore = databaseForScore.getEnrichmentZscores().getElement(curGene.getGene(), trait);
+                    scoreCell.setCellValue(zscore);
+                } else {
+                    XSSFCell scoreCell = row.createCell(9, CellType.STRING);
+                    scoreCell.setCellValue("NA");
+                    scoreCell.setCellStyle(zscoreStyle);
+                }
+
+
+                r++;
+                row = locusOverview.createRow(r + 1); //+1 for header
+            }
+            i++;
+        }
+
+        // Auto-scale columns in sheet
+        for (int c = 0; c < numberOfCols; ++c) {
+            locusOverview.autoSizeColumn(c);
+        }
+
     }
 
     private void populateOverviewSheet(Workbook enrichmentWorkbook, String trait, Collection<PathwayEnrichments> pathwayEnrichments, CreationHelper createHelper) {
@@ -224,25 +384,39 @@ public class ExcelWriter {
         }
     }
 
-    private void populatePathwaySheet(Workbook enrichmentWorkbook, PathwayEnrichments pathwayEnrichment, String trait, CreationHelper createHelper) throws IOException {
+    private void populatePathwaySheet(Workbook enrichmentWorkbook, PathwayEnrichments pathwayEnrichment, String trait, CreationHelper createHelper, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
+
         PathwayDatabase pathwayDatabase = pathwayEnrichment.getPathwayDatabase();
 
-        final PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayDatabase.getLocation() + ".colAnnotations.txt"));
-        final int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
-        final DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
-        final DoubleMatrixDataset<String, String> databaseEnrichmentQvalues = pathwayEnrichment.getqValues();
-        final ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
-        //final int currentTraitCol = databaseEnrichment.getColIndex(trait);
-        final double bonferroniCutoff = 0.05 / pathwayEnrichment.getNumberOfPathways();
+        PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayDatabase.getLocation() + ".colAnnotations.txt"));
+        int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 
-        final DoubleMatrix1D traitEnrichment = databaseEnrichmentZscores.getCol(trait);
-        final DoubleMatrix1D traitQvalue = databaseEnrichmentQvalues.getCol(trait);
+        DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
+        DoubleMatrixDataset<String, String> databaseEnrichmentQvalues = pathwayEnrichment.getqValues();
+
+        final DoubleMatrixDataset<String, String> gwasPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+
+        ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
+        double bonferroniCutoff = 0.05 / pathwayEnrichment.getNumberOfPathways();
+        DoubleMatrix1D traitEnrichment = databaseEnrichmentZscores.getCol(trait);
+        DoubleMatrix1D traitQvalue = databaseEnrichmentQvalues.getCol(trait);
         int[] order = DoubleMatrix1dOrder.sortIndexReverse(traitEnrichment);
-
-        boolean annotateWithGwasData = pathwayDatabase.getName().startsWith("AnnotateGwas");
+        boolean annotateWithGwasData = options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
         int gwasAnnotations = 0;
+
         if (annotateWithGwasData) {
-            gwasAnnotations = 2;
+            gwasAnnotations = 4;
+        }
+
+        LOGGER.debug(pathwayDatabase.getName());
+        LOGGER.debug(annotateWithGwasData);
+
+        Map<String, List<SummaryStatisticRecord>> indepVariantsPerTrait = null;
+        Map<String, Gene> genes = null;
+
+        if (annotateWithGwasData) {
+            indepVariantsPerTrait = getIndepVariantsAsSummaryStatisticsRecord();
+            genes = IoUtils.readGenesMap(options.getGeneInfoFile());
         }
 
         XSSFSheet databaseSheet = (XSSFSheet) enrichmentWorkbook.createSheet(pathwayDatabase.getName());
@@ -269,12 +443,20 @@ public class ExcelWriter {
         headerRow.createCell(hc++, CellType.STRING).setCellValue("Bonferroni significant");
         headerRow.createCell(hc++, CellType.STRING).setCellValue("FDR 5% significant");
 
+        if (annotateWithGwasData) {
+            headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to indep GWAS hit");
+            headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS Variant Id");
+            headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS P-value");
+            headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS gene P-value");
+        }
+
         // Loop over rows
         for (int r = 0; r < databaseEnrichmentZscores.rows(); ++r) {
             XSSFRow row = databaseSheet.createRow(r + 1); //+1 for header
             String geneSet = geneSets.get(order[r]);
             row.createCell(0, CellType.STRING).setCellValue(geneSet);
 
+            // Annotations from .colAnnotations file
             if (maxAnnotations > 0) {
                 ArrayList<String> thisPathwayAnnotations = pathwayAnnotations.getAnnotationsForPathway(geneSet);
                 if (thisPathwayAnnotations == null) {
@@ -311,7 +493,6 @@ public class ExcelWriter {
             zscoreCell.setCellStyle(zscoreStyle);
 
             double pvalue = ZScores.zToP(zscore);
-
             XSSFCell pvalueCell = row.createCell(2 + maxAnnotations, CellType.NUMERIC);
             pvalueCell.setCellValue(pvalue);
             pvalueCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
@@ -326,21 +507,83 @@ public class ExcelWriter {
             XSSFCell fdrCell = row.createCell(5 + maxAnnotations, CellType.BOOLEAN);
             fdrCell.setCellValue(qvalue <= 0.05);
 
+            if (annotateWithGwasData) {
+                // Determine the closest independent tophit
+                String geneId = databaseEnrichmentZscores.getRowObjects().get(order[r]);
+                Gene curGene = genes.get(geneId);
+
+                // No overlap = -9
+                int closestDist = -8;
+                String variantId = "";
+
+                if (curGene != null) {
+                    List<Integer> distanceCache = new ArrayList<>();
+                    List<SummaryStatisticRecord> varianceCache = new ArrayList<>();
+                    for (SummaryStatisticRecord curRec : indepVariantsPerTrait.get(trait)) {
+                        if (curGene.isOverlapping(curRec, 1000000)) {
+                            int tmp = Math.min(Math.abs(curGene.getStart() - curRec.getPosition()), Math.abs(curGene.getEnd() - curRec.getPosition()));
+                            distanceCache.add(tmp);
+                            varianceCache.add(curRec);
+                        }
+                    }
+                    if (distanceCache.size() >= 1) {
+                        List<Integer> indexList = new ArrayList<>(distanceCache);
+                        Collections.sort(indexList);
+                        int idx = distanceCache.indexOf(indexList.get(0));
+                        closestDist = distanceCache.get(idx);
+                        variantId = varianceCache.get(idx).getPrimaryVariantId();
+                    } else {
+                        closestDist = -9;
+                    }
+                } else {
+                    // Missing from ensembl file = -10
+                    closestDist = -10;
+                }
+
+                if (closestDist == -9) {
+                    XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.STRING);
+                    snpDistCell.setCellValue(">1mb");
+                } else if(closestDist == -10) {
+                    XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.STRING);
+                    snpDistCell.setCellValue("Missing gene");
+                } else {
+                    XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.NUMERIC);
+                    snpDistCell.setCellValue(closestDist);
+                }
+
+                XSSFCell snpNameCell = row.createCell(7 + maxAnnotations, CellType.STRING);
+                snpNameCell.setCellValue(variantId);
+
+                if (variantId.length() >1) {
+                    double snpPvalue = ZScores.zToP(gwasPvalues.getElement(variantId, trait));
+                    XSSFCell snpPvalueCell = row.createCell(8 + maxAnnotations, CellType.NUMERIC);
+                    snpPvalueCell.setCellValue(snpPvalue);
+                    snpPvalueCell.setCellStyle(snpPvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+                } else {
+                    XSSFCell snpPvalueCell = row.createCell(8 + maxAnnotations, CellType.STRING);
+                    snpPvalueCell.setCellValue("");
+                }
+
+                double genePvalue = genePvalues.getElement(geneId, trait);
+                XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
+                genePCell.setCellValue(genePvalue);
+                genePCell.setCellStyle(genePvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+            }
         }
 
         // Auto-scale collumns in sheet
-        for (int c = 0; c < (5 + maxAnnotations); ++c) {
+        for (int c = 0; c < (9 + maxAnnotations); ++c) {
             databaseSheet.autoSizeColumn(c);
-            databaseSheet.setColumnWidth(c, databaseSheet.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
+            //databaseSheet.setColumnWidth(c, databaseSheet.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
         }
     }
 
-    private void populateGenePvalueSheet(Workbook enrichmentWorkbook, String trait, DoubleMatrixDataset<String, String> genePvalues) throws IOException {
+    private void populateGenePvalueSheet(Workbook enrichmentWorkbook, DoubleMatrixDataset<String, String> genePvalues) throws IOException {
 
         Map<String, Gene> geneInfo = IoUtils.readGenesMap(options.getGeneInfoFile());
         XSSFSheet genePSheet = (XSSFSheet) enrichmentWorkbook.createSheet("GenePvalues");
         XSSFTable table = genePSheet.createTable(new AreaReference(new CellReference(0, 0),
-                new CellReference(genePvalues.rows(), 6),
+                new CellReference(genePvalues.rows(), 5 + genePvalues.columns()),
                 SpreadsheetVersion.EXCEL2007));
 
         table.setName("GenePvalues_res");
@@ -352,47 +595,120 @@ public class ExcelWriter {
 
         int hc = 0;
         headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene id");
-        headerRow.createCell(hc++, CellType.STRING).setCellValue("P-value");
         headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene name");
         headerRow.createCell(hc++, CellType.STRING).setCellValue("Chromosome");
         headerRow.createCell(hc++, CellType.STRING).setCellValue("Start");
         headerRow.createCell(hc++, CellType.STRING).setCellValue("End");
 
-        for (int r = 0; r < genePvalues.rows(); ++r) {
+        for (String trait : genePvalues.getColObjects()) {
+            // p-value
+            headerRow.createCell(hc++, CellType.STRING).setCellValue(trait);
+        }
 
+        for (int r = 0; r < genePvalues.rows(); ++r) {
             XSSFRow row = genePSheet.createRow(r + 1); //+1 for header
             // gene id
             String geneId = genePvalues.getRowObjects().get(r);
             XSSFCell geneIdCell = row.createCell(0, CellType.STRING);
             geneIdCell.setCellValue(geneId);
 
-            // p-value
-            double pvalue = genePvalues.getElement(r, genePvalues.getColIndex(trait));
-            XSSFCell pvalueCell = row.createCell(1, CellType.NUMERIC);
-            pvalueCell.setCellValue(pvalue);
-            pvalueCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
-
             // gene name
-            XSSFCell geneNameCell = row.createCell(2, CellType.STRING);
-            geneNameCell.setCellValue(geneInfo.get(geneId).getGene());
+            XSSFCell geneNameCell = row.createCell(1, CellType.STRING);
+            geneNameCell.setCellValue(geneInfo.get(geneId).getGeneSymbol());
 
             // chromosome
-            XSSFCell chrCell = row.createCell(3, CellType.NUMERIC);
+            XSSFCell chrCell = row.createCell(2, CellType.NUMERIC);
             chrCell.setCellValue(geneInfo.get(geneId).getSequenceName());
 
             // start
-            XSSFCell startCell = row.createCell(4, CellType.NUMERIC);
+            XSSFCell startCell = row.createCell(3, CellType.NUMERIC);
             startCell.setCellValue(geneInfo.get(geneId).getStart());
 
             // end
-            XSSFCell endCell = row.createCell(5, CellType.NUMERIC);
+            XSSFCell endCell = row.createCell(4, CellType.NUMERIC);
             endCell.setCellValue(geneInfo.get(geneId).getEnd());
+
+            int x = 1;
+            for (String trait : genePvalues.getColObjects()) {
+                // p-value
+                double pvalue = genePvalues.getElement(r, genePvalues.getColIndex(trait));
+                XSSFCell pvalueCell = row.createCell(4 + x, CellType.NUMERIC);
+                pvalueCell.setCellValue(pvalue);
+                pvalueCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+                x++;
+            }
         }
 
         // Auto-scale columns in sheet
-        for (int c = 0; c < 6; ++c) {
+        for (int c = 0; c < 5 + genePvalues.columns(); ++c) {
             genePSheet.autoSizeColumn(c);
         }
+    }
+
+
+    /**
+     * Reads the independent genetic variant id file and returns the corresponding GeneticVariants
+     *
+     * @return
+     * @throws IOException
+     */
+    @Deprecated
+    private Map<String, List<GeneticVariant>> getIndepVariantsAsGeneticVariants() throws IOException {
+
+        Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getGwasTopHitsFile());
+
+        Set<String> allVariants = new HashSet<>();
+        for (Set<String> set : independentVariants.values()) {
+            allVariants.addAll(set);
+        }
+
+        RandomAccessGenotypeData genotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, allVariants);
+        Map<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
+
+        Map<String, List<GeneticVariant>> output = new HashMap<>();
+        for (String trait : independentVariants.keySet()) {
+
+            List<GeneticVariant> curRecordList = new ArrayList<>();
+
+            for (String curVariant : independentVariants.get(trait)) {
+                curRecordList.add(variantMap.get(curVariant));
+            }
+            output.put(trait, curRecordList);
+        }
+
+        return output;
+    }
+
+    /**
+     * Reads the independent genetic variant id file and returns the corresponding GeneticVariants
+     *
+     * @return
+     * @throws IOException
+     */
+    private Map<String, List<SummaryStatisticRecord>> getIndepVariantsAsSummaryStatisticsRecord() throws IOException {
+
+        Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getGwasTopHitsFile());
+
+        Set<String> allVariants = new HashSet<>();
+        for (Set<String> set : independentVariants.values()) {
+            allVariants.addAll(set);
+        }
+
+        RandomAccessGenotypeData genotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, allVariants);
+        Map<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
+
+        Map<String, List<SummaryStatisticRecord>> output = new HashMap<>();
+        for (String trait : independentVariants.keySet()) {
+
+            List<SummaryStatisticRecord> curRecordList = new ArrayList<>();
+
+            for (String curVariant : independentVariants.get(trait)) {
+                curRecordList.add(new SummaryStatisticRecord(variantMap.get(curVariant), 1));
+            }
+            output.put(trait, curRecordList);
+        }
+
+        return output;
     }
 
 }

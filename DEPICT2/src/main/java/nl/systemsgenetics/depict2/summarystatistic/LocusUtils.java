@@ -334,17 +334,27 @@ public class LocusUtils {
      * @return
      */
     public static boolean partialGenomicRangeOverlap(OverlappableGenomicRange a, OverlappableGenomicRange b) {
+        return partialGenomicRangeOverlapWindow(a, b, 0);
+    }
 
-        if (a.getSequenceName().equals(b.getSequenceName())) {
-            boolean startOverlap = a.getStart() >= b.getStart() && a.getStart() <= b.getEnd();
-            boolean endOverlaps =  a.getEnd() >= b.getStart() && a.getEnd() <= b.getEnd();
-            boolean bothOverlaps = a.getStart() <= b.getStart() && a.getEnd() >= b.getEnd();
+
+    /**
+     * Checks if A overlaps B.
+     * @param a The smaller range
+     * @param b The larger range
+     * @return
+     */
+    public static boolean partialGenomicRangeOverlapWindow(OverlappableGenomicRange a, OverlappableGenomicRange b, int window) {
+
+        if (a.getSequenceName().toLowerCase().replace("chr", "").equals(b.getSequenceName().toLowerCase().replace("chr",""))) {
+            boolean startOverlap = (a.getStart() >= (b.getStart() - window)) && (a.getStart() <= (b.getEnd() + window));
+            boolean endOverlaps =  (a.getEnd() >= (b.getStart() - window)) && (a.getEnd() <= (b.getEnd() + window));
+            boolean bothOverlaps = (a.getStart() <= (b.getStart() - window)) && (a.getEnd() >= (b.getEnd() + window));
 
             return startOverlap || endOverlaps || bothOverlaps;
         }
 
         return false;
     }
-
 
 }
