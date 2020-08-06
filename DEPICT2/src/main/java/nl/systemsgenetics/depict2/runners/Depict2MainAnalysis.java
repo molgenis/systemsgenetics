@@ -11,6 +11,7 @@ import nl.systemsgenetics.depict2.summarystatistic.Locus;
 import nl.systemsgenetics.depict2.summarystatistic.LocusUtils;
 import nl.systemsgenetics.depict2.summarystatistic.SummaryStatisticRecord;
 import nl.systemsgenetics.depict2.summarystatistic.filters.PvalueFilterSmaller;
+import nl.systemsgenetics.depict2.summarystatistic.filters.RegionFilter;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -243,7 +244,8 @@ public class Depict2MainAnalysis {
         // TODO: paramterize
         double upperPvalThresh = 5e-8;
         double lowerPvalThresh = upperPvalThresh;
-        int window = 1000000;
+        int window = 500000;
+        RegionFilter inHlaRegionFilter = new RegionFilter("6", 40000000, 20000000);
 
         // GWAS pvalues
         DoubleMatrixDataset<String, String> gwasSnpZscores = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
@@ -281,7 +283,16 @@ public class Depict2MainAnalysis {
             for (String variant : variantMap.keySet()) {
                 double pvalue = ZScores.zToP(gwasSnpZscores.getElement(variant, trait));
                 if (pvalue < upperPvalThresh) {
-                    records.put(variant, new SummaryStatisticRecord(variantMap.get(variant), pvalue));
+                    SummaryStatisticRecord outRec = new SummaryStatisticRecord(variantMap.get(variant), pvalue);
+                    // Check if SNP is in HLA region
+                    boolean passesHla = true;
+                    if (options.isExcludeHla()) {
+                        passesHla = !inHlaRegionFilter.passesFilter(outRec);
+                    }
+
+                    if (passesHla) {
+                        records.put(variant, outRec);
+                    }
                 }
             }
 

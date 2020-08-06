@@ -184,8 +184,18 @@ public class Depict2 {
 
                 case STEP2:
                     step2Res = Depict2MainAnalysis.step2(options, null);
-                    ExcelWriter writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), options);
-                    writer.saveStep2Excel(step2Res);
+
+                    ExcelWriter writer = null;
+                    if (options.isSaveOuputAsExcelFiles()) {
+                        writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), options);
+                        writer.saveStep2Excel(step2Res);
+                    }
+                    if (options.isAssignPathwayGenesToCisWindow()) {
+                        step3Res = Depict2MainAnalysis.step3(options);
+                        if (writer != null) {
+                            writer.saveStep3Excel(step2Res, step3Res);
+                        }
+                    }
                     break;
                 case CORRELATE_GENES:
                     Depict2Utilities.correlateGenes(options);
