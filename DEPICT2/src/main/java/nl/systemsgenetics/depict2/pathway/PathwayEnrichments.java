@@ -5,7 +5,6 @@
  */
 package nl.systemsgenetics.depict2.pathway;
 
-import cern.colt.function.tdouble.DoubleFunction;
 import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
@@ -940,7 +939,7 @@ public class PathwayEnrichments {
 					throw new RuntimeException("Internal error");
 				}
 
-				MetaGene currentMetaGene = new MetaGene(currentGene, armGenes.get(r).getStart(), armGenes.get(r).getStop());
+				MetaGene currentMetaGene = new MetaGene(currentGene, armGenes.get(r).getStart(), armGenes.get(r).getEnd());
 				metaGenesArm.put(currentGene, currentMetaGene);
 
 				cols:

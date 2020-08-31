@@ -396,7 +396,7 @@ public class GenePvalueCalculator {
 
 			final DoubleMatrixDataset<String, String> variantScaledDosagesRange;
 			if (windowExtend >= 0) {
-				DoubleMatrixDataset<String, String> tmp = loadVariantScaledDosageMatrix(gene.getChr(), gene.getStart() - windowExtend, gene.getStop() + windowExtend);
+				DoubleMatrixDataset<String, String> tmp = loadVariantScaledDosageMatrix(gene.getChr(), gene.getStart() - windowExtend, gene.getEnd() + windowExtend);
 
 				if (tmp.columns() == 0) {
 					//no variants in range
@@ -1037,7 +1037,7 @@ public class GenePvalueCalculator {
 		long timeStop = System.currentTimeMillis();
 		timeInLoadingGenotypeDosages += (timeStop - timeStart);
 
-		LOGGER.debug(" * Variants found in region: " + variantsDosages.size());
+		LOGGER.debug(" * Variants found in locus: " + variantsDosages.size());
 
 		timeStart = System.currentTimeMillis();
 

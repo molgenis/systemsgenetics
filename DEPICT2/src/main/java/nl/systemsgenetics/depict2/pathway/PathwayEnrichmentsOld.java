@@ -8,7 +8,6 @@ package nl.systemsgenetics.depict2.pathway;
 import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleSingularValueDecomposition;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -693,10 +692,10 @@ public class PathwayEnrichmentsOld {
 
 					//Only look at position because this is done per chromosome arm
 					int geneIStart = geneI.getStart();
-					int geneIStop = geneI.getStop();
+					int geneIStop = geneI.getEnd();
 
 					int geneJStart = geneJ.getStart();
-					int geneJStop = geneJ.getStop();
+					int geneJStop = geneJ.getEnd();
 
 					if (Math.abs(geneIStart - geneJStart) <= correlationWindow
 							|| Math.abs(geneIStart - geneJStop) <= correlationWindow
