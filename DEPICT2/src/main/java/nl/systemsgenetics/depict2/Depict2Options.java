@@ -941,6 +941,7 @@ public class Depict2Options {
         switch (mode) {
 			case CREATE_EXCEL:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
 				break;
             case CONVERT_EQTL:
                 LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -1271,7 +1272,7 @@ public class Depict2Options {
     }
 
     public File getGwasTopHitsFile() {
-        return new File(getOutputBasePath() + "_independentTopVariants.txt");
+        return new File(run1BasePath + "_independentTopVariants.txt");
     }
 
     public boolean isAssignPathwayGenesToCisWindow() {
