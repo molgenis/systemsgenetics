@@ -24,12 +24,18 @@ public class Cache<K, V> extends LinkedHashMap<K, V>
 		this.capacity = capacity;
 	}
 
-	public V get(Object key)
+	@Override
+	synchronized public V get(Object key)
 	{
-		V value = super.get(key);
-		return value;
+		return super.get(key);
 	}
-
+	
+	@Override
+	synchronized public V put(K key, V value) {
+		return super.put(key, value);
+	}
+	
+	@Override
 	protected boolean removeEldestEntry(Map.Entry<K, V> eldest)
 	{
 		return size() > capacity;
