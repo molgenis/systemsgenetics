@@ -144,8 +144,10 @@ public class IoUtils {
         while ((line = reader.readLine()) != null) {
             List<String> data = Arrays.asList(line.split("\t"));
             Set<String> rsids = new HashSet<>();
-            rsids.addAll(data.subList(1, data.size() - 1));
-
+			if(!data.isEmpty()){
+				rsids.addAll(data.subList(1, data.size() - 1));
+			}
+			
             output.put(data.get(0), rsids);
         }
 
