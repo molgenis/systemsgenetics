@@ -939,6 +939,9 @@ public class Depict2Options {
         LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
 
         switch (mode) {
+			case CREATE_EXCEL:
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				break;
             case CONVERT_EQTL:
                 LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
                 if (pvalueToZscore) {
