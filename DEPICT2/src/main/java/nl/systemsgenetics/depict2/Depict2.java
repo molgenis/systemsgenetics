@@ -94,7 +94,7 @@ public class Depict2 {
         }
 
         try {
-            FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() == Depict2Mode.STEP2 || options.getMode() == Depict2Mode.TOP_HITS);
+            FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() != Depict2Mode.STEP1);
             ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
             Logger.getRootLogger().removeAllAppenders();
             Logger.getRootLogger().addAppender(logFileAppender);
