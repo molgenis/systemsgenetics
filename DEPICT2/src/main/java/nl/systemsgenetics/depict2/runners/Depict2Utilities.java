@@ -104,7 +104,9 @@ public class Depict2Utilities {
 	}
 
 	/**
-	 * Converts a matrix of Pearson R values to z-scores. Diagonal of this matrix is set to zero.
+	 * Converts a matrix of Pearson R values to z-scores. Diagonal of this
+	 * matrix is set to zero.
+	 *
 	 * @param options
 	 * @throws FileNotFoundException
 	 * @throws Exception
@@ -221,32 +223,37 @@ public class Depict2Utilities {
 	}
 
 	/**
-	 * Re-generate the excel file from existing files in the intermediate folder.
+	 * Re-generate the excel file from existing files in the intermediate
+	 * folder.
+	 *
 	 * @param options
 	 * @throws Exception
 	 */
 	public static void generateExcelFromIntermediates(Depict2Options options) throws Exception {
-		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 
-		DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
+		Depict2Step2Results step2 = loadExistingStep2Restuls(options);
 
-		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
-		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, options.getIntermediateFolder(), options.isExcludeHla()));
-		}
-
-
-		Depict2Step2Results step2 = new Depict2Step2Results(pathwayEnrichments, genePvalues);
-		ExcelWriter writer = new ExcelWriter(genePvalues.getColObjects(), options);
+		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
 
 		writer.saveStep2Excel(step2);
-		writer.saveGenePvalueExcel(genePvalues);
+		writer.saveGenePvalueExcel(step2.getGenePvalues());
 
 		if (options.getPathwayDatabasesToAnnotateWithGwas().size() >= 1) {
 			Depict2Step3Results step3 = Depict2MainAnalysis.step3(options);
 			writer.saveStep3Excel(step2, step3);
 		}
 
+	}
+
+	public static Depict2Step2Results loadExistingStep2Restuls(Depict2Options options) throws Exception {
+
+		DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
+		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
+		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
+			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, options.getIntermediateFolder(), options.isExcludeHla()));
+		}
+		return new Depict2Step2Results(pathwayEnrichments, genePvalues);
 
 	}
 

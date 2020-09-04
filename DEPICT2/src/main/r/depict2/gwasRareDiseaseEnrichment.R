@@ -1,4 +1,4 @@
-setwd("C:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
+setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
 
 
 
@@ -13,12 +13,12 @@ hpoMatrix <- readRDS("../GeneNetwork/Data31995Genes05-12-2017/PCA_01_02_2018/Pat
 trait <- "height_2018_30124842_hg19"
 
 
-table_tmp <- read_delim(paste0("./",trait,"_48/",trait,"_genePvalues.txt"), delim = "\t", quote = "")
+table_tmp <- read_delim(paste0("./",trait,"_73/Coregulation_Enrichment_normalizedGwasGeneScores_ExHla.txt"), delim = "\t", quote = "")
 gwasGenePvalue <- as.matrix(table_tmp[,-1])
 rownames(gwasGenePvalue) <- table_tmp[,1][[1]]
 rm(table_tmp)
 
-table_tmp <- read_delim(paste0("./",trait,"_48/",trait,"_intermediates_Coregulation_Enrichment_zscoreExHla.txt"), delim = "\t", quote = "")
+table_tmp <- read_delim(paste0("./",trait,"_73/Coregulation_1588_Enrichment_empericalPvalsExHla.txt"), delim = "\t", quote = "")
 coreGeneScores <- as.matrix(table_tmp[,-1])
 rownames(coreGeneScores) <- table_tmp[,1][[1]]
 rm(table_tmp)
@@ -45,18 +45,18 @@ all(rownames(hpoMatrix2) ==names(coreGeneScores2))
 all(row.names(gwasGenePvalue2) ==names(coreGeneScores2))
 
 hpoTerm = "HP:0000002" #Abnormality of body height
-hpoTerm = "HP:0003107"
+hpoTerm = "HP:0000464"
 
 layout(matrix(1:3, nrow = 1))
-boxplot(-log10(gwasGenePvalue2) ~ as.factor(hpoMatrix2[,hpoTerm]), main = "-log10 Height gene p-value")
-boxplot(coreGeneScores2 ~ as.factor(hpoMatrix2[,hpoTerm]), main = "Height gene co-regulation Z-score")
+boxplot(gwasGenePvalue2 ~ as.factor(hpoMatrix2[,hpoTerm]), main = "-log10 Height gene p-value")
+boxplot(-log10(coreGeneScores2) ~ as.factor(hpoMatrix2[,hpoTerm]), main = "Height gene co-regulation Z-score")
 layout(1)
 
 
 
 library(pROC)
-(geneP <- roc(as.factor(hpoMatrix2[,hpoTerm]), -log10(gwasGenePvalue2)))
-(geneCoReg <- roc(as.factor(hpoMatrix2[,hpoTerm]), coreGeneScores2))
+(geneP <- roc(as.factor(hpoMatrix2[,hpoTerm]), gwasGenePvalue2))
+(geneCoReg <- roc(as.factor(hpoMatrix2[,hpoTerm]), -log10(coreGeneScores2)))
 #LudeRoc <- roc(as.factor(hpoMatrix2[,hpoTerm]), heightLude2)
 #geneGadoAndCoReg <- roc(as.factor(hpoMatrix2[,hpoTerm]), (coreGeneScores2 + hpoPredictions2[,hpoTerm]))
 

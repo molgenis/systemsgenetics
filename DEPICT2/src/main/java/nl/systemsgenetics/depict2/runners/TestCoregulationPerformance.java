@@ -16,7 +16,10 @@ import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.depict2.Depict2Options;
+import nl.systemsgenetics.depict2.Depict2Step2Results;
 import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
+import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
+import static nl.systemsgenetics.depict2.runners.Depict2Utilities.loadExistingStep2Restuls;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -30,16 +33,27 @@ public class TestCoregulationPerformance {
 	
 	private static final Logger LOGGER = Logger.getLogger(TestCoregulationPerformance.class);
 
-	public static void testCoreGenePredictionPerformance(Depict2Options options) throws IOException {
+	public static void testCoreGenePredictionPerformance(Depict2Options options) throws IOException, Exception {
+		
+		Depict2Step2Results step2 = loadExistingStep2Restuls(options);
 
-		DoubleMatrixDataset<String, String> gwasCoreGenePredictions = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-		List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+		List<PathwayDatabase> pathwayDatabases2 = options.getPathwayDatabases2();
+		
+		testPredictions(step2.getGenePvalues(), pathwayDatabases2, options, "genePvalues");
+		
+		for (PathwayEnrichments step2Enrichment : step2.getPathwayEnrichments()) {
+			testPredictions( step2Enrichment.getEnrichmentZscores(), pathwayDatabases2, options, step2Enrichment.getPathwayDatabase().getName());
+		}
+		
 
-		ArrayList<String> genesWithPrediciton = gwasCoreGenePredictions.getRowObjects();
+	}
 
-		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-
-			final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase.getLocation());
+	private static void testPredictions(DoubleMatrixDataset<String, String> predictionMatrix, List<PathwayDatabase> pathwayDatabases2, Depict2Options options, String predictionSource) throws IOException {
+		ArrayList<String> genesWithPrediciton = predictionMatrix.getRowObjects();
+		
+		for (PathwayDatabase pathwayDatabase2 : pathwayDatabases2) {
+			
+			final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase2.getLocation());
 
 			Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
 
@@ -54,14 +68,14 @@ public class TestCoregulationPerformance {
 			final int sharedGenesCount = sharedGenes.size();
 
 			final DoubleMatrixDataset<String, String> pathwayMatrix = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);
-			final DoubleMatrixDataset<String, String> gwasCoreGenePredictionsMatched = gwasCoreGenePredictions.viewRowSelection(sharedGenes);
-
+			final DoubleMatrixDataset<String, String> gwasCoreGenePredictionsMatched = predictionMatrix.viewRowSelection(sharedGenes);
+			
 			
 			final DoubleMatrixDataset<String, String> outputMatrix = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), gwasCoreGenePredictionsMatched.getHashCols());
 
 			final ArrayList<String> pathwayNames = pathwayMatrix.getColObjects();
 			
-			try (ProgressBar pb = new ProgressBar(pathwayDatabase.getName(), pathwayMatrix.columns(), ProgressBarStyle.ASCII)) {
+			try (ProgressBar pb = new ProgressBar(predictionSource + "_" + pathwayDatabase2.getName(), pathwayMatrix.columns(), ProgressBarStyle.ASCII)) {
 
 				for (int pathwayI = 0; pathwayI < pathwayMatrix.columns(); ++pathwayI) {
 
@@ -116,11 +130,10 @@ public class TestCoregulationPerformance {
 
 				}
 
-				outputMatrix.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + ".txt");
+				outputMatrix.save(options.getOutputBasePath() + "_" + predictionSource + "_auc_" + pathwayDatabase2.getName() + ".txt");
 
 			}
 		}
-
 	}
 
 }
