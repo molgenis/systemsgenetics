@@ -7,6 +7,7 @@ import com.opencsv.CSVReaderBuilder;
 import nl.systemsgenetics.depict2.Depict2;
 import nl.systemsgenetics.depict2.Depict2Options;
 import nl.systemsgenetics.depict2.gene.Gene;
+import nl.systemsgenetics.depict2.summarystatistic.SummaryStatisticRecord;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
@@ -132,6 +133,57 @@ public class IoUtils {
     }
 
 
+    public static Set<String> readAlternativeIndependentVariants(String path) throws IOException {
+        return readAlternativeIndependentVariants(new File(path));
+    }
+
+    public static Set<String> readAlternativeIndependentVariants(File path) throws IOException {
+        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(path))).withCSVParser(parser).withSkipLines(0).build();
+
+        HashSet<String> variantIds = new HashSet<>();
+
+        String[] nextLine;
+        while ((nextLine = reader.readNext()) != null) {
+            //SummaryStatisticRecord curRec = new SummaryStatisticRecord(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Double.parseDouble(nextLine[3]));
+            variantIds.add(nextLine[0]);
+        }
+
+        return variantIds;
+    }
+
+    public static Map<String, Set<String>> readAlternativeIndependentVariants(Map<String, File> files) throws IOException {
+        Map<String, Set<String>> output = new HashMap<>();
+
+        for (String file: files.keySet()) {
+            output.put(file, readAlternativeIndependentVariants(files.get(file)));
+        }
+
+        return output;
+    }
+
+
+
+    public static List<SummaryStatisticRecord> readAlternativeIndependentVariantsAsRecords(String path) throws IOException {
+        return readAlternativeIndependentVariantsAsRecords(new File(path));
+    }
+
+    public static List<SummaryStatisticRecord> readAlternativeIndependentVariantsAsRecords(File path) throws IOException {
+        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(path))).withCSVParser(parser).withSkipLines(0).build();
+
+        List<SummaryStatisticRecord> variants = new ArrayList<>();
+
+        String[] nextLine;
+        while ((nextLine = reader.readNext()) != null) {
+            SummaryStatisticRecord curRec = new SummaryStatisticRecord(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Double.parseDouble(nextLine[3]));
+            variants.add(curRec);
+        }
+
+        return variants;
+    }
+
+
     public static Map<String, Set<String>> readIndependentVariants(String path) throws IOException {
         return readIndependentVariants(new File(path));
     }
@@ -144,16 +196,17 @@ public class IoUtils {
         while ((line = reader.readLine()) != null) {
             List<String> data = Arrays.asList(line.split("\t"));
             Set<String> rsids = new HashSet<>();
-			if(!data.isEmpty()){
-				rsids.addAll(data.subList(1, data.size() - 1));
-			}
-			
+            if(!data.isEmpty()){
+                rsids.addAll(data.subList(1, data.size() - 1));
+            }
+
             output.put(data.get(0), rsids);
         }
 
         reader.close();
         return output;
     }
+
 
 
     public static LinkedHashMap<String, Gene> readGenesMap(File geneFile) throws IOException {

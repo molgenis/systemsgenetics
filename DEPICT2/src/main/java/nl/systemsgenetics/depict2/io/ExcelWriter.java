@@ -584,6 +584,7 @@ public class ExcelWriter {
 
 				// No overlap = -9
 				int closestDist = -8;
+				SummaryStatisticRecord closestVariant = null;
 				String variantId = "";
 
 				if (curGene != null) {
@@ -602,6 +603,13 @@ public class ExcelWriter {
 						int idx = distanceCache.indexOf(indexList.get(0));
 						closestDist = distanceCache.get(idx);
 						variantId = varianceCache.get(idx).getPrimaryVariantId();
+						closestVariant = varianceCache.get(idx);
+
+						// If the SNP is inside the gene body, set distance to zero
+						if (curGene.isOverlapping(varianceCache.get(idx))) {
+							closestDist = 0;
+						}
+
 					} else {
 						closestDist = -9;
 					}
@@ -627,7 +635,17 @@ public class ExcelWriter {
 				snpNameCell.setCellValue(variantId);
 
 				if (variantId.length() > 1) {
-					double snpPvalue = ZScores.zToP(gwasPvalues.getElement(variantId, trait));
+					double snpPvalue;
+					if (closestVariant != null && closestVariant.getPvalue() != -9) {
+						snpPvalue = closestVariant.getPvalue();
+					} else {
+						if (gwasPvalues.getRowObjects().contains(variantId)) {
+							snpPvalue = ZScores.zToP(gwasPvalues.getElement(variantId, trait));
+						} else {
+							snpPvalue = -9;
+						}
+					}
+
 					XSSFCell snpPvalueCell = row.createCell(8 + maxAnnotations, CellType.NUMERIC);
 					snpPvalueCell.setCellValue(snpPvalue);
 					snpPvalueCell.setCellStyle(snpPvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
@@ -640,6 +658,7 @@ public class ExcelWriter {
 
 				if (!Double.isNaN(genePvalue)) {
 					XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
+					genePvalue = 1 - ZScores.zToP(genePvalue);
 					genePCell.setCellValue(genePvalue);
 					genePCell.setCellStyle(genePvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
 				} else {
@@ -787,7 +806,6 @@ public class ExcelWriter {
 		}
 
 		Map<String, File> alternativeTopHitFiles = options.getAlternativeTopHitFiles();
-
 		RandomAccessGenotypeData genotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, allVariants);
 		Map<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
 
@@ -797,22 +815,11 @@ public class ExcelWriter {
 			List<SummaryStatisticRecord> curRecordList = new ArrayList<>();
 
 			if (alternativeTopHitFiles.containsKey(trait)) {
-
 				LOGGER.info("Using alternative top hits for: " + trait);
-				
-				final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-				final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(alternativeTopHitFiles.get(trait)))).withCSVParser(parser).withSkipLines(0).build();
-
-				String[] nextLine;
-				while ((nextLine = reader.readNext()) != null) {
-
-					curRecordList.add(new SummaryStatisticRecord(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Double.parseDouble(nextLine[3])));
-					
-				}
-
+				curRecordList = IoUtils.readAlternativeIndependentVariantsAsRecords(alternativeTopHitFiles.get(trait));
 			} else {
 				for (String curVariant : independentVariants.get(trait)) {
-					curRecordList.add(new SummaryStatisticRecord(variantMap.get(curVariant), 1));
+					curRecordList.add(new SummaryStatisticRecord(variantMap.get(curVariant), -9));
 				}
 			}
 
