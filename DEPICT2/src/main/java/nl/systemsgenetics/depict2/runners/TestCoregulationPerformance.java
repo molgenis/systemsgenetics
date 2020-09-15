@@ -69,9 +69,9 @@ public class TestCoregulationPerformance {
 
 			final DoubleMatrixDataset<String, String> pathwayMatrix = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);
 			final DoubleMatrixDataset<String, String> gwasCoreGenePredictionsMatched = predictionMatrix.viewRowSelection(sharedGenes);
-			
-			
-			final DoubleMatrixDataset<String, String> outputMatrix = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), gwasCoreGenePredictionsMatched.getHashCols());
+
+			final DoubleMatrixDataset<String, String> outputMatrixAuc = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), gwasCoreGenePredictionsMatched.getHashCols());
+			final DoubleMatrixDataset<String, String> outputMatrixPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), gwasCoreGenePredictionsMatched.getHashCols());
 
 			final ArrayList<String> pathwayNames = pathwayMatrix.getColObjects();
 			
@@ -117,12 +117,14 @@ public class TestCoregulationPerformance {
 						uTest.setData(coreGeneScoresAnnotatedGenes, coreGeneScoresOtherGenes);
 
 						final double auc = uTest.getAuc();
-						
+						final double pval = uTest.getP();
+
 						if(LOGGER.isDebugEnabled() && Double.isNaN(auc)){
 							LOGGER.debug(pathwayNames.get(pathwayI_2) + " NaN AUC " + Arrays.toString(coreGeneScoresAnnotatedGenes));
 						}
-						
-						outputMatrix.setElementQuick(pathwayI2, traitI, auc);
+
+						outputMatrixAuc.setElementQuick(pathwayI2, traitI, auc);
+						outputMatrixPvalues.setElementQuick(pathwayI2, traitI, pval);
 
 					});
 					
@@ -130,8 +132,8 @@ public class TestCoregulationPerformance {
 
 				}
 
-				outputMatrix.save(options.getOutputBasePath() + "_" + predictionSource + "_auc_" + pathwayDatabase2.getName() + ".txt");
-
+				outputMatrixAuc.save(options.getOutputBasePath() + "_" + predictionSource + "_auc_" + pathwayDatabase2.getName() + ".txt");
+				outputMatrixPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_aucPvals_" + pathwayDatabase2.getName() + ".txt");
 			}
 		}
 	}

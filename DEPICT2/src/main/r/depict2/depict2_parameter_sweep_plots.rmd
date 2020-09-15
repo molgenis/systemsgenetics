@@ -45,29 +45,26 @@ plot.xy <- function(x.name, y.name, data) {
   return(theme.nature(p1))
 }
 
+
 trait <- "height_2014_25282103_hg19_enrichtments_exHla.xlsx"
+trait <- "inflammatory_bowel_disease_2017_29906448_hg19_enrichtments_exHla.xlsx"
+type  <- "expression"
 
-order   <- rownames(kb50$height_2014_25282103_hg19_enrichtments_exHla.xlsx$expression)
-df.plot <- data.frame(kb15=kb15[[trait]]$expression[order,]$Enrichment.Z.score,
-                      kb25=kb25[[trait]]$expression[order,]$Enrichment.Z.score,
-                      kb50=kb50[[trait]]$expression[order,]$Enrichment.Z.score,
-                      kb100=kb100[[trait]]$expression[order,]$Enrichment.Z.score,
-                      kb150=kb150[[trait]]$expression[order,]$Enrichment.Z.score)
+order   <- rownames(kb50[[trait]][[type]])
+df.plot <- data.frame(kb15=kb15[[trait]][[type]][order,]$Enrichment.Z.score,
+                      kb25=kb25[[trait]][[type]][order,]$Enrichment.Z.score,
+                      kb50=kb50[[trait]][[type]][order,]$Enrichment.Z.score,
+                      kb100=kb100[[trait]][[type]][order,]$Enrichment.Z.score)#,
+ #                     kb150=kb150[[trait]][[type]][order,]$Enrichment.Z.score)
 
-order   <- rownames(kb50$height_2014_25282103_hg19_enrichtments_exHla.xlsx$Coregulation)
-df.plot <- data.frame(kb15=kb15$height_2014_25282103_hg19_enrichtments_exHla.xlsx$Coregulation[order,]$Enrichment.Z.score,
-                      kb25=kb25$height_2014_25282103_hg19_enrichtments_exHla.xlsx$Coregulation[order,]$Enrichment.Z.score,
-                      kb50=kb50$height_2014_25282103_hg19_enrichtments_exHla.xlsx$Coregulation[order,]$Enrichment.Z.score,
-                      kb100=kb100$height_2014_25282103_hg19_enrichtments_exHla.xlsx$Coregulation[order,]$Enrichment.Z.score,
-                      kb150=kb150$height_2014_25282103_hg19_enrichtments_exHla.xlsx$Coregulation[order,]$Enrichment.Z.score)
-
-p1 <- plot.xy("kb50", "kb15", df.plot)
+p1 <- plot.xy("kb25", "kb15", df.plot)
 p2 <- plot.xy("kb50", "kb25", df.plot)
 p3 <- plot.xy("kb50", "kb100", df.plot)
 p4 <- plot.xy("kb50", "kb150", df.plot)
 
 
 grid.arrange(grobs=list(p1, p2, p3, p4), ncol=4)
+grid.arrange(grobs=list(p1, p2, p3), ncol=3)
 
 
 ```

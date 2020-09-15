@@ -113,8 +113,8 @@ public class Locus implements OverlappableGenomicRange {
      * @param variantIds the variant ids
      */
     public void addIndepVariants(Collection<String> variantIds) {
-        for (String vvariantId : variantIds) {
-            addIndepVariant(vvariantId);
+        for (String variantId : variantIds) {
+            addIndepVariant(variantId);
         }
     }
 

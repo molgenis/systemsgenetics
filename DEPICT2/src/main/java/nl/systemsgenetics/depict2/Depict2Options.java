@@ -524,7 +524,7 @@ public class Depict2Options {
 
 					for (int i = 0; i < athValues.length; i += 2) {
 
-						if (!alternativeTopHitFiles.containsKey(athValues[i])) {
+						if (alternativeTopHitFiles.containsKey(athValues[i])) {
 							throw new ParseException("Error parsing --alternaitveTopHits. Duplicate names found");
 						}
 

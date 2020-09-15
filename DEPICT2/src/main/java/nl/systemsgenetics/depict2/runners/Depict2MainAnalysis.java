@@ -1,6 +1,10 @@
 package nl.systemsgenetics.depict2.runners;
 
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import nl.systemsgenetics.depict2.*;
 import nl.systemsgenetics.depict2.gene.Gene;
 import nl.systemsgenetics.depict2.gene.GenePvalueCalculator;
@@ -18,9 +22,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
@@ -274,25 +276,43 @@ public class Depict2MainAnalysis {
 
         // Independent variants, defined in step1
         Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getGwasTopHitsFile());
+        Map<String, Set<String>> alternativeIndependentVariants = IoUtils.readAlternativeIndependentVariants(options.getAlternativeTopHitFiles());
+
+        // Optional alternative top hits, will override internal depict prio
+        Map<String, File> alternativeTopHitFiles = options.getAlternativeTopHitFiles();
 
         // Output store
         Depict2Step3Results output = new Depict2Step3Results();
 
         for (String trait : gwasSnpZscores.getColObjects()) {
-            Map<String, SummaryStatisticRecord> records = new HashMap<>();
-            for (String variant : variantMap.keySet()) {
-                double pvalue = ZScores.zToP(gwasSnpZscores.getElement(variant, trait));
-                if (pvalue < upperPvalThresh) {
-                    SummaryStatisticRecord outRec = new SummaryStatisticRecord(variantMap.get(variant), pvalue);
-                    // Check if SNP is in HLA region
-                    boolean passesHla = true;
-                    if (options.isExcludeHla()) {
-                        passesHla = !inHlaRegionFilter.passesFilter(outRec);
-                    }
 
-                    if (passesHla) {
-                        records.put(variant, outRec);
+            Map<String, SummaryStatisticRecord> records = new HashMap<>();
+            List<SummaryStatisticRecord> recordCache = new ArrayList<>();
+
+            // Use either internal Downstreamer topsnps or the ones from the  provided file
+            if (alternativeTopHitFiles.containsKey(trait)) {
+                LOGGER.info("Using alternative top hits for: " + trait);
+                recordCache = IoUtils.readAlternativeIndependentVariantsAsRecords(alternativeTopHitFiles.get(trait));
+            } else {
+                for (String variant : variantMap.keySet()) {
+                    double pvalue = ZScores.zToP(gwasSnpZscores.getElement(variant, trait));
+                    if (pvalue < upperPvalThresh) {
+                        recordCache.add(new SummaryStatisticRecord(variantMap.get(variant), pvalue));
                     }
+                }
+            }
+
+            LOGGER.info("Parsed " + recordCache.size() + " records");
+
+            // Check if SNP is in HLA region
+            for (SummaryStatisticRecord outRec : recordCache) {
+                boolean passesHla = true;
+                if (options.isExcludeHla()) {
+                    passesHla = !inHlaRegionFilter.passesFilter(outRec);
+                }
+
+                if (passesHla) {
+                    records.put(outRec.getPrimaryVariantId(), outRec);
                 }
             }
 
@@ -302,14 +322,22 @@ public class Depict2MainAnalysis {
 
             for (Locus curLocus : loci) {
                 // Annotate the independent top variants
-                curLocus.addIndepVariants(independentVariants.get(trait));
+                if (alternativeTopHitFiles.containsKey(trait)) {
+                    curLocus.addIndepVariants(alternativeIndependentVariants.get(trait));
+                } else {
+                    curLocus.addIndepVariants(independentVariants.get(trait));
+                }
 
                 // Add the genes to the loci objects
                 // TODO: not very efficient, but should be fine, the existing implementations were not really easily implementable. Alternatively could look into using R-trees if this proves to slow
-                for (Gene curGene : genes.get(curLocus.getSequenceName())) {
-                    if (curGene.isOverlapping(curLocus)) {
-                        curLocus.addGene(curGene);
+                if (genes.containsKey(curLocus.getSequenceName())) {
+                    for (Gene curGene : genes.get(curLocus.getSequenceName())) {
+                        if (curGene.isOverlapping(curLocus)) {
+                            curLocus.addGene(curGene);
+                        }
                     }
+                } else {
+                    LOGGER.warn("Omitting " + curLocus.getSequenceName() + ":" + curLocus.getStart() + "-" + curLocus.getEnd() + " as the chromosome could not be found");
                 }
             }
 
@@ -318,9 +346,6 @@ public class Depict2MainAnalysis {
 
         return output;
     }
-
-
-
 
 
     private static double[] generateRandomChi2(long numberOfPermutations, int numberOfVariantPerGeneToExpect) {
