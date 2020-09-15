@@ -344,6 +344,7 @@ public class Depict2MainAnalysis {
             output.addLoci(trait, loci);
         }
 
+
         return output;
     }
 
