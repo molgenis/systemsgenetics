@@ -46,7 +46,6 @@ public class Depict2Step1Results {
 		DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(run1BasePath + "_geneMaxSnpZscoresNullGwas");
 
 		DoubleMatrixDataset<String, String> geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(run1BasePath + "_geneVariantCount.txt", '\t');
-		LOGGER.info("Gene p-values loaded");
 
 		return new Depict2Step1Results(genePvalues, genePvaluesNullGwas, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
 	}
