@@ -80,6 +80,7 @@ public class Depict2Options {
 	private final String x;
 	private final String y;
 	private List<String> pathwayDatabasesToAnnotateWithGwas;
+	private Map<String, File> alternativeTopHitFiles;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -363,6 +364,13 @@ public class Depict2Options {
 		OptionBuilder.withDescription("Name of Pathway databases that you want to annotate with GWAS info. Rownames MUST be enembl Id's");
 		OPTIONS.addOption(OptionBuilder.create("annotDb"));
 
+		OptionBuilder.withArgName("name=path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withValueSeparator();
+		OptionBuilder.withDescription("Alternative file with top GWAS hits id\tchr\tpos\tp-value. name must be name as in oter output files for trait");
+		OptionBuilder.withLongOpt("alternaitveTopHits");
+		OPTIONS.addOption(OptionBuilder.create("ath"));
+
 	}
 
 	public Depict2Options(String... args) throws ParseException {
@@ -503,6 +511,37 @@ public class Depict2Options {
 				} else {
 					pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				}
+				if (commandLine.hasOption("ath")) {
+					
+
+					String[] athValues = commandLine.getOptionValues("ath");
+
+					if (athValues.length % 2 != 0) {
+						throw new ParseException("Error parsing --alternaitveTopHits. Must be in name=path format");
+					}
+					
+					alternativeTopHitFiles = new HashMap<>(athValues.length/2);
+
+					for (int i = 0; i < athValues.length; i += 2) {
+
+						if (!alternativeTopHitFiles.containsKey(athValues[i])) {
+							throw new ParseException("Error parsing --alternaitveTopHits. Duplicate names found");
+						}
+
+						File hitsFile = new File(athValues[i + 1]);
+						
+						if(!hitsFile.canRead()){
+							throw new ParseException("Error parsing --alternaitveTopHits. Can't find: " + hitsFile.getAbsolutePath());
+						}
+						
+						alternativeTopHitFiles.put(athValues[i], hitsFile);
+
+					}
+
+				} else {
+					alternativeTopHitFiles = Collections.EMPTY_MAP;
+				}
+
 				break;
 			case CORRELATE_GENES:
 				if (commandLine.hasOption("ge")) {
@@ -522,7 +561,7 @@ public class Depict2Options {
 			case CORE_GENE_AUC:
 				pathwayDatabases = parsePd(commandLine, "pd", "pathwayDatabase");
 				pathwayDatabases2 = parsePd(commandLine, "pd2", "pathwayDatabase2");
-				if(pathwayDatabases2.isEmpty()){
+				if (pathwayDatabases2.isEmpty()) {
 					throw new ParseException("--pathwayDatabase2 not specified");
 				}
 				permutationGeneCorrelations = 0;
@@ -1297,4 +1336,9 @@ public class Depict2Options {
 	public List<String> getPathwayDatabasesToAnnotateWithGwas() {
 		return pathwayDatabasesToAnnotateWithGwas;
 	}
+
+	public Map<String, File> getAlternativeTopHitFiles() {
+		return alternativeTopHitFiles;
+	}
+	
 }
