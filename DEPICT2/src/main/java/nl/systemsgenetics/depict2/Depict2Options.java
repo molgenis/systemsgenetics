@@ -523,11 +523,8 @@ public class Depict2Options {
 					alternativeTopHitFiles = new HashMap<>(athValues.length/2);
 
 					for (int i = 0; i < athValues.length; i += 2) {
-						
-						System.out.println(athValues[i]);
-						System.out.println(athValues[i+1]);
 
-						if (!alternativeTopHitFiles.containsKey(athValues[i])) {
+						if (alternativeTopHitFiles.containsKey(athValues[i])) {
 							throw new ParseException("Error parsing --alternaitveTopHits. Duplicate names found");
 						}
 
