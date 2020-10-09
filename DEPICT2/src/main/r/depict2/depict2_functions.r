@@ -25,6 +25,7 @@ theme.nature <- function(p, base_size = 11, base_family = "ArialMT") {
           plot.title = element_text(hjust=0.5))
   return(p)
 }
+
 # ------------------------------------------------------ 
 # Plot depict2 scatterplot by enrichment score
 make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour="Enrichment.Z.score", limits=NA) {
@@ -85,10 +86,9 @@ make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour
   return(p)
 }
 
-
 # ------------------------------------------------------ 
 read.depict2 <- function(path) {
-  potential_traits <- c("expression","expression_scP3","expression_brain","expression_gs_tcell","Coregulation","Coregulation_eQTLGen","Coregulation_brain","Reactome","GO_P","GO_C","GO_F","KEGG","HPO","GO_P_brain","GO_C_brain","GO_F_brain","KEGG_brain","HPO_brain","Reactome_brain","gtexV8","gtex")
+  potential_traits <- c("expression","expression_scP3","expression_brain","expression_gs_tcell","Coregulation","Coregulation_1588","Coregulation_eQTLGen","Coregulation_brain","Reactome","GO_P","GO_C","GO_F","KEGG","HPO","GO_P_brain","GO_C_brain","GO_F_brain","KEGG_brain","HPO_brain","Reactome_brain","gtexV8","gtex")
   output <- list()
   for (sheet in potential_traits) {
     tmp <- tryCatch({data.frame(read_excel(path, sheet=sheet, col_types ="guess", trim_ws = T), stringsAsFactors=F)},
@@ -132,7 +132,7 @@ make.zscore.matrix <- function(datasets, trait="Coregulation", collumn="Enrichme
 }
 
 # ------------------------------------------------------ 
-read.enrichments <- function(files, column=1) {
+read.enrichments <- function(files, column=1, trim.colnames=NULL) {
   out <- matrix()
   i=0
   for (dataset in files) {
@@ -145,6 +145,45 @@ read.enrichments <- function(files, column=1) {
     i <- i+1
   }
   colnames(out) <- make.names(basename(files), unique=T)
+  
+  if (!is.null(trim.colnames)) {
+    colnames(out) <- gsub(trim.colnames, "", colnames(out))
+  }
+  
+  return(out)
+}
+
+# ------------------------------------------------------ 
+read.genep.excel <- function(files, column=6) {
+  out <- matrix()
+  i=0
+  
+  rnames <- c()
+  cnames <- c()
+  
+  for (dataset in files) {
+    tmp <- data.frame(read_excel(dataset, sheet=1, col_types ="guess", trim_ws = T), stringsAsFactors = F)
+    rownames(tmp) <- tmp[,1]
+    if (i==0) {
+      out <- as.matrix(tmp[,column:ncol(tmp), drop=F])
+      rownames(out) <- tmp[,1]
+      rnames <- tmp[,1]
+    } else {
+      out <- cbind(out, tmp[rownames(out), column:ncol(tmp), drop=F])
+    }
+    
+    if (ncol(tmp) - column > 0) {
+      cnames <- c(cnames, colnames(tmp)[column:ncol(tmp)])
+    } else {
+      cnames <- c(cnames, basename(dataset))
+    }
+    
+    i <- i+1
+  }
+
+  out <- apply(out, 2, as.numeric)
+  colnames(out) <- cnames
+  rownames(out) <- rnames
   
   return(out)
 }
@@ -168,6 +207,7 @@ read.enrichments.fread <- function(files, column=1) {
   
   return(out)
 }
+
 # ------------------------------------------------------ 
 cor.test.p <- function(x, method){
   FUN <- function(x, y) cor.test(x, y, method=method, use="complete.obs")[["p.value"]]
@@ -207,3 +247,29 @@ simple.qq.plot <- function (observedPValues) {
        -log10(sort(observedPValues)))
   abline(0, 1, col = "red")
 }
+
+#----------------------------------------------------------------------------------------
+fancy.qq.plot <- function (y, main="", col="black", highlight.col="blue") {
+  y <- na.omit(y)
+  x <- -log10(1:length(y)/length(y))
+  y <- -log10(sort(y))
+  
+  thresh <- -log10(0.05/length(y))
+  upper <- max(c(x, y)) + 1
+  
+  p <- ggplot(data.frame(x=x, y=y, col=y > thresh), mapping=aes(x=x, y=y, col=col)) +
+    geom_point() +
+    geom_abline(slope=1, intercept=0, col="black") +
+    geom_hline(yintercept=thresh, lty=2, col="grey") +
+    xlab("-log10(expected p-value)") +
+    ylab("-log10(observed p-value)") +
+    ggtitle(main) +
+    ylim(c(0, upper)) +
+    xlim(c(0, upper)) +
+    coord_fixed() +
+    annotate("text", y=01, x=upper-2, label=paste0("N=", length(y)), col="grey") +
+    scale_color_manual(values=c(`TRUE`=highlight.col, `FALSE`=col), name="Bonferroni significant")
+  
+  return(p)
+}
+

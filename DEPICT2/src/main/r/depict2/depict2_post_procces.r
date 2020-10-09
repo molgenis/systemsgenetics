@@ -1,37 +1,24 @@
-library(ggplot2)
-library(gridExtra)
-library(readxl)
-library(pheatmap)
-library(RColorBrewer)
-library(gridExtra)
-
 source("depict2_functions.r")
 
-path <- "/home/work/Desktop/depict2/maf_filtered/metabolites_2016_27005778_hg19_48/"
-
-path <- "/home/work/Desktop/depict2/output/height_paper_v2/v56/"
-files <- list.files(path, pattern="*.xlsx")
+# Read excel files
+path  <- "/home/work/Desktop/depict2/output/final_paper/excels/"
+files <- list.files(path, pattern=".*_enrichtments.*.xlsx")
 
 datasets <- list()
 for (file in files) {
-  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\.xlsx", "", file)
-  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", file)
+  name <- gsub("\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
   name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
-  name <- gsub("\\_hg19\\.txt\\_exHla\\.xlsx", "", name)
+  name <- gsub("\\.txt\\_exHla\\.xlsx", "", name)
   
   datasets[[name]] <- read.depict2(paste0(path, file))
 }
 
-# Manual 
-dataset     <- "run_41_enrichtments_exHla.xlsx"
-cur.dataset <- datasets[[dataset]]
-p1          <- make.tsne.plot(cur.dataset$expression, dataset, x="Annotation1", y="Annotation2") +
-  xlab("t-SNE component 1") +
-  ylab("t-SNE component 2")
 
-p1
+#----------------------------------------------------------------------
+# T-SNE plots
 
-pdf(width=10, height=10, file="/home/work/Desktop/depict2/plots/v56_tsne_plots_blood.pdf")
+pdf(width=10, height=10, file="/home/work/Desktop/depict2/plots/v75_tsne_plots_blood.pdf")
 for (dataset in 1:length(datasets)) {
   cur.dataset <- datasets[[dataset]]
   p1 <- make.tsne.plot(cur.dataset$expression, paste0(names(datasets)[dataset], " expression"), x="Annotation1", y="Annotation2", limits=c(-6, 6))
@@ -42,31 +29,17 @@ for (dataset in 1:length(datasets)) {
 }
 dev.off()
 
+#----------------------------------------------------------------------
+# Correlation heatmaps
 
-pdf(width=30, height=30, file="~/Desktop/depict2/plots/v56_correlation_heatmaps.pdf")
+pdf(width=15, height=15, file="~/Desktop/depict2/plots/v75_correlation_heatmaps.pdf")
 trait <- "Coregulation"
 bla <- make.zscore.matrix(datasets, trait=trait)
 make.correlation.heatmap(bla, trait)
 
-#trait <- "Coregulation_brain"
-#bla <- make.zscore.matrix(datasets, trait=trait)
-#make.correlation.heatmap(bla, trait)
-
-#trait <- "Coregulation_eQTLGen"
-#bla <- make.zscore.matrix(datasets, trait=trait)
-#make.correlation.heatmap(bla, trait)
-
 trait <- "expression"
 bla <- make.zscore.matrix(datasets, trait=trait)
 make.correlation.heatmap(bla, trait)
-
-#trait <- "expression_brain"
-#bla <- make.zscore.matrix(datasets, trait=trait)
-#make.correlation.heatmap(bla, trait)
-
-#trait <- "expression_scP3"
-#bla <- make.zscore.matrix(datasets, trait=trait)
-#make.correlation.heatmap(bla, trait)
 
 trait <- "KEGG"
 bla <- make.zscore.matrix(datasets, trait=trait)
@@ -79,32 +52,38 @@ make.correlation.heatmap(bla, trait)
 trait <- "Reactome"
 bla <- make.zscore.matrix(datasets, trait=trait)
 make.correlation.heatmap(bla, trait)
-
 dev.off()
 
 
 
-############# Scratchpad
+#----------------------------------------------------------------------
+# qq plots
 
-pbc <- datasets$primary_biliary_cirrhosis_2012_22961000
-alz <- datasets$alzheimers_disease_2018_29777097
+plots.coregulation <- lapply(names(datasets), function(dataset) {
+  cur.dataset <- datasets[[dataset]]$Coregulation$Enrichment.P.value
+  
+  return(theme.nature(fancy.qq.plot(cur.dataset, main=dataset)))
+})
 
-p1 <- make.tsne.plot(pbc$expression," expression", x="Annotation1", y="Annotation2")
-p2 <- make.tsne.plot(alz$expression, " expression", x="Annotation1", y="Annotation2")
-p3 <- theme.nature(plot.lm(pbc$expression$Enrichment.Z.score, alz$expression$Enrichment.Z.score, ylab="PBC zscore", xlab="ALZ zscore"))
-
-grid.arrange(grobs=list(p1,p2,p3), ncol=3)
+png(width=2500, height=2500, file="~/Desktop/depict2/plots/v75_qqplots_coregulation.png")
+grid.arrange(grobs=plots.coregulation)
+dev.off()
 
 
-library(data.table)
+plots.expression <- lapply(names(datasets), function(dataset) {
+  cur.dataset <- datasets[[dataset]]$expression$Enrichment.P.value
+  
+  return(theme.nature(fancy.qq.plot(cur.dataset, main=dataset)))
+})
 
-x <- fread("gunzip -c ~/Desktop/depict2/Alzh_4_UK_Biobank_IGAP_17May2018_formatted.txt.gz", data.table=F)
-rownames(x) <- make.unique(x$SNP)
-y <- fread("gunzip -c ~/Desktop/depict2/primary_biliary_cirrhosis_2012_22961000_hg19.txt.gz", data.table=F)
-rownames(y) <- make.unique(y[,1])
-y <- y[-1,]
+png(width=2500, height=2500, file="~/Desktop/depict2/plots/v75_qqplots_expression.png")
+grid.arrange(grobs=plots.expression)
+dev.off()
 
-ol <- intersect(rownames(x), rownames(y))
 
-c <- cor(-log10(x[ol,2]), -log10(y[ol,2]), use="complete.obs")
+
+  for(dataset in names(datasets)) {
+  cur.dataset <- datasets[[dataset]]$Coregulation$Enrichment.P.value
+  hist(cur.dataset)
+}
 

@@ -5,7 +5,6 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import nl.systemsgenetics.depict2.Depict2;
 import nl.systemsgenetics.depict2.Depict2Options;
 import nl.systemsgenetics.depict2.Depict2Step2Results;
 import nl.systemsgenetics.depict2.Depict2Step3Results;
@@ -157,6 +156,7 @@ public class Depict2Utilities {
 
 	}
 
+
 	/**
 	 * Utility to get the force normalized gene pvalues with tie resolving.
 	 * Shares some duplicate code with Depict2MainAnalysis.run2(). This can be
@@ -166,6 +166,18 @@ public class Depict2Utilities {
 	 * @throws Exception
 	 */
 	public static void getNormalizedGwasGenePvalues(Depict2Options options) throws Exception {
+		getNormalizedGwasGenePvaluesReturn(options);
+	}
+
+	/**
+	 * Utility to get the force normalized gene pvalues with tie resolving.
+	 * Shares some duplicate code with Depict2MainAnalysis.run2(). This can be
+	 * cleaned up in future
+	 *
+	 * @param options
+	 * @throws Exception
+	 */
+	public static DoubleMatrixDataset<String, String> getNormalizedGwasGenePvaluesReturn(Depict2Options options) throws Exception {
 
 		DoubleMatrixDataset<String, String> genePvalues;
 		List<Gene> genes;
@@ -173,18 +185,18 @@ public class Depict2Utilities {
 		DoubleMatrixDataset<String, String> geneMaxSnpZscore;
 
 		LOGGER.info("Continuing previous analysis by loading gene p-values");
-		if (new File(options.getOutputBasePath() + "_genePvalues.dat").exists()) {
-			genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_genePvalues");
+		if (new File(options.getRun1BasePath() + "_genePvalues.dat").exists()) {
+			genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
 			// Always load to avoid nullpointers
-			geneMaxSnpZscore = DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputBasePath() + "_geneMaxSnpScores");
+			geneMaxSnpZscore = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_geneMaxSnpScores");
 
 		} else {
-			LOGGER.fatal("Could not find gene pvalues at: " + options.getOutputBasePath() + "_genePvalues.dat");
+			LOGGER.fatal("Could not find gene pvalues at: " + options.getRun1BasePath() + "_genePvalues.dat");
 			LOGGER.fatal("First use --mode RUN to calculate gene p-values");
-			return;
+			return null;
 		}
 
-		geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getOutputBasePath() + "_geneVariantCount.txt", '\t');
+		geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(options.getRun1BasePath() + "_geneVariantCount.txt", '\t');
 		LOGGER.info("Gene p-values loaded");
 		genes = IoUtils.readGenes(options.getGeneInfoFile());
 		LOGGER.info("Loaded " + genes.size() + " genes");
@@ -217,9 +229,9 @@ public class Depict2Utilities {
 		DoubleMatrixDataset<String, String> normalizedGwasGeneScores;
 		normalizedGwasGeneScores = PathwayEnrichments.createColumnForceNormalDuplicate(genePvalues, geneMaxSnpZscore);
 		normalizedGwasGeneScores.save(options.getOutputBasePath() + "_normalizedGenePvalues.txt");
-
 		LOGGER.info("Done");
 
+		return(normalizedGwasGeneScores);
 	}
 
 	/**
@@ -231,7 +243,7 @@ public class Depict2Utilities {
 	 */
 	public static void generateExcelFromIntermediates(Depict2Options options) throws Exception {
 
-		Depict2Step2Results step2 = loadExistingStep2Restuls(options);
+		Depict2Step2Results step2 = loadExistingStep2Results(options);
 
 		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
 
@@ -245,15 +257,17 @@ public class Depict2Utilities {
 
 	}
 
-	public static Depict2Step2Results loadExistingStep2Restuls(Depict2Options options) throws Exception {
+	public static Depict2Step2Results loadExistingStep2Results(Depict2Options options) throws Exception {
 
 		DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
+		DoubleMatrixDataset<String, String> normalizedGenePvalues = getNormalizedGwasGenePvaluesReturn(options);
+
 		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
 		ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
 			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, options.getIntermediateFolder(), options.isExcludeHla()));
 		}
-		return new Depict2Step2Results(pathwayEnrichments, genePvalues);
+		return new Depict2Step2Results(pathwayEnrichments, genePvalues, normalizedGenePvalues);
 
 	}
 

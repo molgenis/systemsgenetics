@@ -9,11 +9,17 @@ public class Depict2Step2Results {
 
 
     private DoubleMatrixDataset<String, String> genePvalues;
+    private DoubleMatrixDataset<String, String> normalizedGenePvalues;
     private List<PathwayEnrichments> pathwayEnrichments;
-
 
     public Depict2Step2Results(List<PathwayEnrichments> pathwayEnrichments, DoubleMatrixDataset<String, String> genePvalues) {
         this.genePvalues = genePvalues;
+        this.pathwayEnrichments = pathwayEnrichments;
+    }
+
+    public Depict2Step2Results(List<PathwayEnrichments> pathwayEnrichments, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> normalizedGenePvalues) {
+        this.genePvalues = genePvalues;
+        this.normalizedGenePvalues = normalizedGenePvalues;
         this.pathwayEnrichments = pathwayEnrichments;
     }
 
@@ -31,5 +37,9 @@ public class Depict2Step2Results {
 
     public void setPathwayEnrichments(List<PathwayEnrichments> pathwayEnrichments) {
         this.pathwayEnrichments = pathwayEnrichments;
+    }
+
+    public DoubleMatrixDataset<String, String> getNormalizedGenePvalues() {
+        return normalizedGenePvalues;
     }
 }

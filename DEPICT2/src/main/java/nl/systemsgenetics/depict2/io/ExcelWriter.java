@@ -658,7 +658,7 @@ public class ExcelWriter {
 
 				if (!Double.isNaN(genePvalue)) {
 					XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
-					genePvalue = 1 - ZScores.zToP(genePvalue);
+					genePvalue = ZScores.zToP(genePvalue);
 					genePCell.setCellValue(genePvalue);
 					genePCell.setCellStyle(genePvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
 				} else {

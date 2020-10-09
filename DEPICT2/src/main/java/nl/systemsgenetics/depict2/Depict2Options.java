@@ -559,6 +559,11 @@ public class Depict2Options {
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				break;
 			case CORE_GENE_AUC:
+				if (commandLine.hasOption("ge")) {
+					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				} else {
+					geneInfoFile = null;
+				}
 				pathwayDatabases = parsePd(commandLine, "pd", "pathwayDatabase");
 				pathwayDatabases2 = parsePd(commandLine, "pd2", "pathwayDatabase2");
 				if (pathwayDatabases2.isEmpty()) {
@@ -568,7 +573,6 @@ public class Depict2Options {
 				permutationPathwayEnrichment = 0;
 				permutationFDR = 0;
 				genePruningR = 0;
-				geneInfoFile = null;
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				break;

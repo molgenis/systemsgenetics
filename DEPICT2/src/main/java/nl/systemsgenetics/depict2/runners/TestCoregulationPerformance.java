@@ -19,7 +19,7 @@ import nl.systemsgenetics.depict2.Depict2Options;
 import nl.systemsgenetics.depict2.Depict2Step2Results;
 import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
 import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
-import static nl.systemsgenetics.depict2.runners.Depict2Utilities.loadExistingStep2Restuls;
+import static nl.systemsgenetics.depict2.runners.Depict2Utilities.loadExistingStep2Results;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -35,11 +35,10 @@ public class TestCoregulationPerformance {
 
 	public static void testCoreGenePredictionPerformance(Depict2Options options) throws IOException, Exception {
 		
-		Depict2Step2Results step2 = loadExistingStep2Restuls(options);
+		Depict2Step2Results step2 = loadExistingStep2Results(options);
 
 		List<PathwayDatabase> pathwayDatabases2 = options.getPathwayDatabases2();
-		
-		testPredictions(step2.getGenePvalues(), pathwayDatabases2, options, "genePvalues");
+		testPredictions(step2.getNormalizedGenePvalues(), pathwayDatabases2, options, "normalizedGenePvalues");
 		
 		for (PathwayEnrichments step2Enrichment : step2.getPathwayEnrichments()) {
 			testPredictions( step2Enrichment.getEnrichmentZscores(), pathwayDatabases2, options, step2Enrichment.getPathwayDatabase().getName());
