@@ -70,7 +70,7 @@ grid.arrange(grobs=plots.coregulation)
 dev.off()
 
 
-plots.expression <- lapply(names(datasets), function(dataset) {
+  plots.expression <- lapply(names(datasets), function(dataset) {
   cur.dataset <- datasets[[dataset]]$expression$Enrichment.P.value
   
   return(theme.nature(fancy.qq.plot(cur.dataset, main=dataset)))
