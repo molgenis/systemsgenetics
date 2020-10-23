@@ -402,6 +402,15 @@ public class TriTyperToDosageMatrix {
             allowedSamplesPerDs.add(allowedSamples);
         }
 
+        HashSet<String> allSNPsHash = new HashSet<String>();
+        for (int d = 0; d < m_gg.length; d++) {
+            allSNPsHash.addAll(Arrays.asList(m_gg[d].getSNPs()));
+        }
+        ArrayList<String> allSNPs = new ArrayList<>();
+        allSNPs.addAll(allSNPsHash);
+        Collections.sort(allSNPs);
+
+
         // create sample index
         System.out.println("Creating sample index..");
         HashMap<String, Integer> sampleIdMap = new HashMap<String, Integer>();
@@ -423,6 +432,7 @@ public class TriTyperToDosageMatrix {
 
 
         TextFile tf = null;
+        TextFile log = new TextFile(settings.outputReportsDir + "MergeLog.txt.gz", TextFile.W);
         if (vcf) {
             tf = new TextFile(settings.outputReportsDir + "GenotypeData.vcf.gz", TextFile.W);
             tf.writeln("##fileformat=VCFv4.3");
@@ -435,11 +445,17 @@ public class TriTyperToDosageMatrix {
             tf.writeln("SNP\tAlleles\tMinorAllele\t" + Strings.concat(header, Strings.tab));
         }
 
+        ArrayList<String> snpsToQuery = null;
+        if (settings.tsSNPsConfine != null) {
+            snpsToQuery = new ArrayList<>();
+            snpsToQuery.addAll(settings.tsSNPsConfine);
+            Collections.sort(snpsToQuery);
+        } else {
+            snpsToQuery = allSNPs;
+        }
 
-        ArrayList<String> snpsToQuery = new ArrayList<>();
-        snpsToQuery.addAll(settings.tsSNPsConfine);
-        Collections.sort(snpsToQuery);
         double[] data = new double[sampleIdMap.size()];
+        log.write(snpsToQuery.size() + " SNPs to output");
         ProgressBar pb = new ProgressBar(snpsToQuery.size(), "Querying SNPs...");
         for (int snpctr = 0; snpctr < snpsToQuery.size(); snpctr++) {
             String snp = snpsToQuery.get(snpctr);
@@ -526,7 +542,7 @@ public class TriTyperToDosageMatrix {
                         }
                     }
                 } else if (snpObjs[d] != null) {
-                    System.out.println("Excluding\t" + snp + "\tin dataset\t" + datasetsettings.get(d).name + "\tsince it has incompatible alleles: " + BaseAnnot.getAllelesDescription(snpObjs[d].getAlleles()));
+                    log.writeln("Excluding\t" + snp + "\tin dataset\t" + datasetsettings.get(d).name + "\tsince it has incompatible alleles: " + BaseAnnot.getAllelesDescription(snpObjs[d].getAlleles()));
                 }
             }
 
@@ -537,10 +553,10 @@ public class TriTyperToDosageMatrix {
                 }
             }
             if (missing == data.length) {
-                System.out.println();
-                System.out.println("Excluding\t" + snp + "\tsince it has no values");
-            } else {
-
+                log.write(snp + " has no data");
+            } else if (missing != data.length) {
+                // System.out.println();
+                // System.out.println("Excluding\t" + snp + "\tsince it has no values");
                 if (vcf) {
                     // #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT
 
@@ -566,7 +582,7 @@ public class TriTyperToDosageMatrix {
                             + "\t" + refSNP.getName()
                             + "\t" + refSNPRefAllele
                             + "\t" + refSNPAlleleAssessed
-                            + "\t.\t.\t.\tGD:DS\t"
+                            + "\t.\t.\t.\tGT:DS\t"
                             + Strings.concat(gts, Strings.tab));
 
                 } else {

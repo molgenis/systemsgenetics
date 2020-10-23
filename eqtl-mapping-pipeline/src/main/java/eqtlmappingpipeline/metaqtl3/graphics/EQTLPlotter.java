@@ -9,6 +9,7 @@ import umcg.genetica.math.stats.Descriptives;
 import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import eqtlmappingpipeline.metaqtl3.containers.Result;
 import eqtlmappingpipeline.metaqtl3.containers.WorkPackage;
+
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -17,6 +18,7 @@ import java.io.File;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+
 import umcg.genetica.util.Primitives;
 import umcg.genetica.graphics.ViolinBoxPlot;
 import umcg.genetica.io.trityper.SNP;
@@ -27,7 +29,6 @@ import umcg.genetica.math.stats.Regression;
 import umcg.genetica.util.RankArray;
 
 /**
- *
  * @author harm-jan
  */
 public class EQTLPlotter {
@@ -81,22 +82,22 @@ public class EQTLPlotter {
      * a particular SNP-Probe eQTL, first load the actual SNP, using
      * GeneticalGenomicsDataset.loadSNP, then invoke this method
      *
-     * @param file Output file (depending on 'outputPlotsFileType' this should
-     * be a PNG or PDF file)
-     * @param snpInformation SNP information (SNPName (chr. SNPChr, SNPChrPos))
-     * @param probeInformation Probe information (ProbeName (chr. ProbeChr,
-     * ProbeChrStartPos-ProbeChrEndPos), GeneName)
-     * @param pValueOverall Overall P-Value
-     * @param pValueOverallAbsolute Overall P-Value when using absolute Z-Scores
-     * in the meta-analysis
-     * @param gg Genetical Genomics Datasets
-     * @param datasetIncluded Which Genetical Genomics Datasets should we
-     * include
+     * @param file                                       Output file (depending on 'outputPlotsFileType' this should
+     *                                                   be a PNG or PDF file)
+     * @param snpInformation                             SNP information (SNPName (chr. SNPChr, SNPChrPos))
+     * @param probeInformation                           Probe information (ProbeName (chr. ProbeChr,
+     *                                                   ProbeChrStartPos-ProbeChrEndPos), GeneName)
+     * @param pValueOverall                              Overall P-Value
+     * @param pValueOverallAbsolute                      Overall P-Value when using absolute Z-Scores
+     *                                                   in the meta-analysis
+     * @param gg                                         Genetical Genomics Datasets
+     * @param datasetIncluded                            Which Genetical Genomics Datasets should we
+     *                                                   include
      * @param takeNegativeCorrelationAsAllelesAreFlipped For which Genetical
-     * Genomics Datasets should we take negative correlations, as the actual
-     * alleles have been flipped
-     * @param probeName Unique probe identifier, used to get the expression data
-     * for this eQTL
+     *                                                   Genomics Datasets should we take negative correlations, as the actual
+     *                                                   alleles have been flipped
+     * @param probeName                                  Unique probe identifier, used to get the expression data
+     *                                                   for this eQTL
      */
     //public void drawPlot(File file, String snpInformation, String probeInformation, double pValueOverall, double pValueOverallAbsolute, GGDataset[] gg, SNP[] loadedSNP, boolean[] datasetIncluded, boolean[] takeNegativeCorrelationAsAllelesAreFlipped, String probeName, boolean performParametricAnalysis, boolean onlyPerformCiseQTLAnalysis) {
     public void draw(WorkPackage wp, int pid) {
@@ -158,7 +159,9 @@ public class EQTLPlotter {
             logPValueString = "0" + logPValueString;
         }
 
-        String fileName = m_outputDir + "" + logPValueString + "-" + snpName.replace("/", "_") + "-" + probeName.replace("/", "_").replace(";", "_").replace("|", "").replace("__","_") + ".pdf";
+        String snpNameFix = snpName.replaceAll("/", "_").replaceAll(":", "_");
+        String probeNameFix = probeName.replace("/", "_").replace(";", "_").replace("|", "").replace("__", "_");
+        String fileName = m_outputDir + "" + logPValueString + "-" + snpNameFix + "-" + probeNameFix + ".pdf";
 //        fileName = m_outputDir + "" + logPValueString + "-" + snpName + "-" + probeName + ".pdf";
         File file = new File(fileName);
 
@@ -173,7 +176,7 @@ public class EQTLPlotter {
         } else {
             com.itextpdf.text.Rectangle rectangle = new com.itextpdf.text.Rectangle(width, height);
             document = new com.itextpdf.text.Document(rectangle);
-            
+
             try {
                 writer = com.itextpdf.text.pdf.PdfWriter.getInstance(document, new java.io.FileOutputStream(file));
                 document.open();
@@ -202,7 +205,6 @@ public class EQTLPlotter {
         g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 9));
         g2d.drawString(snpName + " - Chr: " + snpChr + " (" + snpChrpos + ")", margin + 40, 15);
         g2d.drawString(probeName + " - " + probeAnnot, margin + 40, 25);
-
 
 
         String pValueOverallString = df5.format(metaPvalue);
@@ -303,7 +305,6 @@ public class EQTLPlotter {
                         }
                     }
                 }
-
 
 
                 //Draw graph:
@@ -537,8 +538,6 @@ public class EQTLPlotter {
                 //System.out.println(d + "\t" + pixelYOriginal + "\t" + pixelY + "\t" + probeOriginalMeanRank + "\t" + probeMeanRank + "\t" + gg[d].probeOriginalMean[probe] + "\t" + gg[d].probeMean[probe] + "\t" + gg[d].probeOriginalVariance[probe] + "\t" + gg[d].probeVariance[probe]);
 
 
-
-
             } else { // if !datasetincluded[d]
 
                 //eQTL data is not available for this datasets, provide information why not:
@@ -605,7 +604,7 @@ public class EQTLPlotter {
                 System.out.println(e.getStackTrace());
             }
         } else {
-            
+
             g2d.dispose();
             cb.restoreState();
             document.close();

@@ -79,6 +79,14 @@ public class Strings {
         return output.toString();
     }
 
+    public static String concat(double[] s, Pattern t, DecimalFormat f) {
+        String[] str = new String[s.length];
+        for (int i = 0; i < s.length; i++) {
+            str[i] = "" + f.format(s[i]);
+        }
+        return concat(str, t);
+    }
+
     public static String concat(double[] s, Pattern t) {
         String[] str = new String[s.length];
         for (int i = 0; i < s.length; i++) {

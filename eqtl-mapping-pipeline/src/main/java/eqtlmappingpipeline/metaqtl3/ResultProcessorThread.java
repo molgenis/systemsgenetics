@@ -22,6 +22,7 @@ import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -235,6 +236,10 @@ public class ResultProcessorThread extends Thread {
                     //Is this working?
                     if (m_createBinaryFiles && !poison) {
                         writeBinaryResult(r);
+                    }
+
+                    if (m_createMetaAnalysisZscoreTable) {
+                        writeZScoreTable(r);
                     }
 
                     if (m_createTEXTFiles && !poison) {
@@ -457,6 +462,7 @@ public class ResultProcessorThread extends Thread {
 
     private void writeZScoreTable(Result r) throws IOException {
 
+        DecimalFormat format = new DecimalFormat("#.####");
         // only consider trans-eQTLs..
         if (r != null) {
             int[] numSamples = null;
@@ -504,7 +510,9 @@ public class ResultProcessorThread extends Thread {
                         assessedStr = BaseAnnot.toString(alleleassessed);
                     }
                 }
-                zScoreMatrixTextOut.writeln(snp + "\t" + allelesStr + "\t" + assessedStr + "\t" + Strings.concat(finalZscores, Strings.tab));
+
+
+                zScoreMatrixTextOut.writeln(snp + "\t" + allelesStr + "\t" + assessedStr + "\t" + Strings.concat(finalZscores, Strings.tab, format));
                 zScoreMatrixSampleSizeTextOut.writeln(snp + "\t" + allelesStr + "\t" + assessedStr + "\t" + Strings.concat(nrSamplesPerProbe, Strings.tab));
             }
         }
