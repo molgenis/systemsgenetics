@@ -176,6 +176,9 @@ public class ExcelWriter {
 
 		DoubleMatrixDataset<String,String> genePvalues = step2Results.getGenePvalues();
 		double bonfSigLevel = 0.05 / genePvalues.rows();
+		//TODO: TEMPORARY FOR ALS GWAS
+		//LOGGER.warn("Signficiance level for GENES hardcoded to 1e-5");
+		//bonfSigLevel = 1e-5;
 
 		for (String trait: traits) {
 

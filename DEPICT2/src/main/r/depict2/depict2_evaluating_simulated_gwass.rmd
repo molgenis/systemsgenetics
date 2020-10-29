@@ -10,7 +10,7 @@ library(qqman)
 source("depict2_functions.r")
 
 path <- "/home/work/Desktop/depict2/output/simulated_gwas//"
-path <- "/home/work/Desktop/"
+path <- "/home/work/Desktop/depict2/simulations/"
 
 #files <- list.files(path, pattern="*merged_pvalues.txt", full.names = T)
 #curstats <- fread(files[1], data.table=F)
@@ -38,7 +38,7 @@ hist(-log10(height[,2]), breaks=100)
 # Manhattan plot
 ```{r}
 curstats[-log10(curstats$simulated_pval_1) > 300, "simulated_pval_1"] <- 1e-300
-png(width=10000, height=3000, file="output/plots/pheno1_manhattanplot.png")
+png(width=10000, height=3000, file="output/plots/random_trait_11_manhattanplot.png")
 manhattan(curstats, chr="chr", bp="position", snp="rs", p="simulated_pval_1")
 dev.off()
 

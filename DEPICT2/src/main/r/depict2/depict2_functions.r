@@ -88,7 +88,36 @@ make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour
 
 # ------------------------------------------------------ 
 read.depict2 <- function(path) {
-  potential_traits <- c("expression","expression_scP3","expression_brain","expression_gs_tcell","Coregulation","Coregulation_1588","Coregulation_eQTLGen","Coregulation_brain","Reactome","GO_P","GO_C","GO_F","KEGG","HPO","GO_P_brain","GO_C_brain","GO_F_brain","KEGG_brain","HPO_brain","Reactome_brain","gtexV8","gtex")
+  potential_traits <- c("expression",
+                        "expression_scP3",
+                        "expression_brain",
+                        "expression_gs_tcell",
+                        "Coregulation",
+                        "Coregulation_1588",
+                        "eigenvectors_1588",
+                        "Coregulation_eQTLGen",
+                        "Coregulation_MetaBrain",
+                        "Reactome",
+                        "GO_P",
+                        "GO_C",
+                        "GO_F",
+                        "KEGG",
+                        "HPO",
+                        "Reactome_raw",
+                        "Reacome_raw",
+                        "GO_P_raw",
+                        "GO_C_raw",
+                        "GO_F_raw",
+                        "KEGG_raw",
+                        "HPO_raw",
+                        "GO_P_MetaBrain",
+                        "GO_C_MetaBrain",
+                        "GO_F_MetaBrain",
+                        "KEGG_MetaBrain",
+                        "HPO_MetaBrain",
+                        "Reactome_MetaBrain",
+                        "gtexV8",
+                        "gtex")
   output <- list()
   for (sheet in potential_traits) {
     tmp <- tryCatch({data.frame(read_excel(path, sheet=sheet, col_types ="guess", trim_ws = T), stringsAsFactors=F)},
