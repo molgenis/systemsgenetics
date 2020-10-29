@@ -562,9 +562,9 @@ public class ExcelWriter {
 		//databaseSheet.createFreezePane(0, 1);
 		XSSFRow headerRow = databaseSheet.createRow(0);
 		int hc = 0;
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene set");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue(pathwayAnnotations.getSetName() == null ? "Gene set" : pathwayAnnotations.getSetName());
 		for (int i = 0; i < maxAnnotations; ++i) {
-			headerRow.createCell(hc++, CellType.STRING).setCellValue("Annotation" + (i + 1));
+			headerRow.createCell(hc++, CellType.STRING).setCellValue(pathwayAnnotations.getAnnotationHeaders().get(i));
 		}
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Enrichment Z-score");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Enrichment P-value");

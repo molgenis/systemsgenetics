@@ -27,8 +27,9 @@ import org.apache.log4j.Logger;
 public class PathwayAnnotations {
 
 	private final HashMap<String, ArrayList<String>> annotations;
-	private final int maxNumberOfAnnotations;
-	
+	private final ArrayList<String> annotationHeaders;
+	private final String setName;
+
 	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
 
 	public PathwayAnnotations(final File annotationFile) throws FileNotFoundException, IOException {
@@ -36,14 +37,25 @@ public class PathwayAnnotations {
 		if (annotationFile.exists()) {
 
 			annotations = new HashMap<>();
-			int maxNumberOfAnnotationsTmp = 0;
 			final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(annotationFile))).withCSVParser(parser).withSkipLines(0).build();
 
-			String[] nextLine;
+			String[] nextLine = reader.readNext();
+			if (nextLine == null) {
+				throw new IOException("Empty annotation file: " + annotationFile.getAbsolutePath());
+			}
+
+			annotationHeaders = new ArrayList<>(nextLine.length - 1);
+			setName=nextLine[0];
+			for (int i = 1; i < nextLine.length; ++i) {
+				annotationHeaders.add(nextLine[i]);
+			}
+			
+			final int numberOfAnnotations = annotationHeaders.size();
+
 			while ((nextLine = reader.readNext()) != null) {
 
-				ArrayList<String> thisAnnotions = new ArrayList<>();
+				ArrayList<String> thisAnnotions = new ArrayList<>(numberOfAnnotations);
 
 				for (int i = 1; i < nextLine.length; ++i) {
 					thisAnnotions.add(nextLine[i]);
@@ -51,20 +63,16 @@ public class PathwayAnnotations {
 
 				annotations.put(nextLine[0], thisAnnotions);
 
-				if (thisAnnotions.size() > maxNumberOfAnnotationsTmp) {
-					maxNumberOfAnnotationsTmp = thisAnnotions.size();
-				}
-
 			}
 
-			maxNumberOfAnnotations = maxNumberOfAnnotationsTmp;
-
-			LOGGER.debug("Found annotations at: " + annotationFile.getAbsolutePath() + ". Max annotations is: " + maxNumberOfAnnotations);
+			LOGGER.debug("Found annotations at: " + annotationFile.getAbsolutePath() + ". Number of annotations is: " + annotationHeaders.size());
 
 		} else {
 			LOGGER.debug("Did not found annotations at: " + annotationFile.getAbsolutePath());
 			annotations = null;
-			maxNumberOfAnnotations = 0;
+			setName = null;
+			annotationHeaders = null;
+
 		}
 
 	}
@@ -74,7 +82,15 @@ public class PathwayAnnotations {
 	}
 
 	public int getMaxNumberOfAnnotations() {
-		return maxNumberOfAnnotations;
+		return annotationHeaders.size();
+	}
+
+	public String getSetName() {
+		return setName;
+	}
+
+	public ArrayList<String> getAnnotationHeaders() {
+		return annotationHeaders;
 	}
 
 }
