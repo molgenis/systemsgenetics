@@ -257,6 +257,26 @@ public class Depict2Utilities {
 
 	}
 
+	/**
+	 * Generate an excel file with the z-scores of the pathways for all bonf. sig. genes and pathways.
+	 *
+	 * @param options
+	 * @throws Exception
+	 */
+	public static void generatePathwayLoadingExcel(Depict2Options options) throws Exception {
+		Depict2Step2Results step2 = loadExistingStep2Results(options);
+
+		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
+		writer.savePathwayLoadings(step2);
+	}
+
+	/**
+	 * Load existing results from step 2 from storage
+	 *
+	 * @param options
+	 * @return
+	 * @throws Exception
+	 */
 	public static Depict2Step2Results loadExistingStep2Results(Depict2Options options) throws Exception {
 
 		DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");

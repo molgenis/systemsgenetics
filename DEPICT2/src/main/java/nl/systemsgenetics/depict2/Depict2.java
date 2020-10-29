@@ -150,6 +150,9 @@ public class Depict2 {
                 case CREATE_EXCEL:
                     Depict2Utilities.generateExcelFromIntermediates(options);
                     break;
+                case GET_PATHWAY_LOADINGS:
+                    Depict2Utilities.generatePathwayLoadingExcel(options);
+                    break;
                 case TOP_HITS:
                     PruneToIndependentTopHits.prune(options);
                     break;

@@ -15,6 +15,22 @@ for (file in files) {
 }
 
 
+path  <- "/home/work/Desktop/depict2/output/simulated_gwas//"
+files <- list.files(path, pattern=".*_enrichtments.*_1.xlsx")
+files <- c(files, list.files(path, pattern=".*_enrichtments.*.xlsx"))
+
+for (file in files) {
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", file)
+  name <- gsub("\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
+  name <- gsub("\\.txt\\_exHla\\.xlsx", "", name)
+  
+  datasets[[name]] <- read.depict2(paste0(path, file))
+}
+
+save(datasets, file="output/downstreamer_v75_results_cache_2020-10-29.RData")
+load("output/downstreamer_v75_results_cache_2020-10-29.RData")
+
 #----------------------------------------------------------------------
 # T-SNE plots
 
@@ -37,6 +53,10 @@ trait <- "Coregulation"
 bla <- make.zscore.matrix(datasets, trait=trait)
 make.correlation.heatmap(bla, trait)
 
+trait <- "eigenvectors_1588"
+bla <- make.zscore.matrix(datasets, trait=trait)
+make.correlation.heatmap(bla, trait)
+
 trait <- "expression"
 bla <- make.zscore.matrix(datasets, trait=trait)
 make.correlation.heatmap(bla, trait)
@@ -54,13 +74,11 @@ bla <- make.zscore.matrix(datasets, trait=trait)
 make.correlation.heatmap(bla, trait)
 dev.off()
 
-
-
 #----------------------------------------------------------------------
 # qq plots
 
 plots.coregulation <- lapply(names(datasets), function(dataset) {
-  cur.dataset <- datasets[[dataset]]$Coregulation$Enrichment.P.value
+    cur.dataset <- datasets[[dataset]]$Coregulation$Enrichment.P.value
   
   return(theme.nature(fancy.qq.plot(cur.dataset, main=dataset)))
 })

@@ -79,11 +79,7 @@ public class ExcelWriter {
 	}
 
 	/**
-	 * @param pathwayEnrichments
-	 * @param pathwayDatabases
-	 * @param outputBasePath
-	 * @param traits
-	 * @param hlaExcluded
+	 *
 	 * @throws java.io.FileNotFoundException
 	 */
 	public void saveStep2Excel(Depict2Step2Results results) throws Exception {
@@ -174,6 +170,69 @@ public class ExcelWriter {
 		}
 		enrichmentWorkbook.write(new FileOutputStream(excelFile));
 
+	}
+
+	public void savePathwayLoadings(Depict2Step2Results step2Results) throws Exception {
+
+		DoubleMatrixDataset<String,String> genePvalues = step2Results.getGenePvalues();
+		double bonfSigLevel = 0.05 / genePvalues.rows();
+		//TODO: TEMPORARY FOR ALS GWAS
+		//LOGGER.warn("Signficiance level for GENES hardcoded to 1e-5");
+		//bonfSigLevel = 1e-5;
+
+		for (String trait: traits) {
+
+			System.setProperty(" java.awt.headless", "true");
+			Workbook enrichmentWorkbook = new XSSFWorkbook();
+			setStyles(enrichmentWorkbook);
+
+			// Determine significant genes
+			Set<String> significantGenes = new HashSet<>();
+
+			for (int i=0; i < genePvalues.rows(); i++) {
+				if (genePvalues.getCol(trait).get(i) < bonfSigLevel) {
+					significantGenes.add(genePvalues.getRowObjects().get(i));
+				}
+			}
+
+			// Determine signif pathways and subset matrix
+			for (PathwayEnrichments enrichment: step2Results.getPathwayEnrichments()) {
+
+				// Determine significant pathways
+				DoubleMatrixDataset<String, String> curZscores = enrichment.getEnrichmentZscores();
+				double bonfSigZscore = -ZScores.pToZ(0.05 / enrichment.getNumberOfPathways());
+
+				Set<String> significantPathways = new HashSet<>();
+
+				for (int i=0; i < curZscores.rows(); i++) {
+					if (curZscores.getCol(trait).get(i) > bonfSigZscore) {
+						significantPathways.add(curZscores.getRowObjects().get(i));
+					}
+				}
+
+				// Load the pathway and subset for signif genes
+				PathwayDatabase curDb = enrichment.getPathwayDatabase();
+
+				// Intersect all available genes for that pathway
+				List<String> availGenes = DoubleMatrixDataset.readDoubleTextDataRowNames(curDb.getLocation() + ".rows.txt",'\t');
+				significantGenes.retainAll(availGenes);
+
+				// Make the subset
+				DoubleMatrixDataset<String, String> curPathwaySubset = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(curDb.getLocation(), significantGenes);
+				curPathwaySubset = curPathwaySubset.viewColSelection(significantPathways);
+
+				populatePathwayLoadingSheet(enrichmentWorkbook, enrichment, curPathwaySubset);
+			}
+
+			// Save the file
+			File excelFile = new File(outputBasePath + "_pathwayLoadings" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
+			int nr = 1;
+			while (excelFile.exists()) {
+				excelFile = new File(outputBasePath + "_pathwayLoadings" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla" : "") + "_" + nr + ".xlsx");
+				nr++;
+			}
+			enrichmentWorkbook.write(new FileOutputStream(excelFile));
+		}
 	}
 
 	private void setStyles(Workbook enrichmentWorkbook) {
@@ -752,6 +811,92 @@ public class ExcelWriter {
 		// Auto-scale columns in sheet
 		for (int c = 0; c < 5 + genePvalues.columns(); ++c) {
 			genePSheet.autoSizeColumn(c);
+		}
+	}
+
+	/**
+	 * Populates a tab with the pathway loadings for each for the provided subset of genes and pathways
+	 *
+	 * @param enrichmentWorkbook
+	 * @param pathwayEnrichment
+	 * @param pathwayZscores
+	 * @throws IOException
+	 */
+	private void populatePathwayLoadingSheet(Workbook enrichmentWorkbook, PathwayEnrichments pathwayEnrichment, DoubleMatrixDataset<String, String> pathwayZscores) throws IOException {
+
+		PathwayDatabase pathwayDatabase = pathwayEnrichment.getPathwayDatabase();
+
+		Map<String, Gene> geneInfo = IoUtils.readGenesMap(options.getGeneInfoFile());
+		XSSFSheet zscoreSheet = (XSSFSheet) enrichmentWorkbook.createSheet(pathwayDatabase.getName());
+		XSSFTable table = zscoreSheet.createTable(new AreaReference(new CellReference(0, 0),
+				new CellReference(pathwayZscores.rows(), 5 + pathwayZscores.columns()),
+				SpreadsheetVersion.EXCEL2007));
+
+		table.setName(pathwayDatabase.getName() + "_res");
+		table.setDisplayName(pathwayDatabase.getName());
+		table.setStyleName("TableStyleLight9");
+		table.getCTTable().getTableStyleInfo().setShowRowStripes(true);
+		table.getCTTable().addNewAutoFilter();
+		XSSFRow headerRow = zscoreSheet.createRow(0);
+
+		int hc = 0;
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene id");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene name");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Chromosome");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Start");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("End");
+
+		for (String pathway : pathwayZscores.getColObjects()) {
+			// zscore
+			headerRow.createCell(hc++, CellType.STRING).setCellValue(pathway);
+		}
+
+		for (int r = 0; r < pathwayZscores.rows(); ++r) {
+			XSSFRow row = zscoreSheet.createRow(r + 1); //+1 for header
+			// gene id
+			String geneId = pathwayZscores.getRowObjects().get(r);
+			XSSFCell geneIdCell = row.createCell(0, CellType.STRING);
+			geneIdCell.setCellValue(geneId);
+
+			// gene name
+			XSSFCell geneNameCell = row.createCell(1, CellType.STRING);
+			geneNameCell.setCellValue(geneInfo.get(geneId).getGeneSymbol());
+
+			// chromosome
+			XSSFCell chrCell = row.createCell(2, CellType.NUMERIC);
+			chrCell.setCellValue(geneInfo.get(geneId).getSequenceName());
+
+			// start
+			XSSFCell startCell = row.createCell(3, CellType.NUMERIC);
+			startCell.setCellValue(geneInfo.get(geneId).getStart());
+			startCell.setCellStyle(genomicPositionStyle);
+
+			// end
+			XSSFCell endCell = row.createCell(4, CellType.NUMERIC);
+			endCell.setCellValue(geneInfo.get(geneId).getEnd());
+			startCell.setCellStyle(genomicPositionStyle);
+
+			int x = 1;
+			for (String pathway : pathwayZscores.getColObjects()) {
+				double zscore = pathwayZscores.getElement(r, pathwayZscores.getColIndex(pathway));
+
+				if (!Double.isNaN(zscore)) {
+					XSSFCell zscoreCell = row.createCell(4 + x, CellType.NUMERIC);
+					zscoreCell.setCellValue(zscore);
+					zscoreCell.setCellStyle(zscoreStyle);
+				} else {
+					XSSFCell zscoreCell = row.createCell(4 + x, CellType.STRING);
+					zscoreCell.setCellValue("NA");
+					zscoreCell.setCellStyle(rightAlignedText);
+				}
+
+				x++;
+			}
+		}
+
+		// Auto-scale columns in sheet
+		for (int c = 0; c < 5 + pathwayZscores.columns(); ++c) {
+			zscoreSheet.autoSizeColumn(c);
 		}
 	}
 
