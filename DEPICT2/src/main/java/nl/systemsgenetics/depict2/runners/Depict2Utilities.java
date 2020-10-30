@@ -22,6 +22,7 @@ import umcg.genetica.math.stats.ZScores;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -288,6 +289,54 @@ public class Depict2Utilities {
 		}
 		return new Depict2Step2Results(pathwayEnrichments, genePvalues, normalizedGenePvalues);
 
+	}
+
+	public static void removeLocalGeneCorrelations(Depict2Options options) throws IOException, Exception {
+		
+		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+        LOGGER.info("Loaded " + genes.size() + " genes");
+		
+		final DoubleMatrixDataset<String, String> corMatrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		
+		if(!corMatrix.getHashRows().keySet().containsAll(corMatrix.getHashCols().keySet())){
+			throw new Exception("Co-expression matrix is not squared with same row and col names");
+		}
+		
+		if(!genes.keySet().containsAll(corMatrix.getHashRows().keySet())){
+			throw new Exception("Not all genes Co-expression matrix are found in gene mapping file");
+		}
+		
+		final int genesInMatrix = corMatrix.rows();
+		final ArrayList<String> geneOrder = corMatrix.getRowObjects();
+		
+		int overlappingGenePairs = 0;
+		
+		for(int i = 0 ; i < genesInMatrix; ++i){
+			
+			//diagnoal always 0
+			corMatrix.setElementQuick(i, i, 0);
+			
+			Gene geneI = genes.get(geneOrder.get(i));
+			
+			for(int j = i + 1 ; j < genesInMatrix ; ++j ) {
+				
+				Gene geneJ = genes.get(geneOrder.get(j));
+				
+				if(geneI.isOverlapping(geneJ, 250000)){
+					corMatrix.setElementQuick(i, j, 0);
+					corMatrix.setElementQuick(j, i, 0);
+					++overlappingGenePairs;
+				}
+				
+			}
+			
+			
+		}
+		
+		LOGGER.info("Identified " + overlappingGenePairs + " overlapping gene-gene pairs using a 500k window." );
+		
+		corMatrix.saveBinary(options.getOutputBasePath());
+		
 	}
 
 }

@@ -427,7 +427,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.STEP2 || mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE || mode == Depict2Mode.R_2_Z_SCORE || mode == Depict2Mode.TOP_HITS || mode == Depict2Mode.CREATE_EXCEL || mode == Depict2Mode.GET_PATHWAY_LOADINGS) {
+		if (mode == Depict2Mode.STEP2 || mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE || mode == Depict2Mode.R_2_Z_SCORE || mode == Depict2Mode.TOP_HITS || mode == Depict2Mode.CREATE_EXCEL || mode == Depict2Mode.GET_PATHWAY_LOADINGS || mode == Depict2Mode.REMOVE_LOCAL_COR) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -596,6 +596,29 @@ public class Depict2Options {
 				if (commandLine.hasOption("cte")) {
 					columnsToExtract = commandLine.getOptionValues("cte");
 				}
+				pathwayDatabases = null;
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
+				genePruningR = 0;
+				geneInfoFile = null;
+				geneCorrelationWindow = 0;
+				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+				break;
+			case REMOVE_LOCAL_COR:
+				if (!commandLine.hasOption("ge")) {
+					throw new ParseException("--genes not specified");
+				} else {
+					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				}
+				pathwayDatabases = null;
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
+				genePruningR = 0;
+				geneCorrelationWindow = 0;
+				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+				break;
 			default:
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
@@ -1118,6 +1141,10 @@ public class Depict2Options {
 				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
 				logSharedRun1Run2();
 
+				break;
+			case REMOVE_LOCAL_COR:
+				LOGGER.info(" * Gene-gene co-expression / co-regulation matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
 				break;
 
 		}
