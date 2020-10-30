@@ -185,6 +185,21 @@ public class LocusUtilsNGTest {
 		result = LocusUtils.partialGenomicRangeOverlapWindow(a, b, window);
 		assertEquals(result, expResult);
 		
+		a = new Gene("A", "chr1", 15, 10, "");
+		b = new Gene("B", "chr1", 0, 2, "");
+		window = 5;
+		expResult = false;
+		result = LocusUtils.partialGenomicRangeOverlapWindow(a, b, window);
+		assertEquals(result, expResult);
+		
+		
+		a = new Gene("A", "chr1", 15, 10, "");
+		b = new Gene("B", "chr1", 0, 2, "");
+		window = 100;
+		expResult = true;
+		result = LocusUtils.partialGenomicRangeOverlapWindow(a, b, window);
+		assertEquals(result, expResult);
+		
 	}
 	
 	
