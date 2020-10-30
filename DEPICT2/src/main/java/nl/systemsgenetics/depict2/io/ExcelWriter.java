@@ -423,9 +423,13 @@ public class ExcelWriter {
 			}
 		}
 
-		// Auto-scale columns in sheet
 		for (int c = 0; c < numberOfCols; ++c) {
 			locusOverview.autoSizeColumn(c);
+			locusOverview.setColumnWidth(c, locusOverview.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
+			if(c > 1 && locusOverview.getColumnWidth(c) > 20000){
+				//max col width. Not for first column.
+				locusOverview.setColumnWidth(c, 20000);
+			}
 		}
 
 	}
@@ -472,7 +476,7 @@ public class ExcelWriter {
 
 		for (int c = 0; c < 2; ++c) {
 			overviewSheet.autoSizeColumn(c);
-			overviewSheet.setColumnWidth(c, overviewSheet.getColumnWidth(c) + 500);//compensate for with auto filter and inaccuracies
+			overviewSheet.setColumnWidth(c, overviewSheet.getColumnWidth(c) + 1500);//compensate for with auto filter and inaccuracies
 		}
 
 		overviewSheet.createRow(r++);
