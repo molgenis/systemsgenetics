@@ -457,41 +457,7 @@ public class PathwayEnrichments {
 					//betaX.assign(DoubleFunctions.mult(beta));
 					//residuals.getCol(pathwayI).assign(betaX, DoubleFunctions.minus);
 				});
-				/*
 
-                // Multiply the inverse correlation matrix with the residuals
-                DoubleMatrixDataset<String, String> invCorXResiduals = new DoubleMatrixDataset<>(residuals.getHashRows(), residuals.getHashCols());
-                inverseCorrelationMatrices.values().parallelStream().forEach((DoubleMatrixDataset<String, String> geneInvCorMatrixSubset) -> {
-                    DoubleMatrix2D residualsSubset = residuals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
-                    DoubleMatrix2D invCorXResidualsSubset = invCorXResiduals.viewRowSelectionMatrix(geneInvCorMatrixSubset.getRowObjects());
-                    geneInvCorMatrixSubset.getMatrix().zMult(residualsSubset, invCorXResidualsSubset);
-                });
-
-                // Determine the pvalue for each pathway
-                IntStream.range(0, numberOfPathways).parallel().forEach(pathwayI -> {
-                    DoubleMatrix1D residualsPathway = residuals.getCol(pathwayI);
-                    DoubleMatrix1D invCorXResiddualsPathway = invCorXResiduals.getCol(pathwayI);
-
-                    double sigmaSqr = (residualsPathway.zDotProduct(invCorXResiddualsPathway)) / df;
-                    double seBeta = Math.sqrt(sigmaSqr / b1Trait);
-
-                    // Determine pvalue
-                    double beta = betas.getElementQuick(pathwayI, traitIb);
-                    double tstatistic = Math.abs(beta) / seBeta;
-                    double pvalue = tdist.cumulativeProbability(-tstatistic) * 2;
-                    double zscore = ZScores.pToZTwoTailed(pvalue);
-
-                    // The zscore returned by pToZTwoTailed is always negative, therefore, match direction on beta
-                    if (beta > 0) {
-                        zscore = -zscore;
-                    }
-
-                    //standardErrors.setElementQuick(pathwayI, traitIb, seBeta);
-                    pValues.setElementQuick(pathwayI, traitIb, pvalue);
-                    //zscores.setElementQuick(pathwayI, traitIb, zscore);
-                });
-
-				 */
 				pb.step();
 			}
 
@@ -771,59 +737,6 @@ public class PathwayEnrichments {
 
 		}
 		return chrArmToGeneMapping;
-	}
-
-	private static LinkedHashSet<String> findUncorrelatedGenes(DoubleMatrixDataset<String, String> geneZscoresNullGwas, HashSet<String> genesWithPvalue, List<Gene> genes, double maxCorrelationBetweenGenes) {
-
-		final Map<String, ArrayList<Gene>> chrArmToGeneMapping = createChrArmGeneMapping(genes, genesWithPvalue);
-
-		final LinkedHashSet<String> includedUncorrelatedGenes = new LinkedHashSet<>();
-
-		chrArmToGeneMapping.keySet().parallelStream().forEach((String chrArm) -> {
-
-			final ArrayList<Gene> armGenes = chrArmToGeneMapping.get(chrArm);
-			final ArrayList<String> armGenesIds = new ArrayList<>(armGenes.size());
-
-			final HashSet<String> includedUncorrelatedGenesArm = new HashSet<>();
-
-			for (Gene armGene : armGenes) {
-				armGenesIds.add(armGene.getGene());
-			}
-
-			final DoubleMatrixDataset<String, String> geneZscoresNullGwasArm = geneZscoresNullGwas.viewRowSelection(armGenesIds);
-
-			//final DoubleMatrixDataset<String, String> invCorMatrixArmGenes = invCorMatrix.viewSelection(armGenes, armGenes);
-			final DoubleMatrixDataset<String, String> genePvaluesNullGwasArmT = geneZscoresNullGwasArm.viewDice();
-
-			final DoubleMatrixDataset<String, String> genePvaluesNullGwasGeneArmCorrelation = genePvaluesNullGwasArmT.calculateCorrelationMatrix();
-
-			//We need to take the inverse of the correlation matrix. To do that the correlation between genes can't be correlated
-			//Simply removing highly correlated genes did not always work, therefor:
-			//(1) create correlation matrix of correlations
-			//(2) identifie genes that have correlated correlation
-			//(3) prune gene correlation matrix
-			DoubleMatrixDataset<String, String> correlationOfCorrelations = genePvaluesNullGwasGeneArmCorrelation.calculateCorrelationMatrix();
-
-			ArrayList<String> variantNames = correlationOfCorrelations.getRowObjects();
-
-			rows:
-			for (int r = 0; r < correlationOfCorrelations.rows(); ++r) {
-				cols:
-				for (int c = 0; c < r; ++c) {
-					if (Math.abs(correlationOfCorrelations.getElementQuick(r, c)) >= maxCorrelationBetweenGenes && includedUncorrelatedGenesArm.contains(variantNames.get(c))) {
-						continue rows;
-					}
-				}
-				includedUncorrelatedGenesArm.add(variantNames.get(r));
-			}
-
-			synchronized (includedUncorrelatedGenes) {
-				includedUncorrelatedGenes.addAll(includedUncorrelatedGenesArm);
-			}
-
-		});
-
-		return includedUncorrelatedGenes;
 	}
 
 	private static DoubleMatrixDataset<String, String> createLocalGeneCorrelation(final DoubleMatrixDataset<String, String> geneZscoresNullGwasCorrelationSubset, final ArrayList<MetaGene> genes, final int correlationWindow) {
