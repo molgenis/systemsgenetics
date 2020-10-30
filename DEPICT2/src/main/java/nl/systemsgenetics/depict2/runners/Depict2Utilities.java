@@ -229,7 +229,6 @@ public class Depict2Utilities {
 		DoubleMatrixDataset<String, String> normalizedGwasGeneScores;
 		normalizedGwasGeneScores = PathwayEnrichments.createColumnForceNormalDuplicate(genePvalues, geneMaxSnpZscore);
 		normalizedGwasGeneScores.save(options.getOutputBasePath() + "_normalizedGenePvalues.txt");
-		LOGGER.info("Done");
 
 		return(normalizedGwasGeneScores);
 	}
