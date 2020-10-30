@@ -174,13 +174,13 @@ public class ExcelWriter {
 
 	public void savePathwayLoadings(Depict2Step2Results step2Results) throws Exception {
 
-		DoubleMatrixDataset<String,String> genePvalues = step2Results.getGenePvalues();
+		DoubleMatrixDataset<String, String> genePvalues = step2Results.getGenePvalues();
 		double bonfSigLevel = 0.05 / genePvalues.rows();
 		//TODO: TEMPORARY FOR ALS GWAS
 		//LOGGER.warn("Signficiance level for GENES hardcoded to 1e-5");
 		//bonfSigLevel = 1e-5;
 
-		for (String trait: traits) {
+		for (String trait : traits) {
 
 			System.setProperty(" java.awt.headless", "true");
 			Workbook enrichmentWorkbook = new XSSFWorkbook();
@@ -189,14 +189,14 @@ public class ExcelWriter {
 			// Determine significant genes
 			Set<String> significantGenes = new HashSet<>();
 
-			for (int i=0; i < genePvalues.rows(); i++) {
+			for (int i = 0; i < genePvalues.rows(); i++) {
 				if (genePvalues.getCol(trait).get(i) < bonfSigLevel) {
 					significantGenes.add(genePvalues.getRowObjects().get(i));
 				}
 			}
 
 			// Determine signif pathways and subset matrix
-			for (PathwayEnrichments enrichment: step2Results.getPathwayEnrichments()) {
+			for (PathwayEnrichments enrichment : step2Results.getPathwayEnrichments()) {
 
 				// Determine significant pathways
 				DoubleMatrixDataset<String, String> curZscores = enrichment.getEnrichmentZscores();
@@ -204,7 +204,7 @@ public class ExcelWriter {
 
 				Set<String> significantPathways = new HashSet<>();
 
-				for (int i=0; i < curZscores.rows(); i++) {
+				for (int i = 0; i < curZscores.rows(); i++) {
 					if (curZscores.getCol(trait).get(i) > bonfSigZscore) {
 						significantPathways.add(curZscores.getRowObjects().get(i));
 					}
@@ -214,7 +214,7 @@ public class ExcelWriter {
 				PathwayDatabase curDb = enrichment.getPathwayDatabase();
 
 				// Intersect all available genes for that pathway
-				List<String> availGenes = DoubleMatrixDataset.readDoubleTextDataRowNames(curDb.getLocation() + ".rows.txt",'\t');
+				List<String> availGenes = DoubleMatrixDataset.readDoubleTextDataRowNames(curDb.getLocation() + ".rows.txt", '\t');
 				significantGenes.retainAll(availGenes);
 
 				// Make the subset
@@ -492,10 +492,6 @@ public class ExcelWriter {
 
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Gene pruning r: " + options.getGenePruningR());
-
-		row = overviewSheet.createRow(r++);
-		cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Force normal pathway scores: " + options.isForceNormalPathwayPvalues());
 
 		row = overviewSheet.createRow(r++);
@@ -729,11 +725,16 @@ public class ExcelWriter {
 			}
 		}
 
-		// Auto-scale collumns in sheet
-		for (int c = 0; c < (9 + maxAnnotations); ++c) {
+		// Auto-scale columns in sheet
+		for (int c = 0; c < hc; ++c) {
 			databaseSheet.autoSizeColumn(c);
-			//databaseSheet.setColumnWidth(c, databaseSheet.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
+			databaseSheet.setColumnWidth(c, databaseSheet.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
+			if(c > 1 && databaseSheet.getColumnWidth(c) > 20000){
+				//max col width. Not for first column.
+				databaseSheet.setColumnWidth(c, 20000);
+			}
 		}
+
 	}
 
 	private void populateGenePvalueSheet(Workbook enrichmentWorkbook, DoubleMatrixDataset<String, String> genePvalues) throws IOException {
@@ -809,13 +810,19 @@ public class ExcelWriter {
 		}
 
 		// Auto-scale columns in sheet
-		for (int c = 0; c < 5 + genePvalues.columns(); ++c) {
+		for (int c = 0; c < hc; ++c) {
 			genePSheet.autoSizeColumn(c);
+			genePSheet.setColumnWidth(c, genePSheet.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
+			if(c > 1 && genePSheet.getColumnWidth(c) > 20000){
+				//max col width. Not for first column.
+				genePSheet.setColumnWidth(c, 20000);
+			}
 		}
 	}
 
 	/**
-	 * Populates a tab with the pathway loadings for each for the provided subset of genes and pathways
+	 * Populates a tab with the pathway loadings for each for the provided
+	 * subset of genes and pathways
 	 *
 	 * @param enrichmentWorkbook
 	 * @param pathwayEnrichment
@@ -895,8 +902,13 @@ public class ExcelWriter {
 		}
 
 		// Auto-scale columns in sheet
-		for (int c = 0; c < 5 + pathwayZscores.columns(); ++c) {
+		for (int c = 0; c < hc; ++c) {
 			zscoreSheet.autoSizeColumn(c);
+			zscoreSheet.setColumnWidth(c, zscoreSheet.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
+			if(c > 1 && zscoreSheet.getColumnWidth(c) > 20000){
+				//max col width. Not for first column.
+				zscoreSheet.setColumnWidth(c, 20000);
+			}
 		}
 	}
 
