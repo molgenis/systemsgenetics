@@ -427,7 +427,7 @@ public class Depict2Options {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.STEP2 || mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE || mode == Depict2Mode.R_2_Z_SCORE || mode == Depict2Mode.TOP_HITS || mode == Depict2Mode.CREATE_EXCEL || mode == Depict2Mode.GET_PATHWAY_LOADINGS || mode == Depict2Mode.REMOVE_LOCAL_COR) {
+		if (mode == Depict2Mode.STEP2 || mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE || mode == Depict2Mode.R_2_Z_SCORE || mode == Depict2Mode.TOP_HITS || mode == Depict2Mode.CREATE_EXCEL || mode == Depict2Mode.GET_PATHWAY_LOADINGS || mode == Depict2Mode.REMOVE_CIS_COEXP) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -605,7 +605,7 @@ public class Depict2Options {
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				break;
-			case REMOVE_LOCAL_COR:
+			case REMOVE_CIS_COEXP:
 				if (!commandLine.hasOption("ge")) {
 					throw new ParseException("--genes not specified");
 				} else {
@@ -1142,7 +1142,7 @@ public class Depict2Options {
 				logSharedRun1Run2();
 
 				break;
-			case REMOVE_LOCAL_COR:
+			case REMOVE_CIS_COEXP:
 				LOGGER.info(" * Gene-gene co-expression / co-regulation matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
 				break;

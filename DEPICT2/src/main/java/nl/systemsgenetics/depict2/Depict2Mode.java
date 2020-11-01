@@ -31,6 +31,6 @@ public enum Depict2Mode {
 	R_2_Z_SCORE,
 	CREATE_EXCEL,
 	TOP_HITS,
-	REMOVE_LOCAL_COR,
+	REMOVE_CIS_COEXP,
 	SPECIAL;
 }

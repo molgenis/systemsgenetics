@@ -221,7 +221,7 @@ public class Depict2 {
 				case GET_NORMALIZED_GENEP:
 					Depict2Utilities.getNormalizedGwasGenePvalues(options);
 					break;
-				case REMOVE_LOCAL_COR:
+				case REMOVE_CIS_COEXP:
 					Depict2Utilities.removeLocalGeneCorrelations(options);
 					break;
 				case SPECIAL:
