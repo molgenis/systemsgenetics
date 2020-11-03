@@ -1,0 +1,126 @@
+```{r}
+source("../../downstreamer_main/downstreamer_functions.r")
+
+# Read excel files
+path  <- "/home/work/Desktop/depict2/collaborations/biogen//"
+files <- list.files(path, pattern=".*_enrichtments.*.xlsx")
+
+datasets <- list()
+for (file in files) {
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", file)
+  name <- gsub("\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
+  name <- gsub("\\.txt\\_exHla\\.xlsx", "", name)
+  
+  datasets[[name]] <- read.depict2(paste0(path, file))
+}
+
+
+plot.auc.comparison <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="AUC 1", ylab="AUC 2", main=NULL) {
+  auc.pval.1[auc.1 == 0] <- 1
+  auc.pval.2[auc.2 == 0] <- 1
+
+  df.plot <- data.frame(auc.1=auc.1,
+                        auc.2=auc.2,
+                        signif.1 = auc.pval.1 < (0.05 / length(auc.1)), 
+                        signif.2 = auc.pval.2 < (0.05 / length(auc.2)))
+  
+  
+  df.plot$signif.both    <- (df.plot$signif.1 + df.plot$signif.2) == 2
+  df.plot$signif.either  <- (df.plot$signif.1 + df.plot$signif.2) > 0
+  df.plot <- df.plot[order(df.plot$signif.either),]
+
+  lims <- c(min(c(auc.1, auc.2), na.rm=T), max(c(auc.1, auc.2), na.rm=T))  
+
+  
+  p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2)) +
+    geom_point(alpha=0.75, mapping=aes(col=signif.either)) +
+    geom_abline(slope=1, intercept=0, col="grey", lty=2) +
+    coord_fixed() +
+    xlab(xlab) +
+    ylab(ylab) +
+    ggtitle(main) + 
+    scale_color_manual(values=c(`FALSE`="#2c6c70", `TRUE`="#0ae4f2")) +
+    geom_smooth(method="lm") +
+    xlim(lims) +
+    ylim(lims)
+  
+
+  
+  return(theme.nature(p))
+}
+
+
+```
+
+```{r}
+
+make.plot <- function(trait) {
+
+  curdata.x <- curset[[paste0(trait, "_MetaBrain")]]
+  curdata.y <- curset[[paste0(trait, "_raw")]]
+  ol        <- intersect(rownames(curdata.x), rownames(curdata.y))
+  curdata.x <- curdata.x[ol,]
+  curdata.y <- curdata.y[ol,]
+  
+  p <- plot.auc.comparison(curdata.x$Enrichment.Z.score, curdata.x$Enrichment.P.value, curdata.y$Enrichment.Z.score, curdata.y$Enrichment.P.value, xlab=paste0(trait, "_MetaBrain"), ylab=paste0(trait, "_raw"))
+  
+  return(p)
+}
+
+
+curset <- datasets[["2020-04-28-ALS.replication"]]
+
+p1 <- make.plot("GO_F")
+p2 <- make.plot("GO_C")
+p3 <- make.plot("GO_P")
+p4 <- make.plot("KEGG")
+p5 <- make.plot("HPO")
+p6 <- make.plot("Reactome")
+
+grid.arrange(grobs=list(p1,p2,p3,p4,p5,p6), ncol=3)
+
+
+curset <- datasets[["ALS_sumstats_EUR_ASIA"]]
+
+p1 <- make.plot("GO_F")
+p2 <- make.plot("GO_C")
+p3 <- make.plot("GO_P")
+p4 <- make.plot("KEGG")
+p5 <- make.plot("HPO")
+p6 <- make.plot("Reactome")
+
+grid.arrange(grobs=list(p1,p2,p3,p4,p5,p6), ncol=3)
+
+
+
+
+curset.x <- datasets[["2020-04-28-ALS.replication"]]
+curset.y <- datasets[["ALS_sumstats_EUR_ASIA"]]
+
+make.plot <- function(trait) {
+
+  curdata.x <- curset.x[[paste0(trait, "_MetaBrain")]]
+  curdata.y <- curset.y[[paste0(trait, "_MetaBrain")]]
+  ol        <- intersect(rownames(curdata.x), rownames(curdata.y))
+  curdata.x <- curdata.x[ol,]
+  curdata.y <- curdata.y[ol,]
+  
+  p <- plot.auc.comparison(curdata.x$Enrichment.Z.score, curdata.x$Enrichment.P.value, curdata.y$Enrichment.Z.score, curdata.y$Enrichment.P.value, xlab=paste0(trait, "_exlAsia"), ylab=paste0(trait, "_inclAsia"))
+  
+  return(p)
+}
+
+
+p1 <- make.plot("GO_F")
+p2 <- make.plot("GO_C")
+p3 <- make.plot("GO_P")
+p4 <- make.plot("KEGG")
+p5 <- make.plot("HPO")
+p6 <- make.plot("Reactome")
+
+grid.arrange(grobs=list(p1,p2,p3,p4,p5,p6), ncol=3)
+
+
+```
+

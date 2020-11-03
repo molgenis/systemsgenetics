@@ -1,0 +1,37 @@
+```{r}
+library(ggplot2)
+library(gridExtra)
+
+source("~/Documents/projects/pr_integration/wd_integration/Code/UtillityScripts/PlottingFunctions.r")
+# data <- read.table("~/Desktop/depict2/expression_ced.csv", sep="\t", quote='"', header=T)
+
+data2 <- read.table("~/Desktop/depict2/expression_bmi.csv", sep="\t", quote='"', header=T)
+
+rownames(data) <- data$Gene.set
+
+rownames(data2) <- data2$Gene.set
+
+data2 <- data2[rownames(data),]
+
+p <- ggplot(aes(x=Annotation1, y=Annotation2, colour=Enrichment.Z.score),  data=data) + geom_point() +
+  scale_colour_gradient2(low=adjustcolor("red", alpha.f = 0.5), mid=adjustcolor("lightgrey", alpha = 0), high=adjustcolor("blue", alpha.f = 0.5)) + labs(title="Coeliac disease 2010")
+
+p <- theme.nature(p)
+
+
+p2 <- ggplot(aes(x=Annotation1, y=Annotation2, colour=Enrichment.Z.score),  data=data2) + geom_point() +
+  scale_colour_gradient2(low=adjustcolor("red", alpha.f = 0.5), mid=adjustcolor("lightgrey", alpha = 0), high=adjustcolor("blue", alpha.f = 0.5)) + labs(title="IBD")
+
+
+p2 <- theme.nature(p2)
+
+
+p3 <- theme.nature(plot.lm(data$Enrichment.Z.score, data2$Enrichment.Z.score, ylab="IBD zscore", xlab="CeD zscore"))
+
+
+grid.arrange(grobs=list(p, p2, p3), nrow=1)
+
+
+
+```
+

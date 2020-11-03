@@ -1,0 +1,189 @@
+```{r}
+source("downstreamer_functions.r")
+setwd("evaluating_coregulation")
+source("data/source_olivier.r")
+
+library(ggsignif)
+
+# Read reference datasets
+ensembl <- read.table(ensembl.file,sep="\t", header=T, row.names = 1, stringsAsFactors = F)
+ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
+rownames(ensembl) <- make.names(ensembl$Gene.name, unique=T)
+
+# Gnomad Pli
+gnomad <- read.table(gnomad.file,sep="\t", header=T, stringsAsFactors = F)
+gnomad <- gnomad[!duplicated(gnomad$gene),]
+rownames(gnomad) <- make.names(gsub("\\.\\d+", "", ensembl[gnomad$gene, ]$Gene.stable.ID.version), unique=T)
+
+# HPO genes
+hpo.genes <- read.table(hpo.file, stringsAsFactors = F, sep="\t")
+hpo.genes <- gsub("\\.\\d+", "", ensembl[unique(hpo.genes$V2), "Gene.stable.ID.version"])
+
+# Coregulation
+files    <- list.files(main.downstreamer.output.path, pattern="*.xlsx", full.names = T)
+datasets <- list()
+for (file in files) {
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\.xlsx", "", basename(file))
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
+  name <- gsub("\\_hg19\\.txt\\_exHla\\.xlsx", "", name)
+  
+  if (length(grep("v55", file)) > 0) {
+    name <- paste0(name, "_v55")
+  }
+  datasets[[name]] <- read.depict2(file)
+}
+
+# Genepvalues
+files <- list.files(main.downstreamer.output.path, pattern="*_genePvalues_.*.xlsx", full.names = T)
+genep <- read.genep.excel(files)
+genep[is.na(genep)] <- 1
+```
+
+# HPO genes and Pli
+```{r}
+hpo.genes             <- intersect(hpo.genes, rownames(gnomad))
+bonf.sig.gwas.genes   <- rownames(genep)[rowSums(genep < (0.05 / (nrow(genep) * ncol(genep)))) >=1]
+
+bonf.sig.coreg.genes  <- unique(unlist(lapply(datasets[grep("run", names(datasets), invert=T, value=T)], function(dataset){
+  coreg <- dataset$Coregulation
+  return(coreg$Gene.set[coreg$Bonferroni.significant & coreg$Enrichment.Z.score > 0])
+})))
+
+others                <- rownames(gnomad)[!rownames(gnomad) %in% unique(c(hpo.genes, bonf.sig.coreg.genes))]
+
+
+df.plot <- data.frame(pli=c(gnomad[others,"pLI"],
+                            gnomad[bonf.sig.coreg.genes,"pLI"],
+                            gnomad[bonf.sig.gwas.genes, "pLI"],
+                            gnomad[hpo.genes, "pLI"]),
+                      annot=factor(c(rep(paste0("Not core|HPO gene N=", length(others)), length(others)), 
+                              rep(paste0("Core genes N=", length(bonf.sig.coreg.genes)), length(bonf.sig.coreg.genes)),
+                              rep(paste0("GWAS genes N=", length(bonf.sig.gwas.genes)), length(bonf.sig.gwas.genes)),
+                              rep(paste0("HPO genes N=", length(hpo.genes)), length(hpo.genes))),
+                              levels=c(paste0("Core genes N=", length(bonf.sig.coreg.genes)),
+                                       paste0("HPO genes N=", length(hpo.genes)),
+                                       paste0("GWAS genes N=", length(bonf.sig.gwas.genes)),
+                                       rep(paste0("Not core|HPO gene N=", length(others))))))
+
+
+pdf(width=8, height=3, file= "output/plots/pli_comparrison_all.pdf")
+p <- ggplot(df.plot, aes(y=pli, x=annot, fill=annot)) +
+geom_violin(color="white", scale="width") +
+  geom_boxplot(width=0.05, color="black") +
+  ylab("Gnomad Pli score (LoF intolerance)") +
+  xlab("")
+  t.test(gnomad[others,"pLI"], gnomad[bonf.sig.coreg.genes,"pLI"]) 
+theme.nature(p) + scale_fill_manual(values=c("dodgerblue3", "#3BB273", "goldenrod2", "#8576B6"))
+
+dev.off()
+
+```
+
+```{r}
+df.plot <- data.frame(pli=c(gnomad[others,"lof_z"],
+                            gnomad[bonf.sig.coreg.genes,"lof_z"],
+                            gnomad[bonf.sig.gwas.genes, "lof_z"],
+                            gnomad[hpo.genes, "lof_z"]),
+                      annot=factor(c(rep(paste0("Not core|HPO gene N=", length(others)), length(others)), 
+                              rep(paste0("Core genes N=", length(bonf.sig.coreg.genes)), length(bonf.sig.coreg.genes)),
+                              rep(paste0("GWAS genes N=", length(bonf.sig.gwas.genes)), length(bonf.sig.gwas.genes)),
+                              rep(paste0("HPO genes N=", length(hpo.genes)), length(hpo.genes))),
+                              levels=c(paste0("Core genes N=", length(bonf.sig.coreg.genes)),
+                                       paste0("HPO genes N=", length(hpo.genes)),
+                                       paste0("GWAS genes N=", length(bonf.sig.gwas.genes)),
+                                       rep(paste0("Not core|HPO gene N=", length(others))))))
+
+
+pdf(width=10, height=4, file="output/plots/gnomad_lof_vs_bonf_sig.pdf")
+p <- ggplot(df.plot, aes(y=pli, x=annot, fill=annot)) +
+  geom_hline(yintercept=0, col="grey") +
+  geom_hline(yintercept=median(df.plot$pli[df.plot$annot == paste0("Not core|HPO gene N=", length(others))], na.rm=T), lty=2, col="grey") +
+  geom_violin(color="white", scale="width") +
+  geom_boxplot(width=0.05, color="black") +
+  ylab("Gnomad LoF Z-score (LoF intolerance)") +
+  xlab("") + 
+  geom_signif(comparisons=list(c(paste0("Core genes N=", length(bonf.sig.coreg.genes)),
+                                 paste0("GWAS genes N=", length(bonf.sig.gwas.genes))),
+                               c(paste0("Core genes N=", length(bonf.sig.coreg.genes)),
+                                 paste0("Not core|HPO gene N=", length(others)))),
+              tip_length = 0, step_increase=0.1)
+theme.nature(p) + scale_fill_manual(values=c("dodgerblue3", "#3BB273", "goldenrod2", "#8576B6"))
+
+dev.off()
+```
+
+# Max zscore vs gnomad PLI
+```{r}
+zscores <- make.zscore.matrix(datasets)
+ol <- intersect(rownames(gnomad), rownames(zscores))
+zscores <- apply(zscores[ol,], 1, max)
+
+df.plot <- data.frame(zscores=zscores[ol], gnomad=gnomad[ol, "lof_z"])
+
+pdf(width=5, height=4, file="output/plots/gnomad_lof_vs_max_zscore.pdf")
+p <- ggplot(data=df.plot, mapping=aes(x=zscores, y=gnomad)) + 
+  geom_hex(bins=50, col=NA) + 
+  geom_smooth(method="lm", col="#383838") +
+  geom_hline(yintercept=0, col="grey", lty=2) +
+  xlab("Maximum zscore for a gene") +
+  ylab("Gnomad lof Z-score") +
+  scale_fill_gradientn(colors=c("#2c6c70", "#0ae4f2"))
+
+theme.nature(p)
+
+dev.off()
+```
+
+# Distance from SNP vs coreg zscore
+```{r}
+distance.per.gene <- sapply(datasets, function(dataset){
+  tmp <- dataset$Coregulation
+  x <- tmp$Distance.to.indep.GWAS.hit  
+  x[x==">1mb"] <- 1000000
+  x <- as.numeric(x)
+  
+  y <- x
+  y[x == 0] <- "Gene body"
+  y[x > 0 & x < 10000] <- "10k"
+  y[x > 10000 & x < 50000] <- "50k"
+  y[x > 50000 & x < 250000] <- "250k"
+  y[x > 250000] <- ">500k"
+
+  names(y) <- tmp$Gene.set
+  
+  y <- factor(y, levels=c("Gene body", "10k", "50k", "250k", ">500k"))
+  return(y)
+})
+
+zscores <- make.zscore.matrix(datasets)
+
+x <- as.factor(unlist(distance.per.gene[rownames(zscores), colnames(zscores)]))
+y <- as.numeric(unlist(zscores))
+
+
+boxplot(y ~ x)
+
+mean.zscore.per.bin <- sapply(datasets, function(dataset){
+  tmp <- dataset$Coregulation
+  x <- tmp$Distance.to.indep.GWAS.hit  
+  x[x==">1mb"] <- 1000000
+  x <- as.numeric(x)
+  
+  y <- tmp$Enrichment.Z.score
+  m1 <- mean(y[x == 0], na.rm=T)
+  m2 <- mean(y[x > 0 & x < 10000], na.rm=T)
+  m3 <- mean(y[x > 10000 & x < 50000] , na.rm=T)
+  m4 <- mean(y[x > 50000 & x < 250000], na.rm=T)
+  m5 <- mean(y[x > 250000], na.rm=T)
+
+
+  out <- c(m1, m2, m3, m4, m5)
+  names(out) <- c("Gene body", "10k", "50k", "250k", ">500k")
+  return(out)
+})
+mean.zscore.per.bin <- t(mean.zscore.per.bin)
+
+boxplot(mean.zscore.per.bin, ylab="Mean Coregulation zscore of genes mapping in winow", xlab="Genomic range compared to GWAS hit")
+```
+
