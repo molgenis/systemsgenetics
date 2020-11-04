@@ -82,6 +82,9 @@ public class PathwayAnnotations {
 	}
 
 	public int getMaxNumberOfAnnotations() {
+		if (annotationHeaders == null) {
+			return 0;
+		}
 		return annotationHeaders.size();
 	}
 
