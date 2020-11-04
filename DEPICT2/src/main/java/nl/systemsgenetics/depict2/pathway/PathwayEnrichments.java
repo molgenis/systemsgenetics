@@ -1196,6 +1196,10 @@ public class PathwayEnrichments {
 		return qValues;
 	}
 
+	public DoubleMatrixDataset<String, String> getpValues() {
+		return pValues;
+	}
+	
 	// Deprecated methods
 	/**
 	 * Determine the Pvalue, Se and Tstat for a given gls regression. Only valid

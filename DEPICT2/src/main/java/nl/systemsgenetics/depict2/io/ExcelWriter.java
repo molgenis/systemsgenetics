@@ -6,21 +6,11 @@
 package nl.systemsgenetics.depict2.io;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import com.opencsv.CSVParser;
-import com.opencsv.CSVParserBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVReaderBuilder;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.IntStream;
-
-import hep.aida.tdouble.ref.DoubleVariableAxis;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import nl.systemsgenetics.depict2.*;
 import nl.systemsgenetics.depict2.gene.Gene;
 import nl.systemsgenetics.depict2.gene.IndexedDouble;
@@ -42,10 +32,6 @@ import org.apache.poi.xssf.usermodel.XSSFTable;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
-import sun.nio.ch.IOUtil;
-import sun.rmi.runtime.Log;
-import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
-import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.matrix2.DoubleMatrix1dOrder;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
