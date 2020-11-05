@@ -222,7 +222,7 @@ public class PathwayEnrichments {
 		final int numberTraits = geneZscores.columns();
 		final int numberTraitsNull = geneZscoresNullGwasNullBetas.columns();
 
-		try (ProgressBar pb = new ProgressBar(pathwayDatabase.getName() + " enrichment analysis", metaGenesPerArm.size() + numberTraits + numberTraits + numberTraitsNull + 2, ProgressBarStyle.ASCII)) {
+		try (ProgressBar pb = new ProgressBar(pathwayDatabase.getName() + " enrichment analysis", metaGenesPerArm.size() + numberTraits + numberTraits + 2, ProgressBarStyle.ASCII)) {
 
 			// Collapse the gene p-values to these predefined metagenes
 			final DoubleMatrixDataset<String, String> geneZscoresPathwayMatched;
