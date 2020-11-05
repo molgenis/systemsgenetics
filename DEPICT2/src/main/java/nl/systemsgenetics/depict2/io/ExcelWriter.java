@@ -6,21 +6,11 @@
 package nl.systemsgenetics.depict2.io;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import com.opencsv.CSVParser;
-import com.opencsv.CSVParserBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVReaderBuilder;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.IntStream;
-
-import hep.aida.tdouble.ref.DoubleVariableAxis;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import nl.systemsgenetics.depict2.*;
 import nl.systemsgenetics.depict2.gene.Gene;
 import nl.systemsgenetics.depict2.gene.IndexedDouble;
@@ -42,10 +32,6 @@ import org.apache.poi.xssf.usermodel.XSSFTable;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
-import sun.nio.ch.IOUtil;
-import sun.rmi.runtime.Log;
-import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
-import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.matrix2.DoubleMatrix1dOrder;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
@@ -57,19 +43,12 @@ public class ExcelWriter {
 
 	private static final Logger LOGGER = Logger.getLogger(ExcelWriter.class);
 
-	private CellStyle zscoreStyle;
-	private CellStyle largePvalueStyle;
-	private CellStyle smallPvalueStyle;
-	private CellStyle hlinkStyle;
-	private CellStyle boldStyle;
-	private CellStyle genomicPositionStyle;
-	private CellStyle boldGenomicPositionStyle;
-	private CellStyle rightAlignedText;
-
-	private String outputBasePath;
-	private boolean hlaExcluded;
-	private List<String> traits;
-	private Depict2Options options;
+	private ExcelStyles styles;
+	
+	private final String outputBasePath;
+	private final boolean hlaExcluded;
+	private final List<String> traits;
+	private final Depict2Options options;
 
 	public ExcelWriter(List<String> traits, Depict2Options options) {
 		this.outputBasePath = options.getOutputBasePath();
@@ -92,7 +71,7 @@ public class ExcelWriter {
 		for (String trait : traits) {
 
 			Workbook enrichmentWorkbook = new XSSFWorkbook();
-			setStyles(enrichmentWorkbook);
+			styles = new ExcelStyles(enrichmentWorkbook);
 			CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
 
 			// Overview sheet
@@ -138,7 +117,7 @@ public class ExcelWriter {
 		for (String trait : traits) {
 
 			Workbook enrichmentWorkbook = new XSSFWorkbook();
-			setStyles(enrichmentWorkbook);
+			styles = new ExcelStyles(enrichmentWorkbook);
 			CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
 
 			populateCisPrioSheet(enrichmentWorkbook, trait, lociPerTrait.get(trait), pathwayEnrichments);
@@ -157,7 +136,7 @@ public class ExcelWriter {
 
 		System.setProperty(" java.awt.headless", "true");
 		Workbook enrichmentWorkbook = new XSSFWorkbook();
-		setStyles(enrichmentWorkbook);
+		styles = new ExcelStyles(enrichmentWorkbook);
 
 		populateGenePvalueSheet(enrichmentWorkbook, genePvalues);
 
@@ -184,7 +163,7 @@ public class ExcelWriter {
 
 			System.setProperty(" java.awt.headless", "true");
 			Workbook enrichmentWorkbook = new XSSFWorkbook();
-			setStyles(enrichmentWorkbook);
+			styles = new ExcelStyles(enrichmentWorkbook);
 
 			// Determine significant genes
 			Set<String> significantGenes = new HashSet<>();
@@ -233,41 +212,6 @@ public class ExcelWriter {
 			}
 			enrichmentWorkbook.write(new FileOutputStream(excelFile));
 		}
-	}
-
-	private void setStyles(Workbook enrichmentWorkbook) {
-		DataFormat format = enrichmentWorkbook.createDataFormat();
-
-		zscoreStyle = enrichmentWorkbook.createCellStyle();
-		zscoreStyle.setDataFormat(format.getFormat("0.00"));
-
-		largePvalueStyle = enrichmentWorkbook.createCellStyle();
-		largePvalueStyle.setDataFormat(format.getFormat("0.0000"));
-
-		smallPvalueStyle = enrichmentWorkbook.createCellStyle();
-		smallPvalueStyle.setDataFormat(format.getFormat("0.00E+0"));
-
-		hlinkStyle = enrichmentWorkbook.createCellStyle();
-		Font hlinkFont = enrichmentWorkbook.createFont();
-		hlinkFont.setUnderline(Font.U_SINGLE);
-		hlinkStyle.setFont(hlinkFont);
-
-		boldStyle = enrichmentWorkbook.createCellStyle();
-		Font fontBold = enrichmentWorkbook.createFont();
-		fontBold.setBold(true);
-		boldStyle.setFont(fontBold);
-
-		genomicPositionStyle = enrichmentWorkbook.createCellStyle();
-		genomicPositionStyle.setDataFormat(format.getFormat("###,###,##0"));
-
-		boldGenomicPositionStyle = enrichmentWorkbook.createCellStyle();
-		fontBold.setFontHeightInPoints((short) 10);
-		boldGenomicPositionStyle.setFont(fontBold);
-		boldGenomicPositionStyle.setDataFormat(format.getFormat("###,###,##0"));
-
-		rightAlignedText = enrichmentWorkbook.createCellStyle();
-		rightAlignedText.setAlignment(HorizontalAlignment.RIGHT);
-
 	}
 
 	private void populateCisPrioSheet(Workbook enrichmentWorkbook, String trait, List<Locus> loci, PathwayEnrichments databaseForScore) throws IOException {
@@ -321,12 +265,12 @@ public class ExcelWriter {
 			// start
 			XSSFCell startCell = row.createCell(3, CellType.NUMERIC);
 			startCell.setCellValue(curLocus.getStart());
-			startCell.setCellStyle(genomicPositionStyle);
-
+			startCell.setCellStyle(styles.getGenomicPositionStyle());
+			
 			// end
 			XSSFCell endCell = row.createCell(4, CellType.NUMERIC);
 			endCell.setCellValue(curLocus.getEnd());
-			endCell.setCellStyle(genomicPositionStyle);
+			endCell.setCellStyle(styles.getGenomicPositionStyle());
 
 			// Topsnp id
 			XSSFCell snpCell = row.createCell(5, CellType.STRING);
@@ -336,8 +280,8 @@ public class ExcelWriter {
 			XSSFCell snpPvalCell = row.createCell(6, CellType.NUMERIC);
 			double pvalue = curLocus.getMinPval().getPvalue();
 			snpPvalCell.setCellValue(pvalue);
-			snpPvalCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
-
+			snpPvalCell.setCellStyle(pvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
+						
 			// Makes sure loci without genes are reported in the file
 			if (curLocus.getGenes().size() >= 1) {
 				// Sort genes on zscore
@@ -379,11 +323,11 @@ public class ExcelWriter {
 					if (databaseForScore.getEnrichmentZscores().getRowObjects().contains(curGene.getGene())) {
 						XSSFCell scoreCell = row.createCell(9, CellType.NUMERIC);
 						scoreCell.setCellValue(zscore.getValue());
-						scoreCell.setCellStyle(zscoreStyle);
+						scoreCell.setCellStyle(styles.getZscoreStyle());
 					} else {
 						XSSFCell scoreCell = row.createCell(9, CellType.STRING);
 						scoreCell.setCellValue("NA");
-						scoreCell.setCellStyle(rightAlignedText);
+						scoreCell.setCellStyle(styles.getRightAlignedText());
 					}
 
 					// Distance to index SNP
@@ -397,7 +341,7 @@ public class ExcelWriter {
 						dist = Math.min(Math.abs(curLocus.getMinPval().getPosition() - curGene.getStart()), Math.abs(curLocus.getMinPval().getPosition() - curGene.getEnd()));
 					}
 					geneDistanceCell.setCellValue(dist);
-					geneDistanceCell.setCellStyle(genomicPositionStyle);
+					geneDistanceCell.setCellStyle(styles.getGenomicPositionStyle());
 
 					if (dist < minimalSnpDistance || minimalSnpDistance == -1) {
 						minimalSnpDistance = dist;
@@ -411,7 +355,7 @@ public class ExcelWriter {
 
 				// Make the cell with the minimal distance bold
 				if (locusOverview.getRow(rowWithMinimalSnpDistance) != null) {
-					locusOverview.getRow(rowWithMinimalSnpDistance).getCell(10).setCellStyle(boldGenomicPositionStyle);
+					locusOverview.getRow(rowWithMinimalSnpDistance).getCell(10).setCellStyle(styles.getBoldGenomicPositionStyle());
 				}
 			} else {
 				// Locus id
@@ -444,22 +388,22 @@ public class ExcelWriter {
 		XSSFRow row = overviewSheet.createRow(r++);
 		XSSFCell cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Pathway enrichment analysis for: " + trait);
-		cell.setCellStyle(boldStyle);
+		cell.setCellStyle(styles.getBoldStyle());
 
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Generated using Downstreamer " + Depict2.VERSION);
-		cell.setCellStyle(boldStyle);
+		cell.setCellStyle(styles.getBoldStyle());
 
 		overviewSheet.createRow(r++);
 
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Gene set database");
-		cell.setCellStyle(boldStyle);
+		cell.setCellStyle(styles.getBoldStyle());
 		cell = row.createCell(1, CellType.STRING);
 		cell.setCellValue("Number of sets");
-		cell.setCellStyle(boldStyle);
+		cell.setCellStyle(styles.getBoldStyle());
 
 		for (PathwayEnrichments pathwayEnrichment : pathwayEnrichments) {
 			row = overviewSheet.createRow(r++);
@@ -469,7 +413,7 @@ public class ExcelWriter {
 			Hyperlink link = createHelper.createHyperlink(HyperlinkType.DOCUMENT);
 			link.setAddress(pathwayEnrichment.getPathwayDatabase().getName() + "!A1");
 			cell.setHyperlink(link);
-			cell.setCellStyle(hlinkStyle);
+			cell.setCellStyle(styles.getHlinkStyle());
 
 			row.createCell(1, CellType.NUMERIC).setCellValue(pathwayEnrichment.getNumberOfPathways());
 		}
@@ -484,7 +428,7 @@ public class ExcelWriter {
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Used settings");
-		cell.setCellStyle(boldStyle);
+		cell.setCellStyle(styles.getBoldStyle());
 
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
@@ -603,7 +547,7 @@ public class ExcelWriter {
 								Hyperlink link = createHelper.createHyperlink(HyperlinkType.URL);
 								link.setAddress(annotation);
 								cell.setHyperlink(link);
-								cell.setCellStyle(hlinkStyle);
+								cell.setCellStyle(styles.getHlinkStyle());
 							}
 
 						} else {
@@ -619,16 +563,16 @@ public class ExcelWriter {
 
 			XSSFCell zscoreCell = row.createCell(1 + maxAnnotations, CellType.NUMERIC);
 			zscoreCell.setCellValue(zscore);
-			zscoreCell.setCellStyle(zscoreStyle);
+			zscoreCell.setCellStyle(styles.getZscoreStyle());
 
 			double pvalue = ZScores.zToP(zscore);
 			XSSFCell pvalueCell = row.createCell(2 + maxAnnotations, CellType.NUMERIC);
 			pvalueCell.setCellValue(pvalue);
-			pvalueCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+			pvalueCell.setCellStyle(pvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 
 			XSSFCell qvalueCell = row.createCell(3 + maxAnnotations, CellType.NUMERIC);
 			qvalueCell.setCellValue(qvalue);
-			qvalueCell.setCellStyle(qvalue > 0 && qvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+			qvalueCell.setCellStyle(qvalue > 0 && qvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 
 			XSSFCell bonferroniCell = row.createCell(4 + maxAnnotations, CellType.BOOLEAN);
 			bonferroniCell.setCellValue(pvalue <= bonferroniCutoff);
@@ -680,14 +624,14 @@ public class ExcelWriter {
 				if (closestDist == -9) {
 					XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.STRING);
 					snpDistCell.setCellValue(">1mb");
-					snpDistCell.setCellStyle(rightAlignedText);
+					snpDistCell.setCellStyle(styles.getRightAlignedText());
 				} else if (closestDist == -10) {
 					XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.STRING);
 					snpDistCell.setCellValue("Missing gene");
 				} else {
 					XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.NUMERIC);
 					snpDistCell.setCellValue(closestDist);
-					snpDistCell.setCellStyle(genomicPositionStyle);
+					snpDistCell.setCellStyle(styles.getGenomicPositionStyle());
 				}
 
 				XSSFCell snpNameCell = row.createCell(7 + maxAnnotations, CellType.STRING);
@@ -707,7 +651,7 @@ public class ExcelWriter {
 
 					XSSFCell snpPvalueCell = row.createCell(8 + maxAnnotations, CellType.NUMERIC);
 					snpPvalueCell.setCellValue(snpPvalue);
-					snpPvalueCell.setCellStyle(snpPvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+					snpPvalueCell.setCellStyle(snpPvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 				} else {
 					XSSFCell snpPvalueCell = row.createCell(8 + maxAnnotations, CellType.STRING);
 					snpPvalueCell.setCellValue("");
@@ -719,11 +663,11 @@ public class ExcelWriter {
 					XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
 					genePvalue = ZScores.zToP(genePvalue);
 					genePCell.setCellValue(genePvalue);
-					genePCell.setCellStyle(genePvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+					genePCell.setCellStyle(genePvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 				} else {
 					XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.STRING);
 					genePCell.setCellValue("NA");
-					genePCell.setCellStyle(rightAlignedText);
+					genePCell.setCellStyle(styles.getRightAlignedText());
 				}
 
 			}
@@ -786,12 +730,12 @@ public class ExcelWriter {
 			// start
 			XSSFCell startCell = row.createCell(3, CellType.NUMERIC);
 			startCell.setCellValue(geneInfo.get(geneId).getStart());
-			startCell.setCellStyle(genomicPositionStyle);
+			startCell.setCellStyle(styles.getGenomicPositionStyle());
 
 			// end
 			XSSFCell endCell = row.createCell(4, CellType.NUMERIC);
 			endCell.setCellValue(geneInfo.get(geneId).getEnd());
-			startCell.setCellStyle(genomicPositionStyle);
+			startCell.setCellStyle(styles.getGenomicPositionStyle());
 
 			int x = 1;
 			for (String trait : genePvalues.getColObjects()) {
@@ -801,11 +745,11 @@ public class ExcelWriter {
 				if (!Double.isNaN(pvalue)) {
 					XSSFCell pvalueCell = row.createCell(4 + x, CellType.NUMERIC);
 					pvalueCell.setCellValue(pvalue);
-					pvalueCell.setCellStyle(pvalue < 0.001 ? smallPvalueStyle : largePvalueStyle);
+					pvalueCell.setCellStyle(pvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 				} else {
 					XSSFCell pvalueCell = row.createCell(4 + x, CellType.STRING);
 					pvalueCell.setCellValue("NA");
-					pvalueCell.setCellStyle(rightAlignedText);
+					pvalueCell.setCellStyle(styles.getRightAlignedText());
 
 				}
 
@@ -880,12 +824,12 @@ public class ExcelWriter {
 			// start
 			XSSFCell startCell = row.createCell(3, CellType.NUMERIC);
 			startCell.setCellValue(geneInfo.get(geneId).getStart());
-			startCell.setCellStyle(genomicPositionStyle);
+			startCell.setCellStyle(styles.getGenomicPositionStyle());
 
 			// end
 			XSSFCell endCell = row.createCell(4, CellType.NUMERIC);
 			endCell.setCellValue(geneInfo.get(geneId).getEnd());
-			startCell.setCellStyle(genomicPositionStyle);
+			startCell.setCellStyle(styles.getGenomicPositionStyle());
 
 			int x = 1;
 			for (String pathway : pathwayZscores.getColObjects()) {
@@ -894,11 +838,11 @@ public class ExcelWriter {
 				if (!Double.isNaN(zscore)) {
 					XSSFCell zscoreCell = row.createCell(4 + x, CellType.NUMERIC);
 					zscoreCell.setCellValue(zscore);
-					zscoreCell.setCellStyle(zscoreStyle);
+					zscoreCell.setCellStyle(styles.getZscoreStyle());
 				} else {
 					XSSFCell zscoreCell = row.createCell(4 + x, CellType.STRING);
 					zscoreCell.setCellValue("NA");
-					zscoreCell.setCellStyle(rightAlignedText);
+					zscoreCell.setCellStyle(styles.getRightAlignedText());
 				}
 
 				x++;
