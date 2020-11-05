@@ -29,7 +29,7 @@ public class CorrelateExpressionToPredictions {
 		
 		DoubleMatrixDatasetFastSubsetLoader expressionDataLoader = new DoubleMatrixDatasetFastSubsetLoader(options.getY());
 		
-		LinkedHashSet<String> sharedGenes = new LinkedHashSet(corePredictionZscoresLoader.getOriginalRowMap().keySet());
+		LinkedHashSet<String> sharedGenes = new LinkedHashSet<>(corePredictionZscoresLoader.getOriginalRowMap().keySet());
 		sharedGenes.retainAll(expressionDataLoader.getOriginalRowMap().keySet());
 		
 		DoubleMatrixDataset<String, String> corePredictionZscores = corePredictionZscoresLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);

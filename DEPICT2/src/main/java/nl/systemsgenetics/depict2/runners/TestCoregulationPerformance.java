@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,6 +19,7 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.depict2.Depict2Options;
 import nl.systemsgenetics.depict2.Depict2Step2Results;
+import nl.systemsgenetics.depict2.io.CoregeneEnrichmentExcelWriter;
 import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
 import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
 import static nl.systemsgenetics.depict2.runners.Depict2Utilities.loadExistingStep2Results;
@@ -54,7 +56,12 @@ public class TestCoregulationPerformance {
 		DoubleMatrixDataset<String, String> predictionPvalues = step2Enrichment.getpValues();
 		DoubleMatrixDataset<String, String> predictionQvalues = step2Enrichment.getqValues();
 
-		step2Enrichment.getPathwayDatabase().getName();
+		HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2Auc = new HashMap<>();
+		HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2Utest = new HashMap<>();
+		HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfOdds = new HashMap<>();
+		HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfFisherP = new HashMap<>();
+		HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2FdrOdds = new HashMap<>();
+		HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2FdrFisherP = new HashMap<>();
 		
 		ArrayList<String> genesWithPrediciton = predictionZscores.getRowObjects();
 
@@ -98,29 +105,23 @@ public class TestCoregulationPerformance {
 			final DoubleMatrixDataset<String, String> outputMatrixAuc = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 			final DoubleMatrixDataset<String, String> outputMatrixPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 
-			final DoubleMatrixDataset<String, String> fexactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
+			pathwayDatabase2Auc.put(pathwayDatabase2.getName(), outputMatrixAuc);
+			
+			final DoubleMatrixDataset<String, String> bonfexactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
+			final DoubleMatrixDataset<String, String> fdrexactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
+			final DoubleMatrixDataset<String, String> bonfOdds = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
+			final DoubleMatrixDataset<String, String> fdrOdds = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 
 			final ArrayList<String> pathwayNames = pathwayMatrix.getColObjects();
 
 			try (ProgressBar pb = new ProgressBar(predictionSource + "_" + pathwayDatabase2.getName(), pathwayMatrix.columns(), ProgressBarStyle.ASCII)) {
-
-				for (int pathwayI = 0; pathwayI < pathwayMatrix.columns(); ++pathwayI) {
-
-					//make final for paralellel stream
-					final int pathwayI2 = pathwayI;
+				
+				IntStream.range(0, pathwayMatrix.columns()).parallel().forEach(pathwayI -> {
 					
 					final DoubleMatrix1D pathwayAnnotation = pathwayMatrix.getCol(pathwayI);
 					final int annotatedGenesCount = pathwayAnnotation.cardinality();
 
-//					if (annotatedGenesCount < 10) {
-//						if(LOGGER.isDebugEnabled()){
-//							LOGGER.debug("Skipping " + pathwayNames.get(pathwayI) + " " + annotatedGenesCount + " genes annotated");
-//						}
-//						pb.step();
-//						continue;
-//					}
-
-					IntStream.range(0, predictionZscoresMatched.columns()).parallel().forEach(traitI -> {
+					for(int traitI = 0; traitI < predictionZscoresMatched.columns() ; ++traitI){
 
 						final MannWhitneyUTest2 uTest = new MannWhitneyUTest2();
 
@@ -166,26 +167,37 @@ public class TestCoregulationPerformance {
 						final double pval = uTest.getP();
 
 						if (LOGGER.isDebugEnabled() && Double.isNaN(auc)) {
-							LOGGER.debug(pathwayNames.get(pathwayI2) + " NaN AUC " + Arrays.toString(coreGeneScoresAnnotatedGenes));
+							LOGGER.debug(pathwayNames.get(pathwayI) + " NaN AUC " + Arrays.toString(coreGeneScoresAnnotatedGenes));
 						}
 						
 						final double fp =  new FisherExactTest().getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
 
-						fexactPvalues.setElementQuick(pathwayI2, traitI, fp);
-						outputMatrixAuc.setElementQuick(pathwayI2, traitI, auc);
-						outputMatrixPvalues.setElementQuick(pathwayI2, traitI, pval);
+						bonfexactPvalues.setElementQuick(pathwayI, traitI, fp);
+						outputMatrixAuc.setElementQuick(pathwayI, traitI, auc);
+						outputMatrixPvalues.setElementQuick(pathwayI, traitI, pval);
 				
 
-					});
+					}
 
 					pb.step();
 
-				}
+				});
 
+				pathwayDatabase2BonfFisherP.put(predictionSource, bonfexactPvalues);
+				pathwayDatabase2BonfOdds.put(predictionSource,bonfOdds);
+				pathwayDatabase2FdrFisherP.put(predictionSource,fdrexactPvalues);
+				pathwayDatabase2FdrOdds.put(predictionSource,fdrOdds);
+				pathwayDatabase2Auc.put(predictionSource, outputMatrixAuc);
+				pathwayDatabase2Utest.put(predictionSource, outputMatrixPvalues);
+				
+				bonfexactPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_fexactPvals_" + pathwayDatabase2.getName() + ".txt");
 				outputMatrixAuc.save(options.getOutputBasePath() + "_" + predictionSource + "_auc_" + pathwayDatabase2.getName() + ".txt");
-				outputMatrixPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_aucPvals_" + pathwayDatabase2.getName() + ".txt");
+				outputMatrixPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_utestPvals_" + pathwayDatabase2.getName() + ".txt");
 			}
 		}
+		
+		CoregeneEnrichmentExcelWriter.write(options, pathwayDatabase2Auc, pathwayDatabase2Utest, pathwayDatabase2BonfOdds, pathwayDatabase2BonfFisherP, pathwayDatabase2FdrOdds, pathwayDatabase2FdrFisherP, predictionPvalues.getColObjects(), pathwayDatabases2);
+		
 	}
 
 	private static void testPredictionsGenePvalues(DoubleMatrixDataset<String, String> predictionMatrix, List<PathwayDatabase> pathwayDatabases2, Depict2Options options, String predictionSource) throws IOException {

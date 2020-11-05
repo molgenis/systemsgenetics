@@ -371,7 +371,7 @@ public class Depict2Converters {
 	public static void mergeBinMatrix(Depict2Options options) throws IOException, Exception {
 
 		BufferedReader inputReader = new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()));
-		ArrayList<DoubleMatrixDatasetFastSubsetLoader> binMatrices = new ArrayList();
+		ArrayList<DoubleMatrixDatasetFastSubsetLoader> binMatrices = new ArrayList<>();
 		String line;
 		while ((line = inputReader.readLine()) != null) {
 			if (line.endsWith(".dat")) {

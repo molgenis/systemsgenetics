@@ -30,6 +30,7 @@ public class ExcelStyles {
 
 		DataFormat format = wb.createDataFormat();
 
+		//Also used for OR and AUC
 		zscoreStyle = wb.createCellStyle();
 		zscoreStyle.setDataFormat(format.getFormat("0.00"));
 
@@ -62,6 +63,11 @@ public class ExcelStyles {
 
 	}
 
+	/**
+	 * Also used for OR and AUC
+	 * 
+	 * @return 
+	 */
 	public CellStyle getZscoreStyle() {
 		return zscoreStyle;
 	}

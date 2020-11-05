@@ -65,7 +65,7 @@ public class ExcelWriter {
 
 		DoubleMatrixDataset<String, String> genePvalues = results.getGenePvalues();
 		List<PathwayEnrichments> pathwayEnrichments = results.getPathwayEnrichments();
-		System.setProperty(" java.awt.headless", "true");
+		System.setProperty("java.awt.headless", "true");
 
 		// Each trait gets its own sheet
 		for (String trait : traits) {
@@ -98,7 +98,7 @@ public class ExcelWriter {
 	public void saveStep3Excel(Depict2Step2Results step2, Depict2Step3Results step3) throws IOException {
 
 		Map<String, List<Locus>> lociPerTrait = step3.getLoci();
-		System.setProperty(" java.awt.headless", "true");
+		System.setProperty("java.awt.headless", "true");
 
 		String pathwayDatabaseToScore = options.getPathwayDatabasesToAnnotateWithGwas().get(0);
 
@@ -134,7 +134,7 @@ public class ExcelWriter {
 
 	public void saveGenePvalueExcel(DoubleMatrixDataset<String, String> genePvalues) throws IOException {
 
-		System.setProperty(" java.awt.headless", "true");
+		System.setProperty("java.awt.headless", "true");
 		Workbook enrichmentWorkbook = new XSSFWorkbook();
 		styles = new ExcelStyles(enrichmentWorkbook);
 
@@ -161,7 +161,7 @@ public class ExcelWriter {
 
 		for (String trait : traits) {
 
-			System.setProperty(" java.awt.headless", "true");
+			System.setProperty("java.awt.headless", "true");
 			Workbook enrichmentWorkbook = new XSSFWorkbook();
 			styles = new ExcelStyles(enrichmentWorkbook);
 

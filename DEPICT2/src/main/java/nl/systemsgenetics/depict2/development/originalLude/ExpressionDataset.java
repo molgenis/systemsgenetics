@@ -578,7 +578,7 @@ public class ExpressionDataset {
 
     public void reorderProbes(String[] newProbeOrder) {
         this.recalculateHashMaps();
-        HashMap hashProbeIndex = new HashMap();
+        HashMap hashProbeIndex = new HashMap<>();
         for (int p=0; p<newProbeOrder.length; p++) {
             if (hashProbes.containsKey(newProbeOrder[p])) {
                 if (!hashProbeIndex.containsKey(newProbeOrder[p])) {
