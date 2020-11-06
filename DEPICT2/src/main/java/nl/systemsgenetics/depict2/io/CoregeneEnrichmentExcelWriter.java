@@ -74,10 +74,7 @@ public class CoregeneEnrichmentExcelWriter {
 
 				final List<String> geneSets = pathwayDatabase2Auc.get(geneAssociations.getName()).getRowObjects();
 
-				LOGGER.debug(Arrays.asList(pathwayDatabase2Auc));
 				final DoubleMatrix1D auc = pathwayDatabase2Auc.get(geneAssociations.getName()).getCol(trait);
-				LOGGER.debug(Arrays.asList(pathwayDatabase2Utest));
-
 				final DoubleMatrix1D uTestP = pathwayDatabase2Utest.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D bonfOdds = pathwayDatabase2BonfOdds.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D bonfFisherP = pathwayDatabase2BonfFisherP.get(geneAssociations.getName()).getCol(trait);
@@ -187,7 +184,7 @@ public class CoregeneEnrichmentExcelWriter {
 				// Auto-scale columns in sheet
 				for (int c = 0; c < hc; ++c) {
 					sh.autoSizeColumn(c);
-					sh.setColumnWidth(c, sh.getColumnWidth(c) + 1000); //compensate for with auto filter and inaccuracies
+					sh.setColumnWidth(c, sh.getColumnWidth(c) + 1100); //compensate for with auto filter and inaccuracies
 					if (c > 1 && sh.getColumnWidth(c) > 15000) {
 						//max col width. Not for first column.
 						sh.setColumnWidth(c, 15000);

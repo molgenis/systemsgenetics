@@ -81,6 +81,7 @@ public class TestCoregulationPerformance {
 
 			final int sharedGenesCount = sharedGenes.size();
 			final double bonfSigThreshold = 0.05d / sharedGenesCount;
+			final double fdrSigThreshold = 0.05;
 
 			final DoubleMatrixDataset<String, String> pathwayMatrix;
 
@@ -101,12 +102,13 @@ public class TestCoregulationPerformance {
 
 			final DoubleMatrixDataset<String, String> predictionZscoresMatched = predictionZscores.viewRowSelection(sharedGenes);
 			final DoubleMatrixDataset<String, String> predictionPvaluesMatched = predictionPvalues.viewRowSelection(sharedGenes);
+			final DoubleMatrixDataset<String, String> predictionQvaluesMatched = predictionQvalues.viewRowSelection(sharedGenes);
 
 			final DoubleMatrixDataset<String, String> outputMatrixAuc = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 			final DoubleMatrixDataset<String, String> outputMatrixPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 
-			final DoubleMatrixDataset<String, String> bonfexactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
-			final DoubleMatrixDataset<String, String> fdrexactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
+			final DoubleMatrixDataset<String, String> bonfExactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
+			final DoubleMatrixDataset<String, String> fdrExactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 			final DoubleMatrixDataset<String, String> bonfOdds = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 			final DoubleMatrixDataset<String, String> fdrOdds = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 
@@ -125,6 +127,7 @@ public class TestCoregulationPerformance {
 
 						final DoubleMatrix1D coreGeneZScores = predictionZscoresMatched.getCol(traitI);
 						final DoubleMatrix1D coreGenePvalues = predictionPvaluesMatched.getCol(traitI);
+						final DoubleMatrix1D coreGeneQvalues = predictionQvaluesMatched.getCol(traitI);
 
 						final double[] coreGeneScoresAnnotatedGenes = new double[annotatedGenesCount];
 						final double[] coreGeneScoresOtherGenes = new double[sharedGenesCount - annotatedGenesCount];
@@ -137,6 +140,11 @@ public class TestCoregulationPerformance {
 						int notPathwayBonfSig = 0;
 						int notPathwayNotBonfSig = 0;
 
+						int inPathwayFdrSig = 0;
+						int inPathwayNotFdrSig = 0;
+						int notPathwayFdrSig = 0; 
+						int notPathwayNotFdrSig = 0;
+						
 						for (int g = 0; g < sharedGenesCount; g++) {
 							if (pathwayAnnotation.getQuick(g) > 0) {
 								//Gene is annotated to pathway
@@ -147,6 +155,14 @@ public class TestCoregulationPerformance {
 								} else {
 									inPathwayNotBonfSig++;
 								}
+								
+								if(coreGeneZScores.get(g) >= 0 && coreGeneQvalues.get(g) <= fdrSigThreshold){
+									inPathwayFdrSig++;
+								} else {
+									inPathwayNotFdrSig++;
+								}
+								
+								
 							} else {
 								//Gene is not annoated to pathway
 								coreGeneScoresOtherGenes[y++] = coreGeneZScores.get(g);
@@ -155,6 +171,12 @@ public class TestCoregulationPerformance {
 									notPathwayBonfSig++;
 								} else {
 									notPathwayNotBonfSig++;
+								}
+								
+								if(coreGeneZScores.get(g) >= 0 && coreGeneQvalues.get(g) <= fdrSigThreshold){
+									notPathwayFdrSig++;
+								} else {
+									notPathwayNotFdrSig++;
 								}
 							}
 						}
@@ -168,9 +190,17 @@ public class TestCoregulationPerformance {
 							LOGGER.debug(pathwayNames.get(pathwayI) + " NaN AUC " + Arrays.toString(coreGeneScoresAnnotatedGenes));
 						}
 						
-						final double fp =  new FisherExactTest().getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
-
-						bonfexactPvalues.setElementQuick(pathwayI, traitI, fp);
+						final double bonFp = new FisherExactTest().getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
+						final double bonOr = (double) (inPathwayBonfSig * notPathwayNotBonfSig) / (double) (inPathwayNotBonfSig * notPathwayBonfSig);
+						
+						final double fdrFp = new FisherExactTest().getFisherPValue(inPathwayFdrSig, inPathwayNotFdrSig, notPathwayFdrSig, notPathwayNotFdrSig);
+						final double fdrOr = (double) (inPathwayFdrSig * notPathwayNotFdrSig) / (double) (inPathwayNotFdrSig * notPathwayFdrSig);
+						
+						
+						bonfOdds.setElementQuick(pathwayI, traitI, bonOr);
+						bonfExactPvalues.setElementQuick(pathwayI, traitI, bonFp);
+						fdrOdds.setElementQuick(pathwayI, traitI, fdrOr);
+						fdrExactPvalues.setElementQuick(pathwayI, traitI, fdrFp);
 						outputMatrixAuc.setElementQuick(pathwayI, traitI, auc);
 						outputMatrixPvalues.setElementQuick(pathwayI, traitI, pval);
 				
@@ -181,14 +211,17 @@ public class TestCoregulationPerformance {
 
 				});
 
-				pathwayDatabase2BonfFisherP.put(pathwayDatabase2.getName(), bonfexactPvalues);
+				pathwayDatabase2BonfFisherP.put(pathwayDatabase2.getName(), bonfExactPvalues);
 				pathwayDatabase2BonfOdds.put(pathwayDatabase2.getName(),bonfOdds);
-				pathwayDatabase2FdrFisherP.put(pathwayDatabase2.getName(),fdrexactPvalues);
+				pathwayDatabase2FdrFisherP.put(pathwayDatabase2.getName(),fdrExactPvalues);
 				pathwayDatabase2FdrOdds.put(pathwayDatabase2.getName(),fdrOdds);
 				pathwayDatabase2Auc.put(pathwayDatabase2.getName(), outputMatrixAuc);
 				pathwayDatabase2Utest.put(pathwayDatabase2.getName(), outputMatrixPvalues);
 				
-				bonfexactPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_fexactPvals_" + pathwayDatabase2.getName() + ".txt");
+				bonfExactPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_bonFexactPvals_" + pathwayDatabase2.getName() + ".txt");
+				fdrExactPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_fdrFexactPvals_" + pathwayDatabase2.getName() + ".txt");
+				bonfOdds.save(options.getOutputBasePath() + "_" + predictionSource + "_bonFexactOr_" + pathwayDatabase2.getName() + ".txt");
+				fdrOdds.save(options.getOutputBasePath() + "_" + predictionSource + "_fdrFexactOr_" + pathwayDatabase2.getName() + ".txt");
 				outputMatrixAuc.save(options.getOutputBasePath() + "_" + predictionSource + "_auc_" + pathwayDatabase2.getName() + ".txt");
 				outputMatrixPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_utestPvals_" + pathwayDatabase2.getName() + ".txt");
 			}
