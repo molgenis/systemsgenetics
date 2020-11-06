@@ -1,1 +1,0 @@
-ensembl.file <- "~/Documents/data/reference/ensembl/ensembl_gene_position_export.txt"
