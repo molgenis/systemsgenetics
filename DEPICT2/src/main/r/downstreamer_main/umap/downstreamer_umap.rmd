@@ -15,14 +15,13 @@ pcs.165       <- pcs[,1:165]
 ```{r}
 um <- umap(pcs.165,
            verbose=T,
-           n_neighbors=140,
+           n_neighbors=300,
            n_epochs=1000,
-           min_dist=5,
+           min_dist=8,
            spread=10,
            random_state=5820785,
-           n_threads=16,
            transform_state=5820785)
-save(um, file="output/umap_cache_v5.Rdata")
+save(um, file="output/umap_cache_v6.Rdata")
 
 
 km <- kmeans(um$layout, 140)
