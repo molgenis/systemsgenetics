@@ -105,8 +105,6 @@ public class TestCoregulationPerformance {
 			final DoubleMatrixDataset<String, String> outputMatrixAuc = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 			final DoubleMatrixDataset<String, String> outputMatrixPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 
-			pathwayDatabase2Auc.put(pathwayDatabase2.getName(), outputMatrixAuc);
-			
 			final DoubleMatrixDataset<String, String> bonfexactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 			final DoubleMatrixDataset<String, String> fdrexactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
 			final DoubleMatrixDataset<String, String> bonfOdds = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), predictionZscoresMatched.getHashCols());
@@ -183,12 +181,12 @@ public class TestCoregulationPerformance {
 
 				});
 
-				pathwayDatabase2BonfFisherP.put(predictionSource, bonfexactPvalues);
-				pathwayDatabase2BonfOdds.put(predictionSource,bonfOdds);
-				pathwayDatabase2FdrFisherP.put(predictionSource,fdrexactPvalues);
-				pathwayDatabase2FdrOdds.put(predictionSource,fdrOdds);
-				pathwayDatabase2Auc.put(predictionSource, outputMatrixAuc);
-				pathwayDatabase2Utest.put(predictionSource, outputMatrixPvalues);
+				pathwayDatabase2BonfFisherP.put(pathwayDatabase2.getName(), bonfexactPvalues);
+				pathwayDatabase2BonfOdds.put(pathwayDatabase2.getName(),bonfOdds);
+				pathwayDatabase2FdrFisherP.put(pathwayDatabase2.getName(),fdrexactPvalues);
+				pathwayDatabase2FdrOdds.put(pathwayDatabase2.getName(),fdrOdds);
+				pathwayDatabase2Auc.put(pathwayDatabase2.getName(), outputMatrixAuc);
+				pathwayDatabase2Utest.put(pathwayDatabase2.getName(), outputMatrixPvalues);
 				
 				bonfexactPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_fexactPvals_" + pathwayDatabase2.getName() + ".txt");
 				outputMatrixAuc.save(options.getOutputBasePath() + "_" + predictionSource + "_auc_" + pathwayDatabase2.getName() + ".txt");

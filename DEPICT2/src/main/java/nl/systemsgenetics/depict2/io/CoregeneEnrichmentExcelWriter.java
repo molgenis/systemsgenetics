@@ -10,14 +10,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import nl.systemsgenetics.depict2.Depict2;
 import nl.systemsgenetics.depict2.Depict2Options;
 import nl.systemsgenetics.depict2.pathway.PathwayAnnotations;
 import nl.systemsgenetics.depict2.pathway.PathwayDatabase;
-import nl.systemsgenetics.depict2.pathway.PathwayEnrichments;
+import org.apache.log4j.Logger;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.CellType;
@@ -39,6 +40,8 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  * @author patri
  */
 public class CoregeneEnrichmentExcelWriter {
+
+	private static final Logger LOGGER = Logger.getLogger(CoregeneEnrichmentExcelWriter.class);
 
 	public static void write(
 			final Depict2Options options,
@@ -64,26 +67,31 @@ public class CoregeneEnrichmentExcelWriter {
 			CreationHelper createHelper = wb.getCreationHelper();
 
 			populateOverviewSheet(wb, trait, geneAnnotationDatabases, createHelper, options, styles);
-			
+
 			for (PathwayDatabase geneAssociations : geneAnnotationDatabases) {
 
+				LOGGER.debug("Creating sheet for: " + trait + " vs " + geneAssociations.getName());
+
 				final List<String> geneSets = pathwayDatabase2Auc.get(geneAssociations.getName()).getRowObjects();
-				
+
+				LOGGER.debug(Arrays.asList(pathwayDatabase2Auc));
 				final DoubleMatrix1D auc = pathwayDatabase2Auc.get(geneAssociations.getName()).getCol(trait);
+				LOGGER.debug(Arrays.asList(pathwayDatabase2Utest));
+
 				final DoubleMatrix1D uTestP = pathwayDatabase2Utest.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D bonfOdds = pathwayDatabase2BonfOdds.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D bonfFisherP = pathwayDatabase2BonfFisherP.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D fdrOdss = pathwayDatabase2FdrOdds.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D fdrFisherP = pathwayDatabase2FdrFisherP.get(geneAssociations.getName()).getCol(trait);
 
-				int[] order = DoubleMatrix1dOrder.sortIndexReverse(bonfFisherP);
+				int[] order = DoubleMatrix1dOrder.sortIndex(bonfFisherP);
 
 				PathwayAnnotations geneAssociationsAnnotations = new PathwayAnnotations(new File(geneAssociations.getLocation() + ".colAnnotations.txt"));
 				int maxAnnotations = geneAssociationsAnnotations.getMaxNumberOfAnnotations();
 
 				XSSFSheet sh = (XSSFSheet) wb.createSheet(geneAssociations.getName());
 				XSSFTable table = sh.createTable(new AreaReference(new CellReference(0, 0),
-						new CellReference(geneSets.size(), 7 + maxAnnotations),
+						new CellReference(geneSets.size(), 6 + maxAnnotations),
 						SpreadsheetVersion.EXCEL2007));
 
 				table.setName(geneAssociations.getName() + "_enrichment");
@@ -110,9 +118,39 @@ public class CoregeneEnrichmentExcelWriter {
 				XSSFCell cell;
 
 				for (int r = 0; r < geneSets.size(); ++r) {
+
 					XSSFRow row = sh.createRow(r + 1); //+1 for header
 					String geneSet = geneSets.get(order[r]);
 					row.createCell(0, CellType.STRING).setCellValue(geneSet);
+
+					// Annotations from .colAnnotations file
+					if (maxAnnotations > 0) {
+						ArrayList<String> thisPathwayAnnotations = geneAssociationsAnnotations.getAnnotationsForPathway(geneSet);
+						if (thisPathwayAnnotations == null) {
+							for (int j = 0; j < maxAnnotations; ++j) {
+								row.createCell(j + 1, CellType.STRING).setCellValue("");
+							}
+						} else {
+							for (int j = 0; j < maxAnnotations; ++j) {
+								if (j < thisPathwayAnnotations.size()) {
+									String annotation = thisPathwayAnnotations.get(j);
+									cell = row.createCell(j + 1, CellType.STRING);
+									cell.setCellValue(annotation);
+
+									if (annotation.startsWith("http")) {
+										Hyperlink link = createHelper.createHyperlink(HyperlinkType.URL);
+										link.setAddress(annotation);
+										cell.setHyperlink(link);
+										cell.setCellStyle(styles.getHlinkStyle());
+									}
+
+								} else {
+									row.createCell(j + 1, CellType.STRING).setCellValue("");
+								}
+
+							}
+						}
+					}
 
 					v = bonfOdds.getQuick(order[r]);
 					cell = row.createCell(1 + maxAnnotations, CellType.NUMERIC);
@@ -149,10 +187,10 @@ public class CoregeneEnrichmentExcelWriter {
 				// Auto-scale columns in sheet
 				for (int c = 0; c < hc; ++c) {
 					sh.autoSizeColumn(c);
-					sh.setColumnWidth(c, sh.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
-					if (c > 1 && sh.getColumnWidth(c) > 20000) {
+					sh.setColumnWidth(c, sh.getColumnWidth(c) + 1000); //compensate for with auto filter and inaccuracies
+					if (c > 1 && sh.getColumnWidth(c) > 15000) {
 						//max col width. Not for first column.
-						sh.setColumnWidth(c, 20000);
+						sh.setColumnWidth(c, 15000);
 					}
 				}
 
@@ -165,13 +203,11 @@ public class CoregeneEnrichmentExcelWriter {
 				nr++;
 			}
 			wb.write(new FileOutputStream(excelFile));
-			
-			
 
 		}
 
 	}
-	
+
 	private static void populateOverviewSheet(final Workbook wb, String trait, final List<PathwayDatabase> geneAnnotationDatabases, final CreationHelper createHelper, final Depict2Options options, final ExcelStyles styles) {
 		// -----------------------------------------------------------------------
 		// Create overview sheet
