@@ -320,7 +320,7 @@ public class ProbabilitiesConvertor {
 				numberOfAlleles, phasedProbabilities.length);
 
 		// Initialize an array of probabilities.
-		double[] genotypeProbabilities = new double[BgenGenotypeData.numberOfOrderedCombinationsWithRepetition(
+		double[] genotypeProbabilities = new double[BgenGenotypeData.numberOfProbabilitiesForPloidyAlleleCountCombination(
 				phasedProbabilities.length,
 				numberOfAlleles - 1)]; // number of alleles is equal to n, n-1 = numberOfAlleles - 1
 
@@ -337,6 +337,36 @@ public class ProbabilitiesConvertor {
 					Collections.unmodifiableList(haplotypeCombination))] += probability;
 		}
 		return genotypeProbabilities;
+	}
+
+	/**
+	 * Converts between allele dosages per haplotype per sample, and probabilities per haplotype per sample.
+	 * The dosage value is assumed to correspond to the alternative allele.
+	 *
+	 * @param haplotypeDosages An array of dosages for the alternative allele per haplotype, per sample.
+	 * @return An array of probabilities per haplotype, per sample
+	 */
+	public static double[][][] haplotypeDosagesToHaplotypeProbabilities(double[][] haplotypeDosages) {
+		double[][][] probs = new double[haplotypeDosages.length][][];
+
+		// Loop through the samples
+		for (int sampleIndex = 0; sampleIndex < haplotypeDosages.length; sampleIndex++) {
+
+			// Get the dosages per haplotype for this sample
+			double[] haplotypeDosage = haplotypeDosages[sampleIndex];
+			// Initialize a nested array for probabilities corresponding to this sample
+			double[][] sampleProbabilities = new double[haplotypeDosage.length][2];
+			for (int haplotypeIndex = 0; haplotypeIndex < haplotypeDosage.length; haplotypeIndex++) {
+				// Get the allele dosage for this sample and haplotype
+				double alternativeAlleleDosage = haplotypeDosage[haplotypeIndex];
+				// assign probabilities for this sample and haplotype
+				sampleProbabilities[haplotypeIndex][0] = 1 - alternativeAlleleDosage;
+				sampleProbabilities[haplotypeIndex][1] = alternativeAlleleDosage;
+			}
+			// assign the probabilities for this sample.
+			probs[sampleIndex] = sampleProbabilities;
+		}
+		return probs;
 	}
 
 	/**
@@ -360,15 +390,58 @@ public class ProbabilitiesConvertor {
 			// Get the alleles that are called for this sample.
 			Alleles allelesForSample = sampleAlleles.get(sampleIndex);
 			// The number of alleles called is assumed to be the ploidy of the sample for this variant.
-			int ploidy = allelesForSample.getAlleles().size();
+			int ploidy = allelesForSample.getAlleleCount();
 			// Initialize a nested array of probabilities for the current sample.
-			double[][] sampleProbabilities = new double[ploidy][alleles.getAlleles().size()];
+			double[][] sampleProbabilities = new double[ploidy][alleles.getAlleleCount()];
 			for (int i = 0; i < ploidy; i++) {
 				// Set, at the position of the called allele in the list of alleles from the variant, the probability of 1.
 				Allele allele = allelesForSample.get(i);
-				sampleProbabilities[i][alleles.getAlleles().indexOf(allele)] = 1;
+				int indexOfSampleAllele = alleles.getAlleles().indexOf(allele);
+				if (indexOfSampleAllele != -1) {
+					sampleProbabilities[i][indexOfSampleAllele] = 1;
+				}
 			}
 			probs[sampleIndex] = sampleProbabilities;
+		}
+
+		return probs;
+	}
+
+	/**
+	 * Method that converts between called alleles and complex probabilities.
+	 *
+	 * @param allelesPerSample The called alleles per sample.
+	 * @param variantAlleles The all alleles.
+	 * @return The called alleles converted to probabilities.
+	 */
+    public static double[][] convertCalledAllelesToComplexProbabilities(
+    		List<Alleles> allelesPerSample, Alleles variantAlleles) {
+
+		double[][] probs = new double[allelesPerSample.size()][];
+
+		int numberOfAlleles = variantAlleles.getAlleleCount();
+		if (numberOfAlleles == 0) {
+			throw new GenotypeDataException("Error converting alleles to probabilities. No alleles detected");
+		}
+
+		// Loop through samples
+		for (int sampleIndex = 0; sampleIndex < allelesPerSample.size(); sampleIndex++) {
+			// Get the alleles that are called for this sample.
+			Alleles allelesForSample = allelesPerSample.get(sampleIndex);
+			// The number of alleles called is assumed to be the ploidy of the sample for this variant.
+			int ploidy = allelesForSample.getAlleleCount();
+			// Initialize a nested array of probabilities for the current sample.
+			double[][] sampleProbabilities = new double[ploidy][numberOfAlleles];
+			for (int i = 0; i < ploidy; i++) {
+				// Set, at the position of the called allele in the list of alleles from the variant, the probability of 1.
+				Allele allele = allelesForSample.get(i);
+				int indexOfSampleAllele = variantAlleles.getAlleles().indexOf(allele);
+				if (indexOfSampleAllele != -1) {
+					sampleProbabilities[i][indexOfSampleAllele] = 1;
+				}
+			}
+			probs[sampleIndex] = phasedSampleProbabilitiesToGenotypeProbabilities(
+					sampleProbabilities, numberOfAlleles);
 		}
 
 		return probs;

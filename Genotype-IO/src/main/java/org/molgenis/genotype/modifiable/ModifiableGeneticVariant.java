@@ -108,6 +108,11 @@ public class ModifiableGeneticVariant extends AbstractGeneticVariant {
 	}
 
 	@Override
+	public boolean hasPhasedProbabilities() {
+		return getSampleVariantsProvider().arePhasedProbabilitiesPresent(originalVariant);
+	}
+
+	@Override
 	public Map<String, ?> getAnnotationValues() {
 		return originalVariant.getAnnotationValues();
 	}

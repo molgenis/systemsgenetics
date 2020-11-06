@@ -233,6 +233,11 @@ public class SampleFilteredReadOnlyGeneticVariant extends AbstractGeneticVariant
 	}
 
 	@Override
+	public boolean hasPhasedProbabilities() {
+		return original.hasPhasedProbabilities();
+	}
+
+	@Override
 	public float[][] getSampleGenotypeProbilities() {
 
 		float[][] unfilteredProbs = original.getSampleGenotypeProbilities();

@@ -255,6 +255,11 @@ public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData impleme
 	}
 
 	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		return false;
+	}
+
+	@Override
 	public int getSampleVariantProviderUniqueId() {
 		return sampleVariantProviderUniqueId;
 	}

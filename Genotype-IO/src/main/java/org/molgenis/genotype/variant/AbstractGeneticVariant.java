@@ -277,8 +277,13 @@ abstract public class AbstractGeneticVariant implements GeneticVariant {
     public boolean isBiallelic() {
         return this.getVariantAlleles().getAlleleCount() == 2;
     }
-	
-	@Override
+
+    @Override
+    public boolean hasPhasedGenotypes() {
+        return !this.getSamplePhasing().contains(false);
+    }
+
+    @Override
 	public double getMachR2() {
 		return MachR2Calculator.calculateMachR2(this.getSampleGenotypeProbilities());
 	}

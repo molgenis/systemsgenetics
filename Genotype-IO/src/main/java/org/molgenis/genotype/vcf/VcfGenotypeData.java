@@ -3,13 +3,7 @@ package org.molgenis.genotype.vcf;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import net.sf.samtools.util.BlockCompressedInputStream;
 
@@ -23,6 +17,7 @@ import org.molgenis.genotype.SimpleSequence;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.annotation.VcfAnnotation;
+import org.molgenis.genotype.bgen.BgenGenotypeData;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.tabix.TabixIndex;
 import org.molgenis.genotype.tabix.TabixIndex.TabixIterator;
@@ -45,7 +40,6 @@ import org.molgenis.vcf.meta.VcfMetaInfo;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
-import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
@@ -65,6 +59,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
     private static int currentlyOpenFileHandlers = 0;
     private static int closedFileHandlers = 0;
     private final double minimumPosteriorProbabilityToCall;
+    private MappedGenotypeField preferredGenotypeField;
 
     /**
      * VCF genotype reader
@@ -186,27 +181,23 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             return Collections.emptyList();
         }
 
+        boolean canReadFromRequestedVcfFormat = canReadFromRequestedVcfFormat(
+                new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.GT, MappedGenotypeField.GP, MappedGenotypeField.DS)));
+
         int idx = vcfRecord.getFormatIndex("GT");
-        if (idx != -1) {
+        if (idx != -1 && (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+            return getCalledAlleles(variant, vcfRecord);
 
-            // convert vcf sample alleles to Alleles
-            List<Alleles> alleles = new ArrayList<Alleles>(nrSamples);
+        } else if (vcfRecord.getFormatIndex("GP") != -1 &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GP.equals(preferredGenotypeField))) {
 
-            try {
-                for (VcfSample vcfSample : vcfRecord.getSamples()) {
-                    List<Allele> vcfAlleles = vcfSample.getAlleles();
-                    alleles.add(Alleles.createAlleles(vcfAlleles));
-                }
-            } catch (NumberFormatException ex) {
-                throw new GenotypeDataException("Error parsing variant: " + variant.getPrimaryVariantId() + " at " + variant.getSequenceName() + ":" + variant.getStartPos(), ex);
-            }
-            return alleles;
+            return ProbabilitiesConvertor.convertProbabilitiesToAlleles(
+                    getSampleProbilities(variant),
+                    variant.getVariantAlleles(),
+                    minimumPosteriorProbabilityToCall);
 
-        } else if (vcfRecord.getFormatIndex("GP") != -1) {
-
-            return ProbabilitiesConvertor.convertProbabilitiesToAlleles(getSampleProbilities(variant), variant.getVariantAlleles(), minimumPosteriorProbabilityToCall);
-
-        } else if (vcfRecord.getFormatIndex("DS") != -1) {
+        } else if (vcfRecord.getFormatIndex("DS") != -1 &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.DS.equals(preferredGenotypeField))) {
 
             return CalledDosageConvertor.convertDosageToAlleles(getSampleDosage(variant), variant.getVariantAlleles());
 
@@ -219,6 +210,21 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             return sampleAlleles;
         }
 
+    }
+
+    private List<Alleles> getCalledAlleles(GeneticVariant variant, VcfRecord vcfRecord) {
+        // convert vcf sample alleles to Alleles§
+        List<Alleles> alleles = new ArrayList<>(vcfRecord.getNrSamples());
+
+        try {
+            for (VcfSample vcfSample : vcfRecord.getSamples()) {
+                List<Allele> vcfAlleles = vcfSample.getAlleles();
+                alleles.add(Alleles.createAlleles(vcfAlleles));
+            }
+        } catch (NumberFormatException ex) {
+            throw new GenotypeDataException("Error parsing variant: " + variant.getPrimaryVariantId() + " at " + variant.getSequenceName() + ":" + variant.getStartPos(), ex);
+        }
+        return alleles;
     }
 
     @Override
@@ -275,7 +281,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             return Collections.emptyList();
         }
 
-        List<Boolean> phasing = new ArrayList<Boolean>(nrSamples);
+        List<Boolean> phasing = new ArrayList<>(nrSamples);
         for (VcfSample vcfSample : vcfRecord.getSamples()) {
 
             List<Boolean> genotypePhasings = vcfSample.getPhasings();
@@ -292,6 +298,26 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
         }
         return phasing;
+    }
+
+    @Override
+    public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+        VcfRecord vcfRecord = getVcfRecord(variant);
+
+        final int nrSamples = vcfRecord.getNrSamples();
+        if (nrSamples == 0) {
+            return false;
+        }
+
+        // If the requested format is set and present for this variant base decision on this format
+        boolean canReadPhasedData = preferredGenotypeField == null &&
+                (
+                        vcfRecord.getFormatIndex(MappedGenotypeField.HP.name()) > -1
+                        || vcfRecord.getFormatIndex(MappedGenotypeField.ADS.name()) > -1
+                );
+
+        return canReadPhasedData
+                || canReadPhasedDataFromPreferredGenotypeField(variant);
     }
 
     @Override
@@ -321,8 +347,11 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
         float[] dosages;
 
+        boolean canReadFromRequestedVcfFormat = canReadFromRequestedVcfFormat(
+                new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.DS, MappedGenotypeField.GP, MappedGenotypeField.GT)));
+
         int idx = vcfRecord.getFormatIndex("DS");
-        if (idx != -1) {
+        if (idx != -1 && (!canReadFromRequestedVcfFormat || MappedGenotypeField.DS.equals(preferredGenotypeField))) {
             // retrieve sample dosage from sample info
             dosages = new float[nrSamples];
             int i = 0;
@@ -341,12 +370,17 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                 }
 
             }
-        } else if (vcfRecord.getFormatIndex("GP") != -1) {
+        } else if (vcfRecord.getFormatIndex("GP") != -1 &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GP.equals(preferredGenotypeField))) {
             dosages = ProbabilitiesConvertor.convertProbabilitiesToDosage(getSampleProbilities(variant), minimumPosteriorProbabilityToCall);
-        } else if (vcfRecord.getFormatIndex("GT") != -1) {
+
+        } else if (vcfRecord.getFormatIndex("GT") != -1 &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+
             // calculate sample dosage from called alleles
             dosages = CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
                     variant.getVariantAlleles(), variant.getRefAllele());
+
         } else {
             dosages = new float[nrSamples];
             for (int i = 0; i < nrSamples; ++i) {
@@ -375,10 +409,15 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             return new float[0][0];
         }
 
-        float[][] probs = null;
+        int numberOfAlleles = variant.getAlleleCount();
+
+        float[][] probs;
+
+        boolean canReadFromRequestedVcfFormat = canReadFromRequestedVcfFormat(
+                new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.GP, MappedGenotypeField.GT, MappedGenotypeField.DS)));
 
         int idx = vcfRecord.getFormatIndex("GP");
-        if (idx != -1) {
+        if (idx != -1 && (!canReadFromRequestedVcfFormat || MappedGenotypeField.GP.equals(preferredGenotypeField))) {
             // retrieve sample probabilities from sample info
             probs = new float[nrSamples][3];
             int i = 0;
@@ -394,26 +433,34 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 //                        System.out.println(probabilitiesStr);
                     }
                     String[] probabilities = StringUtils.split(probabilitiesStr, ',');
-                    if (probabilities.length != 3) {
-                        throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
-                    }
-
-                    for (int j = 0; j < 3; ++j) {
-                        try {
-                            probs[i][j] = Float.parseFloat(probabilities[j]);
-                        } catch (NumberFormatException e) {
-                            throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+                    if (probabilities.length != 3 || numberOfAlleles != 2) {
+//                        throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+                        probs[i] = new float[3];
+                    } else {
+                        for (int j = 0; j < 3; ++j) {
+                            try {
+                                probs[i][j] = Float.parseFloat(probabilities[j]);
+                            } catch (NumberFormatException e) {
+                                throw new GenotypeDataException("Error in sample prob (GP) value for sample [" + vcfMeta.getSampleName(i) + "], found value: " + probabilitiesStr);
+                            }
                         }
                     }
                 }
                 ++i;
             }
 
-        } else if (vcfRecord.getFormatIndex("GT") != -1) {
-            probs = ProbabilitiesConvertor.convertCalledAllelesToProbability(getSampleVariants(variant), variant.getVariantAlleles());
-        } else if (vcfRecord.getFormatIndex("DS") != -1) {
+        } else if (vcfRecord.getFormatIndex("GT") != -1 &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+
+            probs = ProbabilitiesConvertor.convertCalledAllelesToProbability(
+                    getSampleVariants(variant), variant.getVariantAlleles());
+
+        } else if (vcfRecord.getFormatIndex("DS") != -1 &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.DS.equals(preferredGenotypeField))) {
+
             // calculate sample probabilities from sample dosage
             probs = ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(getSampleDosage(variant));
+
         } else {
             probs = new float[nrSamples][3];
         }
@@ -422,12 +469,274 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
     @Override
     public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
-        return ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(getSampleProbilities(variant));
+        VcfRecord vcfRecord = getVcfRecord(variant);
+
+        final int nrSamples = vcfRecord.getNrSamples();
+        if (nrSamples == 0) {
+            return new double[0][0];
+        }
+
+        int numberOfAlleles = variant.getAlleleCount();
+
+        double[][] probs;
+
+        boolean hasGenotypes = vcfRecord.getFormatIndex("GT") != -1;
+
+        List<Alleles> sampleVariants = null;
+        if (hasGenotypes) {
+            sampleVariants = getCalledAlleles(variant, vcfRecord);
+        }
+
+        boolean canReadFromRequestedVcfFormat = canReadFromRequestedVcfFormat(
+                new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.GP, MappedGenotypeField.GT, MappedGenotypeField.DS)));
+
+        int idx = vcfRecord.getFormatIndex("GP");
+        if (idx != -1 && (!canReadFromRequestedVcfFormat || MappedGenotypeField.GP.equals(preferredGenotypeField))) {
+
+            probs = readGenotypeProbabilitiesComplex(idx, vcfRecord, numberOfAlleles, sampleVariants);
+
+        } else if (hasGenotypes &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+
+            probs = ProbabilitiesConvertor.convertCalledAllelesToComplexProbabilities(
+                    sampleVariants,
+                    variant.getVariantAlleles());
+
+        } else if (vcfRecord.getFormatIndex("DS") != -1 &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.DS.equals(preferredGenotypeField))) {
+
+            // calculate sample probabilities from sample dosage
+            probs = ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(
+                    ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(
+                            getSampleDosage(variant)));
+
+        } else {
+
+            probs = new double[nrSamples][3];
+        }
+        return probs;
+    }
+
+    private boolean canReadFromRequestedVcfFormat(Set<MappedGenotypeField> mappedGenotypeFields) {
+        return preferredGenotypeField != null && mappedGenotypeFields.contains(preferredGenotypeField);
+    }
+
+    private double[][] readGenotypeProbabilitiesComplex(int formatIndex, VcfRecord vcfRecord,
+                                                        int numberOfAlleles, List<Alleles> sampleVariants) {
+        int nrSamples = vcfRecord.getNrSamples();
+        double[][] probs;// retrieve sample probabilities from sample info
+        probs = new double[nrSamples][];
+        int sampleIndex = 0;
+        for (VcfSample vcfSample : vcfRecord.getSamples()) {
+            String probabilitiesStr = vcfSample.getData(formatIndex);
+            if (probabilitiesStr == null) {
+                //throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(sampleIndex) + "]");
+                probs[sampleIndex] = new double[0];
+            } else {
+
+                String[] probabilities = StringUtils.split(probabilitiesStr, ',');
+                // The number of probabilities should match with the number of probabilities expected with
+                // the given number of alleles for this variant and the number of called alleles.
+                // Check this if there are called sample variants available.
+                if (sampleVariants != null) {
+                    // Calculate the number of expected probabilities given the
+                    // ploidy and the number of alleles for this variant.
+                    int calledAlleleCount = sampleVariants.get(sampleIndex).getAlleleCount();
+                    int numberOfExpectedProbabilities = BgenGenotypeData
+                            .numberOfProbabilitiesForPloidyAlleleCountCombination(calledAlleleCount,
+                                    numberOfAlleles - 1);
+
+                    // Test if this corresponds to the actual number of probabilities.
+                    if (probabilities.length != numberOfExpectedProbabilities) {
+                        throw new GenotypeDataException(String.format(
+                                "Error in sample prob (GP) value for sample [%s], found %d values, " +
+                                        "while %d were expected based on %d called alleles and %d variant alleles",
+                                vcfMeta.getSampleName(sampleIndex), probabilities.length,
+                                numberOfExpectedProbabilities, calledAlleleCount, numberOfAlleles));
+                    }
+                }
+
+                // Initialize a double array for the probabilities for this sample.
+                probs[sampleIndex] = new double[probabilities.length];
+
+                // Loop through the probabilities, assigning the present probabilities.
+                for (int i = 0; i < probabilities.length; ++i) {
+
+                    String probabilityAsString = probabilities[i];
+                    // Assign the present probability, or 0 if this probability is missing.
+                    if (probabilityAsString.equals(".")) {
+                        probs[sampleIndex][i] = 0;
+                    } else {
+                        try {
+                            // Parse this probability to a double if it is not missing.
+                            probs[sampleIndex][i] = Double.parseDouble(probabilityAsString);
+
+                        } catch (NumberFormatException e) {
+
+                            // Throw an exception if this probability is neither missing (denoted by a dot,
+                            // nor parsable to a double.
+                            throw new GenotypeDataException(String.format(
+                                    "Error in genotype probabilities (GP) value for sample [%s], " +
+                                            "found value '%s', while a double was expected",
+                                    vcfMeta.getSampleName(sampleIndex),
+                                    probabilityAsString));
+                        }
+                    }
+                }
+            }
+            ++sampleIndex;
+        }
+        return probs;
     }
 
     @Override
     public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
-        throw new GenotypeDataException("Phased data not available");
+        VcfRecord vcfRecord = getVcfRecord(variant);
+
+        final int nrSamples = vcfRecord.getNrSamples();
+        if (nrSamples == 0) {
+            return new double[0][0][0];
+        }
+
+        int numberOfAlleles = variant.getAlleleCount();
+
+        double[][][] probabilities;
+
+        boolean canReadFromRequestedVcfFormat = canReadPhasedDataFromPreferredGenotypeField(variant);
+
+        int idx = vcfRecord.getFormatIndex("HP");
+        if (idx != -1 &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.HP.equals(preferredGenotypeField))) {
+            // retrieve sample probabilities from sample info
+            probabilities = new double[nrSamples][][];
+            int sampleIndex = 0;
+            for (VcfSample vcfSample : vcfRecord.getSamples()) {
+                String probabilitiesStr = vcfSample.getData(idx);
+                if (probabilitiesStr == null) {
+                    //throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(sampleIndex) + "]");
+                    probabilities[sampleIndex] = new double[2][2];
+                } else {
+                    // There should be the same number of values as alleles. These should be split by a comma (",")
+                    String[] probabilitiesAsStrings = StringUtils.split(probabilitiesStr, ',');
+                    // Check if the expected number of values corresponds to the actual number of values,
+                    // and throw an exception if this is not the case.
+                    if ((probabilitiesAsStrings.length % numberOfAlleles) != 0) {
+                        throw new GenotypeDataException(String.format(
+                                "Error in haplotype probabilities (HP) value for sample [%s], found %d value(s) (%s), " +
+                                        "while a multiple of %d were expected based on total allele count",
+                                vcfMeta.getSampleName(sampleIndex), probabilitiesAsStrings.length,
+                                probabilitiesStr, numberOfAlleles));
+                    }
+                    // Should have a multiple of the number of alleles
+                    // For every haplotype, allele, get the probabilities and assign these to the probabilities
+                    int numberOfHaplotypes = probabilitiesAsStrings.length / numberOfAlleles;
+                    probabilities[sampleIndex] = new double[numberOfHaplotypes][numberOfAlleles];
+                    // Loop through haplotypes
+                    for (int haplotypeIndex = 0; haplotypeIndex < numberOfHaplotypes; haplotypeIndex++) {
+                        // Loop through alleles
+                        for (int alleleIndex = 0; alleleIndex < numberOfAlleles; alleleIndex++) {
+                            // Get the probability as a string corresponding to this haplotype and allele.
+                            String probabilityAsString = probabilitiesAsStrings
+                                    [haplotypeIndex * numberOfAlleles + alleleIndex];
+                            if (probabilityAsString.equals(".")) {
+                                probabilities[sampleIndex][haplotypeIndex][alleleIndex] = 0;
+                            } else {
+                                try {
+                                    probabilities[sampleIndex][haplotypeIndex][alleleIndex] =
+                                            Double.parseDouble(probabilityAsString);
+                                } catch (NumberFormatException e) {
+                                    throw new GenotypeDataException(String.format(
+                                            "Error in haplotype probabilities (HP) value for sample [%s], " +
+                                                    "found value '%s', while a double was expected",
+                                            vcfMeta.getSampleName(sampleIndex),
+                                            probabilityAsString));
+                                }
+                            }
+                        }
+                    }
+                }
+                ++sampleIndex;
+            }
+        } else if ((idx = vcfRecord.getFormatIndex("ADS")) != -1 &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.ADS.equals(preferredGenotypeField))) {
+
+            // check if the number of alleles is 2
+            if (variant.getAlleleCount() != 2) {
+                throw new GenotypeDataException(String.format(
+                        "Error in per-haplotype allele dosage (ADS) for variant %s" +
+                                "found %d alleles while 2 were expected",
+                        variant.getPrimaryVariantId(), numberOfAlleles));
+            }
+
+            // retrieve sample probabilities from sample info
+            double[][] haplotypeDosages = new double[nrSamples][];
+            int sampleIndex = 0;
+            for (VcfSample vcfSample : vcfRecord.getSamples()) {
+                String probabilitiesStr = vcfSample.getData(idx);
+                if (probabilitiesStr == null) {
+                    //throw new GenotypeDataException("Missing GP format value for sample [" + vcfMeta.getSampleName(sampleIndex) + "]");
+                    haplotypeDosages[sampleIndex] = new double[2];
+                } else {
+                    // There should be the same number of values as haplotypes. These should be split by a comma (",")
+                    String[] haplotypesAsStrings = StringUtils.split(probabilitiesStr, ',');
+                    // Check if the expected number of values corresponds to the actual number of values,
+                    // and throw an exception if this is not the case.
+
+                    int numberOfHaplotypes = 2;
+                    if (haplotypesAsStrings.length != numberOfHaplotypes) {
+                        throw new GenotypeDataException(String.format(
+                                "Error in per-haplotype allele dosage (ADS) value for sample [%s], " +
+                                        "found %d value(s) (%s), while 2 were expected",
+                                vcfMeta.getSampleName(sampleIndex), haplotypesAsStrings.length,
+                                probabilitiesStr));
+                    }
+                    // Should have a multiple of the number of alleles
+                    // For every haplotype, allele, get the probabilities and assign these to the probabilities
+                    haplotypeDosages[sampleIndex] = new double[numberOfHaplotypes];
+                    // Loop through haplotypes
+                    for (int haplotypeIndex = 0; haplotypeIndex < numberOfHaplotypes; haplotypeIndex++) {
+                        String haplotypeDosageAsString = haplotypesAsStrings[haplotypeIndex];
+                        if (haplotypeDosageAsString.equals(".")) {
+                            haplotypeDosages[sampleIndex][haplotypeIndex] = 0;
+                            try {
+                                haplotypeDosages[sampleIndex][haplotypeIndex] = Double.parseDouble(haplotypeDosageAsString);
+                            } catch (NumberFormatException e) {
+                                throw new GenotypeDataException(String.format(
+                                        "Error in per-haplotype allele dosage (ADS) value for sample [%s], " +
+                                                "found value '%s', while a double was expected",
+                                        vcfMeta.getSampleName(sampleIndex), haplotypeDosageAsString));
+                            }
+                        }
+                    }
+                }
+                ++sampleIndex;
+            }
+            probabilities = ProbabilitiesConvertor.haplotypeDosagesToHaplotypeProbabilities(haplotypeDosages);
+        } else if (vcfRecord.getFormatIndex("GT") != -1 && variant.hasPhasedGenotypes() &&
+                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+            // calculate sample probabilities from sample dosage
+            probabilities = ProbabilitiesConvertor.convertCalledAllelesToPhasedProbabilities(getSampleVariants(variant), variant.getVariantAlleles());
+        } else {
+            throw new GenotypeDataException("Phased data not available");
+        }
+        return probabilities;
+    }
+
+    /**
+     * Method that returns whether or not phased data can be read using the set preferred genotype field.
+     *
+     * @param variant The variant to read phased data from.
+     * @return true if the preferred genotype field is not null, and can provide a phased data
+     */
+    private boolean canReadPhasedDataFromPreferredGenotypeField(GeneticVariant variant) {
+        boolean canReadFromPreferredGenotypeField = canReadFromRequestedVcfFormat(
+                    new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.HP, MappedGenotypeField.ADS, MappedGenotypeField.GT)));
+
+        // If the preferred genotype field is GT, we need to check if phased genotypes are available
+        if (preferredGenotypeField == MappedGenotypeField.GT && !getSamplePhasing(variant).contains(false)) {
+            return false;
+        }
+        return canReadFromPreferredGenotypeField;
     }
 
     @Override
@@ -654,5 +963,36 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
      */
     private GenotypeRecord toGenotypeRecord(VcfRecord vcfRecord, VcfSample vcfSample) {
         return new VcfGenotypeRecord(vcfMeta, vcfRecord, vcfSample);
+    }
+
+    /**
+     * Getter for the preferred VCF genotype field to read from
+     *
+     * @return The preferred genotype field to read from.
+     */
+    public MappedGenotypeField getPreferredGenotypeField() {
+        return preferredGenotypeField;
+    }
+
+    /**
+     * Set the preferred VCF format to read from.
+     * Fails if the requested vcf format has no included mapping in the this VcfGenotypeData
+     *
+     * @param preferredGenotypeField the preferred VCF format to read from.
+     */
+    public void setPreferredGenotypeField(String preferredGenotypeField) {
+        this.preferredGenotypeField = preferredGenotypeField != null ?
+                MappedGenotypeField.valueOf(preferredGenotypeField) : null;
+    }
+
+    /**
+     * Enum with genotype fields which data can be read from.
+     */
+    public enum MappedGenotypeField {
+        GT,
+        GP,
+        HP,
+        DS,
+        ADS
     }
 }

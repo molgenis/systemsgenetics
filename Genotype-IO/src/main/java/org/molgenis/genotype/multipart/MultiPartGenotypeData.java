@@ -59,8 +59,8 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 			throws IncompatibleMultiPartGenotypeDataException
 	{
 		
-		variantAnnotationsMap = new HashMap<String, Annotation>();
-		sampleAnnotationsMap = new HashMap<String, SampleAnnotation>();
+		variantAnnotationsMap = new LinkedHashMap<>();
+		sampleAnnotationsMap = new LinkedHashMap<>();
 		
 		for (RandomAccessGenotypeData genotypeData : genotypeDataCollection)
 		{
@@ -73,28 +73,28 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 			{
 				if (!genotypeData.getSamples().equals(samples))
 				{
-					
-					
-					
+
+
+
 					if(genotypeData.getSamples().size() != samples.size()){
 						throw new IncompatibleMultiPartGenotypeDataException(
 							"Incompatible multi part genotype data. All files should contain identical samples in same order. Number of samples is not identical for chr: "+ sequenceName);
 					}
-					
+
 					Iterator<Sample> newSampleIterator = genotypeData.getSamples().iterator();
 					Iterator<Sample> totalSampleIterator = samples.iterator();
-					
+
 					while(newSampleIterator.hasNext()){
 						Sample newSample = newSampleIterator.next();
 						Sample existingSample = totalSampleIterator.next();
-						
+
 						if(!newSample.equals(existingSample)){
 							throw new IncompatibleMultiPartGenotypeDataException(
 							"Incompatible multi part genotype data. All files should contain identical samples in same order. Found sample: " + newSample + " expected: " + existingSample + " for chr: " + sequenceName);
 						}
-						
+
 					}
-					
+
 					throw new IncompatibleMultiPartGenotypeDataException(
 							"Incompatible multi part genotype data. All files should contain identical samples in same order. Cause of difference unkown for chr: " + sequenceName);
 				}
@@ -132,7 +132,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	 * @param cacheSize
 	 *            size of the cache per vcf file.
 	 * @throws IOException
-	 * @throws IncompetibleMultiPartGenotypeDataException
+	 * @throws IncompatibleMultiPartGenotypeDataException
 	 *             if the datasets are not compatible
 	 * @throws Exception
 	 *             If multiple files for one chr found
@@ -231,20 +231,6 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	}
 
 	@Override
-	public List<Annotation> getVariantAnnotations()
-	{
-		throw new UnsupportedOperationException(
-				"Not yet implemented for multipart genotype data. Feel free to contact the developers");
-	}
-
-	@Override
-	public Annotation getVariantAnnotation(String annotationId)
-	{
-		throw new UnsupportedOperationException(
-				"Not yet implemented for multipart genotype data. Feel free to contact the developers");
-	}
-
-	@Override
 	public Iterable<GeneticVariant> getVariantsByPos(String seqName, int startPos)
 	{
 		if (genotypeDatasets.containsKey(seqName))
@@ -296,20 +282,6 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	}
 
 	@Override
-	public List<SampleAnnotation> getSampleAnnotations()
-	{
-		throw new UnsupportedOperationException(
-				"Not yet implemented for multipart genotype data. Feel free to contact the developers");
-	}
-
-	@Override
-	public Annotation getSampleAnnotation(String annotationId)
-	{
-		throw new UnsupportedOperationException(
-				"Not yet implemented for multipart genotype data. Feel free to contact the developers");
-	}
-
-	@Override
 	public Iterable<GeneticVariant> getVariantsByRange(String seqName, int rangeStart, int rangeEnd)
 	{
 		if (genotypeDatasets.containsKey(seqName))
@@ -336,7 +308,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 
 	@Override
 	public Map<String, SampleAnnotation> getSampleAnnotationsMap() {
-		return getSampleAnnotationsMap();
+		return sampleAnnotationsMap;
 	}
 
 	@Override

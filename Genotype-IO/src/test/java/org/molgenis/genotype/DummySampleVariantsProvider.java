@@ -42,6 +42,11 @@ public class DummySampleVariantsProvider implements SampleVariantsProvider
 	}
 
 	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		return false;
+	}
+
+	@Override
 	public int getSampleVariantProviderUniqueId()
 	{
 		return sampleVariantProviderUniqueId;
