@@ -27,8 +27,8 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.Depict2;
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
@@ -60,7 +60,7 @@ import umcg.genetica.math.stats.ZScores;
 @Deprecated
 public class PathwayEnrichmentsOld {
 
-	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
+	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptions.class);
 
 	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final HashSet<String> genesWithPvalue, final List<PathwayDatabase> pathwayDatabases, List<Gene> genes, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas, final double genePruningR, final boolean ignoreGeneCorrelations, final boolean forceNormalGenePvalues, final boolean forceNormalPathwayPvalues, final int correlationWindow) throws IOException, Exception {
 
@@ -512,7 +512,7 @@ public class PathwayEnrichmentsOld {
 
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
-			cell.setCellValue("Generated using DEPICT" + Depict2.VERSION);
+			cell.setCellValue("Generated using DEPICT" + Downstreamer.VERSION);
 			cell.setCellStyle(boldStyle);
 
 			overviewSheet.createRow(r++);

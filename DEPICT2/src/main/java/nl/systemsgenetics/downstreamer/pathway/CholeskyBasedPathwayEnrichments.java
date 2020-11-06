@@ -16,7 +16,7 @@ import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.Depict2;
+import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.gene.GenePathwayAssociationStatistic;
 import org.apache.commons.math3.distribution.TDistribution;
@@ -39,7 +39,7 @@ import java.util.stream.IntStream;
 @Deprecated
 public class CholeskyBasedPathwayEnrichments  { //extends PathwayEnrichments
 
-    private static final Logger LOGGER = Logger.getLogger(Depict2.class);
+    private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
 
     private final PathwayDatabase pathwayDatabase;
     private final HashSet<String> hlaGenesToExclude;

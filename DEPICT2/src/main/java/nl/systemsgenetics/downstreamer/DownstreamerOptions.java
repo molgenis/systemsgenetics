@@ -10,7 +10,7 @@ import edu.emory.mathcs.utils.ConcurrencyUtils;
 import java.io.File;
 import java.util.*;
 
-import static nl.systemsgenetics.downstreamer.Depict2.LARGE_INT_FORMAT;
+import static nl.systemsgenetics.downstreamer.Downstreamer.LARGE_INT_FORMAT;
 
 import nl.systemsgenetics.downstreamer.gene.GenePvalueCalculator;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
@@ -28,13 +28,13 @@ import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 /**
  * @author patri
  */
-public class Depict2Options {
+public class DownstreamerOptions {
 
 	private static final Options OPTIONS;
 	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();//Might be changed
-	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
+	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptions.class);
 
-	private final Depict2Mode mode;
+	private final DownstreamerMode mode;
 
 	private final String[] genotypeBasePath;
 	private final RandomAccessGenotypeDataReaderFormats genotypeType;
@@ -93,8 +93,8 @@ public class Depict2Options {
 		OptionBuilder.withArgName("string");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("On of the following modes:\n"
-				+ "* STEP1 - Run the DEPICT2 prioritization.\n"
-				+ "* STEP2 - Run the DEPICT2 prioritization starting at stage 2.\n"
+				+ "* STEP1 - Run the Downstreamer prioritization.\n"
+				+ "* STEP2 - Run the Downstreamer prioritization starting at stage 2.\n"
 				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
 				+ "* CONVERT_TXT_MERGE - Merge multiple txt pvalue files into one matrix containing only overlapping snps"
 				+ "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output optionally --columnsToExtract\n"
@@ -373,7 +373,7 @@ public class Depict2Options {
 
 	}
 
-	public Depict2Options(String... args) throws ParseException {
+	public DownstreamerOptions(String... args) throws ParseException {
 
 		final CommandLineParser parser = new PosixParser();
 		final CommandLine commandLine = parser.parse(OPTIONS, args, false);
@@ -422,12 +422,12 @@ public class Depict2Options {
 				modeString = "STEP2";
 			}
 
-			mode = Depict2Mode.valueOf(modeString);
+			mode = DownstreamerMode.valueOf(modeString);
 		} catch (IllegalArgumentException e) {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == Depict2Mode.STEP2 || mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE || mode == Depict2Mode.STEP1 || mode == Depict2Mode.GET_NORMALIZED_GENEP || mode == Depict2Mode.CONVERT_EQTL || mode == Depict2Mode.FIRST1000 || mode == Depict2Mode.CONVERT_GTEX || mode == Depict2Mode.CONVERT_BIN || mode == Depict2Mode.SPECIAL || mode == Depict2Mode.CORRELATE_GENES || mode == Depict2Mode.TRANSPOSE || mode == Depict2Mode.CONVERT_EXP || mode == Depict2Mode.MERGE_BIN || mode == Depict2Mode.PCA || mode == Depict2Mode.INVESTIGATE_NETWORK || mode == Depict2Mode.PTOZSCORE || mode == Depict2Mode.R_2_Z_SCORE || mode == Depict2Mode.TOP_HITS || mode == Depict2Mode.CREATE_EXCEL || mode == Depict2Mode.GET_PATHWAY_LOADINGS || mode == Depict2Mode.REMOVE_CIS_COEXP) {
+		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.CREATE_EXCEL || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -438,7 +438,7 @@ public class Depict2Options {
 			gwasZscoreMatrixPath = null;
 		}
 
-		if (mode == Depict2Mode.CONVERT_TXT || mode == Depict2Mode.CONVERT_TXT_MERGE) {
+		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE) {
 			pvalueToZscore = commandLine.hasOption("p2z");
 			if (commandLine.hasOption("co")) {
 				conversionColumnIncludeFilter = new File(commandLine.getOptionValue("co"));
@@ -940,7 +940,7 @@ public class Depict2Options {
 				break;
 		}
 
-		if (mode == Depict2Mode.R_2_Z_SCORE) {
+		if (mode == DownstreamerMode.R_2_Z_SCORE) {
 
 			if (!commandLine.hasOption("ns")) {
 				throw new ParseException("--numberSamplesUsedForCor not specified");
@@ -1226,7 +1226,7 @@ public class Depict2Options {
 		return geneInfoFile;
 	}
 
-	public Depict2Mode getMode() {
+	public DownstreamerMode getMode() {
 		return mode;
 	}
 

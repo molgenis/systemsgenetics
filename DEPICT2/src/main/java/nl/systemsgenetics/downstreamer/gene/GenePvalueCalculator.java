@@ -34,10 +34,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import static nl.systemsgenetics.downstreamer.Depict2.formatMsForLog;
+import static nl.systemsgenetics.downstreamer.Downstreamer.formatMsForLog;
 
-import nl.systemsgenetics.downstreamer.Depict2;
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -273,10 +273,10 @@ public class GenePvalueCalculator {
 		//Results are writen in genePvalues
 		//runGene(geneI);
 		final AtomicInteger count = new AtomicInteger(0);
-		List<Thread> threads = new ArrayList<>(Depict2Options.getNumberOfThreadsToUse());
-		Depict2.ThreadErrorHandler threadErrorHandler = new Depict2.ThreadErrorHandler("gene p-value calculator");
+		List<Thread> threads = new ArrayList<>(DownstreamerOptions.getNumberOfThreadsToUse());
+		Downstreamer.ThreadErrorHandler threadErrorHandler = new Downstreamer.ThreadErrorHandler("gene p-value calculator");
 
-		for (int i = 0; i < Depict2Options.getNumberOfThreadsToUse(); ++i) {
+		for (int i = 0; i < DownstreamerOptions.getNumberOfThreadsToUse(); ++i) {
 
 			Thread worker = new Thread(new CalculatorThread(count));
 			worker.start();

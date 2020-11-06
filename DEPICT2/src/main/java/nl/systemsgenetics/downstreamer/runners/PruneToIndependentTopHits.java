@@ -10,7 +10,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.IntStream;
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -28,11 +28,11 @@ public class PruneToIndependentTopHits {
 
 	private static final Logger LOGGER = Logger.getLogger(PruneToIndependentTopHits.class);
 
-	public static void prune(final Depict2Options options) throws IOException{
+	public static void prune(final DownstreamerOptions options) throws IOException{
 		prune(options, null);
 	}
 	
-	public static void prune(final Depict2Options options, final RandomAccessGenotypeData referenceGenotypeData) throws IOException {
+	public static void prune(final DownstreamerOptions options, final RandomAccessGenotypeData referenceGenotypeData) throws IOException {
 
 		final String variantPhenotypeZscoreMatrixPath = options.getGwasZscoreMatrixPath();
 		final DoubleMatrixDatasetRowIterable gwasStreamer = new DoubleMatrixDatasetRowIterable(variantPhenotypeZscoreMatrixPath);

@@ -1,11 +1,11 @@
 package nl.systemsgenetics.downstreamer.runners;
 
-import nl.systemsgenetics.downstreamer.Depict2Step3Results;
-import nl.systemsgenetics.downstreamer.Depict2Step2Results;
-import nl.systemsgenetics.downstreamer.Depict2Mode;
-import nl.systemsgenetics.downstreamer.Depict2Step1Results;
-import nl.systemsgenetics.downstreamer.Depict2;
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
+import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
+import nl.systemsgenetics.downstreamer.DownstreamerMode;
+import nl.systemsgenetics.downstreamer.DownstreamerStep1Results;
+import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
@@ -35,19 +35,19 @@ import java.util.stream.IntStream;
 /**
  * Runners for the main Depict 2 analysis.
  */
-public class Depict2MainAnalysis {
+public class DownstreamerMainAnalysis {
 
-    private static final Logger LOGGER = Logger.getLogger(Depict2MainAnalysis.class);
+    private static final Logger LOGGER = Logger.getLogger(DownstreamerMainAnalysis.class);
 
     /**
      * Calculate the real gene p-values from GWAS z-scores as well as those for x ammount of random GWAS phenotypes.
      *
      * @param options
-     * @return Depict2Step1Results
+     * @return DownstreamerStep1Results
      * @throws IOException
      * @throws Exception
      */
-    public static Depict2Step1Results step1(Depict2Options options) throws IOException, Exception {
+    public static DownstreamerStep1Results step1(DownstreamerOptions options) throws IOException, Exception {
 
         //Test here to prevent chrash after running for a while
         if (!new File(options.getGwasZscoreMatrixPath() + ".dat").exists()) {
@@ -62,7 +62,7 @@ public class Depict2MainAnalysis {
 
         double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutationsRescue(), 500);
 
-        LOGGER.info("Prepared reference null distribution with " + Depict2.LARGE_INT_FORMAT.format(randomChi2.length) + " values");
+        LOGGER.info("Prepared reference null distribution with " + Downstreamer.LARGE_INT_FORMAT.format(randomChi2.length) + " values");
 
         File usedVariantsPerGeneFile = options.isSaveUsedVariantsPerGene() ? new File(options.getOutputBasePath() + "_usedVariantsPerGene.txt") : null;
 
@@ -102,7 +102,7 @@ public class Depict2MainAnalysis {
 
         PruneToIndependentTopHits.prune(options, referenceGenotypeData);
 
-        return new Depict2Step1Results(genePvalues, genePvaluesNullGwas, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
+        return new DownstreamerStep1Results(genePvalues, genePvaluesNullGwas, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
     }
 
     /**
@@ -111,17 +111,17 @@ public class Depict2MainAnalysis {
      *
      * @param options
      * @param step1Res
-     * @return Depict2Step2Results
+     * @return DownstreamerStep2Results
      * @throws IOException
      * @throws Exception
      */
-    public static Depict2Step2Results step2(Depict2Options options, Depict2Step1Results step1Res) throws IOException, Exception {
+    public static DownstreamerStep2Results step2(DownstreamerOptions options, DownstreamerStep1Results step1Res) throws IOException, Exception {
 
         options.getIntermediateFolder().mkdir();
 
-        if (options.getMode() == Depict2Mode.STEP2) {
+        if (options.getMode() == DownstreamerMode.STEP2) {
             LOGGER.info("Continuing previous analysis by loading gene p-values");
-            step1Res = Depict2Step1Results.loadFromDisk(options.getRun1BasePath());
+            step1Res = DownstreamerStep1Results.loadFromDisk(options.getRun1BasePath());
             LOGGER.info("Gene p-values loaded");
         }
 
@@ -161,7 +161,7 @@ public class Depict2MainAnalysis {
             }
         });
 
-        LOGGER.info("Number of genes with atleast one variant in specified window: " + Depict2.LARGE_INT_FORMAT.format(selectedGenes.size()));
+        LOGGER.info("Number of genes with atleast one variant in specified window: " + Downstreamer.LARGE_INT_FORMAT.format(selectedGenes.size()));
         final HashSet<String> hlaGenes;
         if (options.isExcludeHla()) {
             hlaGenes = new HashSet<>();
@@ -237,17 +237,17 @@ public class Depict2MainAnalysis {
         }
 
         LOGGER.info("Completed enrichment analysis for " + pathwayDatabases.size() + " pathway databases");
-        return new Depict2Step2Results(pathwayEnrichments, genePvalues);
+        return new DownstreamerStep2Results(pathwayEnrichments, genePvalues);
     }
 
     /**
      * Assign genes to GWAS loci based on a given window, will be used for cis-priotiziation of GWAS genes
      *
      * @param options
-     * @return Depict2Step3Results
+     * @return DownstreamerStep3Results
      * @throws Exception
      */
-    public static Depict2Step3Results step3(Depict2Options options) throws Exception {
+    public static DownstreamerStep3Results step3(DownstreamerOptions options) throws Exception {
         // TODO: paramterize
         double upperPvalThresh = 5e-8;
         double lowerPvalThresh = upperPvalThresh;
@@ -287,7 +287,7 @@ public class Depict2MainAnalysis {
         Map<String, File> alternativeTopHitFiles = options.getAlternativeTopHitFiles();
 
         // Output store
-        Depict2Step3Results output = new Depict2Step3Results();
+        DownstreamerStep3Results output = new DownstreamerStep3Results();
 
         for (String trait : gwasSnpZscores.getColObjects()) {
 
@@ -364,7 +364,7 @@ public class Depict2MainAnalysis {
         }
 
         final int randomChi2Size = randomChi2.length;
-        final int nrThreads = Depict2Options.getNumberOfThreadsToUse();
+        final int nrThreads = DownstreamerOptions.getNumberOfThreadsToUse();
         final int permPerThread = randomChi2Size / nrThreads;
         final int leftoverPerm = randomChi2Size % nrThreads;
 

@@ -6,15 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Depict2Step3Results {
+public class DownstreamerStep3Results {
 
     private Map<String, List<Locus>> lociPerTrait;
 
-    public Depict2Step3Results() {
+    public DownstreamerStep3Results() {
         this.lociPerTrait = new HashMap<>();
     }
 
-    public Depict2Step3Results(Map<String, List<Locus>> loci) {
+    public DownstreamerStep3Results(Map<String, List<Locus>> loci) {
         this.lociPerTrait = loci;
     }
 

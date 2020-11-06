@@ -8,7 +8,7 @@ package nl.systemsgenetics.downstreamer.runners;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -17,7 +17,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  */
 public class NetworkProperties {
 	
-	public static void investigateNetwork(Depict2Options options) throws IOException {
+	public static void investigateNetwork(DownstreamerOptions options) throws IOException {
 		
 		DoubleMatrixDataset<String, String> network = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 		

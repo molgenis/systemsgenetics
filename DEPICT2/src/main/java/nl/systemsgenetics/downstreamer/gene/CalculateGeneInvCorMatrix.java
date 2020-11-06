@@ -19,8 +19,8 @@ import java.util.Map;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.Depict2;
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -30,7 +30,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  */
 public class CalculateGeneInvCorMatrix {
 
-	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
+	private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
 
 	/**
 	 *
@@ -39,7 +39,7 @@ public class CalculateGeneInvCorMatrix {
 	 * @param options
 	 * @return inv cor matrix per chr arm
 	 */
-	public static Map<String, DoubleMatrixDataset<String, String>> CalculateGeneInvCorMatrix(final DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, Depict2Options options) {
+	public static Map<String, DoubleMatrixDataset<String, String>> CalculateGeneInvCorMatrix(final DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DownstreamerOptions options) {
 
 		final Map<String, ArrayList<String>> chrArmToGeneMapping = createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
 

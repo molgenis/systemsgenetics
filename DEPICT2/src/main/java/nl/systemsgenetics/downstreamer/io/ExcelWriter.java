@@ -5,10 +5,10 @@
  */
 package nl.systemsgenetics.downstreamer.io;
 
-import nl.systemsgenetics.downstreamer.Depict2Step3Results;
-import nl.systemsgenetics.downstreamer.Depict2Step2Results;
-import nl.systemsgenetics.downstreamer.Depict2;
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
+import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
+import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 
 import java.io.File;
@@ -51,9 +51,9 @@ public class ExcelWriter {
 	private final String outputBasePath;
 	private final boolean hlaExcluded;
 	private final List<String> traits;
-	private final Depict2Options options;
+	private final DownstreamerOptions options;
 
-	public ExcelWriter(List<String> traits, Depict2Options options) {
+	public ExcelWriter(List<String> traits, DownstreamerOptions options) {
 		this.outputBasePath = options.getOutputBasePath();
 		this.hlaExcluded = options.isExcludeHla();
 		this.traits = traits;
@@ -64,7 +64,7 @@ public class ExcelWriter {
 	 *
 	 * @throws java.io.FileNotFoundException
 	 */
-	public void saveStep2Excel(Depict2Step2Results results) throws Exception {
+	public void saveStep2Excel(DownstreamerStep2Results results) throws Exception {
 
 		DoubleMatrixDataset<String, String> genePvalues = results.getGenePvalues();
 		List<PathwayEnrichments> pathwayEnrichments = results.getPathwayEnrichments();
@@ -98,7 +98,7 @@ public class ExcelWriter {
 		}
 	}
 
-	public void saveStep3Excel(Depict2Step2Results step2, Depict2Step3Results step3) throws IOException {
+	public void saveStep3Excel(DownstreamerStep2Results step2, DownstreamerStep3Results step3) throws IOException {
 
 		Map<String, List<Locus>> lociPerTrait = step3.getLoci();
 		System.setProperty("java.awt.headless", "true");
@@ -154,7 +154,7 @@ public class ExcelWriter {
 
 	}
 
-	public void savePathwayLoadings(Depict2Step2Results step2Results) throws Exception {
+	public void savePathwayLoadings(DownstreamerStep2Results step2Results) throws Exception {
 
 		DoubleMatrixDataset<String, String> genePvalues = step2Results.getGenePvalues();
 		double bonfSigLevel = 0.05 / genePvalues.rows();
@@ -395,7 +395,7 @@ public class ExcelWriter {
 
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Generated using Downstreamer " + Depict2.VERSION);
+		cell.setCellValue("Generated using Downstreamer " + Downstreamer.VERSION);
 		cell.setCellStyle(styles.getBoldStyle());
 
 		overviewSheet.createRow(r++);

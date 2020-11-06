@@ -4,8 +4,8 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import nl.systemsgenetics.downstreamer.Depict2;
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.summarystatistic.SummaryStatisticRecord;
 import org.apache.log4j.Logger;
@@ -33,7 +33,7 @@ public class IoUtils {
      * @return RandomAccesGenotypeData for all SNPs in GWAS matrix and MAF
      * @throws IOException
      */
-    public static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(Depict2Options options) throws IOException {
+    public static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(DownstreamerOptions options) throws IOException {
         return readReferenceGenotypeDataMatchingGwasSnps(options, null);
     }
 
@@ -45,7 +45,7 @@ public class IoUtils {
      * @return RandomAccesGenotypeData for all SNPs in GWAS matrix and MAF
      * @throws IOException
      */
-    public static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(Depict2Options options, Set<String> variantSubset) throws IOException {
+    public static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(DownstreamerOptions options, Set<String> variantSubset) throws IOException {
 
 
         final List<String> variantsInZscoreMatrix;
@@ -57,8 +57,8 @@ public class IoUtils {
 
         final List<String> phenotypesInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
-        LOGGER.info("Number of phenotypes in GWAS matrix: " + Depict2.LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
-        LOGGER.info("Number of variants in GWAS matrix: " + Depict2.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
+        LOGGER.info("Number of phenotypes in GWAS matrix: " + Downstreamer.LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
+        LOGGER.info("Number of variants in GWAS matrix: " + Downstreamer.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
 
         if (options.getVariantFilterFile() != null) {
             HashSet<String> variantsToInclude = IoUtils.readVariantFilterFile(options.getVariantFilterFile());
@@ -69,7 +69,7 @@ public class IoUtils {
                     variantsInZscoreMatrixIt.remove();
                 }
             }
-            LOGGER.info("Number of variants after filtering on selected variants: " + Depict2.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
+            LOGGER.info("Number of variants after filtering on selected variants: " + Downstreamer.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
         }
 
         return IoUtils.loadGenotypes(options, variantsInZscoreMatrix);
@@ -285,7 +285,7 @@ public class IoUtils {
 
     }
 
-    public static RandomAccessGenotypeData loadGenotypes(Depict2Options options, Collection<String> variantsToInclude) throws IOException {
+    public static RandomAccessGenotypeData loadGenotypes(DownstreamerOptions options, Collection<String> variantsToInclude) throws IOException {
         final RandomAccessGenotypeData referenceGenotypeData;
 
         final SampleFilter sampleFilter;

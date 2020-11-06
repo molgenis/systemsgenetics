@@ -5,19 +5,19 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 import java.util.List;
 
-public class Depict2Step2Results {
+public class DownstreamerStep2Results {
 
 
     private DoubleMatrixDataset<String, String> genePvalues;
     private DoubleMatrixDataset<String, String> normalizedGenePvalues;
     private List<PathwayEnrichments> pathwayEnrichments;
 
-    public Depict2Step2Results(List<PathwayEnrichments> pathwayEnrichments, DoubleMatrixDataset<String, String> genePvalues) {
+    public DownstreamerStep2Results(List<PathwayEnrichments> pathwayEnrichments, DoubleMatrixDataset<String, String> genePvalues) {
         this.genePvalues = genePvalues;
         this.pathwayEnrichments = pathwayEnrichments;
     }
 
-    public Depict2Step2Results(List<PathwayEnrichments> pathwayEnrichments, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> normalizedGenePvalues) {
+    public DownstreamerStep2Results(List<PathwayEnrichments> pathwayEnrichments, DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> normalizedGenePvalues) {
         this.genePvalues = genePvalues;
         this.normalizedGenePvalues = normalizedGenePvalues;
         this.pathwayEnrichments = pathwayEnrichments;

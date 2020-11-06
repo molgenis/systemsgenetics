@@ -5,7 +5,7 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import com.opencsv.*;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.io.GwasSummStats;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import org.apache.commons.lang.StringUtils;
@@ -26,11 +26,11 @@ import java.util.zip.GZIPInputStream;
  * Collection of runners that handle conversion of Depict 2 related files.
  *
  */
-public class Depict2Converters {
+public class DownstreamerConverters {
 
-	private static final Logger LOGGER = Logger.getLogger(Depict2Converters.class);
+	private static final Logger LOGGER = Logger.getLogger(DownstreamerConverters.class);
 
-	public static void convertTxtToBin(Depict2Options options) throws IOException, Exception {
+	public static void convertTxtToBin(DownstreamerOptions options) throws IOException, Exception {
 
 		if (options.getConversionColumnIncludeFilter() != null && !options.getConversionColumnIncludeFilter().exists()) {
 			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
@@ -163,7 +163,7 @@ public class Depict2Converters {
 
 	}
 
-	public static void convertExpressionMatrixToBin(Depict2Options options) throws IOException, Exception {
+	public static void convertExpressionMatrixToBin(DownstreamerOptions options) throws IOException, Exception {
 
 		if (options.getConversionColumnIncludeFilter() != null && !options.getConversionColumnIncludeFilter().exists()) {
 			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
@@ -222,7 +222,7 @@ public class Depict2Converters {
 
 	}
 
-	public static void convertBinToTxt(Depict2Options options) throws IOException, Exception {
+	public static void convertBinToTxt(DownstreamerOptions options) throws IOException, Exception {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 
@@ -246,7 +246,7 @@ public class Depict2Converters {
 
 	}
 
-	public static void convertEqtlToBin(Depict2Options options) throws IOException {
+	public static void convertEqtlToBin(DownstreamerOptions options) throws IOException {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadTransEqtlExpressionMatrix(options.getGwasZscoreMatrixPath());
 		matrix.saveBinary(options.getOutputBasePath());
@@ -260,7 +260,7 @@ public class Depict2Converters {
 	 * @param options
 	 * @throws Exception
 	 */
-	public static void convertPvalueToZscore(Depict2Options options) throws Exception {
+	public static void convertPvalueToZscore(DownstreamerOptions options) throws Exception {
 
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
 
@@ -368,7 +368,7 @@ public class Depict2Converters {
 	}
 
 	@SuppressWarnings("empty-statement")
-	public static void mergeBinMatrix(Depict2Options options) throws IOException, Exception {
+	public static void mergeBinMatrix(DownstreamerOptions options) throws IOException, Exception {
 
 		BufferedReader inputReader = new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()));
 		ArrayList<DoubleMatrixDatasetFastSubsetLoader> binMatrices = new ArrayList<>();
@@ -429,7 +429,7 @@ public class Depict2Converters {
 
 	}
 
-	public static void mergeConvertTxt(Depict2Options options) throws IOException, Exception {
+	public static void mergeConvertTxt(DownstreamerOptions options) throws IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()))).withCSVParser(parser).build();
@@ -703,7 +703,7 @@ public class Depict2Converters {
 		finalMergedPvalueMatrix.saveBinary(options.getOutputBasePath());
 	}
 
-	public static void tranposeBinMatrix(Depict2Options options) throws IOException {
+	public static void tranposeBinMatrix(DownstreamerOptions options) throws IOException {
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 		matrix = matrix.viewDice();
 		matrix.saveBinary(options.getOutputBasePath());

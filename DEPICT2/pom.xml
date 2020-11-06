@@ -7,7 +7,7 @@
 		<version>1.0.4-SNAPSHOT</version>
 	</parent>
 	<artifactId>Downstreamer</artifactId> 
-	<version>2.0.76-SNAPSHOT</version>
+	<version>1.14-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<build>
 		<resources>
@@ -19,7 +19,7 @@
 				</includes>
 			</resource>
 		</resources>
-		<finalName>Depict2-${project.version}</finalName>
+		<finalName>Downstreamer-${project.version}</finalName>
 		<plugins>
 			<!-- The configuration of maven-assembly-plugin -->
 			<plugin>
@@ -63,7 +63,7 @@
 							-->
 							<classpathPrefix>lib/</classpathPrefix>
 							<!-- Specifies the main class of the application -->
-							<mainClass>nl.systemsgenetics.depict2.Depict2</mainClass>
+							<mainClass>nl.systemsgenetics.downstreamer.Downstreamer</mainClass>
 						</manifest>
 					</archive>
 				</configuration>

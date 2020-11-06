@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import nl.systemsgenetics.downstreamer.Depict2;
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import org.apache.log4j.Logger;
@@ -44,7 +44,7 @@ public class CoregeneEnrichmentExcelWriter {
 	private static final Logger LOGGER = Logger.getLogger(CoregeneEnrichmentExcelWriter.class);
 
 	public static void write(
-			final Depict2Options options,
+			final DownstreamerOptions options,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2Auc,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2Utest,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfOdds,
@@ -205,7 +205,7 @@ public class CoregeneEnrichmentExcelWriter {
 
 	}
 
-	private static void populateOverviewSheet(final Workbook wb, String trait, final List<PathwayDatabase> geneAnnotationDatabases, final CreationHelper createHelper, final Depict2Options options, final ExcelStyles styles) {
+	private static void populateOverviewSheet(final Workbook wb, String trait, final List<PathwayDatabase> geneAnnotationDatabases, final CreationHelper createHelper, final DownstreamerOptions options, final ExcelStyles styles) {
 		// -----------------------------------------------------------------------
 		// Create overview sheet
 		// -----------------------------------------------------------------------
@@ -219,7 +219,7 @@ public class CoregeneEnrichmentExcelWriter {
 
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Generated using Downstreamer " + Depict2.VERSION);
+		cell.setCellValue("Generated using Downstreamer " + Downstreamer.VERSION);
 		cell.setCellStyle(styles.getBoldStyle());
 
 		overviewSheet.createRow(r++);

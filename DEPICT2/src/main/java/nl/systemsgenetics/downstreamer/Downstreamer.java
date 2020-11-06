@@ -2,10 +2,10 @@ package nl.systemsgenetics.downstreamer;
 
 import nl.systemsgenetics.downstreamer.runners.TestCoregulationPerformance;
 import nl.systemsgenetics.downstreamer.runners.NetworkProperties;
-import nl.systemsgenetics.downstreamer.runners.Depict2Utilities;
-import nl.systemsgenetics.downstreamer.runners.Depict2MainAnalysis;
+import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
+import nl.systemsgenetics.downstreamer.runners.DownstreamerMainAnalysis;
 import nl.systemsgenetics.downstreamer.runners.PruneToIndependentTopHits;
-import nl.systemsgenetics.downstreamer.runners.Depict2Converters;
+import nl.systemsgenetics.downstreamer.runners.DownstreamerConverters;
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -29,25 +29,25 @@ import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataExceptio
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 
 /**
- * Entry point and error handler for Depict 2
+ * Entry point and error handler for Downstreamer
  *
  * @author Patrick Deelen
  */
-public class Depict2 {
+public class Downstreamer {
 
 	public static final DecimalFormat LARGE_INT_FORMAT = new DecimalFormat("###,###");
 	public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private static final Logger LOGGER = Logger.getLogger(Depict2.class);
+	private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"
-			+ "  |                DEPICT2                |\n"
+			+ "  |             Downstreamer              |\n"
 			+ "  |                                       |\n"
 			+ "  |  University Medical Center Groningen  |\n"
 			+ "  \\---------------------------------------/";
 
 	/**
-	 * Main function for Depict 2 analysis, specific tasks are implemented in
+	 * Main function for Downstreamer analysis, specific tasks are implemented in
 	 * respective runner classes.
 	 *
 	 * @param args the command line arguments
@@ -70,18 +70,18 @@ public class Depict2 {
 		System.out.flush(); //flush to make sure header is before errors
 		Thread.sleep(25); //Allows flush to complete
 
-		Depict2Options options;
+		DownstreamerOptions options;
 
 		if (args.length == 0) {
-			Depict2Options.printHelp();
+			DownstreamerOptions.printHelp();
 			return;
 		}
 
 		try {
-			options = new Depict2Options(args);
+			options = new DownstreamerOptions(args);
 		} catch (ParseException ex) {
 			System.err.println("Error parsing commandline: " + ex.getMessage());
-			Depict2Options.printHelp();
+			DownstreamerOptions.printHelp();
 			return;
 		}
 
@@ -98,12 +98,12 @@ public class Depict2 {
 		}
 
 		try {
-			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() != Depict2Mode.STEP1);
+			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() != DownstreamerMode.STEP1);
 			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
 			Logger.getRootLogger().removeAllAppenders();
 			Logger.getRootLogger().addAppender(logFileAppender);
 
-			LOGGER.info("DEPICT" + VERSION);
+			LOGGER.info("Downstreamer" + VERSION);
 			LOGGER.info("Current date and time: " + startDateTime);
 
 			Logger.getRootLogger().addAppender(logConsoleInfoAppender);
@@ -125,52 +125,52 @@ public class Depict2 {
 		try {
 			switch (options.getMode()) {
 				case CONVERT_EQTL:
-					Depict2Converters.convertEqtlToBin(options);
+					DownstreamerConverters.convertEqtlToBin(options);
 					break;
 				case CONVERT_TXT:
-					Depict2Converters.convertTxtToBin(options);
+					DownstreamerConverters.convertTxtToBin(options);
 					break;
 				case CONVERT_BIN:
-					Depict2Converters.convertBinToTxt(options);
+					DownstreamerConverters.convertBinToTxt(options);
 					break;
 				case CONVERT_GTEX:
-					Depict2Converters.convertGct(options.getGwasZscoreMatrixPath(), options.getOutputBasePath());
+					DownstreamerConverters.convertGct(options.getGwasZscoreMatrixPath(), options.getOutputBasePath());
 					break;
 				case CONVERT_EXP:
-					Depict2Converters.convertExpressionMatrixToBin(options);
+					DownstreamerConverters.convertExpressionMatrixToBin(options);
 					break;
 				case CONVERT_TXT_MERGE:
-					Depict2Converters.mergeConvertTxt(options);
+					DownstreamerConverters.mergeConvertTxt(options);
 					break;
 				case MERGE_BIN:
-					Depict2Converters.mergeBinMatrix(options);
+					DownstreamerConverters.mergeBinMatrix(options);
 					break;
 				case FIRST1000:
 					First1000qtl.printFirst1000(options);
 					break;
 				case PTOZSCORE:
-					Depict2Converters.convertPvalueToZscore(options);
+					DownstreamerConverters.convertPvalueToZscore(options);
 					break;
 				case CREATE_EXCEL:
-					Depict2Utilities.generateExcelFromIntermediates(options);
+					DownstreamerUtilities.generateExcelFromIntermediates(options);
 					break;
 				case GET_PATHWAY_LOADINGS:
-					Depict2Utilities.generatePathwayLoadingExcel(options);
+					DownstreamerUtilities.generatePathwayLoadingExcel(options);
 					break;
 				case TOP_HITS:
 					PruneToIndependentTopHits.prune(options);
 					break;
 				case STEP1:
 
-					Depict2Step1Results step1Res = Depict2MainAnalysis.step1(options);
-					Depict2Step2Results step2Res = null;
-					Depict2Step3Results step3Res = null;
+					DownstreamerStep1Results step1Res = DownstreamerMainAnalysis.step1(options);
+					DownstreamerStep2Results step2Res = null;
+					DownstreamerStep3Results step3Res = null;
 
 					if (options.getPathwayDatabases().isEmpty()) {
 						LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode STEP2 and exactly the same output path and genes file to continue");
 						break;
 					} else {
-						step2Res = Depict2MainAnalysis.step2(options, step1Res);
+						step2Res = DownstreamerMainAnalysis.step2(options, step1Res);
 					}
 
 					if (step2Res != null) {
@@ -180,7 +180,7 @@ public class Depict2 {
 							writer.saveStep2Excel(step2Res);
 						}
 						if (options.isAssignPathwayGenesToCisWindow()) {
-							step3Res = Depict2MainAnalysis.step3(options);
+							step3Res = DownstreamerMainAnalysis.step3(options);
 							if (writer != null) {
 								writer.saveStep3Excel(step2Res, step3Res);
 							}
@@ -190,7 +190,7 @@ public class Depict2 {
 					break;
 
 				case STEP2:
-					step2Res = Depict2MainAnalysis.step2(options, null);
+					step2Res = DownstreamerMainAnalysis.step2(options, null);
 
 					ExcelWriter writer = null;
 					if (options.isSaveOuputAsExcelFiles()) {
@@ -198,23 +198,23 @@ public class Depict2 {
 						writer.saveStep2Excel(step2Res);
 					}
 					if (options.isAssignPathwayGenesToCisWindow()) {
-						step3Res = Depict2MainAnalysis.step3(options);
+						step3Res = DownstreamerMainAnalysis.step3(options);
 						if (writer != null) {
 							writer.saveStep3Excel(step2Res, step3Res);
 						}
 					}
 					break;
 				case CORRELATE_GENES:
-					Depict2Utilities.correlateGenes(options);
+					DownstreamerUtilities.correlateGenes(options);
 					break;
 				case R_2_Z_SCORE:
-					Depict2Utilities.convertRtoZscore(options);
+					DownstreamerUtilities.convertRtoZscore(options);
 					break;
 				case TRANSPOSE:
-					Depict2Converters.tranposeBinMatrix(options);
+					DownstreamerConverters.tranposeBinMatrix(options);
 					break;
 				case PCA:
-					Depict2Utilities.doPcaOnBinMatrix(options);
+					DownstreamerUtilities.doPcaOnBinMatrix(options);
 					break;
 				case CORE_GENE_AUC:
 					TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
@@ -223,10 +223,10 @@ public class Depict2 {
 					NetworkProperties.investigateNetwork(options);
 					break;
 				case GET_NORMALIZED_GENEP:
-					Depict2Utilities.getNormalizedGwasGenePvalues(options);
+					DownstreamerUtilities.getNormalizedGwasGenePvalues(options);
 					break;
 				case REMOVE_CIS_COEXP:
-					Depict2Utilities.removeLocalGeneCorrelations(options);
+					DownstreamerUtilities.removeLocalGeneCorrelations(options);
 					break;
 				case SPECIAL:
 					CorrelateExpressionToPredictions.run(options);

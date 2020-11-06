@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import nl.systemsgenetics.downstreamer.Depict2Options;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import org.apache.log4j.Logger;
 
 /**
@@ -30,7 +30,7 @@ public class PathwayAnnotations {
 	private final ArrayList<String> annotationHeaders;
 	private final String setName;
 
-	private static final Logger LOGGER = Logger.getLogger(Depict2Options.class);
+	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptions.class);
 
 	public PathwayAnnotations(final File annotationFile) throws FileNotFoundException, IOException {
 

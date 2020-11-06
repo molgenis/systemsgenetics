@@ -5,9 +5,9 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import nl.systemsgenetics.downstreamer.Depict2Options;
-import nl.systemsgenetics.downstreamer.Depict2Step2Results;
-import nl.systemsgenetics.downstreamer.Depict2Step3Results;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
+import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.ExcelWriter;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
@@ -32,9 +32,9 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
  * Collection of runners that handle pre-processing steps for Depict 2 analysis.
  *
  */
-public class Depict2Utilities {
+public class DownstreamerUtilities {
 
-	private static final Logger LOGGER = Logger.getLogger(Depict2Utilities.class);
+	private static final Logger LOGGER = Logger.getLogger(DownstreamerUtilities.class);
 
 	/**
 	 * Create a gene gene correlation matrix based on a (eigenvector) matrix.
@@ -42,7 +42,7 @@ public class Depict2Utilities {
 	 * @param options
 	 * @throws Exception
 	 */
-	public static void correlateGenes(Depict2Options options) throws FileNotFoundException, Exception {
+	public static void correlateGenes(DownstreamerOptions options) throws FileNotFoundException, Exception {
 
 		DoubleMatrixDataset<String, String> expressionMatrix;
 
@@ -111,7 +111,7 @@ public class Depict2Utilities {
 	 * @throws FileNotFoundException
 	 * @throws Exception
 	 */
-	public static void convertRtoZscore(Depict2Options options) throws FileNotFoundException, Exception {
+	public static void convertRtoZscore(DownstreamerOptions options) throws FileNotFoundException, Exception {
 		DoubleMatrixDataset<String, String> corMatrix;
 
 		if (options.getGwasZscoreMatrixPath().endsWith(".txt") || options.getGwasZscoreMatrixPath().endsWith("txt.gz")) {
@@ -141,7 +141,7 @@ public class Depict2Utilities {
 	 * @param options
 	 * @throws IOException
 	 */
-	public static void doPcaOnBinMatrix(Depict2Options options) throws IOException {
+	public static void doPcaOnBinMatrix(DownstreamerOptions options) throws IOException {
 
 		final DoubleMatrixDataset<String, String> dataset = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 
@@ -166,7 +166,7 @@ public class Depict2Utilities {
 	 * @param options
 	 * @throws Exception
 	 */
-	public static void getNormalizedGwasGenePvalues(Depict2Options options) throws Exception {
+	public static void getNormalizedGwasGenePvalues(DownstreamerOptions options) throws Exception {
 		getNormalizedGwasGenePvaluesReturn(options);
 	}
 
@@ -178,7 +178,7 @@ public class Depict2Utilities {
 	 * @param options
 	 * @throws Exception
 	 */
-	public static DoubleMatrixDataset<String, String> getNormalizedGwasGenePvaluesReturn(Depict2Options options) throws Exception {
+	public static DoubleMatrixDataset<String, String> getNormalizedGwasGenePvaluesReturn(DownstreamerOptions options) throws Exception {
 
 		DoubleMatrixDataset<String, String> genePvalues;
 		List<Gene> genes;
@@ -241,9 +241,9 @@ public class Depict2Utilities {
 	 * @param options
 	 * @throws Exception
 	 */
-	public static void generateExcelFromIntermediates(Depict2Options options) throws Exception {
+	public static void generateExcelFromIntermediates(DownstreamerOptions options) throws Exception {
 
-		Depict2Step2Results step2 = loadExistingStep2Results(options);
+		DownstreamerStep2Results step2 = loadExistingStep2Results(options);
 
 		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
 
@@ -251,7 +251,7 @@ public class Depict2Utilities {
 		writer.saveGenePvalueExcel(step2.getGenePvalues());
 
 		if (options.getPathwayDatabasesToAnnotateWithGwas().size() >= 1) {
-			Depict2Step3Results step3 = Depict2MainAnalysis.step3(options);
+			DownstreamerStep3Results step3 = DownstreamerMainAnalysis.step3(options);
 			writer.saveStep3Excel(step2, step3);
 		}
 
@@ -263,8 +263,8 @@ public class Depict2Utilities {
 	 * @param options
 	 * @throws Exception
 	 */
-	public static void generatePathwayLoadingExcel(Depict2Options options) throws Exception {
-		Depict2Step2Results step2 = loadExistingStep2Results(options);
+	public static void generatePathwayLoadingExcel(DownstreamerOptions options) throws Exception {
+		DownstreamerStep2Results step2 = loadExistingStep2Results(options);
 
 		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
 		writer.savePathwayLoadings(step2);
@@ -277,7 +277,7 @@ public class Depict2Utilities {
 	 * @return
 	 * @throws Exception
 	 */
-	public static Depict2Step2Results loadExistingStep2Results(Depict2Options options) throws Exception {
+	public static DownstreamerStep2Results loadExistingStep2Results(DownstreamerOptions options) throws Exception {
 
 		DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
 		DoubleMatrixDataset<String, String> normalizedGenePvalues = getNormalizedGwasGenePvaluesReturn(options);
@@ -287,11 +287,11 @@ public class Depict2Utilities {
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
 			pathwayEnrichments.add(new PathwayEnrichments(pathwayDatabase, options.getIntermediateFolder(), options.isExcludeHla()));
 		}
-		return new Depict2Step2Results(pathwayEnrichments, genePvalues, normalizedGenePvalues);
+		return new DownstreamerStep2Results(pathwayEnrichments, genePvalues, normalizedGenePvalues);
 
 	}
 
-	public static void removeLocalGeneCorrelations(Depict2Options options) throws IOException, Exception {
+	public static void removeLocalGeneCorrelations(DownstreamerOptions options) throws IOException, Exception {
 		
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
         LOGGER.info("Loaded " + genes.size() + " genes");

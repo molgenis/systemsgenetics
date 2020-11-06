@@ -9,7 +9,7 @@ package nl.systemsgenetics.downstreamer;
  *
  * @author patri
  */
-public enum Depict2Mode {
+public enum DownstreamerMode {
 	STEP1,
 	STEP2,
 	CONVERT_TXT,

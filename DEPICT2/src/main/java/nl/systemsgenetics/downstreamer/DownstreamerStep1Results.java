@@ -16,7 +16,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  *
  * @author patri
  */
-public class Depict2Step1Results {
+public class DownstreamerStep1Results {
 
 	private final DoubleMatrixDataset<String, String> genePvalues;
 	private final DoubleMatrixDataset<String, String> genePvaluesNullGwas;
@@ -24,9 +24,9 @@ public class Depict2Step1Results {
 	private final DoubleMatrixDataset<String, String> geneMaxSnpZscore;
 	private final DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas;
 
-	private static final Logger LOGGER = Logger.getLogger(Depict2Step1Results.class);
+	private static final Logger LOGGER = Logger.getLogger(DownstreamerStep1Results.class);
 
-	public Depict2Step1Results(DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, DoubleMatrixDataset<String, String> geneMaxSnpZscore, DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas) {
+	public DownstreamerStep1Results(DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, DoubleMatrixDataset<String, String> geneMaxSnpZscore, DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas) {
 		this.genePvalues = genePvalues;
 		this.genePvaluesNullGwas = genePvaluesNullGwas;
 		this.geneVariantCount = geneVariantCount;
@@ -34,7 +34,7 @@ public class Depict2Step1Results {
 		this.geneMaxSnpZscoreNullGwas = geneMaxSnpZscoreNullGwas;
 	}
 
-	public static Depict2Step1Results loadFromDisk(String run1BasePath) throws IOException, Exception {
+	public static DownstreamerStep1Results loadFromDisk(String run1BasePath) throws IOException, Exception {
 		if (!new File(run1BasePath + "_genePvalues.dat").exists()) {
 			throw new RuntimeException("Could not find gene pvalues at: " + run1BasePath + "_genePvalues.dat");
 		}
@@ -47,7 +47,7 @@ public class Depict2Step1Results {
 
 		DoubleMatrixDataset<String, String> geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(run1BasePath + "_geneVariantCount.txt", '\t');
 
-		return new Depict2Step1Results(genePvalues, genePvaluesNullGwas, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
+		return new DownstreamerStep1Results(genePvalues, genePvaluesNullGwas, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
 	}
 
 	public DoubleMatrixDataset<String, String> getGenePvalues() {

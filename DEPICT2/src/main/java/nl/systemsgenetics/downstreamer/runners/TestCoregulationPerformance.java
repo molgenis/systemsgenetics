@@ -17,12 +17,12 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.Depict2Options;
-import nl.systemsgenetics.downstreamer.Depict2Step2Results;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.io.CoregeneEnrichmentExcelWriter;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
-import static nl.systemsgenetics.downstreamer.runners.Depict2Utilities.loadExistingStep2Results;
+import static nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities.loadExistingStep2Results;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -37,9 +37,9 @@ public class TestCoregulationPerformance {
 
 	private static final Logger LOGGER = Logger.getLogger(TestCoregulationPerformance.class);
 
-	public static void testCoreGenePredictionPerformance(Depict2Options options) throws IOException, Exception {
+	public static void testCoreGenePredictionPerformance(DownstreamerOptions options) throws IOException, Exception {
 
-		Depict2Step2Results step2 = loadExistingStep2Results(options);
+		DownstreamerStep2Results step2 = loadExistingStep2Results(options);
 
 		List<PathwayDatabase> pathwayDatabases2 = options.getPathwayDatabases2();
 		testPredictionsGenePvalues(step2.getNormalizedGenePvalues(), pathwayDatabases2, options, "normalizedGenePvalues");
@@ -50,7 +50,7 @@ public class TestCoregulationPerformance {
 
 	}
 
-	private static void testPredictions(PathwayEnrichments step2Enrichment, List<PathwayDatabase> pathwayDatabases2, Depict2Options options, String predictionSource) throws IOException {
+	private static void testPredictions(PathwayEnrichments step2Enrichment, List<PathwayDatabase> pathwayDatabases2, DownstreamerOptions options, String predictionSource) throws IOException {
 
 		DoubleMatrixDataset<String, String> predictionZscores = step2Enrichment.getEnrichmentZscores();
 		DoubleMatrixDataset<String, String> predictionPvalues = step2Enrichment.getpValues();
@@ -231,7 +231,7 @@ public class TestCoregulationPerformance {
 		
 	}
 
-	private static void testPredictionsGenePvalues(DoubleMatrixDataset<String, String> predictionMatrix, List<PathwayDatabase> pathwayDatabases2, Depict2Options options, String predictionSource) throws IOException {
+	private static void testPredictionsGenePvalues(DoubleMatrixDataset<String, String> predictionMatrix, List<PathwayDatabase> pathwayDatabases2, DownstreamerOptions options, String predictionSource) throws IOException {
 		ArrayList<String> genesWithPrediciton = predictionMatrix.getRowObjects();
 
 		for (PathwayDatabase pathwayDatabase2 : pathwayDatabases2) {
