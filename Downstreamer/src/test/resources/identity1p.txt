@@ -1,0 +1,4 @@
+	Gene1	Gene2	Gene3
+Gene1	1	0	0
+Gene2	0	1	0
+Gene3	0	0	1

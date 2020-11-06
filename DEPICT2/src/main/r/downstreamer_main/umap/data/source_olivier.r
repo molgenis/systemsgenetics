@@ -1,1 +1,0 @@
-pc.file <- "zcat data/pc-scores1588.txt.gz"
