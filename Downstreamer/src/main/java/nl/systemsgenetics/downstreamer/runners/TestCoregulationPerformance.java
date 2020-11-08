@@ -190,10 +190,14 @@ public class TestCoregulationPerformance {
 							LOGGER.debug(pathwayNames.get(pathwayI) + " NaN AUC " + Arrays.toString(coreGeneScoresAnnotatedGenes));
 						}
 
-						final double bonFp = new FisherExactTest().getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
+						FisherExactTest ft = new FisherExactTest();
+						//first do this before single sided has a value;
+						ft.getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
+						final double bonFp = ft.getFisherLeftTail();
 						final double bonOr = (double) (inPathwayBonfSig * notPathwayNotBonfSig) / (double) (inPathwayNotBonfSig * notPathwayBonfSig);
 
-						final double fdrFp = new FisherExactTest().getFisherPValue(inPathwayFdrSig, inPathwayNotFdrSig, notPathwayFdrSig, notPathwayNotFdrSig);
+						ft.getFisherPValue(inPathwayFdrSig, inPathwayNotFdrSig, notPathwayFdrSig, notPathwayNotFdrSig);
+						final double fdrFp = ft.getFisherLeftTail();
 						final double fdrOr = (double) (inPathwayFdrSig * notPathwayNotFdrSig) / (double) (inPathwayNotFdrSig * notPathwayFdrSig);
 
 						bonfOdds.setElementQuick(pathwayI, traitI, bonOr);
@@ -342,7 +346,10 @@ public class TestCoregulationPerformance {
 							LOGGER.debug(pathwayNames.get(pathwayI_2) + " NaN AUC " + Arrays.toString(coreGeneScoresAnnotatedGenes));
 						}
 
-						final double bonFp = new FisherExactTest().getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
+						FisherExactTest ft = new FisherExactTest();
+						//first do this before single sided has a value;
+						ft.getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
+						final double bonFp = ft.getFisherLeftTail();
 						final double bonOr = (double) (inPathwayBonfSig * notPathwayNotBonfSig) / (double) (inPathwayNotBonfSig * notPathwayBonfSig);
 
 						bonfOdds.setElementQuick(pathwayI2, traitI, bonOr);
