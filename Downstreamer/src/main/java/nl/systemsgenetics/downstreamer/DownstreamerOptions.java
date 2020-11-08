@@ -559,7 +559,7 @@ public class DownstreamerOptions {
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				break;
-			case CORE_GENE_AUC:
+			case PRIO_GENE_ENRICH:
 				if (commandLine.hasOption("ge")) {
 					geneInfoFile = new File(commandLine.getOptionValue("ge"));
 				} else {
@@ -1057,7 +1057,7 @@ public class DownstreamerOptions {
 			case PCA:
 				LOGGER.info(" * Matrix to do PCA on: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
-			case CORE_GENE_AUC:
+			case PRIO_GENE_ENRICH:
 				//LOGGER.info(" * GWAS core gene prediction matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				logPathwayDatabases();
 				LOGGER.info(" * The following pathway annotation databases have been specified to base AUC on:");

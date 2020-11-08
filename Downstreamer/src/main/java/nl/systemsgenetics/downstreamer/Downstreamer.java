@@ -216,7 +216,7 @@ public class Downstreamer {
 				case PCA:
 					DownstreamerUtilities.doPcaOnBinMatrix(options);
 					break;
-				case CORE_GENE_AUC:
+				case PRIO_GENE_ENRICH:
 					TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
 					break;
 				case INVESTIGATE_NETWORK:
