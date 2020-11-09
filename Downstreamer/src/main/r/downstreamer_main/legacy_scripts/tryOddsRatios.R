@@ -94,6 +94,25 @@ oddsMgi <- apply(mgiGenes, 2, function(x){
 })
 
 
+x <- matrix(c(18030, 1078,386,22), ncol = 2)
+fisher.test(x, alternative = "greater")$p.value
+fisher.test(x, alternative = "less")$p.value
+
+1078/18030
+22/386
+
+
+n11 <- 19010
+n12 <- 387
+n21 <- 98
+n22 <- 21
+
+
+fisher.test(matrix(c(n11,n12,n21,22), ncol = 2), alternative = "greater")$p.value
+fisher.test(matrix(c(n11,n12,n21,22), ncol = 2), alternative = "less")$p.value
+
+387/19010
+21/98
 
 
 
