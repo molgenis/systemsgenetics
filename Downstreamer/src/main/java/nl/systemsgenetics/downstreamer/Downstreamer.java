@@ -57,9 +57,9 @@ public class Downstreamer {
 
 		System.out.println(HEADER);
 		System.out.println();
-		System.out.println("          --- Version: " + VERSION + " ---");
+		System.out.println("       --- Version: " + VERSION + " ---");
 		System.out.println();
-		System.out.println("More information: http://molgenis.org/systemsgenetics");
+		System.out.println("More information: https://github.com/molgenis/systemsgenetics/wiki/Downstreamer");
 		System.out.println();
 
 		Date currentDataTime = new Date();
