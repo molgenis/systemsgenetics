@@ -59,7 +59,7 @@ public class LocusUtils {
      * Clump locus objects that have a ld matrix available. Clumps all variants in the locus regardless of p-value.
      * If you want to set a p-value threshold please create the locus objects trough "makeRegions"
      *
-     * @param ldThresh   the ld threshold
+     * @param ldThresh  the ld threshold
      * @param inputLoci the top regions
      * @return the list
      * @throws LdCalculatorException the ld calculator exception if LD matrix is not available
@@ -249,7 +249,7 @@ public class LocusUtils {
      * If they are within a window they are added to the locus. If they are not within an existing locus a new locus is made
      * with that SNP as the top effect if it meets the lowerFiler. The resulting locus object can then be used for clumping
      * based on LD
-     *
+     * <p>
      * Algo is greedy, adds overlapping snps between regions only to the first locus it encounters, this is always the
      * locus with the most significant top snp
      *
@@ -295,6 +295,26 @@ public class LocusUtils {
     }
 
     /**
+     * Generate a list of loci with pre-defined index snps. No checking for overlaps or Pvalue is done, so its assumed
+     * the index snps are correct.
+     * @param records
+     * @param indexSnps
+     * @param window
+     * @return
+     */
+
+    public static List<Locus> makeLociWithGivenIndexSnps(Map<String, SummaryStatisticRecord> records, Set<String> indexSnps, int window) {
+        List<Locus> loci = new ArrayList<>();
+
+        for (String curSnp : indexSnps) {
+            SummaryStatisticRecord  curRecord = records.get(curSnp);
+            loci.add(new Locus(curRecord, window));
+        }
+
+        return loci;
+    }
+
+    /**
      * Calculate LD r2 measures for all variants in a given locus of the specified variant record.
      *
      * @param genotypeData the genotype data
@@ -329,6 +349,7 @@ public class LocusUtils {
 
     /**
      * Checks if A overlaps B.
+     *
      * @param a range a
      * @param b range b
      * @return
@@ -340,41 +361,38 @@ public class LocusUtils {
 
     /**
      * Checks if A overlaps B.
+     *
      * @param a The smaller range
      * @param b The larger range
      * @return
      */
     public static boolean partialGenomicRangeOverlapWindow(OverlappableGenomicRange a, OverlappableGenomicRange b, int window) {
 
-        if (a.getSequenceName().toLowerCase().replace("chr", "").equals(b.getSequenceName().toLowerCase().replace("chr",""))) {
-			
-			final int windowStart = Math.min(a.getStart(), a.getEnd()) - window;
-			final int windowEnd = Math.max(a.getStart(), a.getEnd()) + window;
-			
-			if(b.getStart() >= windowStart && b.getStart() <= windowEnd){
-				return true;
-			} else if(b.getEnd() >= windowStart && b.getEnd()<= windowEnd){
-				return true;
-			}
-			
-			//if a is fully within b we need another test
-			final int bStart = Math.min(b.getStart(), b.getEnd());
-			final int bEnd = Math.max(b.getStart(), b.getEnd());
-			
-			if(windowStart >= bStart && windowStart <= bEnd){
-				return true;
-			}
-			
-			
-		}
-		
-		return false;
-		
-		
-		
-		
-		
-		
+        if (a.getSequenceName().toLowerCase().replace("chr", "").equals(b.getSequenceName().toLowerCase().replace("chr", ""))) {
+
+            final int windowStart = Math.min(a.getStart(), a.getEnd()) - window;
+            final int windowEnd = Math.max(a.getStart(), a.getEnd()) + window;
+
+            if (b.getStart() >= windowStart && b.getStart() <= windowEnd) {
+                return true;
+            } else if (b.getEnd() >= windowStart && b.getEnd() <= windowEnd) {
+                return true;
+            }
+
+            //if a is fully within b we need another test
+            final int bStart = Math.min(b.getStart(), b.getEnd());
+            final int bEnd = Math.max(b.getStart(), b.getEnd());
+
+            if (windowStart >= bStart && windowStart <= bEnd) {
+                return true;
+            }
+
+
+        }
+
+        return false;
+
+
     }
 
 }

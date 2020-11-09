@@ -1,17 +1,17 @@
 ```{r}
-setwd("../evaluating_coregulation")
+setwd("evaluating_coregulation")
 source("../downstreamer_functions.r")
 source("data/source_olivier.r")
 
 library(ggsignif)
 
 # Read reference datasets
-ensembl <- read.table(ensembl.file,sep="\t", header=T, row.names = 1, stringsAsFactors = F)
+ensembl <- read.table(ensembl.file, sep="\t", header=T, row.names = 1, stringsAsFactors = F)
 ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
 rownames(ensembl) <- make.names(ensembl$Gene.name, unique=T)
 
 # Gnomad Pli
-gnomad <- read.table(gnomad.file,sep="\t", header=T, stringsAsFactors = F)
+gnomad <- read.table(gnomad.file, sep="\t", header=T, stringsAsFactors = F)
 gnomad <- gnomad[!duplicated(gnomad$gene),]
 rownames(gnomad) <- make.names(gsub("\\.\\d+", "", ensembl[gnomad$gene, ]$Gene.stable.ID.version), unique=T)
 
@@ -90,14 +90,18 @@ make.gnomad.violin.plot      <- function(trait) {
 return(p)
 }
 
+gnomad$max_lof_z_mis_z <- sapply(1:nrow(gnomad), function(x){max(gnomad[x, "mis_z"], gnomad[x, "lof_z"])})
 
 pdf(width=8, height=3, file= "output/plots/pli_comparrison_all.pdf")
 make.violin.plot("pLI") + ylab("Gnomad pLI score")
 dev.off()
 
 p1 <- make.gnomad.violin.plot("syn_z") + ylab("Gnomad Syn Z-score") + geom_hline(yintercept=0, col="grey", lty=2) 
-p2 <- make.gnomad.violin.plot("mis_z") + ylab("Gnomad MiS Z-score") + geom_hline(yintercept=0, col="grey", lty=2) 
+p2 <- make.gnomad.violin.plot("mis_z") + ylab("Gnomad Mis Z-score") + geom_hline(yintercept=0, col="grey", lty=2) 
 p3 <- make.gnomad.violin.plot("lof_z") + ylab("Gnomad LoF Z-score") + geom_hline(yintercept=0, col="grey", lty=2)
+p4 <- make.gnomad.violin.plot("max_lof_z_mis_z") +
+  ylab("Max Gnomad LoF Mis Z-score") +
+  geom_hline(yintercept=0, col="grey", lty=2)
 
 pdf(width=16, height=5, file= "output/plots/gnomad_zscore_comparrison_all.pdf")
 grid.arrange(grobs=list(p1, p2, p3), ncol=3)
@@ -131,10 +135,10 @@ make.gnomad.scatterplot <- function(trait) {
 p1 <- make.gnomad.scatterplot("syn_z") + ylab("Gnomad Syn Z-score") 
 p2 <- make.gnomad.scatterplot("mis_z") + ylab("Gnomad MiS Z-score")
 p3 <- make.gnomad.scatterplot("lof_z") + ylab("Gnomad LoF Z-score")
-
+p4 <- make.gnomad.scatterplot("max_lof_z_mis_z") + ylab("Max Gnomad LoF Mis Z-score")
 pdf(width=10, height=2.5, file="output/plots/gnomad_zscore_vs_max_zscore.pdf")
 
-grid.arrange(grobs=list(p1, p2, p3), ncol=3)
+grid.arrange(grobs=list(p1, p2, p3, p4), ncol=4)
 
 dev.off()
 ```

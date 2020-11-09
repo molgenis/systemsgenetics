@@ -312,7 +312,7 @@ public class ExcelWriter {
 
 					// Locus id
 					XSSFCell locusIdCell = row.createCell(0, CellType.NUMERIC);
-					locusIdCell.setCellValue(i);
+					locusIdCell.setCellValue(i + 1);
 
 					// Gene id
 					XSSFCell geneIdCell = row.createCell(7, CellType.STRING);
@@ -363,7 +363,7 @@ public class ExcelWriter {
 			} else {
 				// Locus id
 				XSSFCell locusIdCell = row.createCell(0, CellType.NUMERIC);
-				locusIdCell.setCellValue(i);
+				locusIdCell.setCellValue(i + 1);
 				i++;
 				r++;
 				continue;
@@ -470,7 +470,7 @@ public class ExcelWriter {
 		DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
 		DoubleMatrixDataset<String, String> databaseEnrichmentQvalues = pathwayEnrichment.getqValues();
 
-		final DoubleMatrixDataset<String, String> gwasPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		final DoubleMatrixDataset<String, String> gwasSnpPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 
 		ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
 		double bonferroniCutoff = 0.05 / pathwayEnrichment.getNumberOfPathways();
@@ -645,8 +645,8 @@ public class ExcelWriter {
 					if (closestVariant != null && closestVariant.getPvalue() != -9) {
 						snpPvalue = closestVariant.getPvalue();
 					} else {
-						if (gwasPvalues.getRowObjects().contains(variantId)) {
-							snpPvalue = ZScores.zToP(gwasPvalues.getElement(variantId, trait));
+						if (gwasSnpPvalues.getRowObjects().contains(variantId)) {
+							snpPvalue = ZScores.zToP(gwasSnpPvalues.getElement(variantId, trait));
 						} else {
 							snpPvalue = -9;
 						}
@@ -664,7 +664,7 @@ public class ExcelWriter {
 
 				if (!Double.isNaN(genePvalue)) {
 					XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
-					genePvalue = ZScores.zToP(genePvalue);
+					//genePvalue = ZScores.zToP(genePvalue);
 					genePCell.setCellValue(genePvalue);
 					genePCell.setCellStyle(genePvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 				} else {

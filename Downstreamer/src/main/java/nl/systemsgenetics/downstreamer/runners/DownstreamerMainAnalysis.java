@@ -249,31 +249,10 @@ public class DownstreamerMainAnalysis {
      */
     public static DownstreamerStep3Results step3(DownstreamerOptions options) throws Exception {
         // TODO: paramterize
-        double upperPvalThresh = 5e-8;
-        double lowerPvalThresh = upperPvalThresh;
         int window = 500000;
-        RegionFilter inHlaRegionFilter = new RegionFilter("6", 40000000, 20000000);
 
         // GWAS pvalues
         DoubleMatrixDataset<String, String> gwasSnpZscores = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-
-        // Filter variants on pvalue
-        Set<String> significantVariants = new HashSet<>();
-        for (String trait : gwasSnpZscores.getColObjects()) {
-            for (String variant : gwasSnpZscores.getRowObjects()) {
-                double pvalue = ZScores.zToP(gwasSnpZscores.getElement(variant, trait));
-                if (pvalue < upperPvalThresh) {
-                    significantVariants.add(variant);
-                }
-            }
-        }
-        gwasSnpZscores = gwasSnpZscores.viewRowSelection(significantVariants);
-        LOGGER.info("Done loading GWAS data, " + significantVariants.size() + " variants at p < " + upperPvalThresh);
-
-        // Genotype data (for positions, not doing ld clumping here)
-        RandomAccessGenotypeData referenceGenotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, significantVariants);
-        Map<String, GeneticVariant> variantMap = referenceGenotypeData.getVariantIdMap();
-        LOGGER.info("Done loading genotype data");
 
         // Gene info
         Map<String, List<Gene>> genes = IoUtils.readGenesAsChrMap(options.getGeneInfoFile());
@@ -286,6 +265,21 @@ public class DownstreamerMainAnalysis {
         // Optional alternative top hits, will override internal depict prio
         Map<String, File> alternativeTopHitFiles = options.getAlternativeTopHitFiles();
 
+        // Determine the set of possible variants where info needs to be retrieved
+        Set<String> possibleIndexVariants = new HashSet<>();
+        for (String trait : gwasSnpZscores.getColObjects()) {
+            possibleIndexVariants.addAll(independentVariants.get(trait));
+
+            if (alternativeTopHitFiles.containsKey(trait)) {
+                possibleIndexVariants.addAll(alternativeIndependentVariants.get(trait));
+            }
+        }
+
+        // Genotype data (for positions, not doing ld clumping here)
+        RandomAccessGenotypeData referenceGenotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, possibleIndexVariants);
+        Map<String, GeneticVariant> variantMap = referenceGenotypeData.getVariantIdMap();
+        LOGGER.info("Done loading genotype data");
+
         // Output store
         DownstreamerStep3Results output = new DownstreamerStep3Results();
 
@@ -294,36 +288,30 @@ public class DownstreamerMainAnalysis {
             Map<String, SummaryStatisticRecord> records = new HashMap<>();
             List<SummaryStatisticRecord> recordCache = new ArrayList<>();
 
+            // Select index variants and overlap with reference genotypes
+            Set<String> curIndexVariants = independentVariants.get(trait);
+            curIndexVariants.retainAll(variantMap.keySet());
+
             // Use either internal Downstreamer topsnps or the ones from the  provided file
             if (alternativeTopHitFiles.containsKey(trait)) {
                 LOGGER.info("Using alternative top hits for: " + trait);
                 recordCache = IoUtils.readAlternativeIndependentVariantsAsRecords(alternativeTopHitFiles.get(trait));
             } else {
-                for (String variant : variantMap.keySet()) {
+                for (String variant : curIndexVariants) {
                     double pvalue = ZScores.zToP(gwasSnpZscores.getElement(variant, trait));
-                    if (pvalue < upperPvalThresh) {
-                        recordCache.add(new SummaryStatisticRecord(variantMap.get(variant), pvalue));
-                    }
+                    recordCache.add(new SummaryStatisticRecord(variantMap.get(variant), pvalue));
                 }
             }
+            LOGGER.info("Parsed " + recordCache.size() + " index variants (independent SNPs)");
 
-            LOGGER.info("Parsed " + recordCache.size() + " records");
-
-            // Check if SNP is in HLA region
+            // Convert cache to SNP id Map
             for (SummaryStatisticRecord outRec : recordCache) {
-                boolean passesHla = true;
-                if (options.isExcludeHla()) {
-                    passesHla = !inHlaRegionFilter.passesFilter(outRec);
-                }
-
-                if (passesHla) {
-                    records.put(outRec.getPrimaryVariantId(), outRec);
-                }
+                records.put(outRec.getPrimaryVariantId(), outRec);
             }
 
-            // Generate loci based on GWAS topsnps
-            List<Locus> loci = LocusUtils.makeLoci(records, new PvalueFilterSmaller(upperPvalThresh), new PvalueFilterSmaller(lowerPvalThresh), window);
-            LOGGER.info("Detected " + loci.size() + " loci using " + window + " bp window");
+            // Generate loci based on predefined index variants
+            List<Locus> loci = LocusUtils.makeLociWithGivenIndexSnps(records, curIndexVariants, window);
+            LOGGER.info("Made " + loci.size() + " loci (independent SNPs) using " + window + " bp window");
 
             for (Locus curLocus : loci) {
                 // Annotate the independent top variants
