@@ -28,6 +28,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.FisherExactTest;
 import umcg.genetica.math.stats.MannWhitneyUTest2;
+import umcg.genetica.math.stats.ZScores;
 
 /**
  *
@@ -42,7 +43,7 @@ public class TestCoregulationPerformance {
 		DownstreamerStep2Results step2 = loadExistingStep2Results(options);
 
 		List<PathwayDatabase> pathwayDatabases2 = options.getPathwayDatabases2();
-		testPredictionsGenePvalues(step2.getNormalizedGenePvalues(), pathwayDatabases2, options, "normalizedGenePvalues");
+		testPredictionsGenePvalues(step2.getGenePvalues(), pathwayDatabases2, options, "gwasGenePvalues");
 
 		for (PathwayEnrichments step2Enrichment : step2.getPathwayEnrichments()) {
 			testPredictions(step2Enrichment, pathwayDatabases2, options, step2Enrichment.getPathwayDatabase().getName());
@@ -62,7 +63,7 @@ public class TestCoregulationPerformance {
 		HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfFisherP = new HashMap<>();
 		HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2FdrOdds = new HashMap<>();
 		HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2FdrFisherP = new HashMap<>();
-		
+
 		ArrayList<String> genesWithPrediciton = predictionZscores.getRowObjects();
 
 		for (PathwayDatabase pathwayDatabase2 : pathwayDatabases2) {
@@ -115,13 +116,13 @@ public class TestCoregulationPerformance {
 			final ArrayList<String> pathwayNames = pathwayMatrix.getColObjects();
 
 			try (ProgressBar pb = new ProgressBar(predictionSource + "_" + pathwayDatabase2.getName(), pathwayMatrix.columns(), ProgressBarStyle.ASCII)) {
-				
+
 				IntStream.range(0, pathwayMatrix.columns()).parallel().forEach(pathwayI -> {
-					
+
 					final DoubleMatrix1D pathwayAnnotation = pathwayMatrix.getCol(pathwayI);
 					final int annotatedGenesCount = pathwayAnnotation.cardinality();
 
-					for(int traitI = 0; traitI < predictionZscoresMatched.columns() ; ++traitI){
+					for (int traitI = 0; traitI < predictionZscoresMatched.columns(); ++traitI) {
 
 						final MannWhitneyUTest2 uTest = new MannWhitneyUTest2();
 
@@ -134,7 +135,7 @@ public class TestCoregulationPerformance {
 
 						int x = 0;
 						int y = 0;
-						
+
 						int inPathwayBonfSig = 0;
 						int inPathwayNotBonfSig = 0;
 						int notPathwayBonfSig = 0;
@@ -142,38 +143,37 @@ public class TestCoregulationPerformance {
 
 						int inPathwayFdrSig = 0;
 						int inPathwayNotFdrSig = 0;
-						int notPathwayFdrSig = 0; 
+						int notPathwayFdrSig = 0;
 						int notPathwayNotFdrSig = 0;
-						
+
 						for (int g = 0; g < sharedGenesCount; g++) {
 							if (pathwayAnnotation.getQuick(g) > 0) {
 								//Gene is annotated to pathway
 								coreGeneScoresAnnotatedGenes[x++] = coreGeneZScores.get(g);
-								
-								if(coreGeneZScores.get(g) >= 0 && coreGenePvalues.get(g) <= bonfSigThreshold){
+
+								if (coreGeneZScores.get(g) >= 0 && coreGenePvalues.get(g) <= bonfSigThreshold) {
 									inPathwayBonfSig++;
 								} else {
 									inPathwayNotBonfSig++;
 								}
-								
-								if(coreGeneZScores.get(g) >= 0 && coreGeneQvalues.get(g) <= fdrSigThreshold){
+
+								if (coreGeneZScores.get(g) >= 0 && coreGeneQvalues.get(g) <= fdrSigThreshold) {
 									inPathwayFdrSig++;
 								} else {
 									inPathwayNotFdrSig++;
 								}
-								
-								
+
 							} else {
 								//Gene is not annoated to pathway
 								coreGeneScoresOtherGenes[y++] = coreGeneZScores.get(g);
-								
-								if(coreGeneZScores.get(g) >= 0 && coreGenePvalues.get(g) <= bonfSigThreshold){
+
+								if (coreGeneZScores.get(g) >= 0 && coreGenePvalues.get(g) <= bonfSigThreshold) {
 									notPathwayBonfSig++;
 								} else {
 									notPathwayNotBonfSig++;
 								}
-								
-								if(coreGeneZScores.get(g) >= 0 && coreGeneQvalues.get(g) <= fdrSigThreshold){
+
+								if (coreGeneZScores.get(g) >= 0 && coreGeneQvalues.get(g) <= fdrSigThreshold) {
 									notPathwayFdrSig++;
 								} else {
 									notPathwayNotFdrSig++;
@@ -189,21 +189,23 @@ public class TestCoregulationPerformance {
 						if (LOGGER.isDebugEnabled() && Double.isNaN(auc)) {
 							LOGGER.debug(pathwayNames.get(pathwayI) + " NaN AUC " + Arrays.toString(coreGeneScoresAnnotatedGenes));
 						}
-						
-						final double bonFp = new FisherExactTest().getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
+
+						FisherExactTest ft = new FisherExactTest();
+						//first do this before single sided has a value;
+						ft.getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
+						final double bonFp = ft.getFisherRightTail();
 						final double bonOr = (double) (inPathwayBonfSig * notPathwayNotBonfSig) / (double) (inPathwayNotBonfSig * notPathwayBonfSig);
-						
-						final double fdrFp = new FisherExactTest().getFisherPValue(inPathwayFdrSig, inPathwayNotFdrSig, notPathwayFdrSig, notPathwayNotFdrSig);
+
+						ft.getFisherPValue(inPathwayFdrSig, inPathwayNotFdrSig, notPathwayFdrSig, notPathwayNotFdrSig);
+						final double fdrFp = ft.getFisherRightTail();
 						final double fdrOr = (double) (inPathwayFdrSig * notPathwayNotFdrSig) / (double) (inPathwayNotFdrSig * notPathwayFdrSig);
-						
-						
+
 						bonfOdds.setElementQuick(pathwayI, traitI, bonOr);
 						bonfExactPvalues.setElementQuick(pathwayI, traitI, bonFp);
 						fdrOdds.setElementQuick(pathwayI, traitI, fdrOr);
 						fdrExactPvalues.setElementQuick(pathwayI, traitI, fdrFp);
 						outputMatrixAuc.setElementQuick(pathwayI, traitI, auc);
 						outputMatrixPvalues.setElementQuick(pathwayI, traitI, pval);
-				
 
 					}
 
@@ -212,12 +214,12 @@ public class TestCoregulationPerformance {
 				});
 
 				pathwayDatabase2BonfFisherP.put(pathwayDatabase2.getName(), bonfExactPvalues);
-				pathwayDatabase2BonfOdds.put(pathwayDatabase2.getName(),bonfOdds);
-				pathwayDatabase2FdrFisherP.put(pathwayDatabase2.getName(),fdrExactPvalues);
-				pathwayDatabase2FdrOdds.put(pathwayDatabase2.getName(),fdrOdds);
+				pathwayDatabase2BonfOdds.put(pathwayDatabase2.getName(), bonfOdds);
+				pathwayDatabase2FdrFisherP.put(pathwayDatabase2.getName(), fdrExactPvalues);
+				pathwayDatabase2FdrOdds.put(pathwayDatabase2.getName(), fdrOdds);
 				pathwayDatabase2Auc.put(pathwayDatabase2.getName(), outputMatrixAuc);
 				pathwayDatabase2Utest.put(pathwayDatabase2.getName(), outputMatrixPvalues);
-				
+
 				bonfExactPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_bonFexactPvals_" + pathwayDatabase2.getName() + ".txt");
 				fdrExactPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_fdrFexactPvals_" + pathwayDatabase2.getName() + ".txt");
 				bonfOdds.save(options.getOutputBasePath() + "_" + predictionSource + "_bonFexactOr_" + pathwayDatabase2.getName() + ".txt");
@@ -226,9 +228,9 @@ public class TestCoregulationPerformance {
 				outputMatrixPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_utestPvals_" + pathwayDatabase2.getName() + ".txt");
 			}
 		}
-		
+
 		CoregeneEnrichmentExcelWriter.write(options, pathwayDatabase2Auc, pathwayDatabase2Utest, pathwayDatabase2BonfOdds, pathwayDatabase2BonfFisherP, pathwayDatabase2FdrOdds, pathwayDatabase2FdrFisherP, predictionPvalues.getColObjects(), pathwayDatabases2);
-		
+
 	}
 
 	private static void testPredictionsGenePvalues(DoubleMatrixDataset<String, String> predictionMatrix, List<PathwayDatabase> pathwayDatabases2, DownstreamerOptions options, String predictionSource) throws IOException {
@@ -241,6 +243,7 @@ public class TestCoregulationPerformance {
 			Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
 
 			final LinkedHashSet<String> sharedGenes = new LinkedHashSet<>();
+			final double bonfSigThreshold = 0.05d / sharedGenes.size();
 
 			for (String gene : genesWithPrediciton) {
 				if (pathwayGenes.contains(gene)) {
@@ -272,6 +275,9 @@ public class TestCoregulationPerformance {
 			final DoubleMatrixDataset<String, String> outputMatrixAuc = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), gwasCoreGenePredictionsMatched.getHashCols());
 			final DoubleMatrixDataset<String, String> outputMatrixPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), gwasCoreGenePredictionsMatched.getHashCols());
 
+			final DoubleMatrixDataset<String, String> bonfExactPvalues = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), gwasCoreGenePredictionsMatched.getHashCols());
+			final DoubleMatrixDataset<String, String> bonfOdds = new DoubleMatrixDataset<>(pathwayMatrix.getHashCols(), gwasCoreGenePredictionsMatched.getHashCols());
+
 			final ArrayList<String> pathwayNames = pathwayMatrix.getColObjects();
 
 			try (ProgressBar pb = new ProgressBar(predictionSource + "_" + pathwayDatabase2.getName(), pathwayMatrix.columns(), ProgressBarStyle.ASCII)) {
@@ -290,14 +296,13 @@ public class TestCoregulationPerformance {
 //						pb.step();
 //						continue;
 //					}
-
 					final int pathwayI_2 = pathwayI;
 
 					IntStream.range(0, gwasCoreGenePredictionsMatched.columns()).parallel().forEach(traitI -> {
 
 						final MannWhitneyUTest2 uTest = new MannWhitneyUTest2();
 
-						final DoubleMatrix1D coreGeneScore = gwasCoreGenePredictionsMatched.getCol(traitI);
+						final DoubleMatrix1D gwasGeneZscore = gwasCoreGenePredictionsMatched.getCol(traitI);
 
 						final double[] coreGeneScoresAnnotatedGenes = new double[annotatedGenesCount];
 						final double[] coreGeneScoresOtherGenes = new double[sharedGenesCount - annotatedGenesCount];
@@ -305,11 +310,30 @@ public class TestCoregulationPerformance {
 						int x = 0;
 						int y = 0;
 
+						int inPathwayBonfSig = 0;
+						int inPathwayNotBonfSig = 0;
+						int notPathwayBonfSig = 0;
+						int notPathwayNotBonfSig = 0;
+
 						for (int g = 0; g < sharedGenesCount; g++) {
 							if (pathwayAnnotation.getQuick(g) > 0) {
-								coreGeneScoresAnnotatedGenes[x++] = coreGeneScore.get(g);
+
+								if (gwasGeneZscore.get(g) <= bonfSigThreshold) {
+									inPathwayBonfSig++;
+								} else {
+									inPathwayNotBonfSig++;
+								}
+
+								coreGeneScoresAnnotatedGenes[x++] = gwasGeneZscore.get(g);
 							} else {
-								coreGeneScoresOtherGenes[y++] = coreGeneScore.get(g);
+
+								if (gwasGeneZscore.get(g) <= bonfSigThreshold) {
+									notPathwayBonfSig++;
+								} else {
+									notPathwayNotBonfSig++;
+								}
+
+								coreGeneScoresOtherGenes[y++] = gwasGeneZscore.get(g);
 							}
 						}
 
@@ -322,6 +346,15 @@ public class TestCoregulationPerformance {
 							LOGGER.debug(pathwayNames.get(pathwayI_2) + " NaN AUC " + Arrays.toString(coreGeneScoresAnnotatedGenes));
 						}
 
+						FisherExactTest ft = new FisherExactTest();
+						//first do this before single sided has a value;
+						ft.getFisherPValue(inPathwayBonfSig, inPathwayNotBonfSig, notPathwayBonfSig, notPathwayNotBonfSig);
+						final double bonFp = ft.getFisherRightTail();
+						final double bonOr = (double) (inPathwayBonfSig * notPathwayNotBonfSig) / (double) (inPathwayNotBonfSig * notPathwayBonfSig);
+
+						bonfOdds.setElementQuick(pathwayI2, traitI, bonOr);
+						bonfExactPvalues.setElementQuick(pathwayI2, traitI, bonFp);
+
 						outputMatrixAuc.setElementQuick(pathwayI2, traitI, auc);
 						outputMatrixPvalues.setElementQuick(pathwayI2, traitI, pval);
 
@@ -331,8 +364,10 @@ public class TestCoregulationPerformance {
 
 				}
 
+				bonfExactPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_bonFexactPvals_" + pathwayDatabase2.getName() + ".txt");
+				bonfOdds.save(options.getOutputBasePath() + "_" + predictionSource + "_bonFexactOr_" + pathwayDatabase2.getName() + ".txt");
 				outputMatrixAuc.save(options.getOutputBasePath() + "_" + predictionSource + "_auc_" + pathwayDatabase2.getName() + ".txt");
-				outputMatrixPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_aucPvals_" + pathwayDatabase2.getName() + ".txt");
+				outputMatrixPvalues.save(options.getOutputBasePath() + "_" + predictionSource + "_utestPvals_" + pathwayDatabase2.getName() + ".txt");
 			}
 		}
 	}

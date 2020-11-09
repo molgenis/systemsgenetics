@@ -114,6 +114,11 @@ public class ModifiableGeneticVariantTest {
         }
 
         @Override
+        public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public int getSampleVariantProviderUniqueId() {
             return sampleVariantProviderUniqueId;
         }

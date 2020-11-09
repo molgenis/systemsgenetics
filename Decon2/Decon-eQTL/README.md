@@ -12,7 +12,13 @@ Decon-eQTL-v\*.\*.\*.jar
 
 ## Download
 
-The latest .jar build can be downloaded from [here](www.molgenis.org/jenkins/job/systemsgenetics/Decon-eQTL$Decon-eQTL/lastBuild/). Use Decon-eQTL-v\*.\*.\*-jar-with-dependencies.jar.
+Releases can be found here: [https://github.com/molgenis/systemsgenetics/releases/](https://github.com/molgenis/systemsgenetics/releases/)
+
+Jar version that was used for the manuscript:
+
+Aguirre-Gamboa, Raúl, et al. "Deconvolution of bulk blood eQTL effects into immune cell subpopulations." BMC Bioinformatics 21.1 (2020): 1-23.
+
+can be found here: [https://github.com/molgenis/systemsgenetics/releases/download/v1.3/Decon-eQTL-v1.3.0-jar-with-dependencies.jar](https://github.com/molgenis/systemsgenetics/releases/download/v1.3/Decon-eQTL-v1.3.0-jar-with-dependencies.jar)
 
 ### For compiling
 commons-cli v1.3.1  

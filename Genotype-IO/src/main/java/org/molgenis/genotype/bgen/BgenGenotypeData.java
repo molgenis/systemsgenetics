@@ -4,6 +4,7 @@
  */
 package org.molgenis.genotype.bgen;
 
+import com.github.luben.zstd.Zstd;
 import com.google.common.math.IntMath;
 import io.airlift.compress.zstd.ZstdDecompressor;
 import org.apache.log4j.Logger;
@@ -65,7 +66,6 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final List<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
 	private final Inflater gzipInflater = new Inflater();
-	private final ZstdDecompressor zstdInflater = new ZstdDecompressor();
 	private LinkedHashSet<String> sequenceNames = new LinkedHashSet<>();
 	private final BlockRepresentation snpBlockRepresentation;
 	private final Layout fileLayout;
@@ -864,7 +864,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
 
 			// Get the number of probabilities that are to be read here
-			int numberOfCombinations = numberOfOrderedCombinationsWithRepetition(
+			int numberOfCombinations = numberOfProbabilitiesForPloidyAlleleCountCombination(
 					ploidies.get(sampleIndex), numberOfAlleles - 1); // -1 because formula requires n-1
 
 			// If the probabilities are missing for this sample, read zero and continue with the
@@ -965,7 +965,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				return index;
 			}
 			// Calculate the number of possible ordered combinations, with repetition, and add this to the index value.
-			index += numberOfOrderedCombinationsWithRepetition(r, nMinOne);
+			index += numberOfProbabilitiesForPloidyAlleleCountCombination(r, nMinOne);
 		}
 		return index;
 	}
@@ -978,7 +978,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	 * @param nMinOne The number of alleles for a variant - 1.
 	 * @return The number of probabilities that are used.
 	 */
-	public static int numberOfOrderedCombinationsWithRepetition(int r, int nMinOne) {
+	public static int numberOfProbabilitiesForPloidyAlleleCountCombination(int r, int nMinOne) {
 //        return IntMath.factorial(r + nMinOne) /
 //                (IntMath.factorial(r) * IntMath.factorial(nMinOne));
 		return IntMath.binomial(nMinOne + r, r); // This is quicker
@@ -1085,13 +1085,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 				break;
 
 			case compression_2:
-				zstdInflater.decompress(
-						compressedBlockData,
-						0,
-						(int) variantBlockLength,
+				Zstd.decompress(
 						decompressedBlockData,
-						0,
-						(int) decompressedVariantBlockLength);
+						compressedBlockData);
 				break;
 
 			default:
@@ -1345,6 +1341,11 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 					"Could not read variant data %s at position %d%n",
 					variant.getPrimaryVariantId(), bgenVariant.getVariantReadingPosition()));
 		}
+	}
+
+	@Override
+	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
+		return !this.getSamplePhasing(variant).contains(false);
 	}
 
 	@Override

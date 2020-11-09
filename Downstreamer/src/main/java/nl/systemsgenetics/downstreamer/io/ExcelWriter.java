@@ -521,8 +521,8 @@ public class ExcelWriter {
 
 		if (annotateWithGwasData) {
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to indep GWAS hit");
-			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS Variant Id");
-			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS P-value");
+			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant ID");
+			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant P-value");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS gene P-value");
 		}
 

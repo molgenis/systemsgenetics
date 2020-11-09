@@ -52,6 +52,9 @@ public class FisherExactTestTest {
 		double result = instance.getFisherPValue(n11, n12, n21, n22);
 		assertEquals(result, expResult, 0.00001);
 		
+		assertEquals(instance.getFisherLeftTail(), 0.4692982, 0.0000001);
+		assertEquals(instance.getFisherRightTail(),   0.6166419, 0.000001);
+		
 		
 		n11 =  19010  ;
 		n12 =387 ;
@@ -61,6 +64,22 @@ public class FisherExactTestTest {
 		expResult = 5.648946e-14;
 		result = instance.getFisherPValue(n11, n12, n21, n22);
 		assertEquals(result, expResult, 0.0000000000001);
+		assertEquals(instance.getFisherLeftTail(), 1, 0.0000000000001);
+		assertEquals(instance.getFisherRightTail(),  6.429627e-15, 0.0000000000001);
+		
+		n11 = 98 ;
+		n12 = 21;
+		n21 =  19010  ;
+		n22 =387 ;
+		
+		instance = new FisherExactTest();
+		expResult = 5.648946e-14;
+		result = instance.getFisherPValue(n11, n12, n21, n22);
+		assertEquals(result, expResult, 0.0000000000001);
+		assertEquals(instance.getFisherLeftTail(),  6.429627e-15, 0.0000000000001);
+		assertEquals(instance.getFisherRightTail(), 1, 0.0000000000001);
+		
+		
 	}
 
 	

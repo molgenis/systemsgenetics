@@ -57,9 +57,9 @@ public class Downstreamer {
 
 		System.out.println(HEADER);
 		System.out.println();
-		System.out.println("          --- Version: " + VERSION + " ---");
+		System.out.println("       --- Version: " + VERSION + " ---");
 		System.out.println();
-		System.out.println("More information: http://molgenis.org/systemsgenetics");
+		System.out.println("More information: https://github.com/molgenis/systemsgenetics/wiki/Downstreamer");
 		System.out.println();
 
 		Date currentDataTime = new Date();
@@ -216,7 +216,7 @@ public class Downstreamer {
 				case PCA:
 					DownstreamerUtilities.doPcaOnBinMatrix(options);
 					break;
-				case CORE_GENE_AUC:
+				case PRIO_GENE_ENRICH:
 					TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
 					break;
 				case INVESTIGATE_NETWORK:
