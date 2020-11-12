@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.genenetworkbackend.hpo;
 
+import umcg.genetica.io.hpo.HpoOntology;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import com.opencsv.CSVParser;

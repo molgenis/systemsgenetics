@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -34,19 +35,24 @@ public class ConvertReactomeToMatrix {
 	 */
 	public static void main(String[] args) throws IOException, Exception {
 
-		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\Ensembl2Reactome_All_Levels.txt");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
-		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + pathwayFile.getName() + "_matrix.txt");
-		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + pathwayFile.getName() + "_genesInPathways.txt");
+		final File pathwayFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\Ensembl2Reactome_All_Levels_2020_07_18.txt");
+		final File geneOrderFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgncV98.txt");
+		final File outputFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\" + pathwayFile.getName() + "_matrix.txt.gz");
+		final File outputFile2 = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\" + pathwayFile.getName() + "_genesInPathways.txt");
 		
 		HashMap<String, HashSet<String>> pathwayToGenes = readPathwayFile(pathwayFile);
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
 
 		System.out.println("Total genesets: " + pathwayToGenes.size());
-		System.out.println("Genes in order file: " + geneOrder.size());
+		
+		LinkedHashSet<String> geneOrder2 = new LinkedHashSet<>(geneOrder);
 
-		DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder, pathwayToGenes.keySet());
+		System.out.println("Genes in order file: " + geneOrder2.size());
+
+
+		DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder2, pathwayToGenes.keySet());
+		
 		
 		HashSet<String> genesWithPathway = new HashSet<>(10000);
 		BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));
@@ -56,7 +62,7 @@ public class ConvertReactomeToMatrix {
 			String pathway = pathwayToGenesEntry.getKey();
 
 			for (String gene : pathwayToGenesEntry.getValue()) {
-
+				
 				if (pathwayMatrix.containsRow(gene)) {
 					
 					if(genesWithPathway.add(gene)){

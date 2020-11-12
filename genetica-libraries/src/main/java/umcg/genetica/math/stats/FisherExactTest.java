@@ -69,10 +69,25 @@ public class FisherExactTest {
         return twotail;
     }
     
+	/**
+	 * Pvalue smaller than 1 odds ratio. First call getFisherPValue
+	 * 
+	 * Same as in R: fisher.test(matrix(c(n11,n12,n21,22), ncol = 2), alternative = "less")
+	 * 
+	 * @return 
+	 */
     public double getFisherLeftTail() {
         return left;
     }
     
+	
+	/**
+	 * Pvalue bigger than 1 odds ratio. First call getFisherPValue
+	 * 
+	 * Same as in R: fisher.test(matrix(c(n11,n12,n21,22), ncol = 2), alternative = "greater")
+	 * 
+	 * @return 
+	 */
     public double getFisherRightTail() {
         return right;
     }

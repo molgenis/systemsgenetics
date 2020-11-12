@@ -1,0 +1,55 @@
+```{r}
+library(qqman)
+source("downstreamer_functions.r")
+setwd("gwas_simulations")
+source("data/source_olivier.r")
+
+files              <- list.files(simulated.sumstats.path, pattern="*assoc.txt.gz", full.names = T)
+curstats           <- fread(paste0("zcat ", files[1]), data.table=F)
+rownames(curstats) <- make.names(curstats$rs, unique=T)
+#colnames(curstats) <- c("position","expected_z","simulated_z_1","simulated_beta_1","simulated_pval_1","id","chr","rs")
+height             <- fread(height.yengo.sumstats, data.table=F)
+```
+
+# Pvalue evaluation
+```{r}
+par(mfrow=c(2,2))
+hist(curstats[,"simulated_pval_1"])
+hist(height[,2])
+
+hist(-log10(curstats[,"simulated_pval_1"]), breaks=100)
+hist(-log10(height[,2]), breaks=100)
+```
+
+# Manhattan plot
+```{r}
+curstats[-log10(curstats$simulated_pval_1) > 300, "simulated_pval_1"] <- 1e-300
+
+png(width=10000, height=3000, file= "output/plots/random_trait_11_manhattanplot.png")
+manhattan(curstats, chr="chr", bp="position", snp="rs", p="simulated_pval_1")
+dev.off()
+
+rownames(height) <- height[,1]
+ol <- intersect(rownames(height), curstats$rs)
+h <- cbind(curstats[ol,c("rs", "chr", "position")], height[ol,2])
+colnames(h) <- c("rs", "chr", "position", "simulated_pval_1")
+h[-log10(h$simulated_pval_1) > 300, "simulated_pval_1"] <- 300
+
+png(width=10000, height=3000, file= "output/plots/height_manhattanplot.png")
+manhattan(h, chr="chr", bp="position", snp="rs", p="simulated_pval_1")
+dev.off()
+```
+
+# Height odds ratio's
+```{r}
+height <- fread(height.yengo.sumstats, data.table=F)
+
+ors.rand <- c(rnorm(mean = 1, sd=0.05, n=100000), rnorm(mean = 1, sd=0.012, n=100000))
+plot(density(scale(height$BETA)), xlim=c(-23.74065,  19.52504), col="blue", lwd=2, xlab="centered and scaled beta's / OR")
+lines(density(scale(ors.rand)), col="red", lwd=3)
+legend("topleft", legend=c("height betas", "simulated dist"), fill=c("blue", "red"))
+
+hist(ors.rand)
+```
+
+

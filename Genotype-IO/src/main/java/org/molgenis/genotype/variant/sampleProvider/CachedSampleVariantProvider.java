@@ -11,12 +11,11 @@ import org.molgenis.genotype.variant.GenotypeRecord;
 /**
  * Cached sample variant provider to prevent reloading a SNPs that is accessed
  * multiple times in a short period.
- * 
+ *
  * @author Patrick Deelen
- * 
+ *
  */
-public class CachedSampleVariantProvider implements SampleVariantsProvider
-{
+public class CachedSampleVariantProvider implements SampleVariantsProvider {
 
 	private final SampleVariantsProvider sampleVariantProvider;
 	private final Cache<GeneticVariant, List<Alleles>> cache;
@@ -31,8 +30,7 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	private final int cacheSize;
 	private final int sampleVariantProviderUniqueId;
 
-	public CachedSampleVariantProvider(SampleVariantsProvider sampleVariantProvider, int cacheSize)
-	{
+	public CachedSampleVariantProvider(SampleVariantsProvider sampleVariantProvider, int cacheSize) {
 		this.sampleVariantProvider = sampleVariantProvider;
 		this.cache = new Cache<GeneticVariant, List<Alleles>>(cacheSize);
 		this.phasingCache = new Cache<GeneticVariant, List<Boolean>>(cacheSize);
@@ -48,41 +46,34 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	}
 
 	@Override
-	public List<Alleles> getSampleVariants(GeneticVariant variant)
-	{
-		if (cache.containsKey(variant))
-		{
-			return cache.get(variant);
-		}
-		else
-		{
-			List<Alleles> variantAlleles = sampleVariantProvider.getSampleVariants(variant);
+	public List<Alleles> getSampleVariants(GeneticVariant variant) {
+		List<Alleles> variantAlleles = cache.get(variant);
+		if (variantAlleles == null) {
+			variantAlleles = sampleVariantProvider.getSampleVariants(variant);
 			cache.put(variant, variantAlleles);
-			return variantAlleles;
 		}
+		return variantAlleles;
 
 	}
 
 	@Override
-	public int cacheSize()
-	{
+	public int cacheSize() {
 		return cacheSize;
 	}
 
 	@Override
-	public List<Boolean> getSamplePhasing(GeneticVariant variant)
-	{
-		if (phasingCache.containsKey(variant))
-		{
-			return phasingCache.get(variant);
-		}
+	public List<Boolean> getSamplePhasing(GeneticVariant variant) {
 
-		List<Boolean> phasing = sampleVariantProvider.getSamplePhasing(variant);
-		phasingCache.put(variant, phasing);
+		List<Boolean> phasing = phasingCache.get(variant);
+		if (phasing == null) {
+			phasing = sampleVariantProvider.getSamplePhasing(variant);
+			phasingCache.put(variant, phasing);
+		}
 		return phasing;
 	}
 
 	@Override
+
 	public boolean arePhasedProbabilitiesPresent(GeneticVariant variant) {
 		if (phasedProbCache.containsKey(variant))
 		{
@@ -101,77 +92,71 @@ public class CachedSampleVariantProvider implements SampleVariantsProvider
 	}
 
 	@Override
-	public byte[] getSampleCalledDosage(GeneticVariant variant)
-	{
-		if (calledDosageCache.containsKey(variant))
-		{
-			return calledDosageCache.get(variant);
-		}
+	public byte[] getSampleCalledDosage(GeneticVariant variant) {
 
-		byte[] calledDosage = sampleVariantProvider.getSampleCalledDosage(variant);
-		calledDosageCache.put(variant, calledDosage);
+		byte[] calledDosage = calledDosageCache.get(variant);
+		if (calledDosage == null) {
+			calledDosage = sampleVariantProvider.getSampleCalledDosage(variant);
+			calledDosageCache.put(variant, calledDosage);
+		}
 		return calledDosage;
 	}
 
 	@Override
-	public float[] getSampleDosage(GeneticVariant variant)
-	{
-		if (dosageCache.containsKey(variant))
-		{
-			return dosageCache.get(variant);
+	public float[] getSampleDosage(GeneticVariant variant) {
+
+		float[] dosage = dosageCache.get(variant);
+		if (dosage == null) {
+			dosage = sampleVariantProvider.getSampleDosage(variant);
+			dosageCache.put(variant, dosage);
 		}
 
-		float[] dosage = sampleVariantProvider.getSampleDosage(variant);
-		dosageCache.put(variant, dosage);
 		return dosage;
 	}
 
 	@Override
 	public float[][] getSampleProbilities(GeneticVariant variant) {
-		if (probCache.containsKey(variant))
-		{
-			return probCache.get(variant);
-		}
 
-		float[][] probs = sampleVariantProvider.getSampleProbilities(variant);
-		probCache.put(variant, probs);
+		float[][] probs = probCache.get(variant);
+		if (probs == null) {
+			probs = sampleVariantProvider.getSampleProbilities(variant);
+			probCache.put(variant, probs);
+		}
 		return probs;
 	}
 
 	@Override
 	public double[][] getSampleProbabilitiesComplex(GeneticVariant variant) {
-		if (probCacheComplex.containsKey(variant))
-		{
-			return probCacheComplex.get(variant);
-		}
 
-		double[][] probs = sampleVariantProvider.getSampleProbabilitiesComplex(variant);
-		probCacheComplex.put(variant, probs);
+		double[][] probs = probCacheComplex.get(variant);
+		if (probs == null) {
+			probs = sampleVariantProvider.getSampleProbabilitiesComplex(variant);
+			probCacheComplex.put(variant, probs);
+		}
 		return probs;
+
 	}
 
 	@Override
 	public double[][][] getSampleProbabilitiesPhased(GeneticVariant variant) {
-		if (probCachePhased.containsKey(variant))
-		{
-			return probCachePhased.get(variant);
-		}
 
-		double[][][] probs = sampleVariantProvider.getSampleProbabilitiesPhased(variant);
-		probCachePhased.put(variant, probs);
+		double[][][] probs = probCachePhased.get(variant);
+		if (probs == null) {
+			probs = sampleVariantProvider.getSampleProbabilitiesPhased(variant);
+			probCachePhased.put(variant, probs);
+		}
 		return probs;
 	}
 
 	@Override
-	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant)
-	{
-		if (genotypeRecordCache.containsKey(variant))
-		{
-			return genotypeRecordCache.get(variant);
+	public FixedSizeIterable<GenotypeRecord> getSampleGenotypeRecords(GeneticVariant variant) {
+
+		FixedSizeIterable<GenotypeRecord> sampleGenotypeRecords = genotypeRecordCache.get(variant);
+		if (sampleGenotypeRecords == null) {
+			sampleGenotypeRecords = sampleVariantProvider.getSampleGenotypeRecords(variant);
+			genotypeRecordCache.put(variant, sampleGenotypeRecords);
 		}
-		
-		FixedSizeIterable<GenotypeRecord> sampleGenotypeRecords = sampleVariantProvider.getSampleGenotypeRecords(variant);
-		genotypeRecordCache.put(variant, sampleGenotypeRecords);
+
 		return sampleGenotypeRecords;
 	}
 }

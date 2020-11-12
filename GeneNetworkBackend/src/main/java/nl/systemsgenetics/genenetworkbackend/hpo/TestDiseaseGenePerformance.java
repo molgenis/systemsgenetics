@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.genenetworkbackend.hpo;
 
+import umcg.genetica.io.hpo.HpoOntology;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import com.opencsv.CSVParser;
@@ -145,7 +146,7 @@ public class TestDiseaseGenePerformance {
 
 		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
 
-		Ontology hpoOntology = HpoFinder.loadHpoOntology(hpoOboFile);
+		Ontology hpoOntology = HpoOntology.loadHpoOntology(hpoOboFile);
 
 		HpoFinder hpoFinder = new HpoFinder(hpoOntology, predictionInfo);
 
