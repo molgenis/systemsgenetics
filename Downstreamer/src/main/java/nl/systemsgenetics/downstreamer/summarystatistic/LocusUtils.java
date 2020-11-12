@@ -47,7 +47,7 @@ public class LocusUtils {
         List<Locus> loci = makeLoci(records, new PvalueFilterSmaller(upper), new PvalueFilterSmaller(2), window);
 
         for (Locus locus : loci) {
-            SummaryStatisticRecord topHit = locus.getMinPval();
+            SummaryStatisticRecord topHit = locus.getMinPvalRecord();
             topHits.put(topHit.getPrimaryVariantId(), topHit);
         }
 
@@ -83,7 +83,7 @@ public class LocusUtils {
             }
 
             // Initialize the top variant as the first independent one
-            SummaryStatisticRecord indep = topLocus.getMinPval();
+            SummaryStatisticRecord indep = topLocus.getMinPvalRecord();
             topLocus.addIndepVariant(indep.getPrimaryVariantId());
 
             // If there is only one top hit in the locus skip the LD calculation
@@ -155,7 +155,7 @@ public class LocusUtils {
         for (Locus topLocus : topLoci) {
 
             // Initialize the top variant as the first independent one
-            SummaryStatisticRecord indep = topLocus.getMinPval();
+            SummaryStatisticRecord indep = topLocus.getMinPvalRecord();
             topLocus.addIndepVariant(indep.getPrimaryVariantId());
 
             // If there is only one top hit in the locus skip the LD calculation

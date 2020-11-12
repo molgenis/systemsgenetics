@@ -189,7 +189,7 @@ public class Locus implements OverlappableGenomicRange {
      *
      * @return the min pval
      */
-    public SummaryStatisticRecord getMinPval() {
+    public SummaryStatisticRecord getMinPvalRecord() {
 
         //TODO: look at the caching later
         //if (cachedTopHit == null){
@@ -197,6 +197,16 @@ public class Locus implements OverlappableGenomicRange {
         //}
 
         return cachedTopHit;
+    }
+
+
+    /**
+     * Get the minimal pvalue in the locus.
+     *
+     * @return the minimal pvalue in the locus
+     */
+    public double getMinPvalInLocus() {
+        return this.getMinPvalRecord().getPvalue();
     }
 
     /**

@@ -20,6 +20,9 @@ phenotype <- "inflammatory_bowel_disease_2017_29906448_hg19"
 path <- "/home/work/Desktop/depict2/coregulation_data/ibd_top10coreg/"
 phenotype <- "inflammatory_bowel_disease_2017_29906448_hg19"
 
+path <- "/home/work/Desktop/depict2/collaborations/biogen/als_biogen/"
+phenotype <- "als_biogen"
+
 
 read.coreg.data.v2   <- function(path, phenotype, nrows=100, ncols=10, add.edges.for.cols=T, add.edges.for.rows=F) {
   
@@ -36,7 +39,7 @@ read.coreg.data.v2   <- function(path, phenotype, nrows=100, ncols=10, add.edges
     nrows <- tmp
   }
   
-  coreg.tmp       <- read.depict2(paste0(path, "/", list.files(path, pattern="*.xlsx")))$Coregulation
+  coreg.tmp       <- read.depict2(paste0(path, "/", list.files(path, pattern="*.xlsx")))$Coregulation_MetaBrain
   crg             <- coreg.tmp$Enrichment.Z.score
   names(crg)      <- coreg.tmp[,1]
   crg             <- crg[order(crg, decreasing=T)]
@@ -86,9 +89,9 @@ depict.to.network.v2 <- function(cur.data, edge.threshold=2, ngwas=100, gene.nam
   }
   
   nodes$annot[nodes[,1] %in% names(cur.data$gene.pvalues)] <- "GWAS gene"
-  nodes$annot[nodes[,1] %in% cur.data$colgenes]                     <- "Mendelian gene" 
+  nodes$annot[nodes[,1] %in% cur.data$colgenes]            <- "Key Gene" 
   # Is a bonf sig gwas gene?
-  nodes$annot[nodes$annot == "Mendelian gene" & nodes[,1] %in% names(cur.data$gene.pvalues)[cur.data$gene.pvalues < (0.05/ length(cur.data$gene.pvalues))] ] <- "Both"
+  nodes$annot[nodes$annot == "Key Gene" & nodes[,1] %in% names(cur.data$gene.pvalues)[cur.data$gene.pvalues < (0.05/ length(cur.data$gene.pvalues))] ] <- "Both"
   
   colnames(nodes) <- c("gene_id", "annot")
   nodes$annot     <- as.character(nodes$annot)
@@ -166,7 +169,7 @@ depict.to.network.v2 <- function(cur.data, edge.threshold=2, ngwas=100, gene.nam
 #cur.data <- read.coreg.data(path, phenotype, ngene=ngwas, nhpo=nhpo, add.edges.for.hpo = T)
 #network  <- depict.to.network(cur.data, edge.threshold=edge.threshold, ngwas=ngwas)
 cur.data <- read.coreg.data.v2(path, phenotype, nrows=280,  ncols=3, add.edges.for.cols=T, add.edges.for.rows=F)
-network  <- depict.to.network.v2(cur.data, edge.threshold=1, ngwas=280, gene.name.thresh = 10000)
+network  <- depict.to.network.v2(cur.data, edge.threshold=0, ngwas=280, gene.name.thresh = 10000)
 
 #Make plots
 pdf(width=15, height=12, useDingbats = F, file=paste0("output/plots/", phenotype, "_edges_", edge.threshold, "_network_plot.pdf"))
