@@ -14,6 +14,7 @@ cedDsGenes$GWAS.gene.P.valueLog <- -log10(cedDsGenes$GWAS.gene.P.value)
 
 #Rel locus2:60686829-61686829
 
+maxLog10GeneP <- 16
 chr=2
 start=60686829
 stop=61686829
@@ -56,6 +57,8 @@ abline(h=bonfGwasLogP, col = "grey80", lwd = 1, lty = 2)
 
 maxDsZscore <-  max(cedDsGenesNfkb1$Enrichment.Z.score,na.rm = T)
 minDsZscore <-  min(cedDsGenesNfkb1$Enrichment.Z.score,na.rm = T)
+
+
 
 
 plot.new()
