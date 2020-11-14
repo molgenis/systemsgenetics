@@ -173,21 +173,7 @@ public class DownstreamerConverters {
 
 		LOGGER.info("Loaded expression matrix with " + matrix.columns() + " samples and " + matrix.rows() + " genes");
 
-		HashSet<String> phenotypesHashSet = new HashSet<>(matrix.columns());
 
-		for (String sample : matrix.getHashCols().keySet()) {
-			if (!phenotypesHashSet.add(sample)) {
-				throw new Exception("Expression matrix contains a duplicate sample columns: " + sample);
-			}
-		}
-
-		HashSet<String> variantsHashSet = new HashSet<>(matrix.rows());
-
-		for (String gene : matrix.getHashRows().keySet()) {
-			if (!variantsHashSet.add(gene)) {
-				throw new Exception("Expression matrix contains a duplicate genes: " + gene);
-			}
-		}
 
 		if (options.getConversionColumnIncludeFilter() != null) {
 			List<String> colsToSelect = IoUtils.readMatrixAnnotations(options.getConversionColumnIncludeFilter());
