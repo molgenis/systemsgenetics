@@ -88,7 +88,7 @@ make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour
 
 # ------------------------------------------------------ 
 read.depict2 <- function(path) {
-  potential_traits <- c("expression",
+  potential_traits <- c("expression","Expression",
                         "expression_scP3",
                         "expression_brain",
                         "expression_gs_tcell",

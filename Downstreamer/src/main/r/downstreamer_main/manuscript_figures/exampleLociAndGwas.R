@@ -142,3 +142,45 @@ abline(h=bonfZscore, col = "grey80", lwd = 1, lty = 2)
 
 plot.new()
 plot(cedGwas$logP, bg = adjustcolor("dodgerblue2", alpha.f = 0.3), pch = 21, col=adjustcolor("dodgerblue2", alpha.f = 0.5))
+
+
+cedGwas$plotIndex <- 1:nrow(cedGwas)
+
+cedDsGenes$geneMid <- (cedDsGenes$Gene.End..bp. - cedDsGenes$Gene.Start..bp.)+ cedDsGenes$Gene.Start..bp.
+cedDsGenes$plotIndex <- NA
+
+unique(cedDsGenes$Chromosome.Name)
+unique(cedGwas$Chr)
+
+cedDsGenes$Chromosome2 <- cedDsGenes$Chromosome
+
+cedDsGenes$Chromosome2[cedDsGenes$Chromosome2 == "X"] <- 23
+cedDsGenes$Chromosome2[cedDsGenes$Chromosome2 == "Y"] <- 24
+cedDsGenes$Chromosome2[cedDsGenes$Chromosome2 == "MT"] <- 25
+
+cedDsGenes$Chromosome2 <- as.numeric(cedDsGenes$Chromosome2)
+
+cedDsGenes <- cedDsGenes[order(cedDsGenes$Chromosome2,cedDsGenes$geneMid),]
+
+for(chr in unique(cedDsGenes$Chromosome.Name))
+{
+  gwasChr <- cedGwas[cedGwas$Chr==chr,]
+  
+  if(nrow(gwasChr) > 0){
+    
+    for(g in 1:nrow(cedDsGenes)){
+      if(cedDsGenes[g,"Chromosome.Name"] == chr){
+        cedDsGenes$plotIndex[g] <- which.min(abs(gwasChr$Pos - cedDsGenes$geneMid[g]))
+      }
+    }
+  
+  }
+}
+
+
+
+
+
+
+
+

@@ -41,6 +41,7 @@ bin<-hexbin(connectivityGnomad$sumChi2, connectivityGnomad$max_ds_zscore, xbins=
 plot(bin, main="") 
 
 cor.test(connectivityGnomad$sumChi2, connectivityGnomad$lof_z)
+cor.test(connectivityGnomad$max_ds_zscore, connectivityGnomad$lof_z)
 
 cor.test(connectivityGnomad$sumChi2, connectivityGnomad$mis_z)
   

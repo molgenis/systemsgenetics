@@ -180,9 +180,8 @@ public class DownstreamerConverters {
 		}
 		
 		
-//		matrix.normalizeRows();
-//
-//		LOGGER.info("Normalized genes to have mean 0 and sd 1");
+		matrix.normalizeColumns();
+		LOGGER.info("Normalized genes to have mean 0 and sd 1");
 
 
 
