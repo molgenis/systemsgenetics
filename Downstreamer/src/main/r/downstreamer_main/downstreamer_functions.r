@@ -88,8 +88,38 @@ make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour
 
 # ------------------------------------------------------ 
 read.depict2 <- function(path) {
+  potential_traits <- c("expression","Expression",
+                        "expression_scP3",
+                        "expression_brain",
+                        "expression_gs_tcell",
+                        "Coregulation",
+                        "Coregulation_1588",
+                        "eigenvectors_1588",
+                        "Coregulation_eQTLGen",
+                        "Coregulation_MetaBrain",
+                        "Reactome",
+                        "GO_P",
+                        "GO_C",
+                        "GO_F",
+                        "KEGG",
+                        "HPO",
+                        "Reactome_raw",
+                        "Reacome_raw",
+                        "GO_P_raw",
+                        "GO_C_raw",
+                        "GO_F_raw",
+                        "KEGG_raw",
+                        "HPO_raw",
+                        "GO_P_MetaBrain",
+                        "GO_C_MetaBrain",
+                        "GO_F_MetaBrain",
+                        "KEGG_MetaBrain",
+                        "HPO_MetaBrain",
+                        "Reactome_MetaBrain",
+                        "gtexV8",
+                        "gtex")
   output <- list()
-  for (sheet in  excel_sheets(path)) {
+  for (sheet in potential_traits) {
     tmp <- tryCatch({data.frame(read_excel(path, sheet=sheet, col_types ="guess", trim_ws = T), stringsAsFactors=F)},
                     error=function(a){return(NA)},
                     warn=function(a){return(NA)})
@@ -114,11 +144,11 @@ read.depict2 <- function(path) {
 # ------------------------------------------------------ 
 # Read a batch of downstreamer results
 read.downstreamer.batch <- function(main.downstreamer.output.path, USE.CACHE=F) {
-  
+
   if (!dir.exists("data")) {
     dir.create("data")
   }
-  
+
   # Loads enrichment results
   if (USE.CACHE & file.exists("data/downstreamer_results_cache.RData")) {
     cat("[INFO] Loading downstreamer results from cache\n")
@@ -132,17 +162,17 @@ read.downstreamer.batch <- function(main.downstreamer.output.path, USE.CACHE=F) 
       name <- gsub("\\_hg19\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
       name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
       name <- gsub("\\_hg19\\.txt\\_exHla\\.xlsx", "", name)
-      
+
       datasets[[name]] <- read.depict2(file)
     }
     cat("[INFO] Done, saving cache for future use\n")
     save(datasets, file="data/downstreamer_results_cache.RData")
   }
-  
+
   return(datasets)
 }
 
-# ------------------------------------------------------ 
+# ------------------------------------------------------
 # Convert a list of downstreamer enrichments into a matrix
 make.zscore.matrix <- function(datasets, trait="Coregulation", collumn="Enrichment.Z.score") {
   out <- matrix()

@@ -513,15 +513,14 @@ public class DownstreamerOptions {
 					pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				}
 				if (commandLine.hasOption("ath")) {
-					
 
 					String[] athValues = commandLine.getOptionValues("ath");
 
 					if (athValues.length % 2 != 0) {
 						throw new ParseException("Error parsing --alternaitveTopHits. Must be in name=path format");
 					}
-					
-					alternativeTopHitFiles = new HashMap<>(athValues.length/2);
+
+					alternativeTopHitFiles = new HashMap<>(athValues.length / 2);
 
 					for (int i = 0; i < athValues.length; i += 2) {
 
@@ -530,11 +529,11 @@ public class DownstreamerOptions {
 						}
 
 						File hitsFile = new File(athValues[i + 1]);
-						
-						if(!hitsFile.canRead()){
+
+						if (!hitsFile.canRead()) {
 							throw new ParseException("Error parsing --alternaitveTopHits. Can't find: " + hitsFile.getAbsolutePath());
 						}
-						
+
 						alternativeTopHitFiles.put(athValues[i], hitsFile);
 
 					}
@@ -606,6 +605,7 @@ public class DownstreamerOptions {
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				break;
 			case REMOVE_CIS_COEXP:
+			case INVESTIGATE_NETWORK:
 				if (!commandLine.hasOption("ge")) {
 					throw new ParseException("--genes not specified");
 				} else {
@@ -1373,5 +1373,5 @@ public class DownstreamerOptions {
 	public Map<String, File> getAlternativeTopHitFiles() {
 		return alternativeTopHitFiles;
 	}
-	
+
 }

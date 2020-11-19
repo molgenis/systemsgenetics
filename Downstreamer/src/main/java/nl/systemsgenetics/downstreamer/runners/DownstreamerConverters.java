@@ -173,49 +173,43 @@ public class DownstreamerConverters {
 
 		LOGGER.info("Loaded expression matrix with " + matrix.columns() + " samples and " + matrix.rows() + " genes");
 
-		HashSet<String> phenotypesHashSet = new HashSet<>(matrix.columns());
-
-		for (String sample : matrix.getHashCols().keySet()) {
-			if (!phenotypesHashSet.add(sample)) {
-				throw new Exception("Expression matrix contains a duplicate sample columns: " + sample);
-			}
-		}
-
-		HashSet<String> variantsHashSet = new HashSet<>(matrix.rows());
-
-		for (String gene : matrix.getHashRows().keySet()) {
-			if (!variantsHashSet.add(gene)) {
-				throw new Exception("Expression matrix contains a duplicate genes: " + gene);
-			}
-		}
-
 		if (options.getConversionColumnIncludeFilter() != null) {
 			List<String> colsToSelect = IoUtils.readMatrixAnnotations(options.getConversionColumnIncludeFilter());
 			LOGGER.info("Number of selected columns: " + colsToSelect.size());
 			matrix = matrix.viewColSelection(colsToSelect);
 		}
-
-		matrix.normalizeRows();
-
+		
+		
+		matrix.normalizeColumns();
 		LOGGER.info("Normalized genes to have mean 0 and sd 1");
+
+
 
 		ArrayList<String> rowNames = matrix.getRowObjects();
 		ArrayList<String> nonNanRowNames = new ArrayList<>(matrix.rows());
 
 		rows:
 		for (int r = 0; r < matrix.rows(); ++r) {
+			boolean nonZeroValue = false;
+			double e;
 			for (int c = 0; c < matrix.columns(); ++c) {
-				if (Double.isNaN(matrix.getElementQuick(r, c))) {
+				e = matrix.getElementQuick(r, c);
+				if (Double.isNaN(e)) {
 					continue rows;
+				} else if (e != 0){
+					nonZeroValue = true;
 				}
 			}
-			nonNanRowNames.add(rowNames.get(r));
-
+			//if here not NaN values;
+			if(nonZeroValue){
+				nonNanRowNames.add(rowNames.get(r));
+			}
+	
 		}
 
 		if (nonNanRowNames.size() < rowNames.size()) {
 			matrix = matrix.viewRowSelection(nonNanRowNames);
-			LOGGER.info("Removing " + (rowNames.size() - nonNanRowNames.size()) + " rows with NaN after normalizing");
+			LOGGER.info("Removing " + (rowNames.size() - nonNanRowNames.size()) + " rows with only zero's or NaN after normalizing");
 		}
 
 		matrix.saveBinary(options.getOutputBasePath());
