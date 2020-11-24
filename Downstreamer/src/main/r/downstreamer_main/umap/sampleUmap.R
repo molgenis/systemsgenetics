@@ -101,35 +101,86 @@ sampleUmap <- sampleUmap[order(sampleAnnotation$plotOrder),]
 
 
 clusterLabels <- read.delim("Umap/lables.txt",stringsAsFactors = F, comment.char = "#")
+clusterLabelsZoom <- read.delim("Umap/lablesZoom.txt",stringsAsFactors = F, comment.char = "#")
+
+zoomLines <- read.delim("Umap/zoomLines.txt",stringsAsFactors = F, comment.char = "#")
+
 
 
 for(i in 1:nrow(tissueColMap)){
-  sampleAnnotation$col[sampleAnnotation$PlotClass == tissueColMap$PlotClass[i]] <- adjustcolor(tissueColMap$col[i], alpha.f = 0.1)
+  sampleAnnotation$col[sampleAnnotation$PlotClass == tissueColMap$PlotClass[i]] <- adjustcolor(tissueColMap$col[i], alpha.f = 0.2)
   sampleAnnotation$bg[sampleAnnotation$PlotClass == tissueColMap$PlotClass[i]] <- adjustcolor(tissueColMap$col[i], alpha.f = 0.3)
 }
 
-sampleAnnotation$col[sampleAnnotation$PlotClass == "spleen"] <- adjustcolor("black", alpha.f = 0.5)
+#sampleAnnotation$col[sampleAnnotation$PlotClass == "spleen"] <- adjustcolor("black", alpha.f = 0.5)
 
 
 #X11()
 #rpng( width = 1200, height = 1000)
-#pdf("Umap/sampleUmap.pdf", width = 10, height = 10, useDingbats = F)
-layout(matrix(2:1, nrow =1),widths = c(5,1))
-par(mar = c(0,0,0,0), xpd = NA)
+#pdf("Umap/sampleUmap.pdf", width = 20, height = 10, useDingbats = F)
+layout(matrix(1:2, nrow =1))
+
+par(mar = c(3,3,1,0), xpd = NA)
+
 plot.new()
-plot.window(0:1,0:1)
-legend(x = "center", legend = tissueColMap$PlotClass, fill = tissueColMap$col)
-par(mar = c(3,3,1,0))
-plot.new()
-plot.window(xlim = c(-340,390), ylim = c(-380,390))
+#plot.window(xlim = c(-150,100), ylim = c(-200,-50))
+plot.window(xlim = c(-340,390), ylim = c(-380,390), asp = 1)
 axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
 axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-points(sampleUmap, col = sampleAnnotation$col, pch = 16, cex = 0.6)
+#points(sampleUmap, col = sampleAnnotation$col, pch = 16, cex = 0.6)
 
 text(clusterLabels$centerX + clusterLabels$offsetX, clusterLabels$centerY + clusterLabels$offsetY, labels = clusterLabels$label, col = "gray30")
 
+zoomX <- c(-125,55)
+zoomY <- c(-202,-65)
 
-#dev.off()
+rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2], border = "gray70")
+
+zoomLineStartX <- grconvertX(zoomX[2], from = "user", to = "device")
+zoomLineStartY1 <- grconvertY(zoomY[1], from = "user", to = "device")
+zoomLineStartY2 <- grconvertY(zoomY[2], from = "user", to = "device")
+
+zoomPoints <- sampleUmap$V1 >= zoomX[1] & sampleUmap$V1 <= zoomX[2] & sampleUmap$V2 >= zoomY[1] & sampleUmap$V2 <= zoomY[2]
+
+par(mar = c(1,0,1,0), xpd = NA)
+
+plot.new()
+plot.window(xlim = c(-125,55), ylim = c(-202,-65), asp = 1)
+#axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
+#axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
+points(sampleUmap[zoomPoints, ], col = sampleAnnotation$col[zoomPoints], pch = 16, cex = 1)
+
+lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY1, from = "device"),zoomY[1]), col = "gray70")
+lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY2, from = "device"),zoomY[2]), col = "gray70")
+rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2], border = "gray70")
+
+
+text(clusterLabelsZoom$centerX + clusterLabelsZoom$offsetX, clusterLabelsZoom$centerY + clusterLabelsZoom$offsetY, labels = clusterLabelsZoom$label, col = "gray30")
+
+apply(zoomLines, 1, function(coord){
+  lines(x = coord[1:2], y = coord[3:4], col = "gray70")
+})
+
+#lines()  
+
+#lines <- locator(20)
+
+zoomLines2 <- data.frame(
+x1 = lines$x[seq(1, to = length(lines$x), by = 2)],
+x2 = lines$x[seq(2, to = length(lines$x), by = 2)] ,
+y1 = lines$y[seq(1, to = length(lines$x), by = 2)],
+y2 = lines$y[seq(2, to = length(lines$x), by = 2)]
+)
+
+zoomLines <- rbind(zoomLines, zoomLines2)
+
+
+
+#write.table(zoomLines, "Umap/zoomLines.txt", sep = "\t", quote = F, row.names = F)
+
+
+
+dev.off()
 
 fhs(sampleUmap)
 
@@ -178,6 +229,7 @@ colCed <- rep("grey90", nrow(sampleUmap)) #lightblue1
 
 
 fdrZthreshold <- min(abs(cedExp$Enrichment.Z.score[cedExp$FDR.5..significant]))
+bonfZscore <- min(abs(cedExp$Enrichment.Z.score[cedExp$Bonferroni.significant]))
 maxZ <- max(cedExp$Enrichment.Z.score)
 breaks <- seq(fdrZthreshold, maxZ, length.out = 21)
 
@@ -196,8 +248,41 @@ fullColGradient <- c(rev(colMapDepl), rep("grey90", greyBreakCount), colMapEnric
 
 library( plotfunctions)
 
-pdf("MS-UMAP.pdf", width = 10, height = 10, useDingbats = F)
-plot(sampleUmap[order(abs(cedExp$Enrichment.Z.score),decreasing = F),], xlim = c(-380,390), ylim = c(-410,390), col = adjustcolor(colCed[order(abs(cedExp$Enrichment.Z.score),decreasing = F)], alpha.f = 0.5), pch = 16, cex = 0.4, xlab = "UMAP-1", ylab = "UMAP-2", bty = "n")#, bg = adjustcolor(colCed[order(abs(cedExp$Enrichment.Z.score),decreasing = F)], alpha.f = 0.05)
+pdf("MS-UMAP.pdf", width = 20, height = 10, useDingbats = F)
+par(mar = c(1,0,1,0), xpd = NA)
+layout(matrix(1:2, nrow =1))
+
+col <- adjustcolor(colCed[order(abs(cedExp$Enrichment.Z.score),decreasing = F)], alpha.f = 0.5)
+
+sampleUmaporder <- sampleUmap[order(abs(cedExp$Enrichment.Z.score),decreasing = F),]
+
+plot(sampleUmaporder, xlim = c(-380,390), ylim = c(-410,390), col = col, pch = 16, cex = 0.4, xlab = "UMAP-1", ylab = "UMAP-2", bty = "n")#, bg = adjustcolor(colCed[order(abs(cedExp$Enrichment.Z.score),decreasing = F)], alpha.f = 0.05)
+
+
+zoomX <- c(-125,55)
+zoomY <- c(-202,-65)
+
+rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2])
+
+zoomLineStartX <- grconvertX(zoomX[2], from = "user", to = "device")
+zoomLineStartY1 <- grconvertY(zoomY[1], from = "user", to = "device")
+zoomLineStartY2 <- grconvertY(zoomY[2], from = "user", to = "device")
+
+zoomPoints <- sampleUmaporder$V1 >= zoomX[1] & sampleUmaporder$V1 <= zoomX[2] & sampleUmaporder$V2 >= zoomY[1] & sampleUmaporder$V2 <= zoomY[2]
+
+par(mar = c(1,0,1,0), xpd = NA)
+
+plot.new()
+plot.window(xlim = c(-150,100), ylim = c(-200,-50), asp = 1)
+#axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
+#axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
+points(sampleUmaporder[zoomPoints, ], col = col[zoomPoints], pch = 16, cex = 1)
+
+lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY1, from = "device"),zoomY[1]))
+lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY2, from = "device"),zoomY[2]))
+rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2])
+
+
 
 gradientLegend(
   c(-maxZ,maxZ),
