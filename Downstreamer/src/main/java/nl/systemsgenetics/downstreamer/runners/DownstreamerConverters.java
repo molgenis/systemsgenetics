@@ -36,6 +36,10 @@ public class DownstreamerConverters {
 			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
 		}
 
+		if (options.getConversionRowIncludeFilter() != null && !options.getConversionRowIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionRowIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+
 		final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(options.getGwasZscoreMatrixPath(), '\t');
 		final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(options.getGwasZscoreMatrixPath(), '\t');
 
@@ -127,7 +131,7 @@ public class DownstreamerConverters {
 			}
 		}
 
-		if (variantsToExclude.size() > 0) {
+		if (variantsToExclude.size() > 0 || options.getConversionRowIncludeFilter() != null) {
 
 			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsNaN.txt");
 
@@ -146,6 +150,10 @@ public class DownstreamerConverters {
 
 			HashSet<String> variantsToInclude = new HashSet<>(allVariants);
 			variantsToInclude.removeAll(variantsToExclude);
+
+			if (options.getConversionRowIncludeFilter() != null) {
+				variantsToInclude.retainAll(new HashSet<>(IoUtils.readMatrixAnnotations(options.getConversionRowIncludeFilter())));
+			}
 
 			LOGGER.info("Included variants: " + variantsToInclude.size());
 
@@ -169,7 +177,35 @@ public class DownstreamerConverters {
 			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
 		}
 
+		if (options.getConversionRowIncludeFilter() != null && !options.getConversionRowIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionRowIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+
 		DoubleMatrixDataset<String, String> matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+
+		if (options.isTrimGeneNames()) {
+			LinkedHashMap<String, Integer> oldHash = matrix.getHashRows();
+			LinkedHashMap<String, Integer> newHash = new LinkedHashMap<>(oldHash.size());
+
+			for (Map.Entry<String, Integer> oldEntry : oldHash.entrySet()) {
+
+				String oldGeneName = oldEntry.getKey();
+				int indexOfPoint = oldGeneName.indexOf('.');
+
+				if (indexOfPoint < 0) {
+					if (newHash.put(oldGeneName, oldEntry.getValue()) != null) {
+						throw new Exception("Can't trim gene names if this causes duplicate genes: " + oldGeneName);
+					}
+				} else {
+					if (newHash.put(oldGeneName.substring(0, indexOfPoint), oldEntry.getValue()) != null) {
+						throw new Exception("Can't trim gene names if this causes duplicate genes: " + oldGeneName);
+					}
+				}
+
+			}
+
+			matrix.setHashRows(newHash);
+		}
 
 		LOGGER.info("Loaded expression matrix with " + matrix.columns() + " samples and " + matrix.rows() + " genes");
 
@@ -178,12 +214,21 @@ public class DownstreamerConverters {
 			LOGGER.info("Number of selected columns: " + colsToSelect.size());
 			matrix = matrix.viewColSelection(colsToSelect);
 		}
-		
-		
-		matrix.normalizeRows();
-		LOGGER.info("Normalized genes to have mean 0 and sd 1");
 
+		if (options.getConversionRowIncludeFilter() != null) {
+			List<String> rowsToSelect = IoUtils.readMatrixAnnotations(options.getConversionRowIncludeFilter());
 
+			LinkedHashMap<String, Integer> allGenes = matrix.getHashRows();
+			rowsToSelect.retainAll(allGenes.keySet());
+
+			LOGGER.info("Number of selected rows that exist in matrix: " + rowsToSelect.size());
+			matrix = matrix.viewRowSelection(rowsToSelect);
+		}
+
+//		matrix.normalizeRows();
+//		LOGGER.info("Normalized genes to have mean 0 and sd 1");
+		matrix = matrix.createColumnForceNormalDuplicate();
+		LOGGER.info("Created force normal of each sample");
 
 		ArrayList<String> rowNames = matrix.getRowObjects();
 		ArrayList<String> nonNanRowNames = new ArrayList<>(matrix.rows());
@@ -196,15 +241,15 @@ public class DownstreamerConverters {
 				e = matrix.getElementQuick(r, c);
 				if (Double.isNaN(e)) {
 					continue rows;
-				} else if (e != 0){
+				} else if (e != 0) {
 					nonZeroValue = true;
 				}
 			}
 			//if here not NaN values;
-			if(nonZeroValue){
+			if (nonZeroValue) {
 				nonNanRowNames.add(rowNames.get(r));
 			}
-	
+
 		}
 
 		if (nonNanRowNames.size() < rowNames.size()) {
@@ -425,6 +470,10 @@ public class DownstreamerConverters {
 
 	public static void mergeConvertTxt(DownstreamerOptions options) throws IOException, Exception {
 
+		if (options.getConversionRowIncludeFilter() != null && !options.getConversionRowIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionRowIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()))).withCSVParser(parser).build();
 
@@ -505,6 +554,11 @@ public class DownstreamerConverters {
 				pb.step();
 
 			});
+		}
+
+		if (options.getConversionRowIncludeFilter() != null) {
+			overlappingVariants.retainAll(new HashSet<>(IoUtils.readMatrixAnnotations(options.getConversionRowIncludeFilter())));
+			LOGGER.info("Selected variants that are in the row filter");
 		}
 
 		LOGGER.info("Overlapped variants, retained " + overlappingVariants.size());

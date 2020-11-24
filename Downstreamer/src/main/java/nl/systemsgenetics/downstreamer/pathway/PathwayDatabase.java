@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.downstreamer.pathway;
 
+import java.io.File;
 import java.util.Objects;
 
 /**
@@ -57,6 +58,8 @@ public class PathwayDatabase {
 		return true;
 	}
 	
-	
+	public boolean exist(){
+		return new File(location + ".dat").canRead();
+	}
 	
 }

@@ -118,6 +118,14 @@ public class DownstreamerMainAnalysis {
     public static DownstreamerStep2Results step2(DownstreamerOptions options, DownstreamerStep1Results step1Res) throws IOException, Exception {
 
         options.getIntermediateFolder().mkdir();
+		
+		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+		
+		for(PathwayDatabase pd : pathwayDatabases){
+			if(!pd.exist()){
+				throw new FileNotFoundException("Could not read: " + pd.getLocation() + ".dat");
+			}
+		}
 
         if (options.getMode() == DownstreamerMode.STEP2) {
             LOGGER.info("Continuing previous analysis by loading gene p-values");
@@ -177,7 +185,7 @@ public class DownstreamerMainAnalysis {
         }
 
 
-        final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+        
 
         // Split the null GWAS matrix into the parts used in pathway enrichment.
         final int nrSampleToUseForCorrelation = options.getPermutationGeneCorrelations();

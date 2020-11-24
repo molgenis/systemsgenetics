@@ -55,6 +55,7 @@ public class DownstreamerOptions {
 	private final List<PathwayDatabase> pathwayDatabases;
 	private List<PathwayDatabase> pathwayDatabases2 = null;
 	private final File conversionColumnIncludeFilter;
+	private final File conversionRowIncludeFilter;
 	private final boolean correctForLambdaInflation;
 	private final int permutationPathwayEnrichment;
 	private final int permutationGeneCorrelations;
@@ -81,6 +82,7 @@ public class DownstreamerOptions {
 	private final String y;
 	private List<String> pathwayDatabasesToAnnotateWithGwas;
 	private Map<String, File> alternativeTopHitFiles;
+	private final boolean trimGeneNames; //for convert expression data mode
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -238,6 +240,12 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("Optional file with columns to select during conversion");
 		OptionBuilder.withLongOpt("cols");
 		OPTIONS.addOption(OptionBuilder.create("co"));
+		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Optional file with rows to select during conversion");
+		OptionBuilder.withLongOpt("rows");
+		OPTIONS.addOption(OptionBuilder.create("ro"));
 
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Correct the GWAS for the lambda inflation");
@@ -343,6 +351,12 @@ public class DownstreamerOptions {
 		OptionBuilder.withLongOpt("regress-gene-lengths");
 		OPTIONS.addOption(OptionBuilder.create("rgl"));
 
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("For mode CONVERT_EXP trim train .## from the gene names");
+		OptionBuilder.withLongOpt("trimGeneNames");
+		OPTIONS.addOption(OptionBuilder.create("tgn"));
+		
+		
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Only relevant for MODE: R_2_Z_SCORE to specify the number of samples used to create the correlation matrix");
@@ -407,6 +421,7 @@ public class DownstreamerOptions {
 		quantileNormalizePermutations = commandLine.hasOption("qn");
 		regressGeneLengths = commandLine.hasOption("rgl");
 		run1BasePath = commandLine.hasOption("soo") ? new File(commandLine.getOptionValue("soo")) : outputBasePath;
+		trimGeneNames = commandLine.hasOption("tgn");
 
 		if (quantileNormalizePermutations && forceNormalGenePvalues) {
 			throw new ParseException("Can't combine -qn with -fngp");
@@ -438,17 +453,22 @@ public class DownstreamerOptions {
 			gwasZscoreMatrixPath = null;
 		}
 
-		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE) {
+		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.CONVERT_EXP) {
 			pvalueToZscore = commandLine.hasOption("p2z");
 			if (commandLine.hasOption("co")) {
 				conversionColumnIncludeFilter = new File(commandLine.getOptionValue("co"));
 			} else {
 				conversionColumnIncludeFilter = null;
 			}
+			if (commandLine.hasOption("ro")) {
+				conversionRowIncludeFilter = new File(commandLine.getOptionValue("ro"));
+			} else {
+				conversionRowIncludeFilter = null;
+			}
 		} else {
 			pvalueToZscore = false;
 			conversionColumnIncludeFilter = null;
-
+			conversionRowIncludeFilter = null;
 		}
 
 		switch (mode) {
@@ -1036,6 +1056,9 @@ public class DownstreamerOptions {
 				if (conversionColumnIncludeFilter != null) {
 					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
 				}
+				if (conversionRowIncludeFilter != null){
+					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
+				}
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
 				break;
 			case CONVERT_TXT_MERGE:
@@ -1073,8 +1096,14 @@ public class DownstreamerOptions {
 				break;
 			case CONVERT_EXP:
 				LOGGER.info(" * Expression matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
-				if (columnsToExtract != null) {
-					LOGGER.info(" * Columns to extract: " + String.join(" ", columnsToExtract));
+				if (conversionColumnIncludeFilter != null) {
+					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
+				}
+				if (conversionRowIncludeFilter != null){
+					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
+				}
+				if(trimGeneNames){
+					LOGGER.info("Trimming gene names to remove .## from the name");
 				}
 				break;
 			case TRANSPOSE:
@@ -1372,6 +1401,14 @@ public class DownstreamerOptions {
 
 	public Map<String, File> getAlternativeTopHitFiles() {
 		return alternativeTopHitFiles;
+	}
+
+	public File getConversionRowIncludeFilter() {
+		return conversionRowIncludeFilter;
+	}
+
+	public boolean isTrimGeneNames() {
+		return trimGeneNames;
 	}
 
 }
