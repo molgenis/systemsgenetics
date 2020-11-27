@@ -49,7 +49,6 @@ sampleUmap <- read.delim("Umap/umap2.txt")
 
 
 
-
 tissueColMap <- read.delim("Umap/tissueCol5.txt", stringsAsFactors = F)
 sampleAnnotation <- read.delim("Umap/sampleAnnotations.txt", stringsAsFactors = F, row.names = 1 )
 str(sampleAnnotation)
@@ -65,9 +64,8 @@ all(row.names(sampleAnnotation) == row.names(sampleUmap))
 #sampleAnnotation$pch[sampleAnnotation$CellLine != ""] = 5
 #sampleAnnotation$pch[sampleAnnotation$TissueType != ""] = 21
 
-defaultCol <- "gray90"
-
-sampleAnnotation$col = adjustcolor(defaultCol, alpha.f = 0.1)
+defaultCol <- adjustcolor("gray90", alpha.f = 0.1)
+sampleAnnotation$col = defaultCol
 #sampleAnnotation$col = NA
 #sampleAnnotation$bg = NA
 
@@ -91,20 +89,12 @@ str(clusterLabels)
 #sampleAnnotation$bg[sampleAnnotation$PlotClass == "osteoblastic cell"] <- adjustcolor("red", alpha.f = 0.5)
 
 
-sampleAnnotation$plotOrder <- 1
-sampleAnnotation$plotOrder[sampleAnnotation$col != defaultCol] <- 2
-
-
-sampleAnnotation <- sampleAnnotation[ order(sampleAnnotation$plotOrder),]
-sampleUmap <- sampleUmap[order(sampleAnnotation$plotOrder),]
-
-
-
 clusterLabels <- read.delim("Umap/lables.txt",stringsAsFactors = F, comment.char = "#")
 clusterLabelsZoom <- read.delim("Umap/lablesZoom.txt",stringsAsFactors = F, comment.char = "#")
 
 zoomLines <- read.delim("Umap/zoomLines.txt",stringsAsFactors = F, comment.char = "#")
 
+lines <- read.delim("Umap/lines.txt",stringsAsFactors = F, comment.char = "#")
 
 
 for(i in 1:nrow(tissueColMap)){
@@ -112,27 +102,49 @@ for(i in 1:nrow(tissueColMap)){
   sampleAnnotation$bg[sampleAnnotation$PlotClass == tissueColMap$PlotClass[i]] <- adjustcolor(tissueColMap$col[i], alpha.f = 0.3)
 }
 
-#sampleAnnotation$col[sampleAnnotation$PlotClass == "spleen"] <- adjustcolor("black", alpha.f = 0.5)
+#sampleAnnotation$col[sampleAnnotation$PlotClass == "skin"] <- adjustcolor("black", alpha.f = 0.5)
 
+
+sampleAnnotation$plotOrder <- 1
+sampleAnnotation$plotOrder[sampleAnnotation$col != defaultCol] <- 2
+
+plotOrder <- order(sampleAnnotation$plotOrder)
+
+sampleUmapPlot <- sampleUmap[plotOrder,]
+sampleCol <- sampleAnnotation$col[plotOrder]
+
+#all(row.names(sampleAnnotation) == row.names(sampleUmap))
+
+str(sampleAnnotation)
 
 #X11()
 #rpng( width = 1200, height = 1000)
-#pdf("Umap/sampleUmap.pdf", width = 20, height = 10, useDingbats = F)
-layout(matrix(1:2, nrow =1))
 
-par(mar = c(3,3,1,0), xpd = NA)
+pdf("Umap/sampleUmap.pdf", width = 14, height = 7.5, useDingbats = F, title = "GeneNetwork UMAP")
+
+layout(matrix(1:2, nrow =1), widths = c(1.2,1))
+
+par(mar = c(3,3,0,0), xpd = NA)
 
 plot.new()
 #plot.window(xlim = c(-150,100), ylim = c(-200,-50))
-plot.window(xlim = c(-340,390), ylim = c(-380,390), asp = 1)
-axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-#points(sampleUmap, col = sampleAnnotation$col, pch = 16, cex = 0.6)
+plot.window(xlim = c(-358,380), ylim = c(-402,335), asp = 1)
+axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1, col.axis = "gray30")
+axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1, col.axis = "gray30")
+points(sampleUmapPlot, col = sampleCol, pch = 16, cex = 0.6)
+#title(xlab = "UMAP-1", ylab = "UMAP-2", line = 2)
+mtext("UMAP-1",side = 1,at = 0, line = 2, col = "gray30")
+mtext("UMAP-2",side = 2,at = 0, line = 2, col = "gray30")
+
+apply(lines, 1, function(coord){
+  lines(x = coord[1:2], y = coord[3:4], col = "gray70")
+})
+
 
 text(clusterLabels$centerX + clusterLabels$offsetX, clusterLabels$centerY + clusterLabels$offsetY, labels = clusterLabels$label, col = "gray30")
 
-zoomX <- c(-125,55)
-zoomY <- c(-202,-65)
+zoomX <- c(-120,54)
+zoomY <- c(-202,-66)
 
 rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2], border = "gray70")
 
@@ -140,15 +152,14 @@ zoomLineStartX <- grconvertX(zoomX[2], from = "user", to = "device")
 zoomLineStartY1 <- grconvertY(zoomY[1], from = "user", to = "device")
 zoomLineStartY2 <- grconvertY(zoomY[2], from = "user", to = "device")
 
-zoomPoints <- sampleUmap$V1 >= zoomX[1] & sampleUmap$V1 <= zoomX[2] & sampleUmap$V2 >= zoomY[1] & sampleUmap$V2 <= zoomY[2]
+zoomPoints <- sampleUmapPlot$V1 >= zoomX[1] & sampleUmapPlot$V1 <= zoomX[2] & sampleUmapPlot$V2 >= zoomY[1] & sampleUmapPlot$V2 <= zoomY[2]
 
-par(mar = c(1,0,1,0), xpd = NA)
-
+par(mar = c(0,0,0,0), xpd = NA)
 plot.new()
-plot.window(xlim = c(-125,55), ylim = c(-202,-65), asp = 1)
+plot.window(xlim = c(-115,50), ylim = c(-202,-65), asp = 1)
 #axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
 #axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-points(sampleUmap[zoomPoints, ], col = sampleAnnotation$col[zoomPoints], pch = 16, cex = 1)
+points(sampleUmapPlot[zoomPoints, ], col = sampleCol[zoomPoints], pch = 16, cex = 0.9)
 
 lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY1, from = "device"),zoomY[1]), col = "gray70")
 lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY2, from = "device"),zoomY[2]), col = "gray70")
@@ -161,26 +172,30 @@ apply(zoomLines, 1, function(coord){
   lines(x = coord[1:2], y = coord[3:4], col = "gray70")
 })
 
+
+
+dev.off()
+
 #lines()  
 
 #lines <- locator(20)
 
-zoomLines2 <- data.frame(
-x1 = lines$x[seq(1, to = length(lines$x), by = 2)],
-x2 = lines$x[seq(2, to = length(lines$x), by = 2)] ,
-y1 = lines$y[seq(1, to = length(lines$x), by = 2)],
-y2 = lines$y[seq(2, to = length(lines$x), by = 2)]
-)
+#lines2 <- data.frame(
+#x1 = lines$x[seq(1, to = length(lines$x), by = 2)],
+#x2 = lines$x[seq(2, to = length(lines$x), by = 2)] ,
+#y1 = lines$y[seq(1, to = length(lines$x), by = 2)],
+#y2 = lines$y[seq(2, to = length(lines$x), by = 2)]
+#)
 
-zoomLines <- rbind(zoomLines, zoomLines2)
+#zoomLines <- rbind(zoomLines, zoomLines2)
+
+#axis(1)
+  #axis(2)
+
+write.table(lines2, "Umap/lines.txt", sep = "\t", quote = F, row.names = F)
 
 
 
-#write.table(zoomLines, "Umap/zoomLines.txt", sep = "\t", quote = F, row.names = F)
-
-
-
-dev.off()
 
 fhs(sampleUmap)
 
