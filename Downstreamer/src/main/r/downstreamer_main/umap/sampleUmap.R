@@ -49,7 +49,6 @@ sampleUmap <- read.delim("Umap/umap2.txt")
 
 
 
-
 tissueColMap <- read.delim("Umap/tissueCol5.txt", stringsAsFactors = F)
 sampleAnnotation <- read.delim("Umap/sampleAnnotations.txt", stringsAsFactors = F, row.names = 1 )
 str(sampleAnnotation)
@@ -65,9 +64,8 @@ all(row.names(sampleAnnotation) == row.names(sampleUmap))
 #sampleAnnotation$pch[sampleAnnotation$CellLine != ""] = 5
 #sampleAnnotation$pch[sampleAnnotation$TissueType != ""] = 21
 
-defaultCol <- "gray90"
-
-sampleAnnotation$col = adjustcolor(defaultCol, alpha.f = 0.1)
+defaultCol <- adjustcolor("gray90", alpha.f = 0.1)
+sampleAnnotation$col = defaultCol
 #sampleAnnotation$col = NA
 #sampleAnnotation$bg = NA
 
@@ -91,20 +89,12 @@ str(clusterLabels)
 #sampleAnnotation$bg[sampleAnnotation$PlotClass == "osteoblastic cell"] <- adjustcolor("red", alpha.f = 0.5)
 
 
-sampleAnnotation$plotOrder <- 1
-sampleAnnotation$plotOrder[sampleAnnotation$col != defaultCol] <- 2
-
-
-sampleAnnotation <- sampleAnnotation[ order(sampleAnnotation$plotOrder),]
-sampleUmap <- sampleUmap[order(sampleAnnotation$plotOrder),]
-
-
-
 clusterLabels <- read.delim("Umap/lables.txt",stringsAsFactors = F, comment.char = "#")
 clusterLabelsZoom <- read.delim("Umap/lablesZoom.txt",stringsAsFactors = F, comment.char = "#")
 
 zoomLines <- read.delim("Umap/zoomLines.txt",stringsAsFactors = F, comment.char = "#")
 
+lines <- read.delim("Umap/lines.txt",stringsAsFactors = F, comment.char = "#")
 
 
 for(i in 1:nrow(tissueColMap)){
@@ -112,75 +102,122 @@ for(i in 1:nrow(tissueColMap)){
   sampleAnnotation$bg[sampleAnnotation$PlotClass == tissueColMap$PlotClass[i]] <- adjustcolor(tissueColMap$col[i], alpha.f = 0.3)
 }
 
-#sampleAnnotation$col[sampleAnnotation$PlotClass == "spleen"] <- adjustcolor("black", alpha.f = 0.5)
+#sampleAnnotation$col[sampleAnnotation$PlotClass == "skin"] <- adjustcolor("black", alpha.f = 0.5)
 
+
+sampleAnnotation$plotOrder <- 1
+sampleAnnotation$plotOrder[sampleAnnotation$col != defaultCol] <- 2
+
+plotOrder <- order(sampleAnnotation$plotOrder)
+
+sampleUmapPlot <- sampleUmap[plotOrder,]
+sampleCol <- sampleAnnotation$col[plotOrder]
+
+#all(row.names(sampleAnnotation) == row.names(sampleUmap))
+
+str(sampleAnnotation)
 
 #X11()
 #rpng( width = 1200, height = 1000)
-#pdf("Umap/sampleUmap.pdf", width = 20, height = 10, useDingbats = F)
-layout(matrix(1:2, nrow =1))
 
-par(mar = c(3,3,1,0), xpd = NA)
-
-plot.new()
-#plot.window(xlim = c(-150,100), ylim = c(-200,-50))
-plot.window(xlim = c(-340,390), ylim = c(-380,390), asp = 1)
-axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-#points(sampleUmap, col = sampleAnnotation$col, pch = 16, cex = 0.6)
-
-text(clusterLabels$centerX + clusterLabels$offsetX, clusterLabels$centerY + clusterLabels$offsetY, labels = clusterLabels$label, col = "gray30")
-
-zoomX <- c(-125,55)
-zoomY <- c(-202,-65)
-
-rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2], border = "gray70")
-
-zoomLineStartX <- grconvertX(zoomX[2], from = "user", to = "device")
-zoomLineStartY1 <- grconvertY(zoomY[1], from = "user", to = "device")
-zoomLineStartY2 <- grconvertY(zoomY[2], from = "user", to = "device")
-
-zoomPoints <- sampleUmap$V1 >= zoomX[1] & sampleUmap$V1 <= zoomX[2] & sampleUmap$V2 >= zoomY[1] & sampleUmap$V2 <= zoomY[2]
-
-par(mar = c(1,0,1,0), xpd = NA)
-
-plot.new()
-plot.window(xlim = c(-125,55), ylim = c(-202,-65), asp = 1)
-#axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-#axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-points(sampleUmap[zoomPoints, ], col = sampleAnnotation$col[zoomPoints], pch = 16, cex = 1)
-
-lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY1, from = "device"),zoomY[1]), col = "gray70")
-lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY2, from = "device"),zoomY[2]), col = "gray70")
-rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2], border = "gray70")
+pdf("Umap/sampleUmap.pdf", width = 14, height = 7.5, useDingbats = F, title = "GeneNetwork UMAP")
 
 
-text(clusterLabelsZoom$centerX + clusterLabelsZoom$offsetX, clusterLabelsZoom$centerY + clusterLabelsZoom$offsetY, labels = clusterLabelsZoom$label, col = "gray30")
+createUmap(sampleUmapPlot, sampleCol)
 
-apply(zoomLines, 1, function(coord){
-  lines(x = coord[1:2], y = coord[3:4], col = "gray70")
-})
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+createUmap <- function(sampleUmapPlot, sampleCol){
+  
+  layout(matrix(1:2, nrow =1), widths = c(1.2,1))
+  
+  par(mar = c(3,3,0,0), xpd = NA)
+  
+  plot.new()
+  #plot.window(xlim = c(-150,100), ylim = c(-200,-50))
+  plot.window(xlim = c(-358,380), ylim = c(-402,335), asp = 1)
+  axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1, col.axis = "gray30")
+  axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1, col.axis = "gray30")
+  points(sampleUmapPlot, col = sampleCol, pch = 16, cex = 0.6)
+  #title(xlab = "UMAP-1", ylab = "UMAP-2", line = 2)
+  mtext("UMAP-1",side = 1,at = 0, line = 2, col = "gray30")
+  mtext("UMAP-2",side = 2,at = 0, line = 2, col = "gray30")
+  
+  apply(lines, 1, function(coord){
+    lines(x = coord[1:2], y = coord[3:4], col = "gray70")
+  })
+  
+  
+  text(clusterLabels$centerX + clusterLabels$offsetX, clusterLabels$centerY + clusterLabels$offsetY, labels = clusterLabels$label, col = "gray30")
+  
+  zoomX <- c(-120,54)
+  zoomY <- c(-202,-66)
+  
+  rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2], border = "gray70")
+  
+  zoomLineStartX <- grconvertX(zoomX[2], from = "user", to = "device")
+  zoomLineStartY1 <- grconvertY(zoomY[1], from = "user", to = "device")
+  zoomLineStartY2 <- grconvertY(zoomY[2], from = "user", to = "device")
+  
+  zoomPoints <- sampleUmapPlot$V1 >= zoomX[1] & sampleUmapPlot$V1 <= zoomX[2] & sampleUmapPlot$V2 >= zoomY[1] & sampleUmapPlot$V2 <= zoomY[2]
+  
+  par(mar = c(0,0,0,0), xpd = NA)
+  plot.new()
+  plot.window(xlim = c(-115,50), ylim = c(-202,-65), asp = 1)
+  #axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
+  #axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
+  points(sampleUmapPlot[zoomPoints, ], col = sampleCol[zoomPoints], pch = 16, cex = 0.9)
+  
+  lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY1, from = "device"),zoomY[1]), col = "gray70")
+  lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY2, from = "device"),zoomY[2]), col = "gray70")
+  rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2], border = "gray70")
+  
+  
+  text(clusterLabelsZoom$centerX + clusterLabelsZoom$offsetX, clusterLabelsZoom$centerY + clusterLabelsZoom$offsetY, labels = clusterLabelsZoom$label, col = "gray30")
+  
+  apply(zoomLines, 1, function(coord){
+    lines(x = coord[1:2], y = coord[3:4], col = "gray70")
+  })
+  
+  
+}
+
+
+
+
+
+
 
 #lines()  
 
 #lines <- locator(20)
 
-zoomLines2 <- data.frame(
-x1 = lines$x[seq(1, to = length(lines$x), by = 2)],
-x2 = lines$x[seq(2, to = length(lines$x), by = 2)] ,
-y1 = lines$y[seq(1, to = length(lines$x), by = 2)],
-y2 = lines$y[seq(2, to = length(lines$x), by = 2)]
-)
+#lines2 <- data.frame(
+#x1 = lines$x[seq(1, to = length(lines$x), by = 2)],
+#x2 = lines$x[seq(2, to = length(lines$x), by = 2)] ,
+#y1 = lines$y[seq(1, to = length(lines$x), by = 2)],
+#y2 = lines$y[seq(2, to = length(lines$x), by = 2)]
+#)
 
-zoomLines <- rbind(zoomLines, zoomLines2)
+#zoomLines <- rbind(zoomLines, zoomLines2)
+
+#axis(1)
+  #axis(2)
+
+write.table(lines2, "Umap/lines.txt", sep = "\t", quote = F, row.names = F)
 
 
 
-#write.table(zoomLines, "Umap/zoomLines.txt", sep = "\t", quote = F, row.names = F)
-
-
-
-dev.off()
 
 fhs(sampleUmap)
 
@@ -210,9 +247,10 @@ cols = c("", "", "", "", "", "", "", "", "", "", "", "", "")
 
 
 source(paste0("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\main\\r\\downstreamer_main/downstreamer_functions.r"))
-ced <- read.depict2("final_paper/multiple_sclerosis_2013_24076602_hg19_enrichtments_exHla.xlsx")
+ced <- read.depict2("parkinsons_nalls2019_harm_jan_enrichtments_exHla.xlsx")
+name <- "Parkinsons"
 
-ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
+#ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
 str(ced)
 
 cedExp <- ced$Expression
@@ -233,7 +271,7 @@ bonfZscore <- min(abs(cedExp$Enrichment.Z.score[cedExp$Bonferroni.significant]))
 maxZ <- max(cedExp$Enrichment.Z.score)
 breaks <- seq(fdrZthreshold, maxZ, length.out = 21)
 
-greyBreakCount <- round((fdrZthreshold - -fdrZthreshold ) / (breaks[2] - breaks[1]))
+greyBreakCount <- round((fdrZthreshold + fdrZthreshold ) / (breaks[2] - breaks[1]))
 
 colfunc<-colorRampPalette(c("gold2","orange","orangered","red3"))
 colMapEnrich <- colfunc(20)
@@ -248,61 +286,257 @@ fullColGradient <- c(rev(colMapDepl), rep("grey90", greyBreakCount), colMapEnric
 
 library( plotfunctions)
 
-pdf("MS-UMAP.pdf", width = 20, height = 10, useDingbats = F)
-par(mar = c(1,0,1,0), xpd = NA)
-layout(matrix(1:2, nrow =1))
-
-col <- adjustcolor(colCed[order(abs(cedExp$Enrichment.Z.score),decreasing = F)], alpha.f = 0.5)
+sampleCol <- adjustcolor(colCed[order(abs(cedExp$Enrichment.Z.score),decreasing = F)], alpha.f = 0.5)
 
 sampleUmaporder <- sampleUmap[order(abs(cedExp$Enrichment.Z.score),decreasing = F),]
 
-plot(sampleUmaporder, xlim = c(-380,390), ylim = c(-410,390), col = col, pch = 16, cex = 0.4, xlab = "UMAP-1", ylab = "UMAP-2", bty = "n")#, bg = adjustcolor(colCed[order(abs(cedExp$Enrichment.Z.score),decreasing = F)], alpha.f = 0.05)
 
+pdf(paste0("Umap/sampleUmap", name , ".pdf"), width = 14, height = 7.5, useDingbats = F, title = paste0("GeneNetwork UMAP, ", name, " enrichments"))
 
-zoomX <- c(-125,55)
-zoomY <- c(-202,-65)
+createUmap(sampleUmaporder, sampleCol)
 
-rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2])
+posLegend = 0.86
 
-zoomLineStartX <- grconvertX(zoomX[2], from = "user", to = "device")
-zoomLineStartY1 <- grconvertY(zoomY[1], from = "user", to = "device")
-zoomLineStartY2 <- grconvertY(zoomY[2], from = "user", to = "device")
-
-zoomPoints <- sampleUmaporder$V1 >= zoomX[1] & sampleUmaporder$V1 <= zoomX[2] & sampleUmaporder$V2 >= zoomY[1] & sampleUmaporder$V2 <= zoomY[2]
-
-par(mar = c(1,0,1,0), xpd = NA)
-
-plot.new()
-plot.window(xlim = c(-150,100), ylim = c(-200,-50), asp = 1)
-#axis(side = 1, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-#axis(side = 2, at = c(-200,0,200), col = "gray30", lwd = 1.5, col.axis = "gray30")
-points(sampleUmaporder[zoomPoints, ], col = col[zoomPoints], pch = 16, cex = 1)
-
-lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY1, from = "device"),zoomY[1]))
-lines(c(grconvertX(zoomLineStartX, from = "device"), zoomX[1]), c(grconvertY(zoomLineStartY2, from = "device"),zoomY[2]))
-rect(zoomX[1], zoomY[1], zoomX[2], zoomY[2])
-
-
-
-gradientLegend(
+gradientLegend2(
   c(-maxZ,maxZ),
   color = fullColGradient,
-  pos = 0.6,
+  pos = c(0.25,posLegend,0.75,posLegend + 0.02),
   side = 3,
   dec = 1,
-  length = 0.4,
+  length = 0.5,
   depth = 0.025,
   inside = T,
   coords = FALSE,
   pos.num = NULL,
   n.seg = c(-maxZ,-bonfZscore,-fdrZthreshold,0,fdrZthreshold,bonfZscore,maxZ),
-  border.col = "black",
-  tick.col = NULL,
+  border.col = NA,
+  tick.col = "gray30",
   fit.margin = TRUE,
 )
 
-
+mtext(paste0("Sample enrichment for: ", name ), side = 3, line = -4.2, col = "gray30")
 
 dev.off()
 
+
+
+#addapted from plotfunctions
+gradientLegend2 <- function (valRange, color = "terrain", nCol = 30, pos = 0.875, 
+          side = 4, dec = NULL, length = 0.25, depth = 0.05, inside = FALSE, 
+          coords = FALSE, pos.num = NULL, n.seg = 1, border.col = "black", 
+          tick.col = NULL, fit.margin = TRUE, ...) 
+{
+  loc <- c(0, 0, 0, 0)
+  ticks <- c()
+  labels <- c()
+  if (side %in% c(1, 3)) {
+    if (length(pos) == 1) {
+      pos.other <- ifelse(side > 2, 1, 0)
+      switch <- ifelse(inside, 0, 1)
+      switch <- ifelse(side > 2, 1 - switch, switch)
+      loc <- getCoords(c(pos - 0.5 * length, pos.other - 
+                           switch * depth, pos + 0.5 * length, pos.other + 
+                           (1 - switch) * depth), side = c(side, 2, side, 
+                                                           2))
+    }
+    else if (length(pos) == 4) {
+      if (coords) {
+        loc <- pos
+      }
+      else {
+        loc <- getCoords(pos, side = c(1, 2, 1, 2))
+      }
+    }
+    if (length(n.seg) == 1) {
+      ticks <- seq(loc[1], loc[3], length = n.seg + 2)
+      labels <- seq(min(valRange), max(valRange), length = n.seg + 
+                      2)
+    }
+    else {
+      labels <- c(min(valRange), sort(n.seg[n.seg > min(valRange) & 
+                                              n.seg < max(valRange)], decreasing = FALSE), 
+                  max(valRange))
+      b <- diff(loc[c(1, 3)])/diff(range(labels))
+      ticks <- (labels - min(labels)) * b + loc[1]
+    }
+  }
+  else if (side %in% c(2, 4)) {
+    if (length(pos) == 1) {
+      pos.other <- ifelse(side > 2, 1, 0)
+      switch <- ifelse(inside, 0, 1)
+      switch <- ifelse(side > 2, 1 - switch, switch)
+      loc <- getCoords(c(pos.other - switch * depth, pos - 
+                           0.5 * length, pos.other + (1 - switch) * depth, 
+                         pos + 0.5 * length), side = c(1, side, 1, side))
+    }
+    else if (length(pos) == 4) {
+      if (coords) {
+        loc <- pos
+      }
+      else {
+        loc <- getCoords(pos, side = c(1, 2, 1, 2))
+      }
+    }
+    if (length(n.seg) == 1) {
+      ticks <- seq(loc[2], loc[4], length = n.seg + 2)
+      labels <- seq(min(valRange), max(valRange), length = n.seg + 
+                      2)
+    }
+    else {
+      labels <- c(min(valRange), sort(n.seg[n.seg > min(valRange) & 
+                                              n.seg < max(valRange)], decreasing = FALSE), 
+                  max(valRange))
+      b <- diff(loc[c(2, 4)])/diff(range(labels))
+      ticks <- (labels - min(labels)) * b + loc[2]
+    }
+  }
+  if (is.null(pos.num)) {
+    if (side %in% c(1, 3)) {
+      if (inside) {
+        pos.num <- ifelse(side == 1, 3, 1)
+      }
+      else {
+        pos.num <- side
+      }
+    }
+    else {
+      if (inside) {
+        pos.num <- ifelse(side == 2, 4, 2)
+      }
+      else {
+        pos.num <- side
+      }
+    }
+  }
+  getcol <- get_palette(color, nCol = nCol)
+  mycolors <- getcol[["color"]]
+  if (is.null(tick.col)) {
+    tick.col = border.col
+  }
+  vals <- seq(min(valRange), max(valRange), length = length(mycolors))
+  im <- as.raster(mycolors[matrix(1:length(mycolors), ncol = 1)])
+  n <- max(c(length(ticks) - 2, 0))
+  if (side%%2 == 1) {
+    im <- t(im)
+    rasterImage(im, loc[1], loc[2], loc[3], loc[4], col = mycolors, 
+                xpd = T)
+    segments(x0 = ticks, x1 = ticks, y0 = rep(loc[2]-1.5, n), 
+             y1 = rep(loc[2], n), col = tick.col, xpd = TRUE)
+    if(is.na(border.col) & !is.na(tick.col)){
+      segments(loc[1], loc[2], loc[3], loc[2], col = tick.col)
+    } 
+      rect(loc[1], loc[2], loc[3], loc[4], border = border.col, 
+           xpd = T)
+    
+      
+  }
+  else {
+    im <- rev(im)
+    rasterImage(im, loc[1], loc[2], loc[3], loc[4], col = mycolors, 
+                xpd = T)
+    segments(x0 = rep(loc[1], n), x1 = rep(loc[3], n), y0 = ticks, 
+             y1 = ticks, col = tick.col, xpd = TRUE)
+    rect(loc[1], loc[2], loc[3], loc[4], border = border.col, 
+         xpd = T)
+  }
+  lab.loc.x <- lab.loc.y <- c()
+  if (side %in% c(1, 3)) {
+    lab.loc.x <- ticks
+    if (pos.num == 1) {
+      lab.loc.y <- rep(loc[2], length(lab.loc.x))
+    }
+    else if (pos.num == 3) {
+      lab.loc.y <- rep(loc[4], length(lab.loc.x))
+    }
+    else {
+      lab.loc.y <- rep((loc[2] + loc[4])/2, length(lab.loc.x))
+    }
+  }
+  else if (side %in% c(2, 4)) {
+    lab.loc.y <- ticks
+    if (pos.num == 2) {
+      lab.loc.x <- rep(loc[1], length(lab.loc.y))
+    }
+    else if (pos.num == 4) {
+      lab.loc.x <- rep(loc[3], length(lab.loc.y))
+    }
+    else {
+      lab.loc.x <- rep((loc[1] + loc[3])/2, length(lab.loc.y))
+    }
+  }
+  determineDec <- function(x) {
+    out = max(unlist(lapply(strsplit(as.character(x), split = "\\."), 
+                            function(y) {
+                              return(ifelse(length(y) > 1, nchar(gsub("^([^0]*)([0]+)$", 
+                                                                      "\\1", as.character(y[2]))), 0))
+                            })))
+    return(out)
+  }
+  if (is.null(dec)) {
+    dec <- min(c(6, determineDec(labels)))
+  }
+  eval(parse(text = sprintf("labels = sprintf('%s', round(labels, dec) )", 
+                            paste("%.", dec, "f", sep = ""))))
+  labels <- gsub("^(\\-)(0)([\\.0]*)$", "\\2\\3", labels)
+  if (fit.margin == TRUE & inside == FALSE) {
+    lab.height <- max(strheight(labels))
+    lab.width <- max(strwidth(labels))
+    lab.cor <- strheight("0") * 0.5
+    max.pos <- getFigCoords("f")
+    cex.f <- NA
+    change <- NA
+    if (pos.num == 1) {
+      max.height = lab.loc.y[1] - max.pos[3]
+      cex.f = max.height/(lab.height + lab.cor)
+      change <- ifelse(cex.f < 0.8, (lab.height + lab.cor) * 
+                         0.8 - max.height, NA)
+    }
+    else if (pos.num == 2) {
+      max.width = lab.loc.x[1] - max.pos[1]
+      cex.f = max.width/(lab.width + lab.cor)
+      change <- ifelse(cex.f < 0.8, (lab.width + lab.cor) * 
+                         0.8 - max.width, NA)
+    }
+    else if (pos.num == 3) {
+      max.height = max.pos[4] - lab.loc.y[1]
+      cex.f = max.height/(lab.height + lab.cor)
+      change <- ifelse(cex.f < 0.8, (lab.height + lab.cor) * 
+                         0.8 - max.height, NA)
+    }
+    else if (pos.num == 4) {
+      max.width = max.pos[2] - lab.loc.x[1]
+      cex.f = max.width/(lab.width + lab.cor)
+      change <- ifelse(cex.f < 0.8, (lab.width + lab.cor) * 
+                         0.8 - max.width, NA)
+    }
+    if (cex.f < 0.8) {
+      margin <- c("bottom", "left", "top", "right")
+      warning(sprintf("Increase %s margin to fit labels or decrease the number of decimals, see help(gradientLegend).", 
+                      margin[pos.num]))
+    }
+    par <- list(...)
+    if ("cex" %in% names(par)) {
+      text(x = lab.loc.x, y = lab.loc.y, labels = labels, 
+           col = tick.col, pos = pos.num, xpd = T, ...)
+    }
+    else {
+      text(x = lab.loc.x, y = lab.loc.y, labels = labels, 
+           col = tick.col, pos = pos.num, cex = min(c(0.8, 
+                                                      cex.f)), xpd = T)
+    }
+  }
+  else {
+    par <- list(...)
+    if ("cex" %in% names(par)) {
+      text(x = lab.loc.x, y = lab.loc.y, labels = labels, 
+           col = tick.col, pos = pos.num, xpd = T, ...)
+    }
+    else {
+      text(x = lab.loc.x, y = lab.loc.y, labels = labels, 
+           col = tick.col, pos = pos.num, cex = 0.8, xpd = T)
+    }
+  }
+  invisible(list(loc = loc, ticks = ticks, labels = labels, 
+                 im = im))
+}
 
