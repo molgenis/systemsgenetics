@@ -63,7 +63,7 @@ public class CommandLineOptions {
 		Option genotype = Option.builder("g").required(true).hasArg().longOpt("genotype").desc("Genotype file name")
 				.argName("file").build();
 		Option genotypeConfigurationTypeOption = Option.builder("gc").required(false).hasArg().longOpt("genotypeConfigurationType")
-				.desc("Which genotype configuration type to use (either all or two)").build();
+				.desc("Which genotype configuration type to use (either one, all or two)").build();
 		Option minimumSamplesPerGenotype = Option.builder("m").required(false).hasArg().longOpt("minimum_samples_per_genotype")
 				.desc("The minimum amount of samples need for each genotype of a QTL for the QTL to be included in the results")
 				.argName("int").build();
