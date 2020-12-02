@@ -1,0 +1,59 @@
+```{r}
+setwd("evaluating_coregulation")
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+library(UpSetR)
+datasets <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+
+```
+
+```{r}
+make.upset.matrix <- function(datasets, trait="Coregulation", collumn="FDR.5..significant") {
+  out <- matrix()
+  i=0
+  for (dataset in names(datasets)) {
+    tmp <- datasets[[dataset]][[trait]]
+    tmp[tmp$Enrichment.Z.score < 0, collumn] <- F
+    if (i==0) {
+      out <- matrix(tmp[,collumn])
+      rownames(out) <- tmp[,1]
+    } else {
+      out <- cbind(out, tmp[rownames(out), collumn])
+    }
+    i <- i+1
+  }
+  colnames(out) <- names(datasets)
+  
+  out <- out[rowSums(out) >=1,]
+  
+  return(out)
+}
+
+datasets <- datasets[c("coeliac_disease_2010_20190752",
+                                                 "coeliac_disease_2011_22057235", 
+                                                 "asthma_2020_32296059",
+                                                 "rheumatoid_arthritis_2014_24390342",  
+                                                 "inflammatory_bowel_disease_2017_29906448")]
+
+raw.matrix           <- make.upset.matrix(datasets)
+bonf.sig.coreg.genes <- as.data.frame(apply(make.upset.matrix(datasets), 2, as.numeric))
+
+upset(bonf.sig.coreg.genes, nsets = ncol(bonf.sig.coreg.genes))
+
+
+bonf.sig.coreg.genes <- bonf.sig.coreg.genes[, c("coeliac_disease_2011_22057235", 
+                                                 "asthma_2020_32296059",
+                                                 "rheumatoid_arthritis_2014_24390342",  
+                                                 "inflammatory_bowel_disease_2017_29906448")]
+upset(bonf.sig.coreg.genes)
+
+
+zscores <- make.zscore.matrix(datasets)
+zscores <- zscores[rownames(raw.matrix), colnames(bonf.sig.coreg.genes)]
+
+zscore.correlation <- cor(zscores, method="spearman")
+pairs(zscores, col=alpha("black", 0.2))
+cor(zscores)
+```
+

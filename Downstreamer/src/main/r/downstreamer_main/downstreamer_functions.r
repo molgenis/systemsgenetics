@@ -87,9 +87,12 @@ make.tsne.plot <- function(data, trait, x="Annotation1", y="Annotation2", colour
 }
 
 # ------------------------------------------------------ 
-read.depict2 <- function(path) {
-  potential_traits <- excel_sheets(path)
-  potential_traits <- potential_traits[grep("Overview", potential_traits, invert=T)]
+read.depict2 <- function(path, potential_traits=NULL) {
+  if (is.null(potential_traits)) {
+    potential_traits <- excel_sheets(path)
+    potential_traits <- potential_traits[grep("Overview", potential_traits, invert=T)]
+  }
+
   output <- list()
   for (sheet in potential_traits) {
     tmp <- tryCatch({data.frame(read_excel(path, sheet=sheet, col_types ="guess", trim_ws = T), stringsAsFactors=F)},
@@ -115,7 +118,7 @@ read.depict2 <- function(path) {
 
 # ------------------------------------------------------ 
 # Read a batch of downstreamer results
-read.downstreamer.batch <- function(main.downstreamer.output.path, USE.CACHE=F) {
+read.downstreamer.batch <- function(main.downstreamer.output.path, potential_traits=NULL, USE.CACHE=F) {
 
   if (!dir.exists("data")) {
     dir.create("data")
@@ -135,7 +138,7 @@ read.downstreamer.batch <- function(main.downstreamer.output.path, USE.CACHE=F) 
       name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
       name <- gsub("\\_hg19\\.txt\\_exHla\\.xlsx", "", name)
 
-      datasets[[name]] <- read.depict2(file)
+      datasets[[name]] <- read.depict2(file, potential_traits = potential_traits)
     }
     cat("[INFO] Done, saving cache for future use\n")
     save(datasets, file="data/downstreamer_results_cache.RData")
@@ -305,4 +308,38 @@ fancy.qq.plot <- function (y, main="", col="black", highlight.col="blue") {
   
   return(p)
 }
+
+#----------------------------------------------------------------------------------------
+xy.plot.pvalue.colored <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="X", ylab="Y", main=NULL) {
+  auc.pval.1[auc.1 == 0] <- 1
+  auc.pval.2[auc.2 == 0] <- 1
+  
+  df.plot <- data.frame(auc.1=auc.1,
+                        auc.2=auc.2,
+                        signif.1 = auc.pval.1 < (0.05 / length(auc.1)), 
+                        signif.2 = auc.pval.2 < (0.05 / length(auc.2)))
+  
+  df.plot$signif         <- sum(df.plot$signif.1 + df.plot$signif.2)
+  df.plot$signif.both    <- (df.plot$signif.1 + df.plot$signif.2) == 2
+  df.plot$signif.either  <- (df.plot$signif.1 + df.plot$signif.2) > 0
+  df.plot <- df.plot[order(df.plot$signif.either),]
+  
+  lims <- c(min(c(auc.1, auc.2), na.rm=T), max(c(auc.1, auc.2), na.rm=T))  
+
+  p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2)) +
+    geom_point(alpha=0.75, mapping=aes(col=signif.either)) +
+    geom_abline(slope=1, intercept=0, col="grey", lty=2) +
+    coord_fixed() +
+    xlab(xlab) +
+    ylab(ylab) +
+    ggtitle(main) + 
+    scale_color_manual(values=c(`FALSE`="#2c6c70", `TRUE`="#0ae4f2")) +
+    geom_smooth(method="lm") +
+    xlim(lims) +
+    ylim(lims)
+  
+  return(theme.nature(p))
+}
+
+
 
