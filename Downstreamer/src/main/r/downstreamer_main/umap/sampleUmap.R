@@ -247,14 +247,14 @@ cols = c("", "", "", "", "", "", "", "", "", "", "", "", "")
 
 
 source(paste0("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\main\\r\\downstreamer_main/downstreamer_functions.r"))
-ced <- read.depict2("final_paper/amyotrophic_lateral_sclerosis_2018_29273806_hg19_enrichtments_exHla.xlsx")
-name <- "ALS"
+ced <- read.depict2("parkinsons_nalls2019_harm_jan_enrichtments_exHla.xlsx")
+name <- "Parkinsons"
 
 #ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
 str(ced)
 
-cedExp <- ced$expression
-cedExp <- cedExp[match(row.names(sampleUmap), cedExp$Gene.set),]
+cedExp <- ced$Expression
+cedExp <- cedExp[match(row.names(sampleUmap), cedExp$Sample),]
 
 all(cedExp$Sample == row.names(sampleUmap))
 
@@ -314,7 +314,7 @@ gradientLegend2(
   fit.margin = TRUE,
 )
 
-mtext(paste0("Sampe enrichment for: ", name ), side = 3, line = -4.2, col = "gray30")
+mtext(paste0("Sample enrichment for: ", name ), side = 3, line = -4.2, col = "gray30")
 
 dev.off()
 
