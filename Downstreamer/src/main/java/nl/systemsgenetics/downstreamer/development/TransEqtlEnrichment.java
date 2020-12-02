@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.downstreamer.development;
 
+import cern.jet.math.tdouble.DoubleFunctions;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -42,6 +43,7 @@ public class TransEqtlEnrichment {
 
 		String transEqtlMatrixPath = "D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\eqtlgen\\ZScoreMatrix";
 		File gwasFile = new File("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\eqtlgen\\gwas.txt");
+		String outputPath = "D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\eqtlgen\\SumChi2PerGwas.txt";
 
 		if (false) {
 			HashSet<String> colsToExclude = new HashSet<>();
@@ -59,6 +61,14 @@ public class TransEqtlEnrichment {
 		DoubleMatrixDataset<String, String> transEqtlDataset = loadDoubleBinaryData(transEqtlMatrixPath);
 		System.out.println("trans matrix " + transEqtlDataset.rows() + " x " + transEqtlDataset.columns());
 
+		for(int r = 0 ; r < transEqtlDataset.rows() ; ++r){
+			for(int c = 0 ; c < transEqtlDataset.columns(); ++c){
+				if(Double.isNaN(transEqtlDataset.getElementQuick(r, c))){
+					transEqtlDataset.setElementQuick(r, c, 0);
+				}
+			}
+		}	
+		
 		HashMap<String, HashSet<String>> gwasVariants = readGwasFile(gwasFile);
 
 		HashSet<String> allGwasVariants = new HashSet<>();
@@ -66,11 +76,32 @@ public class TransEqtlEnrichment {
 			allGwasVariants.addAll(variants);
 		}
 
-		RandomAccessGenotypeData referenceGenotypeData = RandomAccessGenotypeDataReaderFormats.TRITYPER.createFilteredGenotypeData("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\reference_datasets\\human_b37\\1000G_EUR_noFIN\\HarmoniserAllChrsDuplicatesRemoved", 20000, new VariantIdIncludeFilter(allGwasVariants), null);
-		
-		System.out.println(gwasVariants.get("Ulcerative colitis").size());
+		RandomAccessGenotypeData referenceGenotypeData = RandomAccessGenotypeDataReaderFormats.VCF_FOLDER.createFilteredGenotypeData("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\reference_datasets\\human_b37\\VCF_1Kgp1v3_EUR\\", 20000, new VariantIdIncludeFilter(allGwasVariants), null);
+
+		System.out.println(gwasVariants.get("Inflammatory bowel disease").size());
 		prune(gwasVariants, referenceGenotypeData.getVariantIdMap());
-		System.out.println(gwasVariants.get("Ulcerative colitis").size());
+		System.out.println(gwasVariants.get("Inflammatory bowel disease").size());
+
+		DoubleMatrixDataset<String, String> sumChi2Dataset = new DoubleMatrixDataset<String, String>(transEqtlDataset.getHashCols().keySet(), gwasVariants.keySet());
+
+		for (String trait : gwasVariants.keySet()) {
+			
+			System.out.println(trait);
+			
+			HashSet<String> variants = gwasVariants.get(trait);
+
+			variants.retainAll(transEqtlDataset.getRowObjects());
+
+			DoubleMatrixDataset<String, String> transEffectOfGwasVariants = transEqtlDataset.viewRowSelection(variants);
+
+			for (String gene : transEffectOfGwasVariants.getHashCols().keySet()) {
+				double sumchi2 = transEffectOfGwasVariants.getCol(gene).aggregate(DoubleFunctions.plus, DoubleFunctions.square);
+				sumChi2Dataset.setElement(gene, trait, sumchi2);
+			}
+
+		}
+
+		sumChi2Dataset.save(outputPath);
 
 	}
 
@@ -164,7 +195,7 @@ public class TransEqtlEnrichment {
 
 	public static void prune(final HashMap<String, HashSet<String>> gwasVariants, final HashMap<String, GeneticVariant> varMap) throws IOException {
 
-		final double variantLdThreshold = 0.2;
+		final double variantLdThreshold = 0.1;
 
 		gwasVariants.values().parallelStream().forEach((HashSet<String> variants) -> {
 
@@ -175,11 +206,11 @@ public class TransEqtlEnrichment {
 				String var1Name = variantsList.get(i);
 				GeneticVariant var1 = varMap.get(var1Name);
 				if (var1 == null) {
-					System.out.println(var1Name);
+					//System.out.println(var1Name);
 					variants.remove(var1Name);
 					continue variants;
 				}
-				if(!var1.isBiallelic()){
+				if (!var1.isBiallelic()) {
 					variants.remove(var1Name);
 					continue variants;
 				}
