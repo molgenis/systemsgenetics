@@ -1,0 +1,66 @@
+```{r}
+setwd("umap")
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+library(umap)
+
+
+#pc.file      <- "zcat /groups/umcg-wijmenga/prm02/data_projects/Gado/GeneNetwork_V2_01-02-2018/Covariates/PCA/pc-scores1588.txt.gz"
+pcs           <- fread(pc.file, data.table=F)
+rownames(pcs) <- pcs[,1]
+pcs           <- pcs[,-1]
+pcs.165       <- pcs[,1:165]
+
+tissue.cols <- read.table(tissue.file, stringsAsFactors = F, sep="\t", header=T)
+tissue.annot <- fread(sample.file, stringsAsFactors = F, sep="\t", header=T, data.table=F)
+
+tissue.annot[!tissue.annot$TissueType %in% tissue.cols$Tissues,"TissueType"] <- 0
+rownames(tissue.annot) <- tissue.annot[,1]
+tissue.cols            <- rbind(tissue.cols, c("0", "lightgrey"))
+tissue.cols$alpha      <- c(rep(0.3, 18), 0.1)
+
+cols.vec               <- tissue.cols$col
+names(cols.vec)        <- tissue.cols[,1]
+alpha.vec              <- tissue.cols$alpha
+names(alpha.vec)       <- tissue.cols[,1]
+
+```
+
+```{r}
+um <- umap(pcs.165,
+           verbose=T,
+           n_neighbors=150,
+           n_epochs=1000,
+           min_dist=0.9,
+           spread=1,
+           random_state=5820785,
+           transform_state=5820785)
+save(um, file="output/umap_cache_v10.Rdata")
+
+
+km <- kmeans(um$layout, length(unique(tissue.annot$TissueType)), iter.max=1000)
+tissue.annot$Cluster <- km$cluster
+
+inferred.tissue.type <-
+sapply(km$cluster, function(cluster.nr) {
+  cur.tab <- table(tissue.annot[tissue.annot$Cluster == cluster.nr, "TissueType"])
+  
+  
+}) 
+
+
+
+df.plot <- data.frame(x=um$layout[,1],
+                      y=um$layout[,2],
+                      cols=tissue.annot[rownames(um$layout),"TissueType"])
+
+df.plot <- df.plot[order(df.plot$cols),]
+
+p1 <- ggplot(df.plot, aes(x=x, y=y, col=cols, alpha=cols)) +
+  geom_point() 
+theme.nature(p1) +
+  scale_color_manual(values=cols.vec) +
+  scale_alpha_manual(values = alpha.vec) + guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+```
+

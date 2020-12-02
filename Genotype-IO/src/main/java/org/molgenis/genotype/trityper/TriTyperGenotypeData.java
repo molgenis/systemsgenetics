@@ -361,7 +361,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 			ctr++;
 			++unfilteredSnpCount;
 			if (ctr % 1000000 == 0) {
-				LOG.info(ctr + " SNPs found in file, " + allSNPHash.size() + " loaded so far.");
+				LOG.debug(ctr + " SNPs found in file, " + allSNPHash.size() + " loaded so far.");
 			}
 
 		}
@@ -394,7 +394,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 
 			++lineCount;
 			if (lineCount % 1000000 == 0) {
-				LOG.info(lineCount + " SNP annotations found in file so far.");
+				LOG.debug(lineCount + " SNP annotations found in file so far.");
 			}
 
 			if (chrPosId.length < 3) {

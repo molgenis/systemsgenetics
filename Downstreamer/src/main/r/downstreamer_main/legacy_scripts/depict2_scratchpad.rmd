@@ -1,0 +1,213 @@
+# Genelength and normalized gene scores
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(readxl)
+library(pheatmap)
+library(RColorBrewer)
+library(gridExtra)
+
+source("../downstreamer_functions.r")
+
+# Read reference datasets
+ensembl <- read.table("~/Documents/data/reference/ensembl/ensembl_gene_position_b37_biotype.txt",sep="\t", header=T, row.names = 1, stringsAsFactors = F)
+ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
+
+path         <- "~/Desktop/depict2/output/height_paper_v2/v56"
+files        <- list.files(path, pattern="*_normalizedGenePvalues.txt", full.names = T)
+norm.genep   <- read.enrichments(files)
+
+files        <- list.files(path, pattern="*_genePvalues.txt", full.names = T)
+norm.genep   <- na.omit(read.enrichments(files))
+
+ol           <- intersect(rownames(norm.genep), rownames(ensembl))
+cors.pre.cor <- cor(norm.genep)
+diag(cors.pre.cor) <- 0.3
+hm(cors.pre.cor, cluster_rows=F, cluster_cols=F)
+
+x1 <- ensembl[ol, "gene.length"]
+x2 <- x1^2
+x3 <- x1^3
+
+corrected1.genep <- apply(norm.genep[ol,], 2, function(y){
+  residuals(lm(y ~ log10(x1)))
+})
+
+#corrected1.genep <- apply(norm.genep[ol,], 2, function(y){
+#  summary(lm(y ~ log10(x1)))$coefficients[2,]
+#})
+#corrected1.genep <- t(corrected1.genep)
+
+cors.corr1 <- cor(corrected1.genep)
+diag(cors.corr1) <- 0.3
+hm(cors.corr1, cluster_rows=F, cluster_cols=F)
+
+corrected2.genep <- apply(norm.genep[ol,], 2, function(y){
+  residuals(lm(y ~ x1))
+})
+
+cors.corr2 <- cor(corrected2.genep)
+hm(cors.corr2)
+
+corrected3.genep <- apply(norm.genep[ol,], 2, function(y){
+  residuals(lm(y ~ x1 + x2 + x3))
+})
+
+cors.corr3 <- cor(corrected3.genep)
+hm(cors.corr3)
+
+```
+
+# IBD coreg and transeqtl genes
+```{r}
+source("../downstreamer_functions.r")
+
+transgenes <- read.table("~/Desktop/depict2/Genes with at least 2 independent trans-eQTLs from known IBD loci", stringsAsFactors = F)
+ibd.data   <- read.depict2("~/Desktop/depict2/output/height_paper_v2/v56/inflammatory_bowel_disease_2017_29906448_hg19_enrichtments_exHla_1.xlsx")
+coreg      <- ibd.data$Coregulation
+
+tcoreg  <- coreg[transgenes[,1], "Enrichment.Z.score"]
+ncoreg  <- coreg[!rownames(coreg) %in% transgenes[,1], "Enrichment.Z.score"]
+df.plot <- data.frame(data = c(tcoreg, ncoreg), 
+                    annot = factor(c(
+                      rep(paste0("IBD Trans eQTL N=", length(tcoreg)), length(tcoreg)),
+                      rep(paste0("Other genes N=", length(ncoreg)), length(ncoreg))),
+                              levels=c(paste0("Other genes N=", length(ncoreg)),
+                                       rep(paste0("IBD Trans eQTL N=", length(tcoreg))))))
+
+# Plot
+pdf(width=7, height=5, file="~/Desktop/depict2/plots/ibd_transgenes_coreg.pdf")
+  p <- ggplot(df.plot, aes(y=data, x=annot, fill=annot)) +
+  geom_violin(color="white", scale="area") +
+    geom_boxplot(width=0.05, color="black") +
+    ylab("IBD coregulation Z-score") +
+    xlab("") +
+    
+  p <- p + geom_hline(yintercept = 0, col="black", lty=2)
+  theme.nature(p) + scale_fill_manual(values = c("#3BB273","#2274A5"))
+dev.off()
+```
+
+# Scatterplot of HPO pathway
+```{r}
+library(data.table)
+x1 <- data.frame(fread("~/Desktop/depict2/tmp/height_hpo_for_scatterplot/HPO_Enrichment_forceNormalizedGwasGeneScores_ExHla.txt"), row.names=1)
+y1 <- data.frame(fread("~/Desktop/depict2/tmp/height_hpo_for_scatterplot/HPO_Enrichment_forceNormalizedGenePathwayZscoresExHla.txt"), row.names=1)
+
+
+x2 <-  data.frame(fread("~/Desktop/depict2/tmp/height_hpo_for_scatterplot/HPO_Enrichment_normalizedGwasGeneScores_ExHla.txt"), row.names=1)
+y2 <- data.frame(fread("~/Desktop/depict2/tmp/height_hpo_for_scatterplot/HPO_Enrichment_normalizedPathwayScores_ExHla.txt"), row.names=1)
+
+
+
+term <- "HP.0000925"
+
+
+plot(x1[,1], y1[,term],
+     ylab=paste0("GN HPO predictions: ", term),
+     xlab="Height normalized gene P",
+     main="Height (Abnormality of the vertebral column, p=3.17E-25)",col=adjustcolor("black", alpha.f = 0.2), pch=19)
+
+abline(a=0, b=0, col="blue", lwd=2)
+abline(lm(y1[,term] ~ x1[,1]), col="red", lwd=2)
+summary(lm(y1[,term] ~ x1[,1]))
+
+plot(x2[,1], y2[,term],
+     ylab=paste0("GN HPO predictions: ", term),
+     xlab="Height normalized gene P",
+     main="Height (Abnormality of the vertebral column, p=3.17E-25)",col=adjustcolor("black", alpha.f = 0.2), pch=19)
+
+abline(a=0, b=0, col="blue", lwd=2)
+abline(lm(y2[,term] ~ x2[,1]), col="red", lwd=2)
+summary(lm(y2[,term] ~ x2[,1]))
+
+  ```
+
+
+# Old and new height coregulations
+```{r}
+source("../downstreamer_functions.r")
+old <- read.depict2("~/Desktop/depict2/output/backup_2020-04-24/maf_filtered/v48/height_2018_30124842_hg19_enrichtments_exHla.xlsx")$Coregulation
+
+new <- read.depict2("~/Desktop/depict2/output/height_paper_v2/v56/height_2018_30124842_hg19_enrichtments_exHla_1.xlsx")$Coregulation
+
+ol <- intersect(rownames(new), rownames(old))
+
+plot(old[ol,]$Enrichment.Z.score, new[ol,]$Enrichment.Z.score)
+abline(a=0, b=1, col="red")
+```
+
+# Comparing simgwas and height
+```{r}
+library(readxl)
+a <- read.depict2("~/Desktop/depict2/output/simulated_gwas/run_05_enrichtments_exHla.xlsx")
+b <- read.depict2("~/Desktop/depict2/output/height_paper/height_2018_30124842_hg19_enrichtments_exHla.xlsx")
+
+
+ol <- intersect(rownames(a$Coregulation), rownames(b$Coregulation))
+plot(a$Coregulation[ol,]$Enrichment.Z.score, b$Coregulation[ol,]$Enrichment.Z.score, xlab='Simulated GWAS coregulation zscores', ylab="Height coregulation Zscores")
+
+tmp <- read.table("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_53/height_2018_30124842_hg19_geneMinSnpPvalues", row.names=1, header=T)
+hist(tmp[tmp[,1] < 11,1], breaks=1000, main="gene pvalues height", xlab="Gene zscores??")
+
+library(data.table)
+tmp2 <- fread("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_53/height_2018_30124842_hg19_geneMinSnpPvaluesNullGwas.gz", data.table=F)
+
+hist(tmp2[,2], breaks=1000, main="gene pvalues height", xlab="Gene zscores??")
+hist(tmp2[,1000], breaks=1000, main="gene pvalues height", xlab="Gene zscores??")
+
+```
+
+# Gls tests
+```{r}
+
+
+glsStep1(geneZscoresSubset, geneInvCorMatrixSubsetMatrix, genePathwayZscoresSubset, b1Arm, b2Arm);
+
+geneZscoresSubset = y
+genePathwayZscoresMatrix = x
+geneInvCorMatrix = Sigi
+
+# Calculate Beta
+x <- t(x) %*% Sigi %*% x
+b2Row <- t(x) %*% Sigi %*% y
+
+beta <-  x / b2Row
+
+b1 <- t(x) %*% Sigi %*% x
+b2 <- t(x) %*% Sigi %*% y
+
+
+
+# Model matrix, intercept + coregulation
+x     <- cbind(rep(1, nrow(gwas)), coreg[,"ENSG00000075420"])
+# Gene pvalues / zscores
+y     <- gwas[,1]
+# Gene gene correlation matrix
+Sigma <- gene.cor
+
+
+# Calculate Beta
+Sigi <- solve(Sigma)
+xtxi <- solve(t(x) %*% Sigi %*% x )
+beta <- xtxi %*% t(x) %*% Sigi %*% y
+
+# Calculate SE
+res <- y - x %*% beta
+sig <- sqrt(sum(res^2) / 7711)
+se  <- sqrt(diag(xtxi))*sig
+
+# Calculate p
+tstats <- abs(beta / se)
+2 * pt(tstats[2], df=nrow(x), lower=F)
+
+```
+
+# Select top 300 IBD genes
+```{r}
+top300 <- rownames(genep[order(genep$inflammatory_bowel_disease_2017_29906448_hg19_genePvalues.txt, decreasing = F),][1:300,])
+
+write.table(top300, file="~/Desktop/depict2/output/top300_ibd_genep_genes.txt", quote=F, col.names=F, row.names=F)
+```
+
+

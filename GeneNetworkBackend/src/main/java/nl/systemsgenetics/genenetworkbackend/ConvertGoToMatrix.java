@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -40,11 +41,11 @@ public class ConvertGoToMatrix {
 	 */
 	public static void main(String[] args) throws IOException, Exception {
 
-		final File pathwayFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\GO\\goa_human.gaf");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
-		final File uniPortToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgUniProtId4.txt");
-		final File hgncToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
-		final File outputFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\");
+		final File pathwayFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\GO\\goa_human_2020_06_01.gaf");
+		final File geneOrderFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgncV98.txt");
+		final File uniPortToEnsgMapFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgUniProtIdV98.txt");
+		final File hgncToEnsgMapFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgncV98.txt");
+		final File outputFolder = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\GO");
 
 		HashMap<String, ArrayList<String>> uniProtToEnsgMap = loadUniProtToEnsgMap(uniPortToEnsgMapFile);
 		HashMap<String, ArrayList<String>> hgncToEnsgMap = loadHgncToEnsgMap(hgncToEnsgMapFile);
@@ -52,19 +53,21 @@ public class ConvertGoToMatrix {
 		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = readPathwayFile(pathwayFile, uniProtToEnsgMap, hgncToEnsgMap);
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
+		
+		LinkedHashSet<String> geneOrder2 = new LinkedHashSet<>(geneOrder);
 
-		System.out.println("Genes in order file: " + geneOrder.size());
+		System.out.println("Genes in order file: " + geneOrder2.size());
 
 		for (GoType goType : GoType.values()) {
 
-			final File outputFile = new File(outputFolder, pathwayFile.getName() + "_" + goType.toString() + "_matrix.txt.gz");
-			final File outputFile2 = new File(outputFolder, pathwayFile.getName() + "_" + goType.toString() + "_genesInPathways.txt");
+			final File outputFile = new File(outputFolder, pathwayFile.getName() + "_" + goType.toString() + "_2020_06_01_matrix.txt.gz");
+			final File outputFile2 = new File(outputFolder, pathwayFile.getName() + "_" + goType.toString() + "_2020_06_01_genesInPathways.txt");
 
 			HashMap<String, HashSet<String>> pathwayToGenes = goTypePathwayToGenes.get(goType);
 
 			System.out.println("Total genesets of " + goType.toString() + ": " + pathwayToGenes.size());
 
-			DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder, pathwayToGenes.keySet());
+			DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder2, pathwayToGenes.keySet());
 
 			HashSet<String> genesWithPathway = new HashSet<>(10000);
 			BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));

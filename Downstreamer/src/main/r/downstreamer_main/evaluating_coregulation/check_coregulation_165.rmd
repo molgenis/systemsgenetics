@@ -1,0 +1,87 @@
+```{r}
+source("downstreamer_functions.r")
+setwd("evaluating_coregulation")
+source("data/source_olivier.r")
+
+eigen           <- fread(eigenvectors165.file, data.table = F)
+rownames(eigen) <- eigen[,1]
+eigen           <- eigen[,-1]
+
+ensembl         <- read.table(ensembl.file, sep="\t", header=T)
+ensembl         <- ensembl[ensembl$Gene.Biotype == "protein_coding",]
+protein.coding  <- intersect(ensembl$Ensembl.Gene.ID, rownames(eigen))
+eigen           <- eigen[protein.coding,]
+
+query  <- "ENSG00000143970"
+others <- c("ENSG00000143970","ENSG00000139697","ENSG00000005100","ENSG00000198586","ENSG00000084774","ENSG00000174579","ENSG00000075539","ENSG00000146083","ENSG00000204569","ENSG00000147548","ENSG00000181827","ENSG00000272333","ENSG00000099381","ENSG00000182504","ENSG00000162775","ENSG00000115020","ENSG00000171467","ENSG00000078403","ENSG00000124789","ENSG00000168488","ENSG00000102786","ENSG00000101574","ENSG00000172534","ENSG00000135913","ENSG00000079432","ENSG00000115942","ENSG00000084093","ENSG00000055917","ENSG00000149503","ENSG00000101639","ENSG00000085185","ENSG00000115904","ENSG00000128881","ENSG00000131023","ENSG00000126464","ENSG00000078699")
+```
+
+# Deprecated
+```{r}
+eigen <- scale(eigen)
+diag(eigen) <-  0
+cors <- cor(t(eigen[c(query, others),]))
+pheatmap(cors, cluster_rows=F, cluster_cols=F)
+
+
+coreg <- fread("~/Desktop/age_at_menopause_coreg_genes.txt", data.table = F)
+rownames(coreg) <- coreg[,1]
+coreg <- coreg[,-1]
+
+coreg2 <- fread("~/Desktop/gene_coregulation_test_genes.txt", data.table = F)
+rownames(coreg2) <- coreg2[,1]
+coreg2 <- coreg2[,-1]
+
+coreg3 <- fread("~/Desktop/age_at_menopauseV2_coreg_genes.txt", data.table = F)
+rownames(coreg3) <- coreg3[,1]
+coreg3 <- coreg3[,-1]
+
+pheatmap(na.omit(coreg[c(query, others), c(query, others)]), cluster_rows=F, cluster_cols=F)
+pheatmap(na.omit(coreg3[c(query, others), c(query, others)]), cluster_rows=F, cluster_cols=F)
+
+pheatmap(na.omit(coreg2[c(query, others), c(query, others)]), cluster_rows=F, cluster_cols=F)
+
+ol <- intersect(rownames(coreg2), others)
+
+coreg2 <- as.matrix(coreg2)
+coreg2 <- as.matrix(coreg3)
+
+plot(as.numeric(coreg2[ol, ol]), as.numeric(cors[ol, ol])) +abline(h=0) + abline(v=0)
+
+ps <- (1- pt(abs(coreg2), 163)) *2
+diag(ps) <- 1
+zs <- qt(1-ps, 163)
+diag(zs) <- 0
+zs <- zs * sign(coreg2)
+plot(as.numeric(zs[ol, ol]), as.numeric(cors[ol, ol])) +abline(h=0) + abline(v=0)
+
+# Manual test
+
+#ENSG00000139697, ENSG00000143970
+#ENSG00000115904, ENSG00000143970
+corBinCenter <- 0.47602644
+
+t = corBinCenter / (sqrt((1 - corBinCenter * corBinCenter) / (163)));
+p <- (1-pt(t, df=163))*2
+z <- qnorm(p)
+
+cor.test(as.numeric(eigen["ENSG00000139697",]), as.numeric(eigen["ENSG00000143970",]))
+cor.test(as.numeric(eigen["ENSG00000115904",]), as.numeric(eigen["ENSG00000143970",]))
+
+#-----------------------------------------------
+source("../downstreamer_functions.r")
+
+v74 <- read.depict2("~/Desktop/age_at_menopause_74/age_at_menopause_enrichtments_exHla.xlsx")
+v75 <- read.depict2("~/Desktop/age_at_menopause_75/age_at_menopause_enrichtments_exHla.xlsx")
+
+coreg.v74 <- v74$Coregulation
+coreg.v75 <- v75$Coregulation
+
+ol <- coreg.v75$Gene.set
+plot(coreg.v75[ol,]$Enrichment.Z.score, coreg.v74[ol,]$Enrichment.Z.score, ylab="With wrong coregulation matrix", xlab="With correct coregulation matrix")
+abline(a=0, b=1, col="blue")
+
+```
+
+
+

@@ -1,0 +1,95 @@
+---
+title: "InvCor"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+setwd("D:/UMCG/Genetica/Projects/Depict2Pgs")
+
+
+library(heatmap3)
+library(RColorBrewer)
+
+```
+
+## Genes in arm: 100 number of permutation to determine correlation: 10
+
+
+```{r }
+numberRandomGwas=10
+genesInArm=100
+data <- matrix(rnorm(genesInArm*numberRandomGwas), ncol = genesInArm)
+corData <- cor(data)
+heatmap3(corData, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData)
+```
+
+## Genes in arm: 100 number of permutation to determine correlation: 100
+
+```{r }
+numberRandomGwas=100
+genesInArm=100
+data <- matrix(rnorm(genesInArm*numberRandomGwas), ncol = genesInArm)
+corData <- cor(data)
+heatmap3(corData, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData)
+```
+
+
+## Genes in arm: 100 number of permutation to determine correlation: 1000
+
+```{r }
+numberRandomGwas=1000
+genesInArm=100
+data <- matrix(rnorm(genesInArm*numberRandomGwas), ncol = genesInArm)
+corData <- cor(data)
+heatmap3(corData, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData)
+```
+
+
+## Genes in arm: 1000 number of permutation to determine correlation: 1000
+
+```{r }
+numberRandomGwas=1000
+genesInArm=1000
+data <- matrix(rnorm(genesInArm*numberRandomGwas), ncol = genesInArm)
+corData <- cor(data)
+heatmap3(corData, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData)
+```
+
+## Genes in arm: 1000 number of permutation to determine correlation: 10000
+
+```{r }
+numberRandomGwas=10000
+genesInArm=1000
+data <- matrix(rnorm(genesInArm*numberRandomGwas), ncol = genesInArm)
+corData <- cor(data)
+heatmap3(corData, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData)
+```
+
+## Genes in arm: 1000 number of permutation to determine correlation: 100000
+
+```{r }
+numberRandomGwas=100000
+genesInArm=1000
+data <- matrix(rnorm(genesInArm*numberRandomGwas), ncol = genesInArm)
+corData <- cor(data)
+heatmap3(corData, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData)
+```
+
+## Identity matrix has det of 1
+```{r}
+genesInArm=1000
+corData <- diag(x=1, nrow = genesInArm)
+heatmap3(corData, scale= "none", Rowv = NA, Colv = NA, col = colorRampPalette( brewer.pal(9, "YlOrBr"))(100))
+det(corData)
+
+```
+
+

@@ -1,0 +1,71 @@
+```{r}
+source("../downstreamer_functions.r")
+
+path        <- "~/Desktop/depict2/output/sweep/0kb/"
+files       <- list.files(path, pattern = "*.xlsx")
+kb0        <- lapply(paste0(path, files), read.depict2)
+names(kb0) <- files
+
+path        <- "~/Desktop/depict2/output/sweep/15kb/"
+files       <- list.files(path, pattern = "*.xlsx")
+kb15        <- lapply(paste0(path, files), read.depict2)
+names(kb15) <- files
+
+path        <- "~/Desktop/depict2/output/sweep/25kb/"
+files       <- list.files(path, pattern = "*.xlsx")
+kb25        <- lapply(paste0(path, files), read.depict2)
+names(kb25) <- files
+
+path        <- "~/Desktop/depict2/output/sweep/50kb/"
+files       <- list.files(path, pattern = "*.xlsx")
+kb50        <- lapply(paste0(path, files), read.depict2)
+names(kb50) <- files
+
+path         <- "~/Desktop/depict2/output/sweep/100kb/"
+files        <- list.files(path, pattern = "*.xlsx")
+kb100        <- lapply(paste0(path, files), read.depict2)
+names(kb100) <- files
+
+path         <- "~/Desktop/depict2/output/sweep/150kb/"
+files        <- list.files(path, pattern = "*.xlsx")
+kb150        <- lapply(paste0(path, files), read.depict2)
+names(kb150) <- files
+
+```
+
+
+```{r}
+
+plot.xy <- function(x.name, y.name, data) {
+  p1 <- ggplot(data=df.plot, aes_string(x=x.name, y=y.name)) +
+  geom_point(alpha=0.15) +
+  geom_abline(slope=1, intercept=0, col="blue", lwd=1.25) +
+  geom_smooth(method='lm', formula= y~x, col="red") +
+  coord_fixed()
+  return(theme.nature(p1))
+}
+
+
+trait <- "height_2014_25282103_hg19_enrichtments_exHla.xlsx"
+trait <- "inflammatory_bowel_disease_2017_29906448_hg19_enrichtments_exHla.xlsx"
+type  <- "expression"
+
+order   <- rownames(kb50[[trait]][[type]])
+df.plot <- data.frame(kb15=kb15[[trait]][[type]][order,]$Enrichment.Z.score,
+                      kb25=kb25[[trait]][[type]][order,]$Enrichment.Z.score,
+                      kb50=kb50[[trait]][[type]][order,]$Enrichment.Z.score,
+                      kb100=kb100[[trait]][[type]][order,]$Enrichment.Z.score)#,
+ #                     kb150=kb150[[trait]][[type]][order,]$Enrichment.Z.score)
+
+p1 <- plot.xy("kb25", "kb15", df.plot)
+p2 <- plot.xy("kb50", "kb25", df.plot)
+p3 <- plot.xy("kb50", "kb100", df.plot)
+p4 <- plot.xy("kb50", "kb150", df.plot)
+
+
+grid.arrange(grobs=list(p1, p2, p3, p4), ncol=4)
+grid.arrange(grobs=list(p1, p2, p3), ncol=3)
+
+
+```
+
