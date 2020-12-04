@@ -6,6 +6,7 @@ package umcg.genetica.text;
 
 //import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -292,20 +293,20 @@ public class Strings {
 
     private static Map<String, String> cache;
 
-//    public synchronized static String cache(String s) {
-//        if (cache == null) {
-//            cache = new Object2ObjectOpenHashMap<>(1000000);
-//        }
-//        String output = cache.get(s);
-//        if (output == null) {
-//
-//            cache.put(s, s);
-//            return s;
-//
-//        } else {
-//            return output;
-//        }
-//    }
+    public synchronized static String cache(String s) {
+        if (cache == null) {
+            cache = new Object2ObjectOpenHashMap<>(1000000);
+        }
+        String output = cache.get(s);
+        if (output == null) {
+
+            cache.put(s, s);
+            return s;
+
+        } else {
+            return output;
+        }
+    }
 
 
     public static String concat(float[] s, Pattern t) {

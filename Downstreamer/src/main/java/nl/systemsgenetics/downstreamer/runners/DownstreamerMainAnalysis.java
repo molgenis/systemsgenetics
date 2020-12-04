@@ -7,10 +7,6 @@ import nl.systemsgenetics.downstreamer.DownstreamerStep1Results;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import com.opencsv.CSVParser;
-import com.opencsv.CSVParserBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVReaderBuilder;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.gene.GenePvalueCalculator;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
@@ -19,8 +15,6 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.summarystatistic.Locus;
 import nl.systemsgenetics.downstreamer.summarystatistic.LocusUtils;
 import nl.systemsgenetics.downstreamer.summarystatistic.SummaryStatisticRecord;
-import nl.systemsgenetics.downstreamer.summarystatistic.filters.PvalueFilterSmaller;
-import nl.systemsgenetics.downstreamer.summarystatistic.filters.RegionFilter;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -118,6 +112,14 @@ public class DownstreamerMainAnalysis {
     public static DownstreamerStep2Results step2(DownstreamerOptions options, DownstreamerStep1Results step1Res) throws IOException, Exception {
 
         options.getIntermediateFolder().mkdir();
+		
+		final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+		
+		for(PathwayDatabase pd : pathwayDatabases){
+			if(!pd.exist()){
+				throw new FileNotFoundException("Could not read: " + pd.getLocation() + ".dat");
+			}
+		}
 
         if (options.getMode() == DownstreamerMode.STEP2) {
             LOGGER.info("Continuing previous analysis by loading gene p-values");
@@ -177,7 +179,7 @@ public class DownstreamerMainAnalysis {
         }
 
 
-        final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
+        
 
         // Split the null GWAS matrix into the parts used in pathway enrichment.
         final int nrSampleToUseForCorrelation = options.getPermutationGeneCorrelations();
