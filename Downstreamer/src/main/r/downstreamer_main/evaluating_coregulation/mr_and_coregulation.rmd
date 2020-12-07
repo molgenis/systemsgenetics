@@ -1,0 +1,165 @@
+```{r}
+setwd("evaluating_coregulation")
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+library(ggsignif)
+
+datasets       <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = F, potential_traits = "Coregulation")
+mr.data        <- lapply(list.files(bristol.mr.folder, full.names = T), function(path){fread(path, data.table = F)})
+names(mr.data) <- list.files(bristol.mr.folder)
+
+# Covert rownames to ensembl ids
+mr.data        <- lapply(mr.data, function(dataset) {
+  ensembl.ids <- gsub("(.*)\\.\\d+", "\\1", ensembl[dataset$Gene,]$Gene.stable.ID.version)
+  rownames(dataset) <- make.names(ensembl.ids, unique=T)
+  return(dataset)
+})
+
+```
+
+# MR results from bristol using eQTLgen
+```{r}
+mr.plot <- function(pgs, trait) {
+  mr.table    <- mr.data[[pgs]]
+  coreg.table <- datasets[[trait]][["Coregulation"]]
+  ol          <- intersect(rownames(mr.table), rownames(coreg.table))
+  
+  has.mr.effect <- mr.table[ol,]$P < 0.05 / 20000
+  df.plot       <- data.frame(y=coreg.table[ol,]$Enrichment.Z.score,
+                              x=has.mr.effect,
+                              beta=abs(mr.table[ol,]$Beta),
+                              pval=mr.table[ol,]$P,
+                              zscore=qnorm(mr.table[ol,]$P / 2, lower.tail = F))
+  tmp.tab       <- table(has.mr.effect)
+  a <- paste0("MR effect\nN=", tmp.tab["TRUE"])
+  b <- paste0("No MR effect \nN=", tmp.tab["FALSE"])
+  
+  df.plot[df.plot$x==T,]$x <- a
+  df.plot[df.plot$x==F,]$x <- b
+  df.plot$x                <- factor(df.plot$x, levels=c(b,a))
+  df.plot                  <- na.omit(df.plot)
+  
+  p <- ggplot(data=df.plot, mapping=aes(y=y, x=x)) +
+    geom_hline(yintercept = median(df.plot$y[!has.mr.effect]), lty=2, col="grey") +
+    geom_violin() +
+    geom_boxplot(width=0.05, color="black") +
+    xlab("Has MR effect") +
+    geom_signif(comparisons = list(c(a, b)), tip_length = 0) + 
+    ylab(paste0( trait))
+  
+  p <- ggplot(data=df.plot, mapping=aes(x=beta, y=y)) + 
+    geom_point(col="#2c6c70", alpha=0.5) + 
+    geom_smooth(method="lm", col="#383838") +
+    geom_hline(yintercept=0, col="grey", lty=2) +
+    xlab("MR abs(beta)") +
+    ylab(paste0( trait)) +
+    ggtitle(paste0("R: ",
+                   format(cor(df.plot$beta, df.plot$y, use="complete.obs"), digits=2),
+                   " p-value: ",
+                   format(cor.test(df.plot$beta, df.plot$y, na.action=na.omit())$p.value, digits=2, scientific=T)))
+  
+  theme.nature(p)
+}
+
+pairs <- matrix(ncol=2)
+pairs <- rbind(pairs, c("Immuno_MR_atlas-Multiple_sclerosis-2020-12-02.txt", "multiple_sclerosis_patsopoulos_harm_jan"))
+pairs <- rbind(pairs, c("Immuno_MR_atlas-Rheumatoid_arthritis-2020-12-02.txt", "rheumatoid_arthritis_2014_24390342"))
+pairs <- rbind(pairs, c("Immuno_MR_atlas-Systemic_lupus_erythematosus-2020-12-02.txt", "systemic_lupus_erythematosus_2017_28714469"))
+pairs <- rbind(pairs, c("Immuno_MR_atlas-Inflammatory_bowel_disease-2020-12-02.txt", "inflammatory_bowel_disease_2017_29906448"))
+pairs <- rbind(pairs, c("Immuno_MR_atlas-Asthma-2020-12-02.txt", "asthma_2020_32296059"))
+pairs <- na.omit(pairs)
+
+plots <- apply(pairs, 1, function(pair){
+  cat(pair, "\n")
+  return(mr.plot(pair[1], pair[2]))
+})
+
+grid.arrange(grobs=plots, ncol=3)
+```
+
+
+# TMP eqtlgen MR
+need to clean this code up a bit
+```{r}
+violin.plot <- function(other.trait, xlab="", comps=list(), ylim=NULL) {
+    df.plot <- data.frame(x=other.trait, y=cur.dataset[ol,]$Enrichment.Z.score)
+    df.plot <- na.omit(df.plot)
+    
+    p <- ggplot(data=df.plot, mapping=aes(y=y, x=x)) +
+    geom_hline(yintercept = 0, lty=2, col="grey") +
+    geom_hline(yintercept = -4.71, lty=2, col="grey") +
+    geom_hline(yintercept = 4.71, lty=2, col="grey") +
+    geom_violin() +
+    geom_boxplot(width=0.05, color="black") +
+    geom_signif(comparisons = comps, tip_length = 0) + 
+    xlab(xlab) +
+    ylab("Enrichment Z-score")
+    
+    if (!is.null(ylim)) {
+      p <- p + ylim(ylim)
+    }
+    
+    return(theme.nature(p))
+}
+mr.eqtlgen           <- fread("~/Documents/data/eqtlgen/ibd_2017.smr", stringsAsFactors = F, data.table = F)
+rownames(mr.eqtlgen) <- mr.eqtlgen$Gene
+cur.dataset          <- datasets$inflammatory_bowel_disease_2017_29906448$Coregulation
+ol                   <- intersect(mr.eqtlgen$Gene, cur.dataset$Ensembl.Gene.ID)
+
+
+cor(-log10(mr.eqtlgen[ol,]$p_SMR), cur.dataset[ol,]$Enrichment.Z.score)
+
+p1 <- violin.plot(mr.eqtlgen[ol,]$p_SMR < 0.05 / nrow(mr.eqtlgen), "Has MR effect" , comps=list(c("FALSE", "TRUE"))) + ggtitle("ibd")
+p1
+
+
+mr.eqtlgen           <- fread("~/Documents/data/eqtlgen/height_2018.smr", stringsAsFactors = F, data.table = F)
+rownames(mr.eqtlgen) <- mr.eqtlgen$Gene
+cur.dataset          <- datasets$height_2018_30124842$Coregulation
+ol                   <- intersect(mr.eqtlgen$Gene, cur.dataset$Ensembl.Gene.ID)
+
+p2 <- violin.plot(mr.eqtlgen[ol,]$p_SMR < 0.05 / nrow(mr.eqtlgen), "Has MR effect" , comps=list(c("FALSE", "TRUE"))) + ggtitle("height")
+p2
+
+
+mr.eqtlgen           <- fread("~/Documents/data/eqtlgen/ra_2015.smr", stringsAsFactors = F, data.table = F)
+rownames(mr.eqtlgen) <- mr.eqtlgen$Gene
+cur.dataset          <- datasets$rheumatoid_arthritis_2014_24390342$Coregulation
+ol                   <- intersect(mr.eqtlgen$Gene, cur.dataset$Ensembl.Gene.ID)
+
+p3 <- violin.plot(mr.eqtlgen[ol,]$p_SMR < 0.05 / nrow(mr.eqtlgen), "Has MR effect" , comps=list(c("FALSE", "TRUE")))+ ggtitle("RA")
+p3
+
+
+mr.eqtlgen           <- fread("~/Documents/data/eqtlgen/cad_2018.smr", stringsAsFactors = F, data.table = F)
+rownames(mr.eqtlgen) <- mr.eqtlgen$Gene
+cur.dataset          <- datasets$coronary_artery_disease_2018_29212778$Coregulation
+ol                   <- intersect(mr.eqtlgen$Gene, cur.dataset$Ensembl.Gene.ID)
+
+p4 <- violin.plot(mr.eqtlgen[ol,]$p_SMR < 0.05 / nrow(mr.eqtlgen), "Has MR effect" , comps=list(c("FALSE", "TRUE")))+ ggtitle("CaD")
+p4
+
+
+mr.eqtlgen           <- fread("~/Documents/data/eqtlgen/ea_2018.smr", stringsAsFactors = F, data.table = F)
+rownames(mr.eqtlgen) <- mr.eqtlgen$Gene
+cur.dataset          <- datasets$educational_attainment_2018_30038396$Coregulation
+ol                   <- intersect(mr.eqtlgen$Gene, cur.dataset$Ensembl.Gene.ID)
+
+p5 <- violin.plot(mr.eqtlgen[ol,]$p_SMR < 0.05 / nrow(mr.eqtlgen), "Has MR effect" , comps=list(c("FALSE", "TRUE")))+ ggtitle("EduAtt")
+p5
+
+
+mr.eqtlgen           <- fread("~/Documents/data/eqtlgen/bmi_2018.smr", stringsAsFactors = F, data.table = F)
+rownames(mr.eqtlgen) <- mr.eqtlgen$Gene
+cur.dataset          <- datasets$body_mass_index_2018_30124842$Coregulation
+ol                   <- intersect(mr.eqtlgen$Gene, cur.dataset$Ensembl.Gene.ID)
+
+p6 <- violin.plot(mr.eqtlgen[ol,]$p_SMR < 0.05 / nrow(mr.eqtlgen), "Has MR effect" , comps=list(c("FALSE", "TRUE")))+ ggtitle("BMI")
+p6
+
+
+pdf(width=10.5, height=7.4, file="output/plots/eqtlgen_mr_vs_coregulation.pdf")
+grid.arrange(grobs=list(p1,p2,p3,p4,p5,p6), ncol=3)
+dev.off()
+```

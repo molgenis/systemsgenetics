@@ -510,10 +510,13 @@ public class ExcelWriter {
         table.setStyleName("TableStyleLight9");
         table.getCTTable().getTableStyleInfo().setShowRowStripes(true);
         table.getCTTable().addNewAutoFilter();
-
         //databaseSheet.createFreezePane(0, 1);
+
+        // Header row
         XSSFRow headerRow = databaseSheet.createRow(0);
         int hc = 0;
+
+        // Use colnames from .colAnnot file if available
         headerRow.createCell(hc++, CellType.STRING).setCellValue(pathwayAnnotations.getSetName() == null ? "Gene set" : pathwayAnnotations.getSetName());
         for (int i = 0; i < maxAnnotations; ++i) {
             headerRow.createCell(hc++, CellType.STRING).setCellValue(pathwayAnnotations.getAnnotationHeaders().get(i));
@@ -531,7 +534,7 @@ public class ExcelWriter {
             headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS gene P-value");
         }
 
-        // Loop over rows
+        // Populate the rows, loop over each row
         for (int r = 0; r < databaseEnrichmentZscores.rows(); ++r) {
             XSSFRow row = databaseSheet.createRow(r + 1); //+1 for header
             String geneSet = geneSets.get(order[r]);
@@ -566,41 +569,51 @@ public class ExcelWriter {
                 }
             }
 
+            // Fixed fields from enrichment results
             double zscore = traitEnrichment.getQuick(order[r]);
             double qvalue = traitQvalue.getQuick(order[r]);
 
+            // Zscore
             XSSFCell zscoreCell = row.createCell(1 + maxAnnotations, CellType.NUMERIC);
             zscoreCell.setCellValue(zscore);
             zscoreCell.setCellStyle(styles.getZscoreStyle());
 
+            // Pvalue
             double pvalue = ZScores.zToP(zscore);
             XSSFCell pvalueCell = row.createCell(2 + maxAnnotations, CellType.NUMERIC);
             pvalueCell.setCellValue(pvalue);
             pvalueCell.setCellStyle(pvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 
+            // FDR
             XSSFCell qvalueCell = row.createCell(3 + maxAnnotations, CellType.NUMERIC);
             qvalueCell.setCellValue(qvalue);
             qvalueCell.setCellStyle(qvalue > 0 && qvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 
+            // Is bonerroni y/n
             XSSFCell bonferroniCell = row.createCell(4 + maxAnnotations, CellType.BOOLEAN);
             bonferroniCell.setCellValue(pvalue <= bonferroniCutoff);
 
+            // Is FDR y/n
             XSSFCell fdrCell = row.createCell(5 + maxAnnotations, CellType.BOOLEAN);
             fdrCell.setCellValue(qvalue <= 0.05);
 
+            // Optional GWAS fields
             if (annotateWithGwasData) {
-                // Determine the closest independent tophit
+
                 String geneId = databaseEnrichmentZscores.getRowObjects().get(order[r]);
                 Gene curGene = genes.get(geneId);
 
+                // Determine the closest independent tophit
                 // No overlap = -9
                 int closestDist = -8;
                 SummaryStatisticRecord closestVariant = null;
                 String variantId = "";
 
                 if (curGene != null) {
+
                     List<Integer> distanceCache = new ArrayList<>();
                     List<SummaryStatisticRecord> varianceCache = new ArrayList<>();
+                    // TODO: pretty sure dat de ineffcientie hier zit
                     for (SummaryStatisticRecord curRec : indepVariantsPerTrait.get(trait)) {
                         if (curGene.isOverlapping(curRec, 1000000)) {
                             int tmp = Math.min(Math.abs(curGene.getStart() - curRec.getPosition()), Math.abs(curGene.getEnd() - curRec.getPosition()));
@@ -642,9 +655,11 @@ public class ExcelWriter {
                     snpDistCell.setCellStyle(styles.getGenomicPositionStyle());
                 }
 
+                // SNP name
                 XSSFCell snpNameCell = row.createCell(7 + maxAnnotations, CellType.STRING);
                 snpNameCell.setCellValue(variantId);
 
+                // SNP p-value
                 if (variantId.length() > 1) {
                     double snpPvalue;
                     if (closestVariant != null && closestVariant.getPvalue() != -9) {
@@ -665,6 +680,7 @@ public class ExcelWriter {
                     snpPvalueCell.setCellValue("");
                 }
 
+                // Gene p-value
                 double genePvalue = genePvalues.getElement(geneId, trait);
 
                 if (!Double.isNaN(genePvalue)) {

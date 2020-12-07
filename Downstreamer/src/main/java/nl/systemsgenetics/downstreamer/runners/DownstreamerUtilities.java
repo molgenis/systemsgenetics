@@ -249,7 +249,6 @@ public class DownstreamerUtilities {
 	public static void generateExcelFromIntermediates(DownstreamerOptions options) throws Exception {
 
 		DownstreamerStep2Results step2 = loadExistingStep2Results(options);
-
 		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
 
 		writer.saveStep2Excel(step2);
