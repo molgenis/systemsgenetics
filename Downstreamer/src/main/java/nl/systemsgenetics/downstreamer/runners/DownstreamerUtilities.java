@@ -5,6 +5,7 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
@@ -21,11 +22,16 @@ import umcg.genetica.math.stats.ZScores;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
+import nl.systemsgenetics.downstreamer.summarystatistic.SummaryStatisticRecord;
+import org.molgenis.genotype.RandomAccessGenotypeData;
+import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 
 /**
@@ -157,7 +163,6 @@ public class DownstreamerUtilities {
 
 	}
 
-
 	/**
 	 * Utility to get the force normalized gene pvalues with tie resolving.
 	 * Shares some duplicate code with Depict2MainAnalysis.run2(). This can be
@@ -231,7 +236,7 @@ public class DownstreamerUtilities {
 		normalizedGwasGeneScores = PathwayEnrichments.createColumnForceNormalDuplicate(genePvalues, geneMaxSnpZscore);
 		normalizedGwasGeneScores.save(options.getOutputBasePath() + "_normalizedGenePvalues.txt");
 
-		return(normalizedGwasGeneScores);
+		return (normalizedGwasGeneScores);
 	}
 
 	/**
@@ -258,7 +263,8 @@ public class DownstreamerUtilities {
 	}
 
 	/**
-	 * Generate an excel file with the z-scores of the pathways for all bonf. sig. genes and pathways.
+	 * Generate an excel file with the z-scores of the pathways for all bonf.
+	 * sig. genes and pathways.
 	 *
 	 * @param options
 	 * @throws Exception
@@ -292,50 +298,83 @@ public class DownstreamerUtilities {
 	}
 
 	public static void removeLocalGeneCorrelations(DownstreamerOptions options) throws IOException, Exception {
-		
+
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
-        LOGGER.info("Loaded " + genes.size() + " genes");
-		
+		LOGGER.info("Loaded " + genes.size() + " genes");
+
 		final DoubleMatrixDataset<String, String> corMatrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-		
-		if(!corMatrix.getHashRows().keySet().containsAll(corMatrix.getHashCols().keySet())){
+
+		if (!corMatrix.getHashRows().keySet().containsAll(corMatrix.getHashCols().keySet())) {
 			throw new Exception("Co-expression matrix is not squared with same row and col names");
 		}
-		
-		if(!genes.keySet().containsAll(corMatrix.getHashRows().keySet())){
+
+		if (!genes.keySet().containsAll(corMatrix.getHashRows().keySet())) {
 			throw new Exception("Not all genes Co-expression matrix are found in gene mapping file");
 		}
-		
+
 		final int genesInMatrix = corMatrix.rows();
 		final ArrayList<String> geneOrder = corMatrix.getRowObjects();
-		
+
 		int overlappingGenePairs = 0;
-		
-		for(int i = 0 ; i < genesInMatrix; ++i){
-			
+
+		for (int i = 0; i < genesInMatrix; ++i) {
+
 			//diagnoal always 0
 			corMatrix.setElementQuick(i, i, 0);
-			
+
 			Gene geneI = genes.get(geneOrder.get(i));
-			
-			for(int j = i + 1 ; j < genesInMatrix ; ++j ) {
-				
+
+			for (int j = i + 1; j < genesInMatrix; ++j) {
+
 				Gene geneJ = genes.get(geneOrder.get(j));
-				
-				if(geneI.isOverlapping(geneJ, 250000)){
+
+				if (geneI.isOverlapping(geneJ, 250000)) {
 					corMatrix.setElementQuick(i, j, 0);
 					corMatrix.setElementQuick(j, i, 0);
 					++overlappingGenePairs;
 				}
-				
+
 			}
-			
-			
+
 		}
-		
-		LOGGER.info("Identified " + overlappingGenePairs + " overlapping gene-gene pairs using a 500k window." );
-		
+
+		LOGGER.info("Identified " + overlappingGenePairs + " overlapping gene-gene pairs using a 500k window.");
+
 		corMatrix.saveBinary(options.getOutputBasePath());
+
+	}
+
+	public TObjectIntHashMap<String> getDistanceGeneToTopSnp(final DownstreamerOptions options) throws IOException {
+
+		Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getGwasTopHitsFile());
+
+		Set<String> allVariants = new HashSet<>();
+		for (Set<String> set : independentVariants.values()) {
+			allVariants.addAll(set);
+		}
+
+		Map<String, File> alternativeTopHitFiles = options.getAlternativeTopHitFiles();
+		RandomAccessGenotypeData genotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, allVariants);
+		Map<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
+
+		Map<String, List<SummaryStatisticRecord>> output = new HashMap<>();
+		for (String trait : independentVariants.keySet()) {
+
+			List<SummaryStatisticRecord> curRecordList = new ArrayList<>();
+
+			if (alternativeTopHitFiles.containsKey(trait)) {
+				LOGGER.info("Using alternative top hits for: " + trait);
+				curRecordList = IoUtils.readAlternativeIndependentVariantsAsRecords(alternativeTopHitFiles.get(trait));
+			} else {
+				for (String curVariant : independentVariants.get(trait)) {
+					curRecordList.add(new SummaryStatisticRecord(variantMap.get(curVariant), -9));
+				}
+			}
+
+			output.put(trait, curRecordList);
+		}
+
+		return null;
 		
 	}
 
