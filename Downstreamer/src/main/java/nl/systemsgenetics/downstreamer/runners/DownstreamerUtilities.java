@@ -29,9 +29,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
+import static nl.systemsgenetics.downstreamer.io.IoUtils.getIndepVariantsAsSummaryStatisticsRecord;
 import nl.systemsgenetics.downstreamer.summarystatistic.SummaryStatisticRecord;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
+import umcg.genetica.collections.ChrPosTreeMap;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 
 /**
@@ -343,38 +345,93 @@ public class DownstreamerUtilities {
 
 	}
 
-	public TObjectIntHashMap<String> getDistanceGeneToTopSnp(final DownstreamerOptions options) throws IOException {
+	/**
+	 * 
+	 * HashMap<Trait, Map<Gene, distance>
+	 * <0 for other chr or outside cis window
+	 * 
+	 * @param options
+	 * @return
+	 * @throws IOException 
+	 */
+	public static HashMap<String, HashMap<String, NearestVariant>> getDistanceGeneToTopCisSnpPerTrait(final DownstreamerOptions options) throws IOException {
 
-		Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getGwasTopHitsFile());
+		Map<String, ChrPosTreeMap<SummaryStatisticRecord>> indepVariantsAsSummaryStatisticsRecord = getIndepVariantsAsSummaryStatisticsRecord(options);
+		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+		final int cisExtent = options.getCisWindowExtend();
+		
+		HashMap<String, HashMap<String, NearestVariant>> traitGeneDist = new HashMap<>(indepVariantsAsSummaryStatisticsRecord.size());
+		
+		for(Map.Entry<String, ChrPosTreeMap<SummaryStatisticRecord>> traitEntry : indepVariantsAsSummaryStatisticsRecord.entrySet()){
+			
+			String trait = traitEntry.getKey();
+			ChrPosTreeMap<SummaryStatisticRecord> topHits = traitEntry.getValue();
 
-		Set<String> allVariants = new HashSet<>();
-		for (Set<String> set : independentVariants.values()) {
-			allVariants.addAll(set);
-		}
-
-		Map<String, File> alternativeTopHitFiles = options.getAlternativeTopHitFiles();
-		RandomAccessGenotypeData genotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, allVariants);
-		Map<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
-
-		Map<String, List<SummaryStatisticRecord>> output = new HashMap<>();
-		for (String trait : independentVariants.keySet()) {
-
-			List<SummaryStatisticRecord> curRecordList = new ArrayList<>();
-
-			if (alternativeTopHitFiles.containsKey(trait)) {
-				LOGGER.info("Using alternative top hits for: " + trait);
-				curRecordList = IoUtils.readAlternativeIndependentVariantsAsRecords(alternativeTopHitFiles.get(trait));
-			} else {
-				for (String curVariant : independentVariants.get(trait)) {
-					curRecordList.add(new SummaryStatisticRecord(variantMap.get(curVariant), -9));
+			HashMap<String, NearestVariant> geneDist = new HashMap<>(genes.size());
+			traitGeneDist.put(trait, geneDist);
+			
+			for(Gene gene : genes.values()){
+				
+				int geneStart = Math.min(gene.getStart(), gene.getEnd());
+				int geneEnd = Math.max(gene.getStart(), gene.getEnd());
+				
+				int minDist = Integer.MAX_VALUE;
+				SummaryStatisticRecord nearestVariant = null;
+				
+				for(SummaryStatisticRecord cisVariant : topHits.getChrRange(gene.getChr(), geneStart - cisExtent, true, geneEnd + cisExtent, true).values()){
+					if(cisVariant.getPosition() >= geneStart && cisVariant.getPosition() <= geneEnd){
+						minDist = 0;
+						nearestVariant = cisVariant;
+						continue;
+					}
+					
+					int dist;
+					if(cisVariant.getPosition() < geneStart){
+						dist = geneStart - cisVariant.getPosition();
+					} else {
+						dist = cisVariant.getPosition() - geneEnd;
+					}
+					if(dist < minDist){
+						minDist = dist;
+						nearestVariant = cisVariant;
+					}
+					
 				}
+				
+				if(minDist == Integer.MAX_VALUE){
+					//no variant found in window
+					minDist = -9;
+				}
+				
+				geneDist.put(gene.getGene(), new NearestVariant(nearestVariant, minDist));
+				
 			}
-
-			output.put(trait, curRecordList);
+			
+			
 		}
-
-		return null;
+		
+		return traitGeneDist;
 		
 	}
 
+	public static class NearestVariant{
+		
+		private final SummaryStatisticRecord nearestVariant;
+		private final int distance;
+
+		public NearestVariant(SummaryStatisticRecord nearestVariant, int distance) {
+			this.nearestVariant = nearestVariant;
+			this.distance = distance;
+		}
+
+		public SummaryStatisticRecord getNearestVariant() {
+			return nearestVariant;
+		}
+
+		public int getDistance() {
+			return distance;
+		}
+		
+	}
+	
 }

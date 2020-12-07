@@ -83,6 +83,7 @@ public class DownstreamerOptions {
 	private List<String> pathwayDatabasesToAnnotateWithGwas;
 	private Map<String, File> alternativeTopHitFiles;
 	private final boolean trimGeneNames; //for convert expression data mode
+	private final int cisWindowExtend;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -189,7 +190,7 @@ public class DownstreamerOptions {
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Number of bases to add left and right of gene window, use -1 to not have any variants in window");
+		OptionBuilder.withDescription("Number of bases to add left and right of gene window for step 1, use -1 to not have any variants in window");
 		OptionBuilder.withLongOpt("window");
 		OPTIONS.addOption(OptionBuilder.create("w"));
 
@@ -240,7 +241,7 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("Optional file with columns to select during conversion");
 		OptionBuilder.withLongOpt("cols");
 		OPTIONS.addOption(OptionBuilder.create("co"));
-		
+
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Optional file with rows to select during conversion");
@@ -355,8 +356,7 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("For mode CONVERT_EXP trim train .## from the gene names");
 		OptionBuilder.withLongOpt("trimGeneNames");
 		OPTIONS.addOption(OptionBuilder.create("tgn"));
-		
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Only relevant for MODE: R_2_Z_SCORE to specify the number of samples used to create the correlation matrix");
@@ -384,6 +384,12 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("Alternative file with top GWAS hits id\tchr\tpos\tp-value. name must be name as in oter output files for trait");
 		OptionBuilder.withLongOpt("alternaitveTopHits");
 		OPTIONS.addOption(OptionBuilder.create("ath"));
+
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Cis window is defined as [startOfGene-cwe, endOfGene+cwe]. Defaults to: 250000");
+		OptionBuilder.withLongOpt("cisWindowExtent");
+		OPTIONS.addOption(OptionBuilder.create("cwe"));
 
 	}
 
@@ -440,6 +446,12 @@ public class DownstreamerOptions {
 			mode = DownstreamerMode.valueOf(modeString);
 		} catch (IllegalArgumentException e) {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
+		}
+
+		try {
+			cisWindowExtend = Integer.parseInt(commandLine.getOptionValue("cwe", "250000"));
+		} catch (NumberFormatException e) {
+			throw new ParseException("Could not parse -cwe as integerer: " + commandLine.getOptionValue("cwe"));
 		}
 
 		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.CREATE_EXCEL || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP) {
@@ -1056,7 +1068,7 @@ public class DownstreamerOptions {
 				if (conversionColumnIncludeFilter != null) {
 					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
 				}
-				if (conversionRowIncludeFilter != null){
+				if (conversionRowIncludeFilter != null) {
 					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
 				}
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
@@ -1099,10 +1111,10 @@ public class DownstreamerOptions {
 				if (conversionColumnIncludeFilter != null) {
 					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
 				}
-				if (conversionRowIncludeFilter != null){
+				if (conversionRowIncludeFilter != null) {
 					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
 				}
-				if(trimGeneNames){
+				if (trimGeneNames) {
 					LOGGER.info("Trimming gene names to remove .## from the name");
 				}
 				break;
@@ -1409,6 +1421,10 @@ public class DownstreamerOptions {
 
 	public boolean isTrimGeneNames() {
 		return trimGeneNames;
+	}
+
+	public int getCisWindowExtend() {
+		return cisWindowExtend;
 	}
 
 }

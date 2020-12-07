@@ -20,6 +20,8 @@ import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
 
 import java.io.*;
 import java.util.*;
+import org.molgenis.genotype.variant.GeneticVariant;
+import umcg.genetica.collections.ChrPosTreeMap;
 
 public class IoUtils {
 
@@ -182,6 +184,21 @@ public class IoUtils {
 
         return variants;
     }
+	
+	public static ChrPosTreeMap<SummaryStatisticRecord> readAlternativeIndependentVariantsAsTreeMap(File path) throws IOException {
+        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(path))).withCSVParser(parser).withSkipLines(0).build();
+
+        ChrPosTreeMap<SummaryStatisticRecord> variants = new ChrPosTreeMap();
+
+        String[] nextLine;
+        while ((nextLine = reader.readNext()) != null) {
+            SummaryStatisticRecord curRec = new SummaryStatisticRecord(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Double.parseDouble(nextLine[3]));
+            variants.put(nextLine[1], Integer.parseInt(nextLine[2]), curRec);
+        }
+
+        return variants;
+    }
 
 
     public static Map<String, Set<String>> readIndependentVariants(String path) throws IOException {
@@ -315,4 +332,46 @@ public class IoUtils {
 
         return referenceGenotypeData;
     }
+	
+	 /**
+     * Reads the independent genetic variant id file and returns the
+     * corresponding GeneticVariants
+     *
+     * @return
+     * @throws IOException
+     */
+    public static Map<String, ChrPosTreeMap<SummaryStatisticRecord>> getIndepVariantsAsSummaryStatisticsRecord(DownstreamerOptions options) throws IOException {
+
+        Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getGwasTopHitsFile());
+
+        Set<String> allVariants = new HashSet<>();
+        for (Set<String> set : independentVariants.values()) {
+            allVariants.addAll(set);
+        }
+
+        Map<String, File> alternativeTopHitFiles = options.getAlternativeTopHitFiles();
+        RandomAccessGenotypeData genotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, allVariants);
+        Map<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
+
+        Map<String, ChrPosTreeMap<SummaryStatisticRecord>> output = new HashMap<>();
+        for (String trait : independentVariants.keySet()) {
+
+            ChrPosTreeMap<SummaryStatisticRecord> curRecordList = new ChrPosTreeMap<>();
+
+            if (alternativeTopHitFiles.containsKey(trait)) {
+                LOGGER.info("Using alternative top hits for: " + trait);
+                curRecordList = IoUtils.readAlternativeIndependentVariantsAsTreeMap(alternativeTopHitFiles.get(trait));
+            } else {
+                for (String curVariant : independentVariants.get(trait)) {
+					GeneticVariant variant = variantMap.get(curVariant);
+                    curRecordList.put(variant.getSequenceName(), variant.getStartPos(), new SummaryStatisticRecord(variant, Double.NaN));
+                }
+            }
+
+            output.put(trait, curRecordList);
+        }
+
+        return output;
+    }
+	
 }
