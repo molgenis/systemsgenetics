@@ -485,7 +485,7 @@ public class ExcelWriter {
 		DoubleMatrix1D traitEnrichment = databaseEnrichmentZscores.getCol(trait);
 		DoubleMatrix1D traitQvalue = databaseEnrichmentQvalues.getCol(trait);
 		int[] order = DoubleMatrix1dOrder.sortIndexReverse(traitEnrichment);
-		boolean annotateWithGwasData = options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
+		final boolean annotateWithGwasData = options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
 		int gwasAnnotations = 0;
 
 		if (annotateWithGwasData) {
@@ -495,13 +495,15 @@ public class ExcelWriter {
 		LOGGER.debug(pathwayDatabase.getName());
 		LOGGER.debug(annotateWithGwasData);
 
-		HashMap<String, DownstreamerUtilities.NearestVariant> distanceGeneToTopCisSnp = null;
-		Map<String, Gene> genes = null;
+		final HashMap<String, DownstreamerUtilities.NearestVariant> distanceGeneToTopCisSnp;
+		//Map<String, Gene> genes = null;
 
 		if (annotateWithGwasData) {
 			HashMap<String, HashMap<String, DownstreamerUtilities.NearestVariant>> distanceGeneToTopCisSnpPerTrait = getDistanceGeneToTopCisSnpPerTrait(options);
 			distanceGeneToTopCisSnp = distanceGeneToTopCisSnpPerTrait.get(trait);
-			genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+			//genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+		} else {
+			distanceGeneToTopCisSnp = null;
 		}
 
 		XSSFSheet databaseSheet = (XSSFSheet) enrichmentWorkbook.createSheet(pathwayDatabase.getName());
@@ -605,7 +607,7 @@ public class ExcelWriter {
 			if (annotateWithGwasData) {
 
 				String geneId = databaseEnrichmentZscores.getRowObjects().get(order[r]);
-				Gene curGene = genes.get(geneId);
+				//Gene curGene = genes.get(geneId);
 
 				// Determine the closest independent tophit
 				// No overlap = -9
