@@ -43,6 +43,8 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 public class DownstreamerUtilities {
 
 	private static final Logger LOGGER = Logger.getLogger(DownstreamerUtilities.class);
+	
+	private static HashMap<String, HashMap<String, NearestVariant>> traitGeneDist = null;
 
 	/**
 	 * Create a gene gene correlation matrix based on a (eigenvector) matrix.
@@ -356,11 +358,18 @@ public class DownstreamerUtilities {
 	 */
 	public static HashMap<String, HashMap<String, NearestVariant>> getDistanceGeneToTopCisSnpPerTrait(final DownstreamerOptions options) throws IOException {
 
+		if(traitGeneDist != null){
+			return traitGeneDist;
+		}
+		
+		
 		Map<String, ChrPosTreeMap<SummaryStatisticRecord>> indepVariantsAsSummaryStatisticsRecord = getIndepVariantsAsSummaryStatisticsRecord(options);
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
 		final int cisExtent = options.getCisWindowExtend();
 		
-		HashMap<String, HashMap<String, NearestVariant>> traitGeneDist = new HashMap<>(indepVariantsAsSummaryStatisticsRecord.size());
+		
+		
+		HashMap<String, HashMap<String, NearestVariant>> traitGeneDist2 = new HashMap<>(indepVariantsAsSummaryStatisticsRecord.size());
 		
 		for(Map.Entry<String, ChrPosTreeMap<SummaryStatisticRecord>> traitEntry : indepVariantsAsSummaryStatisticsRecord.entrySet()){
 			
@@ -368,7 +377,7 @@ public class DownstreamerUtilities {
 			ChrPosTreeMap<SummaryStatisticRecord> topHits = traitEntry.getValue();
 
 			HashMap<String, NearestVariant> geneDist = new HashMap<>(genes.size());
-			traitGeneDist.put(trait, geneDist);
+			traitGeneDist2.put(trait, geneDist);
 			
 			for(Gene gene : genes.values()){
 				
@@ -410,7 +419,9 @@ public class DownstreamerUtilities {
 			
 		}
 		
-		return traitGeneDist;
+		traitGeneDist = traitGeneDist2;
+		
+		return traitGeneDist2;
 		
 	}
 

@@ -454,7 +454,7 @@ public class DownstreamerOptions {
 			throw new ParseException("Could not parse -cwe as integerer: " + commandLine.getOptionValue("cwe"));
 		}
 
-		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.CREATE_EXCEL || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP) {
+		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.CREATE_EXCEL || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.PRIO_GENE_ENRICH	) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -607,6 +607,39 @@ public class DownstreamerOptions {
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+				
+				
+				if (commandLine.hasOption("ath")) {
+
+					String[] athValues = commandLine.getOptionValues("ath");
+
+					if (athValues.length % 2 != 0) {
+						throw new ParseException("Error parsing --alternaitveTopHits. Must be in name=path format");
+					}
+
+					alternativeTopHitFiles = new HashMap<>(athValues.length / 2);
+
+					for (int i = 0; i < athValues.length; i += 2) {
+
+						if (alternativeTopHitFiles.containsKey(athValues[i])) {
+							throw new ParseException("Error parsing --alternaitveTopHits. Duplicate names found");
+						}
+
+						File hitsFile = new File(athValues[i + 1]);
+
+						if (!hitsFile.canRead()) {
+							throw new ParseException("Error parsing --alternaitveTopHits. Can't find: " + hitsFile.getAbsolutePath());
+						}
+
+						alternativeTopHitFiles.put(athValues[i], hitsFile);
+
+					}
+
+				} else {
+					alternativeTopHitFiles = Collections.EMPTY_MAP;
+				}
+				
+				
 				break;
 			case GET_NORMALIZED_GENEP:
 				if (commandLine.hasOption("ge")) {
@@ -957,6 +990,46 @@ public class DownstreamerOptions {
 				variantGeneLinkingFile = null;
 				mafFilter = 0;
 
+				break;
+			case PRIO_GENE_ENRICH:
+				if (!commandLine.hasOption('r')) {
+					throw new ParseException("--referenceGenotypes not specified");
+				} else {
+
+					genotypeBasePath = commandLine.getOptionValues('r');
+
+					if (commandLine.hasOption("rs")) {
+						genotypeSamplesFile = new File(commandLine.getOptionValue("rs"));
+					} else {
+						genotypeSamplesFile = null;
+					}
+
+					try {
+						if (commandLine.hasOption('R')) {
+							genotypeType = RandomAccessGenotypeDataReaderFormats.valueOfSmart(commandLine.getOptionValue('R').toUpperCase());
+						} else {
+							if (genotypeBasePath[0].endsWith(".vcf")) {
+								throw new ParseException("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
+							}
+							try {
+								genotypeType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(genotypeBasePath);
+							} catch (GenotypeDataException e) {
+								throw new ParseException("Unable to determine reference type based on specified path. Please specify --refType");
+							}
+						}
+
+					} catch (IllegalArgumentException e) {
+						throw new ParseException("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
+					}
+
+				}
+				maxRBetweenVariants = 0d;
+				numberOfPermutations = 0;
+				numberOfPermutationsRescue = 0;
+				windowExtend = 0;
+				variantFilterFile = null;
+				variantGeneLinkingFile = null;
+				mafFilter = 0;
 				break;
 			default:
 				genotypeBasePath = null;

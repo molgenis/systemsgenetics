@@ -11,7 +11,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import nl.systemsgenetics.downstreamer.Downstreamer;
@@ -47,8 +46,15 @@ public class CoregeneEnrichmentExcelWriter {
 			final DownstreamerOptions options,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2Auc,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2Utest,
+			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfOverlap,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfOdds,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfFisherP,
+			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfCisOverlap,
+			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfCisOdds,
+			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfCisFisherP,
+			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfTransOverlap,
+			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfTransOdds,
+			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfTransFisherP,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2FdrOdds,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2FdrFisherP,
 			final List<String> traits,
@@ -76,8 +82,15 @@ public class CoregeneEnrichmentExcelWriter {
 
 				final DoubleMatrix1D auc = pathwayDatabase2Auc.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D uTestP = pathwayDatabase2Utest.get(geneAssociations.getName()).getCol(trait);
+				final DoubleMatrix1D bonfOverlap = pathwayDatabase2BonfOverlap.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D bonfOdds = pathwayDatabase2BonfOdds.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D bonfFisherP = pathwayDatabase2BonfFisherP.get(geneAssociations.getName()).getCol(trait);
+				final DoubleMatrix1D bonfCisOverlap = pathwayDatabase2BonfCisOverlap.get(geneAssociations.getName()).getCol(trait);
+				final DoubleMatrix1D bonfCisOdds = pathwayDatabase2BonfCisOdds.get(geneAssociations.getName()).getCol(trait);
+				final DoubleMatrix1D bonfCisFisherP = pathwayDatabase2BonfCisFisherP.get(geneAssociations.getName()).getCol(trait);
+				final DoubleMatrix1D bonfTransOverlap = pathwayDatabase2BonfTransOverlap.get(geneAssociations.getName()).getCol(trait);
+				final DoubleMatrix1D bonfTransOdds = pathwayDatabase2BonfTransOdds.get(geneAssociations.getName()).getCol(trait);
+				final DoubleMatrix1D bonfTransFisherP = pathwayDatabase2BonfTransFisherP.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D fdrOdss = pathwayDatabase2FdrOdds.get(geneAssociations.getName()).getCol(trait);
 				final DoubleMatrix1D fdrFisherP = pathwayDatabase2FdrFisherP.get(geneAssociations.getName()).getCol(trait);
 
@@ -88,7 +101,7 @@ public class CoregeneEnrichmentExcelWriter {
 
 				XSSFSheet sh = (XSSFSheet) wb.createSheet(geneAssociations.getName());
 				XSSFTable table = sh.createTable(new AreaReference(new CellReference(0, 0),
-						new CellReference(geneSets.size(), 6 + maxAnnotations),
+						new CellReference(geneSets.size(), 13 + maxAnnotations),
 						SpreadsheetVersion.EXCEL2007));
 
 				table.setName(geneAssociations.getName() + "_enrichment");
@@ -104,8 +117,15 @@ public class CoregeneEnrichmentExcelWriter {
 				for (int i = 0; i < maxAnnotations; ++i) {
 					headerRow.createCell(hc++, CellType.STRING).setCellValue(geneAssociationsAnnotations.getAnnotationHeaders().get(i));
 				}
+				headerRow.createCell(hc++, CellType.STRING).setCellValue("Overlap with bonf sig genes");
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Odds ratio of bonf sig genes");
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Fisher's exact bonf sig genes");
+				headerRow.createCell(hc++, CellType.STRING).setCellValue("Overlap with bonf sig cis genes");
+				headerRow.createCell(hc++, CellType.STRING).setCellValue("Odds ratio of bonf sig cis genes");
+				headerRow.createCell(hc++, CellType.STRING).setCellValue("Fisher's exact bonf sig cis genes");
+				headerRow.createCell(hc++, CellType.STRING).setCellValue("Overlap with bonf sig trans genes");
+				headerRow.createCell(hc++, CellType.STRING).setCellValue("Odds ratio of bonf sig trans genes");
+				headerRow.createCell(hc++, CellType.STRING).setCellValue("Fisher's exact bonf sig trans genes");
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Odds ratio of FDR 5% sig genes");
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("Fisher's exact FDR 5% sig genes");
 				headerRow.createCell(hc++, CellType.STRING).setCellValue("AUC of priorization score");
@@ -116,22 +136,24 @@ public class CoregeneEnrichmentExcelWriter {
 
 				for (int r = 0; r < geneSets.size(); ++r) {
 
+					int c = 0;
+
 					XSSFRow row = sh.createRow(r + 1); //+1 for header
 					String geneSet = geneSets.get(order[r]);
-					row.createCell(0, CellType.STRING).setCellValue(geneSet);
+					row.createCell(c++, CellType.STRING).setCellValue(geneSet);
 
 					// Annotations from .colAnnotations file
 					if (maxAnnotations > 0) {
 						ArrayList<String> thisPathwayAnnotations = geneAssociationsAnnotations.getAnnotationsForPathway(geneSet);
 						if (thisPathwayAnnotations == null) {
 							for (int j = 0; j < maxAnnotations; ++j) {
-								row.createCell(j + 1, CellType.STRING).setCellValue("");
+								row.createCell(c++, CellType.STRING).setCellValue("");
 							}
 						} else {
 							for (int j = 0; j < maxAnnotations; ++j) {
 								if (j < thisPathwayAnnotations.size()) {
 									String annotation = thisPathwayAnnotations.get(j);
-									cell = row.createCell(j + 1, CellType.STRING);
+									cell = row.createCell(c++, CellType.STRING);
 									cell.setCellValue(annotation);
 
 									if (annotation.startsWith("http")) {
@@ -142,40 +164,76 @@ public class CoregeneEnrichmentExcelWriter {
 									}
 
 								} else {
-									row.createCell(j + 1, CellType.STRING).setCellValue("");
+									row.createCell(c++, CellType.STRING).setCellValue("");
 								}
 
 							}
 						}
 					}
 
+					v = bonfOverlap.getQuick(order[r]);
+					cell = row.createCell(c++, CellType.NUMERIC);
+					cell.setCellValue(v);
+					cell.setCellStyle(styles.getIntStyle());
+
 					v = bonfOdds.getQuick(order[r]);
-					cell = row.createCell(1 + maxAnnotations, CellType.NUMERIC);
+					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
 					cell.setCellStyle(styles.getZscoreStyle());
 
 					v = bonfFisherP.getQuick(order[r]);
-					cell = row.createCell(2 + maxAnnotations, CellType.NUMERIC);
+					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
 					cell.setCellStyle(v < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
+		
+					v = bonfCisOverlap.getQuick(order[r]);
+					cell = row.createCell(c++, CellType.NUMERIC);
+					cell.setCellValue(v);
+					cell.setCellStyle(styles.getIntStyle());
 
+					v = bonfCisOdds.getQuick(order[r]);
+					cell = row.createCell(c++, CellType.NUMERIC);
+					cell.setCellValue(v);
+					cell.setCellStyle(styles.getZscoreStyle());
+
+					v = bonfCisFisherP.getQuick(order[r]);
+					cell = row.createCell(c++, CellType.NUMERIC);
+					cell.setCellValue(v);
+					cell.setCellStyle(v < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
+					
+
+					v = bonfTransOverlap.getQuick(order[r]);
+					cell = row.createCell(c++, CellType.NUMERIC);
+					cell.setCellValue(v);
+					cell.setCellStyle(styles.getIntStyle());
+
+					v = bonfTransOdds.getQuick(order[r]);
+					cell = row.createCell(c++, CellType.NUMERIC);
+					cell.setCellValue(v);
+					cell.setCellStyle(styles.getZscoreStyle());
+
+					v = bonfTransFisherP.getQuick(order[r]);
+					cell = row.createCell(c++, CellType.NUMERIC);
+					cell.setCellValue(v);
+					cell.setCellStyle(v < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
+					
 					v = fdrOdss.getQuick(order[r]);
-					cell = row.createCell(3 + maxAnnotations, CellType.NUMERIC);
+					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
 					cell.setCellStyle(styles.getZscoreStyle());
 
 					v = fdrFisherP.getQuick(order[r]);
-					cell = row.createCell(4 + maxAnnotations, CellType.NUMERIC);
+					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
 					cell.setCellStyle(v < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 
 					v = auc.getQuick(order[r]);
-					cell = row.createCell(5 + maxAnnotations, CellType.NUMERIC);
+					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
 					cell.setCellStyle(styles.getZscoreStyle());
 
 					v = uTestP.getQuick(order[r]);
-					cell = row.createCell(6 + maxAnnotations, CellType.NUMERIC);
+					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
 					cell.setCellStyle(v < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 

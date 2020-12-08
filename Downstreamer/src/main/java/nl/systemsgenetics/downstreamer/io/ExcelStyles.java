@@ -18,6 +18,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 public class ExcelStyles {
 
 	private final CellStyle zscoreStyle;
+	private final CellStyle intStyle;
 	private final CellStyle largePvalueStyle;
 	private final CellStyle smallPvalueStyle;
 	private final CellStyle hlinkStyle;
@@ -33,6 +34,10 @@ public class ExcelStyles {
 		//Also used for OR and AUC
 		zscoreStyle = wb.createCellStyle();
 		zscoreStyle.setDataFormat(format.getFormat("0.00"));
+		
+		intStyle = wb.createCellStyle();
+		intStyle.setDataFormat(format.getFormat("0"));
+
 
 		largePvalueStyle = wb.createCellStyle();
 		largePvalueStyle.setDataFormat(format.getFormat("0.0000"));
@@ -98,6 +103,10 @@ public class ExcelStyles {
 
 	public CellStyle getRightAlignedText() {
 		return rightAlignedText;
+	}
+
+	public CellStyle getIntStyle() {
+		return intStyle;
 	}
 	
 	
