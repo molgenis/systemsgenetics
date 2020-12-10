@@ -93,16 +93,15 @@ public class PruneToIndependentTopHits {
 
 			final ArrayList<VariantZscore> topVariants = topVariantsPerTrait.get(p);
 
-			VariantZscore topVariant;
-			while ((topVariant = signficantVariants.pollFirst()) != null) {
-
-				final GeneticVariant topVariantGeno = genotypeIdVariantMap.get(topVariant.getVariant());
+			for(VariantZscore topVariant : topVariants){
+			
+				final GeneticVariant topVariantGeno = genotypeIdVariantMap.get(topVariant.getVariantId());
 
 				if (topVariantGeno == null || !topVariantGeno.isBiallelic()) {
 					continue;
 				}
 
-				LOGGER.debug("Top variant: " + topVariant.getVariant() + " - " + topVariant.getNegZscore());
+				LOGGER.info("Top variant: " + topVariant.getVariant() + " - " + topVariant.getNegZscore());
 
 				topVariant.setVariant(topVariantGeno);
 				topVariants.add(topVariant);
@@ -111,7 +110,7 @@ public class PruneToIndependentTopHits {
 
 				while (otherVariantIterator.hasNext()) {
 					VariantZscore otherVariant = otherVariantIterator.next();
-					GeneticVariant otherVariantGeno = genotypeIdVariantMap.get(otherVariant.getVariant());
+					GeneticVariant otherVariantGeno = genotypeIdVariantMap.get(otherVariant.getVariantId());
 
 					if (otherVariantGeno == null || !otherVariantGeno.isBiallelic()) {
 						otherVariantIterator.remove();
