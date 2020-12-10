@@ -51,6 +51,7 @@ public class DownstreamerOptions {
 	private final boolean debugMode;
 	private final File debugFolder;
 	private final File intermediateFolder;
+	private final File leadSnpsFolder;
 	private final boolean pvalueToZscore;
 	private final List<PathwayDatabase> pathwayDatabases;
 	private List<PathwayDatabase> pathwayDatabases2 = null;
@@ -416,6 +417,7 @@ public class DownstreamerOptions {
 		debugMode = commandLine.hasOption('d');
 		debugFolder = new File(outputBasePath + "_debugFiles");
 		intermediateFolder = new File(outputBasePath + "_intermediates");
+		leadSnpsFolder = new File(outputBasePath + "_leadSnps");
 		ignoreGeneCorrelations = commandLine.hasOption("igc");
 		correctForLambdaInflation = commandLine.hasOption("cl");
 		forceNormalGenePvalues = commandLine.hasOption("fngp");
@@ -1472,10 +1474,6 @@ public class DownstreamerOptions {
 		return permutationFDR;
 	}
 
-	public File getGwasTopHitsFile() {
-		return new File(run1BasePath + "_independentTopVariants.txt");
-	}
-
 	public boolean isAssignPathwayGenesToCisWindow() {
 		return assignPathwayGenesToCisWindow;
 	}
@@ -1498,6 +1496,10 @@ public class DownstreamerOptions {
 
 	public int getCisWindowExtend() {
 		return cisWindowExtend;
+	}
+
+	public File getLeadSnpsFolder() {
+		return leadSnpsFolder;
 	}
 
 }

@@ -4,10 +4,11 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import htsjdk.samtools.util.IntervalTree;
+import htsjdk.samtools.util.IntervalTreeMap;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.gene.Gene;
-import nl.systemsgenetics.downstreamer.summarystatistic.SummaryStatisticRecord;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
@@ -16,362 +17,286 @@ import org.molgenis.genotype.variantFilter.VariantCombinedFilter;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterMaf;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
-import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
 
 import java.io.*;
 import java.util.*;
-import org.molgenis.genotype.variant.GeneticVariant;
+import nl.systemsgenetics.downstreamer.containers.LeadVariant;
 import umcg.genetica.collections.ChrPosTreeMap;
 
 public class IoUtils {
 
-    private static final Logger LOGGER = Logger.getLogger(IoUtils.class);
+	private static final Logger LOGGER = Logger.getLogger(IoUtils.class);
 
+	/**
+	 * Load genotype data matching GWAS matrix and MAF filter.
+	 *
+	 * @param options Depict options object
+	 * @return RandomAccesGenotypeData for all SNPs in GWAS matrix and MAF
+	 * @throws IOException
+	 */
+	public static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(DownstreamerOptions options) throws IOException {
+		return readReferenceGenotypeDataMatchingGwasSnps(options, null);
+	}
 
-    /**
-     * Load genotype data matching GWAS matrix and MAF filter.
-     *
-     * @param options Depict options object
-     * @return RandomAccesGenotypeData for all SNPs in GWAS matrix and MAF
-     * @throws IOException
-     */
-    public static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(DownstreamerOptions options) throws IOException {
-        return readReferenceGenotypeDataMatchingGwasSnps(options, null);
-    }
+	/**
+	 * Load genotype data matching GWAS matrix and MAF filter.
+	 *
+	 * @param options Depict options object
+	 * @return RandomAccesGenotypeData for all SNPs in GWAS matrix and MAF
+	 * @throws IOException
+	 */
+	public static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(DownstreamerOptions options, Set<String> variantSubset) throws IOException {
 
+		final List<String> variantsInZscoreMatrix;
+		if (variantSubset == null) {
+			variantsInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
+		} else {
+			variantsInZscoreMatrix = new ArrayList<>(variantSubset);
+		}
 
-    /**
-     * Load genotype data matching GWAS matrix and MAF filter.
-     *
-     * @param options Depict options object
-     * @return RandomAccesGenotypeData for all SNPs in GWAS matrix and MAF
-     * @throws IOException
-     */
-    public static RandomAccessGenotypeData readReferenceGenotypeDataMatchingGwasSnps(DownstreamerOptions options, Set<String> variantSubset) throws IOException {
+		final List<String> phenotypesInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
 
+		LOGGER.info("Number of phenotypes in GWAS matrix: " + Downstreamer.LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
+		LOGGER.info("Number of variants in GWAS matrix: " + Downstreamer.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
 
-        final List<String> variantsInZscoreMatrix;
-        if (variantSubset == null) {
-            variantsInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
-        } else {
-            variantsInZscoreMatrix = new ArrayList<>(variantSubset);
-        }
+		if (options.getVariantFilterFile() != null) {
+			HashSet<String> variantsToInclude = IoUtils.readVariantFilterFile(options.getVariantFilterFile());
+			Iterator<String> variantsInZscoreMatrixIt = variantsInZscoreMatrix.iterator();
+			while (variantsInZscoreMatrixIt.hasNext()) {
+				String variant = variantsInZscoreMatrixIt.next();
+				if (!variantsToInclude.contains(variant)) {
+					variantsInZscoreMatrixIt.remove();
+				}
+			}
+			LOGGER.info("Number of variants after filtering on selected variants: " + Downstreamer.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
+		}
 
-        final List<String> phenotypesInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
+		return IoUtils.loadGenotypes(options, variantsInZscoreMatrix);
+	}
 
-        LOGGER.info("Number of phenotypes in GWAS matrix: " + Downstreamer.LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
-        LOGGER.info("Number of variants in GWAS matrix: " + Downstreamer.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
+	public static final List<String> readMatrixAnnotations(File file) throws IOException {
 
-        if (options.getVariantFilterFile() != null) {
-            HashSet<String> variantsToInclude = IoUtils.readVariantFilterFile(options.getVariantFilterFile());
-            Iterator<String> variantsInZscoreMatrixIt = variantsInZscoreMatrix.iterator();
-            while (variantsInZscoreMatrixIt.hasNext()) {
-                String variant = variantsInZscoreMatrixIt.next();
-                if (!variantsToInclude.contains(variant)) {
-                    variantsInZscoreMatrixIt.remove();
-                }
-            }
-            LOGGER.info("Number of variants after filtering on selected variants: " + Downstreamer.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
-        }
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(file))).withCSVParser(parser).build();
 
-        return IoUtils.loadGenotypes(options, variantsInZscoreMatrix);
-    }
+		ArrayList<String> identifiers = new ArrayList<>();
 
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+			identifiers.add(nextLine[0]);
+		}
 
-    public static final List<String> readMatrixAnnotations(File file) throws IOException {
+		return identifiers;
+	}
 
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(file))).withCSVParser(parser).build();
+	public static List<Gene> readGenes(File geneFile) throws IOException {
 
-        ArrayList<String> identifiers = new ArrayList<>();
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
-            identifiers.add(nextLine[0]);
-        }
+		final ArrayList<Gene> genes = new ArrayList<>();
 
-        return identifiers;
-    }
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
 
-    public static List<Gene> readGenes(File geneFile) throws IOException {
+			genes.add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]));
 
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
+		}
 
-        final ArrayList<Gene> genes = new ArrayList<>();
+		return genes;
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
+	}
 
-            genes.add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]));
+	public static IntervalTreeMap<Gene> readGenesAsIntervalTree(File geneFile) throws Exception {
 
-        }
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
 
-        return genes;
+		IntervalTreeMap<Gene> intervalTree = new IntervalTreeMap<>();
 
-    }
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+			
+			Gene gene = new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5]);
+			intervalTree.put(gene, gene);
+		}
 
+		return intervalTree;
+	}
 
-    public static PerChrIntervalTree<Gene> readGenesAsIntervalTree(File geneFile) throws Exception {
-        return readGenesAsIntervalTreeWindowed(geneFile, 0);
-    }
+	public static Map<String, ChrPosTreeMap<LeadVariant>> loadLeadVariantsPerTrait(DownstreamerOptions options) throws IOException {
 
-    public static PerChrIntervalTree<Gene> readGenesAsIntervalTreeWindowed(File geneFile, int window) throws Exception {
+		Map<String, File> alternativeLeadVariantFiles = options.getAlternativeTopHitFiles();
 
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
+		Map<String, ChrPosTreeMap<LeadVariant>> leadVariantsPerTrait = new HashMap<>();
 
-        PerChrIntervalTree<Gene> intervalTree = new PerChrIntervalTree<>(Gene.class);
+		for (Map.Entry<String, File> alternativeEntry : alternativeLeadVariantFiles.entrySet()) {
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
-            final ArrayList<Gene> genes = new ArrayList<>();
-            genes.add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]) - window, Integer.parseInt(nextLine[3]) + window, nextLine[5]));
+			String trait = alternativeEntry.getKey();
+			File file = alternativeEntry.getValue();
 
-            intervalTree.addChrElements(nextLine[1], genes);
-        }
+			LOGGER.info("Loading " + trait + " lead variants");
 
-        return intervalTree;
-    }
+			leadVariantsPerTrait.put(trait, readLeadVariantFile(file));
 
+		}
 
-    public static Set<String> readAlternativeIndependentVariants(String path) throws IOException {
-        return readAlternativeIndependentVariants(new File(path));
-    }
+		//Now read all files in lead variants folder.
+		File leadVariantFolder = options.getLeadSnpsFolder();
 
-    public static Set<String> readAlternativeIndependentVariants(File path) throws IOException {
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(path))).withCSVParser(parser).withSkipLines(0).build();
+		File[] leadVariantFiles = leadVariantFolder.listFiles(new LeadVariantFileNameFilter());
 
-        HashSet<String> variantIds = new HashSet<>();
+		for (File leadVariantFile : leadVariantFiles) {
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
-            //SummaryStatisticRecord curRec = new SummaryStatisticRecord(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Double.parseDouble(nextLine[3]));
-            variantIds.add(nextLine[0]);
-        }
+			String trait = leadVariantFile.getName().substring(0, leadVariantFile.getName().length() - 10);
 
-        return variantIds;
-    }
+			if(!leadVariantsPerTrait.containsKey(trait)){
+				LOGGER.info("Loading " + trait + " lead variants");
+				leadVariantsPerTrait.put(trait, readLeadVariantFile(leadVariantFile));
+			}
 
-    public static Map<String, Set<String>> readAlternativeIndependentVariants(Map<String, File> files) throws IOException {
-        Map<String, Set<String>> output = new HashMap<>();
+		}
 
-        for (String file: files.keySet()) {
-            output.put(file, readAlternativeIndependentVariants(files.get(file)));
-        }
+		return leadVariantsPerTrait;
 
-        return output;
-    }
+	}
 
+	public static ChrPosTreeMap<LeadVariant> readLeadVariantFile(File file) throws IOException {
 
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(file))).withCSVParser(parser).withSkipLines(1).build();
 
-    public static List<SummaryStatisticRecord> readAlternativeIndependentVariantsAsRecords(String path) throws IOException {
-        return readAlternativeIndependentVariantsAsRecords(new File(path));
-    }
+		ChrPosTreeMap<LeadVariant> leadVariants = new ChrPosTreeMap<>();
 
-    public static List<SummaryStatisticRecord> readAlternativeIndependentVariantsAsRecords(File path) throws IOException {
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(path))).withCSVParser(parser).withSkipLines(0).build();
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+			String id = nextLine[0];
+			String chr = nextLine[1];
+			int pos = Integer.parseInt(nextLine[2]);
+			double pvalue = Double.parseDouble(nextLine[3]);
+			leadVariants.put(chr, pos, new LeadVariant(id, chr, pos, pvalue));
+		}
 
-        List<SummaryStatisticRecord> variants = new ArrayList<>();
+		return leadVariants;
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
-            SummaryStatisticRecord curRec = new SummaryStatisticRecord(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Double.parseDouble(nextLine[3]));
-            variants.add(curRec);
-        }
+	}
 
-        return variants;
-    }
-	
-	public static ChrPosTreeMap<SummaryStatisticRecord> readAlternativeIndependentVariantsAsTreeMap(File path) throws IOException {
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(path))).withCSVParser(parser).withSkipLines(0).build();
+	public static LinkedHashMap<String, Gene> readGenesMap(File geneFile) throws IOException {
 
-        ChrPosTreeMap<SummaryStatisticRecord> variants = new ChrPosTreeMap();
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
-            SummaryStatisticRecord curRec = new SummaryStatisticRecord(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Double.parseDouble(nextLine[3]));
-            variants.put(nextLine[1], Integer.parseInt(nextLine[2]), curRec);
-        }
+		final LinkedHashMap<String, Gene> genes = new LinkedHashMap<>();
 
-        return variants;
-    }
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
 
+			genes.put(nextLine[0], new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]));
 
-    public static Map<String, Set<String>> readIndependentVariants(String path) throws IOException {
-        return readIndependentVariants(new File(path));
-    }
+		}
 
-    public static Map<String, Set<String>> readIndependentVariants(File path) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(path));
-        Map<String, Set<String>> output = new HashMap<>();
+		return genes;
 
-        String line;
-        while ((line = reader.readLine()) != null) {
-            List<String> data = Arrays.asList(line.split("\t"));
-            Set<String> rsids = new HashSet<>();
-            if(!data.isEmpty()){
-                rsids.addAll(data.subList(1, data.size() - 1));
-            }
+	}
 
-            output.put(data.get(0), rsids);
-        }
+	public static LinkedHashMap<String, List<Gene>> readGenesAsChrMap(File geneFile) throws IOException {
 
-        reader.close();
-        return output;
-    }
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
 
+		final LinkedHashMap<String, List<Gene>> genes = new LinkedHashMap<>();
 
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
 
-    public static LinkedHashMap<String, Gene> readGenesMap(File geneFile) throws IOException {
+			if (!genes.keySet().contains(nextLine[1])) {
+				genes.put(nextLine[1], new ArrayList<>());
+			}
+			genes.get(nextLine[1]).add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]));
 
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
+		}
 
-        final LinkedHashMap<String, Gene> genes = new LinkedHashMap<>();
+		return genes;
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
+	}
 
-            genes.put(nextLine[0], new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]));
+	public static SampleIdIncludeFilter readSampleFile(File sampleFile) throws IOException {
 
-        }
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withCSVParser(parser).withSkipLines(0).build();
 
-        return genes;
+		final HashSet<String> samples = new HashSet<>();
 
-    }
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
 
-    public static LinkedHashMap<String, List<Gene>> readGenesAsChrMap(File geneFile) throws IOException {
+			samples.add(nextLine[0]);
 
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
+		}
 
-        final LinkedHashMap<String, List<Gene>> genes = new LinkedHashMap<>();
+		return new SampleIdIncludeFilter(samples);
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
+	}
 
-            if (!genes.keySet().contains(nextLine[1])) {
-                genes.put(nextLine[1], new ArrayList<>());
-            }
-            genes.get(nextLine[1]).add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]));
+	public static HashSet<String> readVariantFilterFile(File variantFilterFile) throws IOException {
 
-        }
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantFilterFile))).withCSVParser(parser).withSkipLines(0).build();
 
-        return genes;
+		final HashSet<String> variants = new HashSet<>();
 
-    }
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
 
+			variants.add(nextLine[0]);
 
-    public static SampleIdIncludeFilter readSampleFile(File sampleFile) throws IOException {
+		}
 
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withCSVParser(parser).withSkipLines(0).build();
+		return variants;
 
-        final HashSet<String> samples = new HashSet<>();
+	}
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
+	public static RandomAccessGenotypeData loadGenotypes(DownstreamerOptions options, Collection<String> variantsToInclude) throws IOException {
+		final RandomAccessGenotypeData referenceGenotypeData;
 
-            samples.add(nextLine[0]);
+		final SampleFilter sampleFilter;
+		if (options.getGenotypeSamplesFile() != null) {
+			sampleFilter = readSampleFile(options.getGenotypeSamplesFile());
+		} else {
+			sampleFilter = null;
+		}
 
-        }
+		VariantFilter variantFilter;
+		if (variantsToInclude == null) {
+			variantFilter = null;
+		} else {
+			variantFilter = new VariantIdIncludeFilter(new HashSet<>(variantsToInclude));
+		}
 
-        return new SampleIdIncludeFilter(samples);
+		if (options.getMafFilter() != 0) {
+			VariantFilter mafFilter = new VariantFilterMaf(options.getMafFilter());
+			if (variantFilter == null) {
+				variantFilter = mafFilter;
+			} else {
+				variantFilter = new VariantCombinedFilter(variantFilter, mafFilter);
+			}
+		}
 
-    }
+		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, variantFilter, sampleFilter, null, 0.34f);
 
-    public static HashSet<String> readVariantFilterFile(File variantFilterFile) throws IOException {
+		return referenceGenotypeData;
+	}
 
-        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantFilterFile))).withCSVParser(parser).withSkipLines(0).build();
+	private static class LeadVariantFileNameFilter implements FilenameFilter {
 
-        final HashSet<String> variants = new HashSet<>();
+		public LeadVariantFileNameFilter() {
+		}
 
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
+		@Override
+		public boolean accept(File dir, String name) {
+			return name.toLowerCase().endsWith("_leads.txt");
+		}
 
-            variants.add(nextLine[0]);
+	}
 
-        }
-
-        return variants;
-
-    }
-
-    public static RandomAccessGenotypeData loadGenotypes(DownstreamerOptions options, Collection<String> variantsToInclude) throws IOException {
-        final RandomAccessGenotypeData referenceGenotypeData;
-
-        final SampleFilter sampleFilter;
-        if (options.getGenotypeSamplesFile() != null) {
-            sampleFilter = readSampleFile(options.getGenotypeSamplesFile());
-        } else {
-            sampleFilter = null;
-        }
-
-        VariantFilter variantFilter;
-        if (variantsToInclude == null) {
-            variantFilter = null;
-        } else {
-            variantFilter = new VariantIdIncludeFilter(new HashSet<>(variantsToInclude));
-        }
-
-        if (options.getMafFilter() != 0) {
-            VariantFilter mafFilter = new VariantFilterMaf(options.getMafFilter());
-            if (variantFilter == null) {
-                variantFilter = mafFilter;
-            } else {
-                variantFilter = new VariantCombinedFilter(variantFilter, mafFilter);
-            }
-        }
-
-        referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, variantFilter, sampleFilter, null, 0.34f);
-
-        return referenceGenotypeData;
-    }
-	
-	 /**
-     * Reads the independent genetic variant id file and returns the
-     * corresponding GeneticVariants
-     *
-     * @return
-     * @throws IOException
-     */
-    public static Map<String, ChrPosTreeMap<SummaryStatisticRecord>> getIndepVariantsAsSummaryStatisticsRecord(DownstreamerOptions options) throws IOException {
-
-        Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getGwasTopHitsFile());
-
-        Set<String> allVariants = new HashSet<>();
-        for (Set<String> set : independentVariants.values()) {
-            allVariants.addAll(set);
-        }
-
-        Map<String, File> alternativeTopHitFiles = options.getAlternativeTopHitFiles();
-        RandomAccessGenotypeData genotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, allVariants);
-        Map<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
-
-        Map<String, ChrPosTreeMap<SummaryStatisticRecord>> output = new HashMap<>();
-        for (String trait : independentVariants.keySet()) {
-
-            ChrPosTreeMap<SummaryStatisticRecord> curRecordList = new ChrPosTreeMap<>();
-
-            if (alternativeTopHitFiles.containsKey(trait)) {
-                LOGGER.info("Using alternative top hits for: " + trait);
-                curRecordList = IoUtils.readAlternativeIndependentVariantsAsTreeMap(alternativeTopHitFiles.get(trait));
-            } else {
-                for (String curVariant : independentVariants.get(trait)) {
-					GeneticVariant variant = variantMap.get(curVariant);
-                    curRecordList.put(variant.getSequenceName(), variant.getStartPos(), new SummaryStatisticRecord(variant, Double.NaN));
-                }
-            }
-
-            output.put(trait, curRecordList);
-        }
-
-        return output;
-    }
-	
 }

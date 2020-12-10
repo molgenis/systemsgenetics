@@ -5,7 +5,6 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
@@ -27,12 +26,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.IntStream;
-import static nl.systemsgenetics.downstreamer.io.IoUtils.getIndepVariantsAsSummaryStatisticsRecord;
-import nl.systemsgenetics.downstreamer.summarystatistic.SummaryStatisticRecord;
-import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.variant.GeneticVariant;
+import nl.systemsgenetics.downstreamer.containers.LeadVariant;
 import umcg.genetica.collections.ChrPosTreeMap;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 
@@ -331,7 +326,7 @@ public class DownstreamerUtilities {
 
 				Gene geneJ = genes.get(geneOrder.get(j));
 
-				if (geneI.isOverlapping(geneJ, 250000)) {
+				if (geneI.withinDistanceOf(geneJ, 250000)) {
 					corMatrix.setElementQuick(i, j, 0);
 					corMatrix.setElementQuick(j, i, 0);
 					++overlappingGenePairs;
@@ -363,7 +358,7 @@ public class DownstreamerUtilities {
 		}
 		
 		
-		Map<String, ChrPosTreeMap<SummaryStatisticRecord>> indepVariantsAsSummaryStatisticsRecord = getIndepVariantsAsSummaryStatisticsRecord(options);
+		Map<String, ChrPosTreeMap<LeadVariant>> indepVariantsAsSummaryStatisticsRecord = IoUtils.loadLeadVariantsPerTrait(options);
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
 		final int cisExtent = options.getCisWindowExtend();
 		
@@ -371,10 +366,10 @@ public class DownstreamerUtilities {
 		
 		HashMap<String, HashMap<String, NearestVariant>> traitGeneDist2 = new HashMap<>(indepVariantsAsSummaryStatisticsRecord.size());
 		
-		for(Map.Entry<String, ChrPosTreeMap<SummaryStatisticRecord>> traitEntry : indepVariantsAsSummaryStatisticsRecord.entrySet()){
+		for(Map.Entry<String, ChrPosTreeMap<LeadVariant>> traitEntry : indepVariantsAsSummaryStatisticsRecord.entrySet()){
 			
 			String trait = traitEntry.getKey();
-			ChrPosTreeMap<SummaryStatisticRecord> topHits = traitEntry.getValue();
+			ChrPosTreeMap<LeadVariant> topHits = traitEntry.getValue();
 
 			HashMap<String, NearestVariant> geneDist = new HashMap<>(genes.size());
 			traitGeneDist2.put(trait, geneDist);
@@ -385,20 +380,20 @@ public class DownstreamerUtilities {
 				int geneEnd = Math.max(gene.getStart(), gene.getEnd());
 				
 				int minDist = Integer.MAX_VALUE;
-				SummaryStatisticRecord nearestVariant = null;
+				LeadVariant nearestVariant = null;
 				
-				for(SummaryStatisticRecord cisVariant : topHits.getChrRange(gene.getChr(), geneStart - cisExtent, true, geneEnd + cisExtent, true).values()){
-					if(cisVariant.getPosition() >= geneStart && cisVariant.getPosition() <= geneEnd){
+				for(LeadVariant cisVariant : topHits.getChrRange(gene.getChr(), geneStart - cisExtent, true, geneEnd + cisExtent, true).values()){
+					if(cisVariant.getPos()>= geneStart && cisVariant.getPos() <= geneEnd){
 						minDist = 0;
 						nearestVariant = cisVariant;
 						continue;
 					}
 					
 					int dist;
-					if(cisVariant.getPosition() < geneStart){
-						dist = geneStart - cisVariant.getPosition();
+					if(cisVariant.getPos() < geneStart){
+						dist = geneStart - cisVariant.getPos();
 					} else {
-						dist = cisVariant.getPosition() - geneEnd;
+						dist = cisVariant.getPos() - geneEnd;
 					}
 					if(dist < minDist){
 						minDist = dist;
@@ -427,15 +422,15 @@ public class DownstreamerUtilities {
 
 	public static class NearestVariant{
 		
-		private final SummaryStatisticRecord nearestVariant;
+		private final LeadVariant nearestVariant;
 		private final int distance;
 
-		public NearestVariant(SummaryStatisticRecord nearestVariant, int distance) {
+		public NearestVariant(LeadVariant nearestVariant, int distance) {
 			this.nearestVariant = nearestVariant;
 			this.distance = distance;
 		}
 
-		public SummaryStatisticRecord getNearestVariant() {
+		public LeadVariant getNearestVariant() {
 			return nearestVariant;
 		}
 

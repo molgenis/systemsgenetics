@@ -366,7 +366,6 @@ public class LocusUtils {
      * @param b The larger range
      * @return
      */
-    @Deprecated
     public static boolean partialGenomicRangeOverlapWindow(OverlappableGenomicRange a, OverlappableGenomicRange b, int window) {
 
         if (a.getSequenceName().toLowerCase().replace("chr", "").equals(b.getSequenceName().toLowerCase().replace("chr", ""))) {
