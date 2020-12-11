@@ -279,7 +279,7 @@ public class DownstreamerMainAnalysis {
 				GwasLocus gwasLocus = new GwasLocus(leadVariant, leadVariant.getContig(), leadVariant.getPos() - windowExtent, leadVariant.getPos() + windowExtent);
 
 				for (Gene overlappingGene : genes.getOverlapping(gwasLocus)) {
-					LOGGER.info("Found " + overlappingGene.getName() + " with " + leadVariant.getVariantId());
+					LOGGER.info("Found " + overlappingGene.getGene()+ " with " + leadVariant.getVariantId());
 					gwasLocus.addGene(overlappingGene);
 				}
 				

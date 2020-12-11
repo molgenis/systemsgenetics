@@ -222,7 +222,7 @@ public class ExcelWriter {
 		int numberOfCols = 10;
 		int numberOfRows = 0;
 		for (GwasLocus curLocus : loci) {
-			numberOfRows += Math.min(1, curLocus.getOverlappingGenes().size());
+			numberOfRows += Math.max(1, curLocus.getOverlappingGenes().size());
 		}
 		numberOfRows--;
 		
