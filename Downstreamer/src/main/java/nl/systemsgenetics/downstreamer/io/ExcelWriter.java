@@ -222,9 +222,10 @@ public class ExcelWriter {
 		int numberOfCols = 10;
 		int numberOfRows = 0;
 		for (GwasLocus curLocus : loci) {
-			numberOfRows += curLocus.getOverlappingGenes().size();
+			numberOfRows += Math.min(1, curLocus.getOverlappingGenes().size());
 		}
-
+		numberOfRows--;
+		
 		XSSFSheet locusOverview = (XSSFSheet) enrichmentWorkbook.createSheet("LocusOverview");
 		XSSFTable table = locusOverview.createTable(new AreaReference(new CellReference(0, 0),
 				new CellReference(numberOfRows, numberOfCols),
@@ -484,6 +485,8 @@ public class ExcelWriter {
 		int[] order = DoubleMatrix1dOrder.sortIndexReverse(traitEnrichment);
 		final boolean annotateWithGwasData = options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
 		int gwasAnnotations = 0;
+		final int windowExtend = options.getCisWindowExtend();
+		final String transLabel = "Trans (>" + (windowExtend >= 1000 ? ((windowExtend / 1000) + " k" ) : windowExtend)  + "b)";
 
 		if (annotateWithGwasData) {
 			gwasAnnotations = 4;
@@ -531,10 +534,12 @@ public class ExcelWriter {
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("FDR 5% significant");
 
 		if (annotateWithGwasData) {
-			headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to indep GWAS hit");
+			headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to lead GWAS variant");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant ID");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant P-value");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS gene P-value");
+			
+			
 		}
 
 		// Populate the rows, loop over each row
@@ -616,7 +621,8 @@ public class ExcelWriter {
 					int dist = nearest.getDistance();
 					if (dist < 0) {
 						XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.STRING);
-						snpDistCell.setCellValue("Trans");
+						
+						snpDistCell.setCellValue(transLabel);
 						snpDistCell.setCellStyle(styles.getRightAlignedText());
 					} else {
 						XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.NUMERIC);

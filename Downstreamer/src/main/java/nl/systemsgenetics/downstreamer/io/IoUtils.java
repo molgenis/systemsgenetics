@@ -4,6 +4,7 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalTree;
 import htsjdk.samtools.util.IntervalTreeMap;
 import nl.systemsgenetics.downstreamer.Downstreamer;
@@ -117,9 +118,15 @@ public class IoUtils {
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 			
-			Gene gene = new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5]);
+			Gene gene = new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]);
 			intervalTree.put(gene, gene);
 		}
+//		
+//		LOGGER.info("Loaded genes in interval tree:" + intervalTree.size());
+//		
+//		for(Gene gene : intervalTree.getOverlapping(new Interval("1", 67457690, 67957690))){
+//			LOGGER.info(gene.getGene());
+//		}
 
 		return intervalTree;
 	}
@@ -135,9 +142,12 @@ public class IoUtils {
 			String trait = alternativeEntry.getKey();
 			File file = alternativeEntry.getValue();
 
-			LOGGER.info("Loading " + trait + " lead variants");
-
-			leadVariantsPerTrait.put(trait, readLeadVariantFile(file));
+		
+			ChrPosTreeMap<LeadVariant> leadVariants = readLeadVariantFile(file);
+			
+			LOGGER.info("Loaded " + leadVariants.size() + " for " + trait + " lead variants from: " + file.getAbsolutePath());
+			
+			leadVariantsPerTrait.put(trait, leadVariants);
 
 		}
 
@@ -151,8 +161,9 @@ public class IoUtils {
 			String trait = leadVariantFile.getName().substring(0, leadVariantFile.getName().length() - 10);
 
 			if(!leadVariantsPerTrait.containsKey(trait)){
-				LOGGER.info("Loading " + trait + " lead variants");
-				leadVariantsPerTrait.put(trait, readLeadVariantFile(leadVariantFile));
+				ChrPosTreeMap<LeadVariant> leadVariants = readLeadVariantFile(leadVariantFile);
+				leadVariantsPerTrait.put(trait, leadVariants);
+				LOGGER.info("Loaded " + leadVariants.size() + " for " + trait + " lead variants");
 			}
 
 		}

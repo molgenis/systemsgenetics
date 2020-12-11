@@ -91,9 +91,13 @@ public class PruneToIndependentTopHits {
 
 			TreeSet<VariantZscore> signficantVariants = significantVariantsPerTrait.get(p);
 
+			LOGGER.debug("Significant variants: " + signficantVariants.size());
+			
 			final ArrayList<VariantZscore> topVariants = topVariantsPerTrait.get(p);
 
-			for(VariantZscore topVariant : topVariants){
+			//While loop allows save delete within the loop
+			VariantZscore topVariant;
+			while ((topVariant = signficantVariants.pollFirst()) != null) {
 			
 				final GeneticVariant topVariantGeno = genotypeIdVariantMap.get(topVariant.getVariantId());
 
@@ -101,7 +105,7 @@ public class PruneToIndependentTopHits {
 					continue;
 				}
 
-				LOGGER.info("Top variant: " + topVariant.getVariant() + " - " + topVariant.getNegZscore());
+				LOGGER.debug("Top variant: " + topVariant.getVariantId()+ " - " + topVariant.getNegZscore());
 
 				topVariant.setVariant(topVariantGeno);
 				topVariants.add(topVariant);
