@@ -486,7 +486,7 @@ public class ExcelWriter {
 		final boolean annotateWithGwasData = options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
 		int gwasAnnotations = 0;
 		final int windowExtend = options.getCisWindowExtend();
-		final String transLabel = "Trans (>" + (windowExtend >= 1000 ? ((windowExtend / 1000) + " k" ) : windowExtend)  + "b)";
+		final String transLabel = "Trans (>" + (windowExtend >= 1000 ? ((windowExtend / 1000) + " k" ) : (windowExtend + " "))  + "b)";
 
 		if (annotateWithGwasData) {
 			gwasAnnotations = 4;
