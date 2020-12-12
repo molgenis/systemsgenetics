@@ -24,7 +24,6 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
 import static nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities.getDistanceGeneToTopCisSnpPerTrait;
-import nl.systemsgenetics.downstreamer.summarystatistic.Locus;
 import org.apache.log4j.Logger;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
@@ -121,7 +120,7 @@ public class ExcelWriter {
 
 			Workbook enrichmentWorkbook = new XSSFWorkbook();
 			styles = new ExcelStyles(enrichmentWorkbook);
-			CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
+			//CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
 
 			populateCisPrioSheet(enrichmentWorkbook, trait, lociPerTrait.get(trait), pathwayEnrichments);
 			// Save the file
@@ -221,10 +220,22 @@ public class ExcelWriter {
 
 		int numberOfCols = 10;
 		int numberOfRows = 0;
+		
+		LinkedHashMap<String, Integer> geneHashRow = databaseForScore.getEnrichmentZscores().getHashRows();
+		
 		for (GwasLocus curLocus : loci) {
-			numberOfRows += Math.max(1, curLocus.getOverlappingGenes().size());
+			
+			if(curLocus.getOverlappingGenes().isEmpty()){
+				numberOfRows++;
+			} else {
+				for(Gene gene : curLocus.getOverlappingGenes()){
+					if(geneHashRow.containsKey(gene.getGene())){
+						numberOfRows++;
+					}
+				}
+			}
+
 		}
-		numberOfRows--;
 		
 		XSSFSheet locusOverview = (XSSFSheet) enrichmentWorkbook.createSheet("LocusOverview");
 		XSSFTable table = locusOverview.createTable(new AreaReference(new CellReference(0, 0),
@@ -297,10 +308,10 @@ public class ExcelWriter {
 				int idx = 0;
 				for (Gene curGene : curLocus.getOverlappingGenes()) {
 					double zscore;
-					if (databaseForScore.getEnrichmentZscores().getRowObjects().contains(curGene.getGene())) {
+					if (geneHashRow.containsKey(curGene.getGene())) {
 						zscore = databaseForScore.getEnrichmentZscores().getElement(curGene.getGene(), trait);
 					} else {
-						zscore = -99999999;
+						zscore = Double.NaN;
 					}
 					zscores.add(new IndexedDouble(zscore, idx));
 					idx++;
@@ -314,7 +325,7 @@ public class ExcelWriter {
 				for (IndexedDouble zscore : zscores) {
 					Gene curGene = curLocus.getOverlappingGenes().get(zscore.getIndex());
 
-					if (databaseForScore.getEnrichmentZscores().getRowObjects().contains(curGene.getGene())) {
+					if (geneHashRow.containsKey(curGene.getGene())) {
 						// Locus id
 						XSSFCell locusIdCell = row.createCell(0, CellType.NUMERIC);
 						locusIdCell.setCellValue(i + 1);
@@ -476,7 +487,7 @@ public class ExcelWriter {
 		DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
 		DoubleMatrixDataset<String, String> databaseEnrichmentQvalues = pathwayEnrichment.getqValues();
 
-		final DoubleMatrixDataset<String, String> gwasSnpPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		//final DoubleMatrixDataset<String, String> gwasSnpPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 
 		ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
 		double bonferroniCutoff = 0.05 / pathwayEnrichment.getNumberOfPathways();

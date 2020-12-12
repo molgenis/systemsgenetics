@@ -456,7 +456,7 @@ public class DownstreamerOptions {
 			throw new ParseException("Could not parse -cwe as integerer: " + commandLine.getOptionValue("cwe"));
 		}
 
-		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.CREATE_EXCEL || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.PRIO_GENE_ENRICH	) {
+		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP 	) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -1123,8 +1123,9 @@ public class DownstreamerOptions {
 
 		switch (mode) {
 			case CREATE_EXCEL:
-				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
+				LOGGER.info(" * Cis window extend: " + cisWindowExtend);
+				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
 				break;
 			case CONVERT_EQTL:
 				LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -1169,6 +1170,9 @@ public class DownstreamerOptions {
 				break;
 			case PRIO_GENE_ENRICH:
 				//LOGGER.info(" * GWAS core gene prediction matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
+				LOGGER.info(" * Cis window extend: " + cisWindowExtend);
+				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
 				logPathwayDatabases();
 				LOGGER.info(" * The following pathway annotation databases have been specified to base AUC on:");
 				for (PathwayDatabase database2 : pathwayDatabases2) {
@@ -1255,6 +1259,7 @@ public class DownstreamerOptions {
 				break;
 			case STEP2:
 				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
+				LOGGER.info(" * Cis window extend: " + cisWindowExtend);
 				logSharedRun1Run2();
 
 				break;

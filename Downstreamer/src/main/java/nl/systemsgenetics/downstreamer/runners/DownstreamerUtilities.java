@@ -382,7 +382,7 @@ public class DownstreamerUtilities {
 				int minDist = Integer.MAX_VALUE;
 				LeadVariant nearestVariant = null;
 				
-				for(LeadVariant cisVariant : topHits.getChrRange(gene.getChr(), geneStart - cisExtent, true, geneEnd + cisExtent, true).values()){
+				for(LeadVariant cisVariant : topHits.getChrRange(gene.getContig(), geneStart - cisExtent, true, geneEnd + cisExtent, true).values()){
 					if(cisVariant.getPos()>= geneStart && cisVariant.getPos() <= geneEnd){
 						minDist = 0;
 						nearestVariant = cisVariant;

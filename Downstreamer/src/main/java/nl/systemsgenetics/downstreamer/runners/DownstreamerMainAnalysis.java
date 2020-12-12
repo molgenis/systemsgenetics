@@ -25,6 +25,7 @@ import java.util.stream.IntStream;
 import nl.systemsgenetics.downstreamer.containers.GwasLocus;
 import nl.systemsgenetics.downstreamer.containers.LeadVariant;
 import umcg.genetica.collections.ChrPosTreeMap;
+import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 
 /**
  * Runners for the main Depict 2 analysis.
@@ -251,11 +252,12 @@ public class DownstreamerMainAnalysis {
 	public static DownstreamerStep3Results step3(DownstreamerOptions options) throws Exception {
 
 		// GWAS pvalues
-		DoubleMatrixDataset<String, String> gwasSnpZscores = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-
+		//DoubleMatrixDataset<String, String> gwasSnpZscores = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		Set<String> traits = new DoubleMatrixDatasetFastSubsetLoader(options.getOutputBasePath() + "_genePvalues").getOriginalColMap().keySet();
+		
 		// Gene info
 		IntervalTreeMap<Gene> genes = IoUtils.readGenesAsIntervalTree(options.getGeneInfoFile());
-		LOGGER.info("Loaded " + genes.size() + " genes");
+		//LOGGER.info("Loaded " + genes.size() + " genes");
 
 		// Independent variants, defined in step1 or if specified as defined by alternative file
 		Map<String, ChrPosTreeMap<LeadVariant>> independentVariantsPerTrait = IoUtils.loadLeadVariantsPerTrait(options);
@@ -265,7 +267,7 @@ public class DownstreamerMainAnalysis {
 
 		final int windowExtent = options.getCisWindowExtend();
 
-		for (String trait : gwasSnpZscores.getColObjects()) {
+		for (String trait : traits) {
 
 			ArrayList<GwasLocus> gwasLoci = new ArrayList<>();
 
@@ -279,7 +281,7 @@ public class DownstreamerMainAnalysis {
 				GwasLocus gwasLocus = new GwasLocus(leadVariant, leadVariant.getContig(), leadVariant.getPos() - windowExtent, leadVariant.getPos() + windowExtent);
 
 				for (Gene overlappingGene : genes.getOverlapping(gwasLocus)) {
-					LOGGER.info("Found " + overlappingGene.getGene()+ " with " + leadVariant.getVariantId());
+					//LOGGER.info("Found " + overlappingGene.getGene()+ " with " + leadVariant.getVariantId());
 					gwasLocus.addGene(overlappingGene);
 				}
 				
