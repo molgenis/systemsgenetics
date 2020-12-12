@@ -697,7 +697,7 @@ public class ExcelWriter {
 		Map<String, Gene> geneInfo = IoUtils.readGenesMap(options.getGeneInfoFile());
 		XSSFSheet genePSheet = (XSSFSheet) enrichmentWorkbook.createSheet("GenePvalues");
 		XSSFTable table = genePSheet.createTable(new AreaReference(new CellReference(0, 0),
-				new CellReference(genePvalues.rows(), 5 + genePvalues.columns()),
+				new CellReference(genePvalues.rows(), 4 + genePvalues.columns()),
 				SpreadsheetVersion.EXCEL2007));
 
 		table.setName("GenePvalues_res");
