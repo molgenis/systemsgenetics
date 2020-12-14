@@ -300,7 +300,14 @@ public class DownstreamerUtilities {
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
-		final DoubleMatrixDataset<String, String> corMatrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		DoubleMatrixDataset<String, String> corMatrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+
+		List<String> genesToKeep = corMatrix.getRowObjects();
+		LOGGER.info("Read " + genesToKeep.size() + " genes in correlation matrix");
+		genesToKeep.retainAll(genes.keySet());
+		LOGGER.info("Retained " + genesToKeep.size() + " genes that overlap with --genes file");
+		corMatrix = corMatrix.viewSelection(genesToKeep, genesToKeep);
+
 
 		if (!corMatrix.getHashRows().keySet().containsAll(corMatrix.getHashCols().keySet())) {
 			throw new Exception("Co-expression matrix is not squared with same row and col names");
@@ -361,9 +368,7 @@ public class DownstreamerUtilities {
 		Map<String, ChrPosTreeMap<LeadVariant>> indepVariantsAsSummaryStatisticsRecord = IoUtils.loadLeadVariantsPerTrait(options);
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
 		final int cisExtent = options.getCisWindowExtend();
-		
-		
-		
+
 		HashMap<String, HashMap<String, NearestVariant>> traitGeneDist2 = new HashMap<>(indepVariantsAsSummaryStatisticsRecord.size());
 		
 		for(Map.Entry<String, ChrPosTreeMap<LeadVariant>> traitEntry : indepVariantsAsSummaryStatisticsRecord.entrySet()){
