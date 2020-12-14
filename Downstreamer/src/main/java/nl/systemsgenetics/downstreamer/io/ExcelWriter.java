@@ -545,7 +545,7 @@ public class ExcelWriter {
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("FDR 5% significant");
 
 		if (annotateWithGwasData) {
-			headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to lead GWAS variant");
+			headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to lead GWAS variant (bp)");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant ID");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant P-value");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS gene P-value");
@@ -709,7 +709,7 @@ public class ExcelWriter {
 
 		int hc = 0;
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene id");
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene name");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene symbol");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Chromosome");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Start");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("End");
@@ -803,7 +803,7 @@ public class ExcelWriter {
 
 		int hc = 0;
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene id");
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene name");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene symbol");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Chromosome");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Start");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("End");
