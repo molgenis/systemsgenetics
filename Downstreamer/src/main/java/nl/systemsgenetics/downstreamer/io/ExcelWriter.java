@@ -10,12 +10,12 @@ import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import gnu.trove.map.hash.TObjectIntHashMap;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
+import nl.systemsgenetics.downstreamer.containers.GwasLocus;
 
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.gene.IndexedDouble;
@@ -24,8 +24,6 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
 import static nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities.getDistanceGeneToTopCisSnpPerTrait;
-import nl.systemsgenetics.downstreamer.summarystatistic.Locus;
-import nl.systemsgenetics.downstreamer.summarystatistic.SummaryStatisticRecord;
 import org.apache.log4j.Logger;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
@@ -37,8 +35,6 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFTable;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.math.matrix2.DoubleMatrix1dOrder;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
@@ -103,7 +99,7 @@ public class ExcelWriter {
 
 	public void saveStep3Excel(DownstreamerStep2Results step2, DownstreamerStep3Results step3) throws IOException {
 
-		Map<String, List<Locus>> lociPerTrait = step3.getLoci();
+		Map<String, List<GwasLocus>> lociPerTrait = step3.getLoci();
 		System.setProperty("java.awt.headless", "true");
 
 		String pathwayDatabaseToScore = options.getPathwayDatabasesToAnnotateWithGwas().get(0);
@@ -124,7 +120,7 @@ public class ExcelWriter {
 
 			Workbook enrichmentWorkbook = new XSSFWorkbook();
 			styles = new ExcelStyles(enrichmentWorkbook);
-			CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
+			//CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
 
 			populateCisPrioSheet(enrichmentWorkbook, trait, lociPerTrait.get(trait), pathwayEnrichments);
 			// Save the file
@@ -220,14 +216,27 @@ public class ExcelWriter {
 		}
 	}
 
-	private void populateCisPrioSheet(Workbook enrichmentWorkbook, String trait, List<Locus> loci, PathwayEnrichments databaseForScore) throws IOException {
+	private void populateCisPrioSheet(Workbook enrichmentWorkbook, String trait, List<GwasLocus> loci, PathwayEnrichments databaseForScore) throws IOException {
 
 		int numberOfCols = 10;
 		int numberOfRows = 0;
-		for (Locus curLocus : loci) {
-			numberOfRows += curLocus.getGenes().size();
-		}
+		
+		LinkedHashMap<String, Integer> geneHashRow = databaseForScore.getEnrichmentZscores().getHashRows();
+		
+		for (GwasLocus curLocus : loci) {
+			
+			if(curLocus.getOverlappingGenes().isEmpty()){
+				numberOfRows++;
+			} else {
+				for(Gene gene : curLocus.getOverlappingGenes()){
+					if(geneHashRow.containsKey(gene.getGene())){
+						numberOfRows++;
+					}
+				}
+			}
 
+		}
+		
 		XSSFSheet locusOverview = (XSSFSheet) enrichmentWorkbook.createSheet("LocusOverview");
 		XSSFTable table = locusOverview.createTable(new AreaReference(new CellReference(0, 0),
 				new CellReference(numberOfRows, numberOfCols),
@@ -254,22 +263,22 @@ public class ExcelWriter {
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to index SNP");
 
 		// Sort loci by gene pvalue, smallest first
-		loci.sort(Comparator.comparingDouble(Locus::getMinPvalInLocus).reversed());
+		loci.sort(Comparator.comparingDouble(GwasLocus::getPvalue));
 
 		int i = 0;
 		int r = 1; //+1 for header
-		for (Locus curLocus : loci) {
+		for (GwasLocus curLocus : loci) {
 			XSSFRow row = locusOverview.createRow(r);
 
 			// locus id
 			// is below
 			// locus  name
 			XSSFCell locusNameCell = row.createCell(1, CellType.STRING);
-			locusNameCell.setCellValue(curLocus.getSequenceName() + ":" + curLocus.getStart() + "-" + curLocus.getEnd());
+			locusNameCell.setCellValue(curLocus.getContig()+ ":" + curLocus.getStart() + "-" + curLocus.getEnd());
 
 			// chromosome
 			XSSFCell chrCell = row.createCell(2, CellType.NUMERIC);
-			chrCell.setCellValue(curLocus.getSequenceName());
+			chrCell.setCellValue(curLocus.getContig());
 
 			// start
 			XSSFCell startCell = row.createCell(3, CellType.NUMERIC);
@@ -283,26 +292,26 @@ public class ExcelWriter {
 
 			// Topsnp id
 			XSSFCell snpCell = row.createCell(5, CellType.STRING);
-			snpCell.setCellValue(curLocus.getMinPvalRecord().getPrimaryVariantId());
+			snpCell.setCellValue(curLocus.getLeadVariant().getVariantId());
 
 			// Topsnp pvalue
 			XSSFCell snpPvalCell = row.createCell(6, CellType.NUMERIC);
-			double pvalue = curLocus.getMinPvalRecord().getPvalue();
+			double pvalue = curLocus.getPvalue();
 			snpPvalCell.setCellValue(pvalue);
 			snpPvalCell.setCellStyle(pvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 
 			// Makes sure loci without genes are reported in the file
-			if (curLocus.getGenes().size() >= 1) {
+			if (curLocus.getOverlappingGenes().size() >= 1) {
 				// Sort genes on zscore
-				List<IndexedDouble> zscores = new ArrayList<>(curLocus.getGenes().size());
+				List<IndexedDouble> zscores = new ArrayList<>(curLocus.getOverlappingGenes().size());
 
 				int idx = 0;
-				for (Gene curGene : curLocus.getGenes()) {
+				for (Gene curGene : curLocus.getOverlappingGenes()) {
 					double zscore;
-					if (databaseForScore.getEnrichmentZscores().getRowObjects().contains(curGene.getGene())) {
+					if (geneHashRow.containsKey(curGene.getGene())) {
 						zscore = databaseForScore.getEnrichmentZscores().getElement(curGene.getGene(), trait);
 					} else {
-						zscore = -99999999;
+						zscore = Double.NaN;
 					}
 					zscores.add(new IndexedDouble(zscore, idx));
 					idx++;
@@ -310,13 +319,13 @@ public class ExcelWriter {
 				zscores.sort(Collections.reverseOrder());
 
 				// Keep track of minimal distance to SNP
-				int minimalSnpDistance = -1;
+				int minimalSnpDistance = Integer.MAX_VALUE;
 				int rowWithMinimalSnpDistance = r;
 
 				for (IndexedDouble zscore : zscores) {
-					Gene curGene = curLocus.getGenes().get(zscore.getIndex());
+					Gene curGene = curLocus.getOverlappingGenes().get(zscore.getIndex());
 
-					if (databaseForScore.getEnrichmentZscores().getRowObjects().contains(curGene.getGene())) {
+					if (geneHashRow.containsKey(curGene.getGene())) {
 						// Locus id
 						XSSFCell locusIdCell = row.createCell(0, CellType.NUMERIC);
 						locusIdCell.setCellValue(i + 1);
@@ -339,15 +348,15 @@ public class ExcelWriter {
 
 						// If SNP overlaps the gene body / intron, set distance to zero
 						int dist;
-						if (curLocus.getMinPvalRecord().isOverlapping(curGene)) {
+						if (curGene.overlaps(curLocus.getLeadVariant())) {
 							dist = 0;
 						} else {
-							dist = Math.min(Math.abs(curLocus.getMinPvalRecord().getPosition() - curGene.getStart()), Math.abs(curLocus.getMinPvalRecord().getPosition() - curGene.getEnd()));
+							dist = Math.min(Math.abs(curLocus.getLeadVariant().getPos() - curGene.getStart()), Math.abs(curLocus.getLeadVariant().getPos() - curGene.getEnd()));
 						}
 						geneDistanceCell.setCellValue(dist);
 						geneDistanceCell.setCellStyle(styles.getGenomicPositionStyle());
 
-						if (dist < minimalSnpDistance || minimalSnpDistance == -1) {
+						if (dist < minimalSnpDistance) {
 							minimalSnpDistance = dist;
 							rowWithMinimalSnpDistance = r;
 						}
@@ -478,7 +487,7 @@ public class ExcelWriter {
 		DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
 		DoubleMatrixDataset<String, String> databaseEnrichmentQvalues = pathwayEnrichment.getqValues();
 
-		final DoubleMatrixDataset<String, String> gwasSnpPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		//final DoubleMatrixDataset<String, String> gwasSnpPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
 
 		ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
 		double bonferroniCutoff = 0.05 / pathwayEnrichment.getNumberOfPathways();
@@ -487,6 +496,8 @@ public class ExcelWriter {
 		int[] order = DoubleMatrix1dOrder.sortIndexReverse(traitEnrichment);
 		final boolean annotateWithGwasData = options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
 		int gwasAnnotations = 0;
+		final int windowExtend = options.getCisWindowExtend();
+		final String transLabel = "Trans (>" + (windowExtend >= 1000 ? ((windowExtend / 1000) + " k" ) : (windowExtend + " "))  + "b)";
 
 		if (annotateWithGwasData) {
 			gwasAnnotations = 4;
@@ -534,10 +545,12 @@ public class ExcelWriter {
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("FDR 5% significant");
 
 		if (annotateWithGwasData) {
-			headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to indep GWAS hit");
+			headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to lead GWAS variant");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant ID");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant P-value");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS gene P-value");
+			
+			
 		}
 
 		// Populate the rows, loop over each row
@@ -619,7 +632,8 @@ public class ExcelWriter {
 					int dist = nearest.getDistance();
 					if (dist < 0) {
 						XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.STRING);
-						snpDistCell.setCellValue("Trans");
+						
+						snpDistCell.setCellValue(transLabel);
 						snpDistCell.setCellStyle(styles.getRightAlignedText());
 					} else {
 						XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.NUMERIC);
@@ -628,10 +642,10 @@ public class ExcelWriter {
 
 						// SNP name
 						XSSFCell snpNameCell = row.createCell(7 + maxAnnotations, CellType.STRING);
-						snpNameCell.setCellValue(nearest.getNearestVariant().getName());
+						snpNameCell.setCellValue(nearest.getNearestVariant().getVariantId());
 
 						// SNP p-value
-						double snpPvalue = nearest.getNearestVariant().getPvalue();
+						double snpPvalue = nearest.getNearestVariant().getpValue();
 //						if (gwasSnpPvalues.getRowObjects().contains(variantId)) {
 //							snpPvalue = ZScores.zToP(gwasSnpPvalues.getElement(variantId, trait));
 //						} else {
@@ -683,7 +697,7 @@ public class ExcelWriter {
 		Map<String, Gene> geneInfo = IoUtils.readGenesMap(options.getGeneInfoFile());
 		XSSFSheet genePSheet = (XSSFSheet) enrichmentWorkbook.createSheet("GenePvalues");
 		XSSFTable table = genePSheet.createTable(new AreaReference(new CellReference(0, 0),
-				new CellReference(genePvalues.rows(), 5 + genePvalues.columns()),
+				new CellReference(genePvalues.rows(), 4 + genePvalues.columns()),
 				SpreadsheetVersion.EXCEL2007));
 
 		table.setName("GenePvalues_res");
@@ -718,7 +732,7 @@ public class ExcelWriter {
 
 			// chromosome
 			XSSFCell chrCell = row.createCell(2, CellType.NUMERIC);
-			chrCell.setCellValue(geneInfo.get(geneId).getSequenceName());
+			chrCell.setCellValue(geneInfo.get(geneId).getChr());
 
 			// start
 			XSSFCell startCell = row.createCell(3, CellType.NUMERIC);
@@ -812,7 +826,7 @@ public class ExcelWriter {
 
 			// chromosome
 			XSSFCell chrCell = row.createCell(2, CellType.NUMERIC);
-			chrCell.setCellValue(geneInfo.get(geneId).getSequenceName());
+			chrCell.setCellValue(geneInfo.get(geneId).getChr());
 
 			// start
 			XSSFCell startCell = row.createCell(3, CellType.NUMERIC);
@@ -851,40 +865,6 @@ public class ExcelWriter {
 				zscoreSheet.setColumnWidth(c, 20000);
 			}
 		}
-	}
-
-	/**
-	 * Reads the independent genetic variant id file and returns the
-	 * corresponding GeneticVariants
-	 *
-	 * @return
-	 * @throws IOException
-	 */
-	@Deprecated
-	private Map<String, List<GeneticVariant>> getIndepVariantsAsGeneticVariants() throws IOException {
-
-		Map<String, Set<String>> independentVariants = IoUtils.readIndependentVariants(options.getGwasTopHitsFile());
-
-		Set<String> allVariants = new HashSet<>();
-		for (Set<String> set : independentVariants.values()) {
-			allVariants.addAll(set);
-		}
-
-		RandomAccessGenotypeData genotypeData = IoUtils.readReferenceGenotypeDataMatchingGwasSnps(options, allVariants);
-		Map<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
-
-		Map<String, List<GeneticVariant>> output = new HashMap<>();
-		for (String trait : independentVariants.keySet()) {
-
-			List<GeneticVariant> curRecordList = new ArrayList<>();
-
-			for (String curVariant : independentVariants.get(trait)) {
-				curRecordList.add(variantMap.get(curVariant));
-			}
-			output.put(trait, curRecordList);
-		}
-
-		return output;
 	}
 
 }

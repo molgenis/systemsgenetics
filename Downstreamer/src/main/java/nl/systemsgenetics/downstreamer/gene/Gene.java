@@ -6,17 +6,14 @@
 package nl.systemsgenetics.downstreamer.gene;
 
 import htsjdk.samtools.util.Interval;
-import nl.systemsgenetics.downstreamer.summarystatistic.Locus;
-import nl.systemsgenetics.downstreamer.summarystatistic.LocusUtils;
-import nl.systemsgenetics.downstreamer.summarystatistic.OverlappableGenomicRange;
-import umcg.genetica.collections.intervaltree.Range;
 
 import java.util.Objects;
+import umcg.genetica.variantAnnotator.GenomicRange;
 
 /**
  * @author patri
  */
-public class Gene extends Interval implements OverlappableGenomicRange, Range {
+public class Gene extends Interval {
 
     private final String gene;
     private final String geneSymbol;
@@ -42,25 +39,6 @@ public class Gene extends Interval implements OverlappableGenomicRange, Range {
 
     public String getGeneSymbol() {
         return geneSymbol;
-    }
-
-    public String getChr() {
-        return getContig();
-    }
-
-    @Override
-    public String getSequenceName() {
-        return getChr();
-    }
-
-    @Override
-    public boolean isOverlapping(OverlappableGenomicRange other) {
-        return LocusUtils.partialGenomicRangeOverlap(this, other);
-    }
-
-    @Override
-    public boolean isOverlapping(OverlappableGenomicRange other, int window) {
-        return LocusUtils.partialGenomicRangeOverlapWindow(this, other, window);
     }
 
     public String getBand() {
