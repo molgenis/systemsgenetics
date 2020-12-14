@@ -18,6 +18,7 @@ import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
@@ -153,15 +154,22 @@ public class CoregeneEnrichmentExcelWriter {
 						} else {
 							for (int j = 0; j < maxAnnotations; ++j) {
 								if (j < thisPathwayAnnotations.size()) {
-									String annotation = thisPathwayAnnotations.get(j);
-									cell = row.createCell(c++, CellType.STRING);
-									cell.setCellValue(annotation);
 
-									if (annotation.startsWith("http")) {
-										Hyperlink link = createHelper.createHyperlink(HyperlinkType.URL);
-										link.setAddress(annotation);
-										cell.setHyperlink(link);
-										cell.setCellStyle(styles.getHlinkStyle());
+									String annotation = thisPathwayAnnotations.get(j);
+
+									if (NumberUtils.isCreatable(annotation)) {
+										cell = row.createCell(c++, CellType.NUMERIC);
+										cell.setCellValue(Double.parseDouble(annotation));
+									} else {
+										cell = row.createCell(c++, CellType.STRING);
+										cell.setCellValue(annotation);
+
+										if (annotation.startsWith("http")) {
+											Hyperlink link = createHelper.createHyperlink(HyperlinkType.URL);
+											link.setAddress(annotation);
+											cell.setHyperlink(link);
+											cell.setCellStyle(styles.getHlinkStyle());
+										}
 									}
 
 								} else {
@@ -186,7 +194,7 @@ public class CoregeneEnrichmentExcelWriter {
 					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
 					cell.setCellStyle(v < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
-		
+
 					v = bonfCisOverlap.getQuick(order[r]);
 					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
@@ -201,7 +209,6 @@ public class CoregeneEnrichmentExcelWriter {
 					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
 					cell.setCellStyle(v < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
-					
 
 					v = bonfTransOverlap.getQuick(order[r]);
 					cell = row.createCell(c++, CellType.NUMERIC);
@@ -217,7 +224,7 @@ public class CoregeneEnrichmentExcelWriter {
 					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
 					cell.setCellStyle(v < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
-					
+
 					v = fdrOdss.getQuick(order[r]);
 					cell = row.createCell(c++, CellType.NUMERIC);
 					cell.setCellValue(v);
@@ -292,22 +299,22 @@ public class CoregeneEnrichmentExcelWriter {
 		//cell.setCellStyle(styles.getBoldStyle());
 
 		HashSet<String> sheetNames = new HashSet<>();
-		
+
 		for (PathwayDatabase geneAnno : geneAnnotationDatabases) {
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue(geneAnno.getName());
 
 			Hyperlink link = createHelper.createHyperlink(HyperlinkType.DOCUMENT);
-			
-			String sheetName  = WorkbookUtil.createSafeSheetName(geneAnno.getName());
-			
-			if(!sheetNames.add(sheetName)){
+
+			String sheetName = WorkbookUtil.createSafeSheetName(geneAnno.getName());
+
+			if (!sheetNames.add(sheetName)) {
 				throw new RuntimeException("Cannot create sheet for: " + geneAnno.getName() + ". Max sheet name length = 31 char and this resulted in non-unique pathway names");
 			}
-			
+
 			link.setAddress(sheetName + "!A1");
-			
+
 			cell.setHyperlink(link);
 			cell.setCellStyle(styles.getHlinkStyle());
 
@@ -349,7 +356,7 @@ public class CoregeneEnrichmentExcelWriter {
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Cis window definition: " + options.getCisWindowExtend());
-		
+
 		if (options.isIgnoreGeneCorrelations()) {
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);

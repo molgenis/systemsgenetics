@@ -24,6 +24,7 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
 import static nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities.getDistanceGeneToTopCisSnpPerTrait;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
@@ -123,7 +124,7 @@ public class ExcelWriter {
 
 			populateCisPrioSheet(enrichmentWorkbook, trait, lociPerTrait.get(trait), pathwayEnrichments);
 			// Save the file
-			File excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") +  ".xlsx");
+			File excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
 			int nr = 1;
 			while (excelFile.exists()) {
 				excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
@@ -580,16 +581,22 @@ public class ExcelWriter {
 					for (int j = 0; j < maxAnnotations; ++j) {
 						if (j < thisPathwayAnnotations.size()) {
 							String annotation = thisPathwayAnnotations.get(j);
-							XSSFCell cell = row.createCell(j + 1, CellType.STRING);
-							cell.setCellValue(annotation);
+							
 
-							if (annotation.startsWith("http")) {
-								Hyperlink link = createHelper.createHyperlink(HyperlinkType.URL);
-								link.setAddress(annotation);
-								cell.setHyperlink(link);
-								cell.setCellStyle(styles.getHlinkStyle());
+							if (NumberUtils.isCreatable(annotation)) {
+								XSSFCell cell = row.createCell(j + 1, CellType.NUMERIC);
+								cell.setCellValue(Double.parseDouble(annotation));
+							} else {
+								XSSFCell cell = row.createCell(j + 1, CellType.STRING);
+								cell.setCellValue(annotation);
+
+								if (annotation.startsWith("http")) {
+									Hyperlink link = createHelper.createHyperlink(HyperlinkType.URL);
+									link.setAddress(annotation);
+									cell.setHyperlink(link);
+									cell.setCellStyle(styles.getHlinkStyle());
+								}
 							}
-
 						} else {
 							row.createCell(j + 1, CellType.STRING).setCellValue("");
 						}
