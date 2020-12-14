@@ -409,9 +409,7 @@ public class DownstreamerOptions {
 			}
 		}
 
-		//TODO: implement option
-		assignPathwayGenesToCisWindow = true;
-
+		assignPathwayGenesToCisWindow = commandLine.hasOption("annotDb");
 		outputBasePath = new File(commandLine.getOptionValue('o'));
 		logFile = new File(outputBasePath + ".log");
 		debugMode = commandLine.hasOption('d');
