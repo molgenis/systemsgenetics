@@ -254,12 +254,12 @@ public class ExcelWriter {
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus chr");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus start");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus end");
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Index SNP");
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Index SNP P-value");
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene id");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Lead variant");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Load variant P-value");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene ID");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene symbol");
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene score");
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to index SNP");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene prioritization Z-score");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to lead variant");
 
 		// Sort loci by gene pvalue, smallest first
 		loci.sort(Comparator.comparingDouble(GwasLocus::getPvalue));
@@ -718,7 +718,7 @@ public class ExcelWriter {
 		XSSFRow headerRow = genePSheet.createRow(0);
 
 		int hc = 0;
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene id");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene ID");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene symbol");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Chromosome");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Start");
@@ -812,7 +812,7 @@ public class ExcelWriter {
 		XSSFRow headerRow = zscoreSheet.createRow(0);
 
 		int hc = 0;
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene id");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene ID");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene symbol");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Chromosome");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Start");
