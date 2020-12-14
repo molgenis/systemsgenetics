@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
@@ -26,6 +27,7 @@ import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -62,7 +64,6 @@ public class CoregeneEnrichmentExcelWriter {
 	) throws FileNotFoundException, IOException {
 
 		final String outputBasePath = options.getOutputBasePath();
-		final boolean hlaExcluded = options.isExcludeHla();
 
 		System.setProperty("java.awt.headless", "true");
 
@@ -251,10 +252,10 @@ public class CoregeneEnrichmentExcelWriter {
 
 			}
 
-			File excelFile = new File(outputBasePath + "_prioritizedEnrichment" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
+			File excelFile = new File(outputBasePath + "_prioritizedEnrichment" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
 			int nr = 1;
 			while (excelFile.exists()) {
-				excelFile = new File(outputBasePath + "_prioritizedEnrichment" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla" : "") + "_" + nr + ".xlsx");
+				excelFile = new File(outputBasePath + "_prioritizedEnrichment" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
 				nr++;
 			}
 			wb.write(new FileOutputStream(excelFile));
@@ -290,13 +291,23 @@ public class CoregeneEnrichmentExcelWriter {
 		//cell.setCellValue("Number of sets");
 		//cell.setCellStyle(styles.getBoldStyle());
 
+		HashSet<String> sheetNames = new HashSet<>();
+		
 		for (PathwayDatabase geneAnno : geneAnnotationDatabases) {
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue(geneAnno.getName());
 
 			Hyperlink link = createHelper.createHyperlink(HyperlinkType.DOCUMENT);
-			link.setAddress(geneAnno.getName() + "!A1");
+			
+			String sheetName  = WorkbookUtil.createSafeSheetName(geneAnno.getName());
+			
+			if(!sheetNames.add(sheetName)){
+				throw new RuntimeException("Cannot create sheet for: " + geneAnno.getName() + ". Max sheet name length = 31 char and this resulted in non-unique pathway names");
+			}
+			
+			link.setAddress(sheetName + "!A1");
+			
 			cell.setHyperlink(link);
 			cell.setCellStyle(styles.getHlinkStyle());
 
@@ -335,6 +346,10 @@ public class CoregeneEnrichmentExcelWriter {
 		cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Regress out gene lengths from GWAS gene z-scores: " + options.isRegressGeneLengths());
 
+		row = overviewSheet.createRow(r++);
+		cell = row.createCell(0, CellType.STRING);
+		cell.setCellValue("Cis window definition: " + options.getCisWindowExtend());
+		
 		if (options.isIgnoreGeneCorrelations()) {
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);

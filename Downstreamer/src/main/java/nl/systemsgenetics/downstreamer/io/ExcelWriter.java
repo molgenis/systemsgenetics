@@ -30,6 +30,7 @@ import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -49,13 +50,11 @@ public class ExcelWriter {
 	private ExcelStyles styles;
 
 	private final String outputBasePath;
-	private final boolean hlaExcluded;
 	private final List<String> traits;
 	private final DownstreamerOptions options;
 
 	public ExcelWriter(List<String> traits, DownstreamerOptions options) {
 		this.outputBasePath = options.getOutputBasePath();
-		this.hlaExcluded = options.isExcludeHla();
 		this.traits = traits;
 		this.options = options;
 	}
@@ -87,10 +86,10 @@ public class ExcelWriter {
 			}
 
 			// Save the file
-			File excelFile = new File(outputBasePath + "_enrichtments" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
+			File excelFile = new File(outputBasePath + "_enrichtments" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
 			int nr = 1;
 			while (excelFile.exists()) {
-				excelFile = new File(outputBasePath + "_enrichtments" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla" : "") + "_" + nr + ".xlsx");
+				excelFile = new File(outputBasePath + "_enrichtments" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
 				nr++;
 			}
 			enrichmentWorkbook.write(new FileOutputStream(excelFile));
@@ -124,10 +123,10 @@ public class ExcelWriter {
 
 			populateCisPrioSheet(enrichmentWorkbook, trait, lociPerTrait.get(trait), pathwayEnrichments);
 			// Save the file
-			File excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
+			File excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") +  ".xlsx");
 			int nr = 1;
 			while (excelFile.exists()) {
-				excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla" : "") + "_" + nr + ".xlsx");
+				excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
 				nr++;
 			}
 			enrichmentWorkbook.write(new FileOutputStream(excelFile));
@@ -143,10 +142,10 @@ public class ExcelWriter {
 		populateGenePvalueSheet(enrichmentWorkbook, genePvalues);
 
 		// Save the file
-		File excelFile = new File(outputBasePath + "_genePvalues" + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
+		File excelFile = new File(outputBasePath + "_genePvalues" + ".xlsx");
 		int nr = 1;
 		while (excelFile.exists()) {
-			excelFile = new File(outputBasePath + "_genePvalues" + (hlaExcluded ? "_exHla" : "") + "_" + nr + ".xlsx");
+			excelFile = new File(outputBasePath + "_genePvalues" + "_" + nr + ".xlsx");
 			nr++;
 		}
 		enrichmentWorkbook.write(new FileOutputStream(excelFile));
@@ -206,10 +205,10 @@ public class ExcelWriter {
 			}
 
 			// Save the file
-			File excelFile = new File(outputBasePath + "_pathwayLoadings" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla.xlsx" : ".xlsx"));
+			File excelFile = new File(outputBasePath + "_pathwayLoadings" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
 			int nr = 1;
 			while (excelFile.exists()) {
-				excelFile = new File(outputBasePath + "_pathwayLoadings" + (traits.size() > 1 ? "_" + trait : "") + (hlaExcluded ? "_exHla" : "") + "_" + nr + ".xlsx");
+				excelFile = new File(outputBasePath + "_pathwayLoadings" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
 				nr++;
 			}
 			enrichmentWorkbook.write(new FileOutputStream(excelFile));
@@ -220,23 +219,23 @@ public class ExcelWriter {
 
 		int numberOfCols = 10;
 		int numberOfRows = 0;
-		
+
 		LinkedHashMap<String, Integer> geneHashRow = databaseForScore.getEnrichmentZscores().getHashRows();
-		
+
 		for (GwasLocus curLocus : loci) {
-			
-			if(curLocus.getOverlappingGenes().isEmpty()){
+
+			if (curLocus.getOverlappingGenes().isEmpty()) {
 				numberOfRows++;
 			} else {
-				for(Gene gene : curLocus.getOverlappingGenes()){
-					if(geneHashRow.containsKey(gene.getGene())){
+				for (Gene gene : curLocus.getOverlappingGenes()) {
+					if (geneHashRow.containsKey(gene.getGene())) {
 						numberOfRows++;
 					}
 				}
 			}
 
 		}
-		
+
 		XSSFSheet locusOverview = (XSSFSheet) enrichmentWorkbook.createSheet("LocusOverview");
 		XSSFTable table = locusOverview.createTable(new AreaReference(new CellReference(0, 0),
 				new CellReference(numberOfRows, numberOfCols),
@@ -274,7 +273,7 @@ public class ExcelWriter {
 			// is below
 			// locus  name
 			XSSFCell locusNameCell = row.createCell(1, CellType.STRING);
-			locusNameCell.setCellValue(curLocus.getContig()+ ":" + curLocus.getStart() + "-" + curLocus.getEnd());
+			locusNameCell.setCellValue(curLocus.getContig() + ":" + curLocus.getStart() + "-" + curLocus.getEnd());
 
 			// chromosome
 			XSSFCell chrCell = row.createCell(2, CellType.NUMERIC);
@@ -425,13 +424,22 @@ public class ExcelWriter {
 		cell.setCellValue("Number of sets");
 		cell.setCellStyle(styles.getBoldStyle());
 
+		HashSet<String> sheetNames = new HashSet<>();
+
 		for (PathwayEnrichments pathwayEnrichment : pathwayEnrichments) {
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
 			cell.setCellValue(pathwayEnrichment.getPathwayDatabase().getName());
 
 			Hyperlink link = createHelper.createHyperlink(HyperlinkType.DOCUMENT);
-			link.setAddress(pathwayEnrichment.getPathwayDatabase().getName() + "!A1");
+
+			String sheetName = WorkbookUtil.createSafeSheetName(pathwayEnrichment.getPathwayDatabase().getName());
+
+			if (!sheetNames.add(sheetName)) {
+				throw new RuntimeException("Cannot create sheet for: " + pathwayEnrichment.getPathwayDatabase().getName() + ". Max sheet name length = 31 char and this resulted in non-unique pathway names");
+			}
+
+			link.setAddress(sheetName + "!A1");
 			cell.setHyperlink(link);
 			cell.setCellStyle(styles.getHlinkStyle());
 
@@ -470,6 +478,10 @@ public class ExcelWriter {
 		cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Regress out gene lengths from GWAS gene z-scores: " + options.isRegressGeneLengths());
 
+		row = overviewSheet.createRow(r++);
+		cell = row.createCell(0, CellType.STRING);
+		cell.setCellValue("Cis window definition: " + options.getCisWindowExtend());
+
 		if (options.isIgnoreGeneCorrelations()) {
 			row = overviewSheet.createRow(r++);
 			cell = row.createCell(0, CellType.STRING);
@@ -488,7 +500,6 @@ public class ExcelWriter {
 		DoubleMatrixDataset<String, String> databaseEnrichmentQvalues = pathwayEnrichment.getqValues();
 
 		//final DoubleMatrixDataset<String, String> gwasSnpPvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-
 		ArrayList<String> geneSets = databaseEnrichmentZscores.getRowObjects();
 		double bonferroniCutoff = 0.05 / pathwayEnrichment.getNumberOfPathways();
 		DoubleMatrix1D traitEnrichment = databaseEnrichmentZscores.getCol(trait);
@@ -497,7 +508,7 @@ public class ExcelWriter {
 		final boolean annotateWithGwasData = options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
 		int gwasAnnotations = 0;
 		final int windowExtend = options.getCisWindowExtend();
-		final String transLabel = "Trans (>" + (windowExtend >= 1000 ? ((windowExtend / 1000) + " k" ) : (windowExtend + " "))  + "b)";
+		final String transLabel = "Trans (>" + (windowExtend >= 1000 ? ((windowExtend / 1000) + " k") : (windowExtend + " ")) + "b)";
 
 		if (annotateWithGwasData) {
 			gwasAnnotations = 4;
@@ -517,7 +528,7 @@ public class ExcelWriter {
 			distanceGeneToTopCisSnp = null;
 		}
 
-		XSSFSheet databaseSheet = (XSSFSheet) enrichmentWorkbook.createSheet(pathwayDatabase.getName());
+		XSSFSheet databaseSheet = (XSSFSheet) enrichmentWorkbook.createSheet(WorkbookUtil.createSafeSheetName(pathwayDatabase.getName()));
 		XSSFTable table = databaseSheet.createTable(new AreaReference(new CellReference(0, 0),
 				new CellReference(databaseEnrichmentZscores.rows(), 5 + maxAnnotations + gwasAnnotations),
 				SpreadsheetVersion.EXCEL2007));
@@ -549,8 +560,7 @@ public class ExcelWriter {
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant ID");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant P-value");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS gene P-value");
-			
-			
+
 		}
 
 		// Populate the rows, loop over each row
@@ -632,7 +642,7 @@ public class ExcelWriter {
 					int dist = nearest.getDistance();
 					if (dist < 0) {
 						XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.STRING);
-						
+
 						snpDistCell.setCellValue(transLabel);
 						snpDistCell.setCellStyle(styles.getRightAlignedText());
 					} else {
