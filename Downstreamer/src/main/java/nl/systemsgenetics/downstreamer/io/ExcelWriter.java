@@ -250,7 +250,7 @@ public class ExcelWriter {
 		XSSFRow headerRow = locusOverview.createRow(0);
 
 		int hc = 0;
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus id");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus number");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus name");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus chr");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus start");
@@ -258,7 +258,7 @@ public class ExcelWriter {
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Index SNP");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Index SNP P-value");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene id");
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene name");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene symbol");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene score");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to index SNP");
 
@@ -390,7 +390,7 @@ public class ExcelWriter {
 		for (int c = 0; c < numberOfCols; ++c) {
 			locusOverview.autoSizeColumn(c);
 			locusOverview.setColumnWidth(c, locusOverview.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
-			if (c > 1 && locusOverview.getColumnWidth(c) > 20000) {
+			if (c >= 1 && locusOverview.getColumnWidth(c) > 20000) {
 				//max col width. Not for first column.
 				locusOverview.setColumnWidth(c, 20000);
 			}
@@ -684,7 +684,7 @@ public class ExcelWriter {
 		for (int c = 0; c < hc; ++c) {
 			databaseSheet.autoSizeColumn(c);
 			databaseSheet.setColumnWidth(c, databaseSheet.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
-			if (c > 1 && databaseSheet.getColumnWidth(c) > 20000) {
+			if (c >= 1 && databaseSheet.getColumnWidth(c) > 20000) {
 				//max col width. Not for first column.
 				databaseSheet.setColumnWidth(c, 20000);
 			}
@@ -768,7 +768,7 @@ public class ExcelWriter {
 		for (int c = 0; c < hc; ++c) {
 			genePSheet.autoSizeColumn(c);
 			genePSheet.setColumnWidth(c, genePSheet.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
-			if (c > 1 && genePSheet.getColumnWidth(c) > 20000) {
+			if (c >= 1 && genePSheet.getColumnWidth(c) > 20000) {
 				//max col width. Not for first column.
 				genePSheet.setColumnWidth(c, 20000);
 			}
@@ -860,7 +860,7 @@ public class ExcelWriter {
 		for (int c = 0; c < hc; ++c) {
 			zscoreSheet.autoSizeColumn(c);
 			zscoreSheet.setColumnWidth(c, zscoreSheet.getColumnWidth(c) + 1500); //compensate for with auto filter and inaccuracies
-			if (c > 1 && zscoreSheet.getColumnWidth(c) > 20000) {
+			if (c >= 1 && zscoreSheet.getColumnWidth(c) > 20000) {
 				//max col width. Not for first column.
 				zscoreSheet.setColumnWidth(c, 20000);
 			}

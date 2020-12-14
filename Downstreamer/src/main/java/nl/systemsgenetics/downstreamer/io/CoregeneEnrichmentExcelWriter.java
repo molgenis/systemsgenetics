@@ -243,7 +243,7 @@ public class CoregeneEnrichmentExcelWriter {
 				for (int c = 0; c < hc; ++c) {
 					sh.autoSizeColumn(c);
 					sh.setColumnWidth(c, sh.getColumnWidth(c) + 1100); //compensate for with auto filter and inaccuracies
-					if (c > 1 && sh.getColumnWidth(c) > 15000) {
+					if (c >= 1 && sh.getColumnWidth(c) > 15000) {
 						//max col width. Not for first column.
 						sh.setColumnWidth(c, 15000);
 					}
