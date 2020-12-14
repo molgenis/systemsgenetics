@@ -59,7 +59,6 @@ public class ExcelStyles {
 		genomicPositionStyle.setDataFormat(format.getFormat("###,###,##0"));
 
 		boldGenomicPositionStyle = wb.createCellStyle();
-		fontBold.setFontHeightInPoints((short) 10);
 		boldGenomicPositionStyle.setFont(fontBold);
 		boldGenomicPositionStyle.setDataFormat(format.getFormat("###,###,##0"));
 
