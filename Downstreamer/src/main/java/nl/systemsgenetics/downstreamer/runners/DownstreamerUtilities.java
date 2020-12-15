@@ -251,7 +251,7 @@ public class DownstreamerUtilities {
 		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
 
 		writer.saveStep2Excel(step2);
-		writer.saveGenePvalueExcel(step2.getGenePvalues());
+		//writer.saveGenePvalueExcel(step2.getGenePvalues());
 
 		if (options.getPathwayDatabasesToAnnotateWithGwas().size() >= 1) {
 			DownstreamerStep3Results step3 = DownstreamerMainAnalysis.step3(options);
