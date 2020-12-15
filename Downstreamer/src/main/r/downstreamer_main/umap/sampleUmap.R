@@ -5,7 +5,6 @@ remoter::client("localhost", port = 55557, password = "laberkak")
 setwd("/groups/umcg-wijmenga/tmp04/projects/depict2/")
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
 
-library(readr)
 library(gatepoints)
 
 #if(FALSE){
@@ -247,13 +246,13 @@ cols = c("", "", "", "", "", "", "", "", "", "", "", "", "")
 
 
 source(paste0("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\main\\r\\downstreamer_main/downstreamer_functions.r"))
-ced <- read.depict2("parkinsons_nalls2019_harm_jan_enrichtments_exHla.xlsx")
-name <- "Parkinsons"
+ced <- read.depict2("final_paper/type_2_diabetes_bmi_adjusted_2018_29632382_hg19_enrichtments.xlsx")
+name <- "T2D"
 
 #ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
 str(ced)
 
-cedExp <- ced$Expression
+cedExp <- ced$SampleEnrichment
 cedExp <- cedExp[match(row.names(sampleUmap), cedExp$Sample),]
 
 all(cedExp$Sample == row.names(sampleUmap))

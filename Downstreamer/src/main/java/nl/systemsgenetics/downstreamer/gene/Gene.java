@@ -8,7 +8,6 @@ package nl.systemsgenetics.downstreamer.gene;
 import htsjdk.samtools.util.Interval;
 
 import java.util.Objects;
-import umcg.genetica.variantAnnotator.GenomicRange;
 
 /**
  * @author patri

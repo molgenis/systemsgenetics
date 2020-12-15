@@ -6,6 +6,7 @@
 package nl.systemsgenetics.downstreamer;
 
 import edu.emory.mathcs.utils.ConcurrencyUtils;
+import htsjdk.tribble.SimpleFeature;
 
 import java.io.File;
 import java.util.*;
@@ -33,6 +34,7 @@ public class DownstreamerOptions {
 	private static final Options OPTIONS;
 	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();//Might be changed
 	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptions.class);
+	private static final SimpleFeature HLA = new SimpleFeature("6", 20000000, 40000000);
 
 	private final DownstreamerMode mode;
 
@@ -1503,6 +1505,10 @@ public class DownstreamerOptions {
 
 	public File getLeadSnpsFolder() {
 		return leadSnpsFolder;
+	}
+
+	public SimpleFeature getHla() {
+		return HLA;
 	}
 
 }

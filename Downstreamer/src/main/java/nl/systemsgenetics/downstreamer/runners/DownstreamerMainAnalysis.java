@@ -170,7 +170,7 @@ public class DownstreamerMainAnalysis {
 		if (options.isExcludeHla()) {
 			hlaGenes = new HashSet<>();
 			for (Gene gene : genes.values()) {
-				if (gene.getChr().equals("6") && ((gene.getStart() > 20000000 && gene.getStart() < 40000000) || (gene.getEnd() > 20000000 && gene.getEnd() < 40000000))) {
+				if (gene.overlaps(options.getHla())) {
 					hlaGenes.add(gene.getGene());
 				}
 			}

@@ -121,8 +121,21 @@ public class ExcelWriter {
 			Workbook enrichmentWorkbook = new XSSFWorkbook();
 			styles = new ExcelStyles(enrichmentWorkbook);
 			//CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
-
-			populateCisPrioSheet(enrichmentWorkbook, trait, lociPerTrait.get(trait), pathwayEnrichments);
+			List<GwasLocus> allLoci = lociPerTrait.get(trait);
+			
+			List<GwasLocus> hlaLoci = new ArrayList<>();
+			List<GwasLocus> nonHlaLoci = new ArrayList<>();
+			
+			for(GwasLocus locus : allLoci){
+				if(locus.overlaps(options.getHla())){
+					hlaLoci.add(locus);
+				} else {
+					nonHlaLoci.add(locus);
+				}
+			}
+			
+			populateCisPrioSheet(enrichmentWorkbook, trait, nonHlaLoci, pathwayEnrichments, "LocusOverview");
+			populateCisPrioSheet(enrichmentWorkbook, trait, hlaLoci, pathwayEnrichments, "HlaLocusOverview");
 			// Save the file
 			File excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
 			int nr = 1;
@@ -216,7 +229,7 @@ public class ExcelWriter {
 		}
 	}
 
-	private void populateCisPrioSheet(Workbook enrichmentWorkbook, String trait, List<GwasLocus> loci, PathwayEnrichments databaseForScore) throws IOException {
+	private void populateCisPrioSheet(Workbook enrichmentWorkbook, String trait, List<GwasLocus> loci, PathwayEnrichments databaseForScore, String sheetName) throws IOException {
 
 		int numberOfCols = 11;
 		int numberOfRows = 0;
@@ -237,13 +250,13 @@ public class ExcelWriter {
 
 		}
 
-		XSSFSheet locusOverview = (XSSFSheet) enrichmentWorkbook.createSheet("LocusOverview");
+		XSSFSheet locusOverview = (XSSFSheet) enrichmentWorkbook.createSheet(sheetName);
 		XSSFTable table = locusOverview.createTable(new AreaReference(new CellReference(0, 0),
 				new CellReference(numberOfRows, numberOfCols-1),
 				SpreadsheetVersion.EXCEL2007));
 
-		table.setName("LocusOverview");
-		table.setDisplayName("LocusOverview");
+		table.setName(sheetName);
+		table.setDisplayName(sheetName);
 		table.setStyleName("TableStyleLight9");
 		table.getCTTable().getTableStyleInfo().setShowRowStripes(true);
 		table.getCTTable().addNewAutoFilter();
@@ -680,7 +693,7 @@ public class ExcelWriter {
 				}
 
 				// Gene p-value
-				double genePvalue = genePvalues.getElement(geneId, trait);
+				double genePvalue = ZScores.zToP(genePvalues.getElement(geneId, trait));
 
 				XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
 				if (Double.isNaN(genePvalue)) {
