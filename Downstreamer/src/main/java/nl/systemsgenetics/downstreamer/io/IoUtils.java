@@ -28,6 +28,8 @@ public class IoUtils {
 
 	private static final Logger LOGGER = Logger.getLogger(IoUtils.class);
 
+	private static Map<String, ChrPosTreeMap<LeadVariant>> leadVariantsPerTraitCache = null;
+
 	/**
 	 * Load genotype data matching GWAS matrix and MAF filter.
 	 *
@@ -117,7 +119,7 @@ public class IoUtils {
 
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
-			
+
 			Gene gene = new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]);
 			intervalTree.put(gene, gene);
 		}
@@ -133,43 +135,49 @@ public class IoUtils {
 
 	public static Map<String, ChrPosTreeMap<LeadVariant>> loadLeadVariantsPerTrait(DownstreamerOptions options) throws IOException {
 
-		Map<String, File> alternativeLeadVariantFiles = options.getAlternativeTopHitFiles();
+		if (leadVariantsPerTraitCache != null) {
+			//this is save because options should not change during a run
+			return leadVariantsPerTraitCache;
+		} else {
 
-		Map<String, ChrPosTreeMap<LeadVariant>> leadVariantsPerTrait = new HashMap<>();
+			Map<String, File> alternativeLeadVariantFiles = options.getAlternativeTopHitFiles();
 
-		for (Map.Entry<String, File> alternativeEntry : alternativeLeadVariantFiles.entrySet()) {
+			Map<String, ChrPosTreeMap<LeadVariant>> leadVariantsPerTrait = new HashMap<>();
 
-			String trait = alternativeEntry.getKey();
-			File file = alternativeEntry.getValue();
+			for (Map.Entry<String, File> alternativeEntry : alternativeLeadVariantFiles.entrySet()) {
 
-		
-			ChrPosTreeMap<LeadVariant> leadVariants = readLeadVariantFile(file);
-			
-			LOGGER.info("Loaded " + leadVariants.size() + " for " + trait + " lead variants from: " + file.getAbsolutePath());
-			
-			leadVariantsPerTrait.put(trait, leadVariants);
+				String trait = alternativeEntry.getKey();
+				File file = alternativeEntry.getValue();
 
-		}
+				ChrPosTreeMap<LeadVariant> leadVariants = readLeadVariantFile(file);
 
-		//Now read all files in lead variants folder.
-		File leadVariantFolder = options.getLeadSnpsFolder();
+				LOGGER.info("Loaded " + leadVariants.size() + " for " + trait + " lead variants from: " + file.getAbsolutePath());
 
-		File[] leadVariantFiles = leadVariantFolder.listFiles(new LeadVariantFileNameFilter());
-
-		for (File leadVariantFile : leadVariantFiles) {
-
-			String trait = leadVariantFile.getName().substring(0, leadVariantFile.getName().length() - 10);
-
-			if(!leadVariantsPerTrait.containsKey(trait)){
-				ChrPosTreeMap<LeadVariant> leadVariants = readLeadVariantFile(leadVariantFile);
 				leadVariantsPerTrait.put(trait, leadVariants);
-				LOGGER.info("Loaded " + leadVariants.size() + " for " + trait + " lead variants");
+
 			}
 
+			//Now read all files in lead variants folder.
+			File leadVariantFolder = options.getLeadSnpsFolder();
+
+			File[] leadVariantFiles = leadVariantFolder.listFiles(new LeadVariantFileNameFilter());
+
+			for (File leadVariantFile : leadVariantFiles) {
+
+				String trait = leadVariantFile.getName().substring(0, leadVariantFile.getName().length() - 10);
+
+				if (!leadVariantsPerTrait.containsKey(trait)) {
+					ChrPosTreeMap<LeadVariant> leadVariants = readLeadVariantFile(leadVariantFile);
+					leadVariantsPerTrait.put(trait, leadVariants);
+					LOGGER.info("Loaded " + leadVariants.size() + " for " + trait + " lead variants");
+				}
+
+			}
+
+			leadVariantsPerTraitCache = leadVariantsPerTrait;
+
+			return leadVariantsPerTrait;
 		}
-
-		return leadVariantsPerTrait;
-
 	}
 
 	public static ChrPosTreeMap<LeadVariant> readLeadVariantFile(File file) throws IOException {

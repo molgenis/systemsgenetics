@@ -218,7 +218,7 @@ public class ExcelWriter {
 
 	private void populateCisPrioSheet(Workbook enrichmentWorkbook, String trait, List<GwasLocus> loci, PathwayEnrichments databaseForScore) throws IOException {
 
-		int numberOfCols = 10;
+		int numberOfCols = 11;
 		int numberOfRows = 0;
 
 		LinkedHashMap<String, Integer> geneHashRow = databaseForScore.getEnrichmentZscores().getHashRows();
@@ -239,7 +239,7 @@ public class ExcelWriter {
 
 		XSSFSheet locusOverview = (XSSFSheet) enrichmentWorkbook.createSheet("LocusOverview");
 		XSSFTable table = locusOverview.createTable(new AreaReference(new CellReference(0, 0),
-				new CellReference(numberOfRows, numberOfCols),
+				new CellReference(numberOfRows, numberOfCols-1),
 				SpreadsheetVersion.EXCEL2007));
 
 		table.setName("LocusOverview");
@@ -256,7 +256,7 @@ public class ExcelWriter {
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus start");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Locus end");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Lead variant");
-		headerRow.createCell(hc++, CellType.STRING).setCellValue("Load variant P-value");
+		headerRow.createCell(hc++, CellType.STRING).setCellValue("Lead variant P-value");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene ID");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene symbol");
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("Gene prioritization Z-score");
@@ -557,7 +557,7 @@ public class ExcelWriter {
 		headerRow.createCell(hc++, CellType.STRING).setCellValue("FDR 5% significant");
 
 		if (annotateWithGwasData) {
-			headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to lead GWAS variant (bp)");
+			headerRow.createCell(hc++, CellType.STRING).setCellValue("Distance to lead GWAS variant");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant ID");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS variant P-value");
 			headerRow.createCell(hc++, CellType.STRING).setCellValue("GWAS gene P-value");
@@ -581,7 +581,6 @@ public class ExcelWriter {
 					for (int j = 0; j < maxAnnotations; ++j) {
 						if (j < thisPathwayAnnotations.size()) {
 							String annotation = thisPathwayAnnotations.get(j);
-							
 
 							if (NumberUtils.isCreatable(annotation)) {
 								XSSFCell cell = row.createCell(j + 1, CellType.NUMERIC);
@@ -673,26 +672,24 @@ public class ExcelWriter {
 						snpPvalueCell.setCellValue(snpPvalue);
 						snpPvalueCell.setCellStyle(snpPvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 
-						// Gene p-value
-						double genePvalue = genePvalues.getElement(geneId, trait);
-
-						if (!Double.isNaN(genePvalue)) {
-							XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
-							//genePvalue = ZScores.zToP(genePvalue);
-							genePCell.setCellValue(genePvalue);
-							genePCell.setCellStyle(genePvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
-						} else {
-							XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.STRING);
-							genePCell.setCellValue("NA");
-							genePCell.setCellStyle(styles.getRightAlignedText());
-						}
-
 					}
 				} else {
 					XSSFCell snpDistCell = row.createCell(6 + maxAnnotations, CellType.STRING);
 					snpDistCell.setCellValue("Missing");
 					snpDistCell.setCellStyle(styles.getRightAlignedText());
 				}
+
+				// Gene p-value
+				double genePvalue = genePvalues.getElement(geneId, trait);
+
+				XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
+				if (Double.isNaN(genePvalue)) {
+					genePCell.setBlank();
+				} else {
+					genePCell.setCellValue(genePvalue);
+					genePCell.setCellStyle(genePvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
+				}
+
 
 			}
 		}
@@ -766,15 +763,13 @@ public class ExcelWriter {
 				// p-value
 				double pvalue = genePvalues.getElement(r, genePvalues.getColIndex(trait));
 
-				if (!Double.isNaN(pvalue)) {
-					XSSFCell pvalueCell = row.createCell(4 + x, CellType.NUMERIC);
-					pvalueCell.setCellValue(pvalue);
-					pvalueCell.setCellStyle(pvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
+				XSSFCell genePCell = row.createCell(4 + x, CellType.NUMERIC);
+				//genePvalue = ZScores.zToP(genePvalue);
+				if (Double.isNaN(pvalue)) {
+					genePCell.setCellErrorValue(FormulaError.NA);
 				} else {
-					XSSFCell pvalueCell = row.createCell(4 + x, CellType.STRING);
-					pvalueCell.setCellValue("NA");
-					pvalueCell.setCellStyle(styles.getRightAlignedText());
-
+					genePCell.setCellValue(pvalue);
+					genePCell.setCellStyle(pvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 				}
 
 				x++;
