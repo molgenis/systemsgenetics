@@ -135,7 +135,9 @@ public class ExcelWriter {
 			}
 			
 			populateCisPrioSheet(enrichmentWorkbook, trait, nonHlaLoci, pathwayEnrichments, "LocusOverview");
-			populateCisPrioSheet(enrichmentWorkbook, trait, hlaLoci, pathwayEnrichments, "HlaLocusOverview");
+			if(!hlaLoci.isEmpty()){
+				populateCisPrioSheet(enrichmentWorkbook, trait, hlaLoci, pathwayEnrichments, "HlaLocusOverview");
+			}
 			// Save the file
 			File excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
 			int nr = 1;

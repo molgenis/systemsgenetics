@@ -246,8 +246,8 @@ cols = c("", "", "", "", "", "", "", "", "", "", "", "", "")
 
 
 source(paste0("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\main\\r\\downstreamer_main/downstreamer_functions.r"))
-ced <- read.depict2("final_paper/type_2_diabetes_bmi_adjusted_2018_29632382_hg19_enrichtments.xlsx")
-name <- "T2D"
+ced <- read.depict2("final_paper/lipids_2018_29507422_hg19_enrichtments_ldl_2018_29507422_hg19.txt.xlsx")
+name <- "LDL"
 
 #ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
 str(ced)
@@ -294,7 +294,7 @@ pdf(paste0("Umap/sampleUmap", name , ".pdf"), width = 14, height = 7.5, useDingb
 
 createUmap(sampleUmaporder, sampleCol)
 
-posLegend = 0.86
+posLegend = 0.89
 
 gradientLegend2(
   c(-maxZ,maxZ),
@@ -313,7 +313,7 @@ gradientLegend2(
   fit.margin = TRUE,
 )
 
-mtext(paste0("Sample enrichment for: ", name ), side = 3, line = -4.2, col = "gray30")
+mtext(paste0("Sample enrichment for: ", name ), side = 3, line = -2.8, col = "gray30")
 
 dev.off()
 
