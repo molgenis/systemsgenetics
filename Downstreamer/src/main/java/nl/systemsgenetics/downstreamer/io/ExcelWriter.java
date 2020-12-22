@@ -390,7 +390,10 @@ public class ExcelWriter {
 
 				// Make the cell with the minimal distance bold
 				if (locusOverview.getRow(rowWithMinimalSnpDistance) != null) {
-					locusOverview.getRow(rowWithMinimalSnpDistance).getCell(10).setCellStyle(styles.getBoldGenomicPositionStyle());
+					XSSFCell geneDistanceCell = locusOverview.getRow(rowWithMinimalSnpDistance).getCell(10);
+					if (geneDistanceCell != null) {
+						geneDistanceCell.setCellStyle(styles.getBoldGenomicPositionStyle());
+					}
 				}
 			} else {
 				// Locus id
