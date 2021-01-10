@@ -42,6 +42,8 @@ public class hpoClass {
 
 		}
 		
+		System.out.println("--------");
+		
 		ArrayList<hpoTermWithTopDiseaseClass> terms = new ArrayList();
 		
 		for (Term term : hpo.getAllTerms()){

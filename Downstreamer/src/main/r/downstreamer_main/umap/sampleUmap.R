@@ -213,7 +213,7 @@ createUmap <- function(sampleUmapPlot, sampleCol){
 #axis(1)
   #axis(2)
 
-write.table(lines2, "Umap/lines.txt", sep = "\t", quote = F, row.names = F)
+#write.table(lines2, "Umap/lines.txt", sep = "\t", quote = F, row.names = F)
 
 
 
@@ -246,8 +246,8 @@ cols = c("", "", "", "", "", "", "", "", "", "", "", "", "")
 
 
 source(paste0("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\main\\r\\downstreamer_main/downstreamer_functions.r"))
-ced <- read.depict2("final_paper/lipids_2018_29507422_hg19_enrichtments_ldl_2018_29507422_hg19.txt.xlsx")
-name <- "LDL"
+ced <- read.depict2("final_paper/cellcounts_2020_32888494_hg19_enrichtments_PLT.xlsx")
+name <- "PLT"
 
 #ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
 str(ced)
@@ -313,7 +313,7 @@ gradientLegend2(
   fit.margin = TRUE,
 )
 
-mtext(paste0("Sample enrichment for: ", name ), side = 3, line = -2.8, col = "gray30")
+mtext(paste0("Sample enrichment for: ", name ), side = 3, line = -2.9, col = "gray30")
 
 dev.off()
 
