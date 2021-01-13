@@ -22,6 +22,7 @@ import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import java.io.*;
 import java.util.*;
 import nl.systemsgenetics.downstreamer.containers.LeadVariant;
+import org.molgenis.genotype.variantFilter.VariantFilterBiAllelic;
 import umcg.genetica.collections.ChrPosTreeMap;
 
 public class IoUtils {
@@ -285,22 +286,24 @@ public class IoUtils {
 			sampleFilter = null;
 		}
 
-		VariantFilter variantFilter;
-		if (variantsToInclude == null) {
-			variantFilter = null;
-		} else {
-			variantFilter = new VariantIdIncludeFilter(new HashSet<>(variantsToInclude));
+		ArrayList<VariantFilter> variantFilters = new ArrayList<>();
+		variantFilters.add(new VariantFilterBiAllelic());
+		
+		if (variantsToInclude != null) {
+			variantFilters.add(new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)));
 		}
 
 		if (options.getMafFilter() != 0) {
-			VariantFilter mafFilter = new VariantFilterMaf(options.getMafFilter());
-			if (variantFilter == null) {
-				variantFilter = mafFilter;
-			} else {
-				variantFilter = new VariantCombinedFilter(variantFilter, mafFilter);
-			}
+			variantFilters.add(new VariantFilterMaf(options.getMafFilter()));
 		}
 
+		final VariantFilter variantFilter;
+		if(variantFilters.size() == 1){
+			variantFilter = variantFilters.get(0);
+		} else {
+			variantFilter = new VariantCombinedFilter(variantFilters);
+		}
+		
 		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, variantFilter, sampleFilter, null, 0.34f);
 
 		return referenceGenotypeData;
