@@ -31,9 +31,16 @@ genePrioritizationsZscores <- lapply(genePrioritizations, function(x){
 })
 str(genePrioritizationsZscores)
 
+genePascalPvalues <- lapply(genePrioritizations, function(x){
+  return(x$GWAS.gene.P.value[ match(genePrioritizations[["height"]]$Gene.ID, x$Gene.ID)])
+})
+str(genePascalPvalues)
+
+pascalGeneP <- do.call(cbind, genePascalPvalues)
+row.names(pascalGeneP) <- genePrioritizations[["height"]]$Gene.ID
+
 dsGeneZ <- do.call(cbind, genePrioritizationsZscores)
 row.names(dsGeneZ) <- genePrioritizations[["height"]]$Gene.ID
-
 
 
 ukbCodes <- unique(mapping$UKB.phenotype.code)
@@ -82,9 +89,16 @@ row.names(ukbLof4) <- ensg$Ensembl.Gene.ID[match(row.names(ukbLof4), ensg$Associ
 str(ukbCoding4)
 
 
+#pascalGeneP[is.na(pascalGeneP)] <- 1
+
 ukbCodingCor <- cor(-log10(ukbCoding4))
 ukbLofCor <- cor(-log10(ukbLof4))
 dsGeneCor <- cor(dsGeneZ)
+pascalGenePCor <- cor(-log10(pascalGeneP),use="pairwise.complete.obs")
+
+
+pascalGenePNaCor <- cor(is.na(pascalGeneP))
+
 
 corToZ <- function(r, df){
   t = sqrt(df) * abs(r) / sqrt(1 - (r*r))
@@ -104,6 +118,7 @@ corToZ <- function(r, df){
 ukbCodingCorZ <- apply(ukbCodingCor, 1:2, corToZ, df = nrow(ukbCoding4)-2)
 ukbLofCorZ <- apply(ukbLofCor, 1:2, corToZ, df = nrow(ukbCoding4)-2)
 dsGeneCorZ <- apply(dsGeneCor, 1:2, corToZ, df = nrow(dsGeneZ)-2)
+#pascalGenePCorZ <- apply(pascalGenePCor, 1:2, corToZ, df = nrow(pascalGeneP)-2)
 
 
 str(ukbCodingCor)
@@ -118,6 +133,10 @@ heatmap3(ukbLofCorZ, scale= "none", balanceColor = T, method = "ward.D2", keep.d
 
 
 heatmap3(dsGeneCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
+
+heatmap3(pascalGenePCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
+
+heatmap3(pascalGenePNaCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
 
 
 geneOverlapCoding <- intersect(row.names(dsGeneZ), row.names(ukbCoding4))
@@ -150,3 +169,13 @@ plot(-log10(ukbLof4_l[,"NEU"]), dsGeneZ_l[,"NEU"])
 cor.test(-log10(ukbLof4_l[,"NEU"]), dsGeneZ_l[,"NEU"])
 
 
+
+load("gene_zcore_gene_prio_pearson_correlations.Rdata")
+
+str(cor.m)
+colnames(cor.m)
+
+
+cor.m[,"height_2018_30124842"]
+
+heatmap3(cor.m, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
