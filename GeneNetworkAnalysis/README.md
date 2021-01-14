@@ -1,5 +1,4 @@
-# Upated GeneNetwork Pipeline
-
+# GeneNetwork Pipeline
 
 ## Introduction
 The GeneNetwork pipeline is a command line python3 tool to perform the decomposition and gene pathway score calculation. The main goal of the analysis is to calculate gene z-scores for every gene for every pathway in the input files which gives the contribution of a gene to the pathway. Where the input pathway file contains only a Boolean value if the gene is linked to the pathway, this analysis calculates a contribution z-score value for each gene to every pathway by using gene expression data.
@@ -31,10 +30,10 @@ The permutated version of the input matrix will be saved as pandas pickle file o
 
 The process of calculation of z-scores for one pathway can be take a serious amount of time, especially for pathways with a lot of genes. To reduce the overall processing time, the script use by default multiple CPU cores of the machine. The maximal number of available cores are used, but this can be reduced by setting a maximal number of cores through a parameter.  The script has also build-in support for multi node processing, for cluster usage. This can be easily setup with a job manager like Slurm. An example job script is included.
 
-##Input data
+## Input data
 Both scripts use input data frames to perform the analysis. Every input data frame can be given as Pandas pickled data frame or as a tab separated txt file. The txt input file is automatically decompressed if the file paths ends withs ‘.gz’, ‘.bz2’, ‘.zip’, or ‘.xz’. An cached pandas pickle file are created on the same location as the input txt file to speed up the reading process of the input file in further analysis. These cached files automatically created on the same location and same name as the input file with the suffix “_cashed.pickle”.
 
-##Output data
+## Output data
 Both scripts create different output files as described in the above. The files are created in the given output directory, which is also created if the directory does not exit. Output matrixes are by default created as pandas pickled dataframe and tab separated text file. The txt matrix files are by default gz compressed. The compressing can be disabled (parameter: --output_disable_gzip), even as the creation of the txt file or the pickle file (option: --output_disable_txt and --output_disable_pickle)
 
 # Prerequisites  
