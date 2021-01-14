@@ -55,7 +55,7 @@ See 'Installing' on how to install these packages.
 Installing and running the program can be done by executing the following steps:  
 
 **Step 1: acquire the source files**
-Either [clone](https://henrywiersma@bitbucket.org/henrywiersma/gene-network.git) or [download](https://bitbucket.org/henrywiersma/gene-network/downloads/) the source files.
+Download or clone the GeneNetworkAnalysis directory from the [systemsgenetics](https://github.com/molgenis/systemsgenetics) repository.
 
 **Step 2: installing the required packages**  
 1. Install the required packages. The python packager manager (pip) and the requirements file can be used to install all the nessesary packages:  
