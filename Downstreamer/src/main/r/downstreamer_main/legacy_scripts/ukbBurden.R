@@ -141,7 +141,10 @@ heatmap3(pascalGenePNaCor, scale= "none", balanceColor = T, method = "ward.D2", 
 
 geneOverlapCoding <- intersect(row.names(dsGeneZ), row.names(ukbCoding4))
 
+
+
 dsGeneZ_c <- dsGeneZ[match(geneOverlapCoding, row.names(dsGeneZ)),]
+pascalGeneP_c <- pascalGeneP[match(geneOverlapCoding, row.names(pascalGeneP)),]
 ukbCoding4_c <- ukbCoding4[match(geneOverlapCoding, row.names(ukbCoding4)),]
 
 
@@ -155,6 +158,7 @@ heatmap3(dsVsCodingCorZ, scale= "none", balanceColor = T, method = "ward.D2", ke
 geneOverlapLof <- intersect(row.names(dsGeneZ), row.names(ukbLof4))
 
 dsGeneZ_l <- dsGeneZ[match(geneOverlapLof, row.names(dsGeneZ)),]
+pascalGeneP_l <- pascalGeneP[match(geneOverlapLof, row.names(pascalGeneP)),]
 ukbLof4_l <- ukbLof4[match(geneOverlapLof, row.names(ukbLof4)),]
 
 
@@ -179,3 +183,27 @@ colnames(cor.m)
 cor.m[,"height_2018_30124842"]
 
 heatmap3(cor.m, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
+
+
+
+
+pascalVsCodingCor <- cor(-log10(pascalGeneP_c), -log10(ukbCoding4_c), use = "pairwise.complete.obs")
+heatmap3(pascalVsCodingCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
+
+heatmap3(pascalVsCodingCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T, Rowv = NA, Colv= NA)
+
+
+
+
+
+pascalVsCodingCor <- cor(-log10(pascalGeneP_c), -log10(ukbCoding4_c), use = "pairwise.complete.obs")
+heatmap3(pascalVsCodingCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
+
+heatmap3(pascalVsCodingCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T, Rowv = NA, Colv= NA)
+
+
+
+pascalVsLofCor <- cor(-log10(pascalGeneP_l), -log10(ukbLof4_l), use = "pairwise.complete.obs")
+heatmap3(pascalVsCodingCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
+
+heatmap3(pascalVsCodingCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T, Rowv = NA, Colv= NA)

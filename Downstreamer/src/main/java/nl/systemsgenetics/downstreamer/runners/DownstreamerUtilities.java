@@ -333,7 +333,7 @@ public class DownstreamerUtilities {
 
 				Gene geneJ = genes.get(geneOrder.get(j));
 
-				if (geneI.withinDistanceOf(geneJ, 250000)) {
+				if (geneI.withinDistanceOf(geneJ, options.getCisWindowExtend())) {
 					corMatrix.setElementQuick(i, j, 0);
 					corMatrix.setElementQuick(j, i, 0);
 					++overlappingGenePairs;
@@ -343,7 +343,7 @@ public class DownstreamerUtilities {
 
 		}
 
-		LOGGER.info("Identified " + overlappingGenePairs + " overlapping gene-gene pairs using a 500k window.");
+		LOGGER.info("Identified " + overlappingGenePairs + " overlapping gene-gene pairs within " + options.getCisWindowExtend() + "b.");
 
 		corMatrix.saveBinary(options.getOutputBasePath());
 
