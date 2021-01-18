@@ -456,7 +456,7 @@ public class DownstreamerOptions {
 			throw new ParseException("Could not parse -cwe as integerer: " + commandLine.getOptionValue("cwe"));
 		}
 
-		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP 	) {
+		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.SUBSET_MATRIX) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -467,7 +467,7 @@ public class DownstreamerOptions {
 			gwasZscoreMatrixPath = null;
 		}
 
-		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.CONVERT_EXP) {
+		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.SUBSET_MATRIX) {
 			pvalueToZscore = commandLine.hasOption("p2z");
 			if (commandLine.hasOption("co")) {
 				conversionColumnIncludeFilter = new File(commandLine.getOptionValue("co"));
@@ -609,8 +609,7 @@ public class DownstreamerOptions {
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
-				
-				
+
 				if (commandLine.hasOption("ath")) {
 
 					String[] athValues = commandLine.getOptionValues("ath");
@@ -640,8 +639,7 @@ public class DownstreamerOptions {
 				} else {
 					alternativeTopHitFiles = Collections.EMPTY_MAP;
 				}
-				
-				
+
 				break;
 			case GET_NORMALIZED_GENEP:
 				if (commandLine.hasOption("ge")) {
@@ -1148,6 +1146,15 @@ public class DownstreamerOptions {
 					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
 				}
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
+				break;
+			case SUBSET_MATRIX:
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				if (conversionColumnIncludeFilter != null) {
+					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
+				}
+				if (conversionRowIncludeFilter != null) {
+					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
+				}
 				break;
 			case CONVERT_TXT_MERGE:
 				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());

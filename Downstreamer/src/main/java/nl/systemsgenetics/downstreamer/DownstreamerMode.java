@@ -32,5 +32,6 @@ public enum DownstreamerMode {
 	CREATE_EXCEL,
 	TOP_HITS,
 	REMOVE_CIS_COEXP,
-	SPECIAL;
+	SPECIAL,
+	SUBSET_MATRIX;
 }
