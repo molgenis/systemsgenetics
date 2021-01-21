@@ -16,6 +16,7 @@ import java.util.*;
 import nl.systemsgenetics.downstreamer.development.CorrelateExpressionToPredictions;
 import nl.systemsgenetics.downstreamer.development.First1000qtl;
 import nl.systemsgenetics.downstreamer.io.ExcelWriter;
+import nl.systemsgenetics.downstreamer.pathway.PredictedPathwayAnnotations;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -230,6 +231,9 @@ public class Downstreamer {
 					break;
 				case REMOVE_CIS_COEXP:
 					DownstreamerUtilities.removeLocalGeneCorrelations(options);
+					break;
+				case EXPAND_PATHWAYS:
+					PredictedPathwayAnnotations.expandAnnotations(options);
 					break;
 				case SPECIAL:
 					CorrelateExpressionToPredictions.run(options);

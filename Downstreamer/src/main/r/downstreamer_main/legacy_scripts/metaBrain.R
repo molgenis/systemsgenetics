@@ -70,7 +70,8 @@ for(trait in traits){
   prioGenes <- res$Gene.ID[res$Bonferroni.significant]
   cisGenes <- res$Gene.ID[!is.na(res$GWAS.gene.P.value) & res$GWAS.gene.P.value <=  2.570694e-06 & res$Enrichment.Z.score >= 1.96]
   
-  if(length(prioGenes) >= 2 & length(cisGenes) >= 2){
+  if(length(prioGenes) >= 1 & length(cisGenes) >= 1){
+    
     coExp <- metaBrainCoExp[prioGenes, cisGenes]
     
     x <- sapply(prioGenes, function(pg){
@@ -79,6 +80,23 @@ for(trait in traits){
     
     prioDrivers <- stack(x)
     colnames(prioDrivers)  <- c("gwasGene", "DS_gene")
+    prioDrivers$coregZ <- apply(prioDrivers, 1, function(pair){
+      coExp[pair[2], pair[1]]
+    })
+    
+    prioDrivers$pascalPGwasGene <- res[prioDrivers$gwasGene,"GWAS.gene.P.value"]
+    prioDrivers$pascalPDsGene <- res[prioDrivers$DS_gene,"GWAS.gene.P.value"]
+    
+    prioDrivers$PrioZGwasGene <- res[prioDrivers$gwasGene,"Enrichment.Z.score"]
+    prioDrivers$PrioZDsGene <- res[prioDrivers$DS_gene,"Enrichment.Z.score"]
+    
+    write.table(prioDrivers, paste0("MetaBrain/",trait,"prioDrivers.txt"), row.names = F, quote = F, sep = "\t")
+    
+  
+  }
+  if(length(prioGenes) >= 2 & length(cisGenes) >= 2){
+    coExp <- metaBrainCoExp[prioGenes, cisGenes]
+    
     write.table(prioDrivers, paste0("MetaBrain/",trait,"prioDrivers.txt"), row.names = F, quote = F, sep = "\t")
     
     heatmap3(coExp, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T, margins = c(10,10), xlab = "GWAS signifcant genes", ylab = "Prioritized genes", main = trait)

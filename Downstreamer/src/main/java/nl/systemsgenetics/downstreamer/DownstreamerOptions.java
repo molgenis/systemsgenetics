@@ -592,6 +592,21 @@ public class DownstreamerOptions {
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				break;
+			case EXPAND_PATHWAYS:
+				geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				pathwayDatabases = parsePd(commandLine, "pd", "pathwayDatabase");
+				pathwayDatabases2 = parsePd(commandLine, "pd2", "pathwayDatabase2");
+				if (pathwayDatabases2.isEmpty()) {
+					throw new ParseException("--pathwayDatabase2 not specified");
+				}
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
+				genePruningR = 0;
+				geneCorrelationWindow = 0;
+				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+
+				break;
 			case PRIO_GENE_ENRICH:
 				if (commandLine.hasOption("ge")) {
 					geneInfoFile = new File(commandLine.getOptionValue("ge"));
@@ -1182,6 +1197,14 @@ public class DownstreamerOptions {
 				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
 				logPathwayDatabases();
 				LOGGER.info(" * The following pathway annotation databases have been specified to base AUC on:");
+				for (PathwayDatabase database2 : pathwayDatabases2) {
+					LOGGER.info("    - " + database2.getName() + " at: " + database2.getLocation());
+				}
+				break;
+			case EXPAND_PATHWAYS:
+				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
+				logPathwayDatabases();
+				LOGGER.info(" * The following prediction Z-score matrices are used to expand pathways:");
 				for (PathwayDatabase database2 : pathwayDatabases2) {
 					LOGGER.info("    - " + database2.getName() + " at: " + database2.getLocation());
 				}
