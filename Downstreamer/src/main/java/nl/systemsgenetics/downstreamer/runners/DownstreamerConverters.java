@@ -757,4 +757,73 @@ public class DownstreamerConverters {
 		matrix.saveBinary(options.getOutputBasePath());
 	}
 
+	public static void subsetMatrix(DownstreamerOptions options) throws FileNotFoundException, IOException, Exception {
+
+		if (options.getConversionColumnIncludeFilter() != null && !options.getConversionColumnIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+
+		if (options.getConversionRowIncludeFilter() != null && !options.getConversionRowIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionRowIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+
+		final List<String> colsToSelect;
+
+		if (options.getConversionColumnIncludeFilter() != null) {
+			colsToSelect = IoUtils.readMatrixAnnotations(options.getConversionColumnIncludeFilter());
+		} else {
+			colsToSelect = null;
+		}
+
+		final List<String> rowsToSelect;
+		
+		if (options.getConversionRowIncludeFilter() != null) {
+			rowsToSelect = IoUtils.readMatrixAnnotations(options.getConversionRowIncludeFilter());
+		} else {
+			rowsToSelect = null;
+		}
+		
+		if(rowsToSelect == null && colsToSelect == null){
+			throw new RuntimeException("No row or col filter selected");
+		}
+
+		String matrixPath = options.getGwasZscoreMatrixPath();
+		
+		final boolean binary = !(matrixPath.endsWith(".txt") || matrixPath.endsWith(".gz") || matrixPath.endsWith(".tsv"));
+		
+		DoubleMatrixDataset<String, String> matrix;
+		
+		if(rowsToSelect == null){
+			if(binary){
+				matrix = DoubleMatrixDataset.loadDoubleBinaryData(matrixPath);
+			} else {
+				matrix = DoubleMatrixDataset.loadDoubleData(matrixPath);
+			}
+		} else {
+			if(binary){
+				matrix = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(matrixPath, rowsToSelect);
+			} else {
+				matrix = DoubleMatrixDataset.loadDoubleData(matrixPath).viewRowSelection(rowsToSelect);
+			}
+		} 
+		
+		if(colsToSelect != null){
+			matrix = matrix.viewColSelection(colsToSelect);
+		}
+		
+		if(binary){
+			matrix.saveBinary(options.getOutputBasePath());
+		} else {
+			if(matrixPath.endsWith(".txt")){
+				matrix.save(options.getOutputBasePath() + ".txt");
+			} else if(matrixPath.endsWith(".tsv")){
+				matrix.save(options.getOutputBasePath() + ".tsv");
+			} else if(matrixPath.endsWith(".txt.gz")){
+				matrix.save(options.getOutputBasePath() + ".txt.gz");
+			}
+		}
+		
+
+	}
+
 }

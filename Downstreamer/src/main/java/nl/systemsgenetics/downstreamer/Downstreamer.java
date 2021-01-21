@@ -130,6 +130,9 @@ public class Downstreamer {
 				case CONVERT_TXT:
 					DownstreamerConverters.convertTxtToBin(options);
 					break;
+				case SUBSET_MATRIX:
+					DownstreamerConverters.subsetMatrix(options);
+					break;
 				case CONVERT_BIN:
 					DownstreamerConverters.convertBinToTxt(options);
 					break;

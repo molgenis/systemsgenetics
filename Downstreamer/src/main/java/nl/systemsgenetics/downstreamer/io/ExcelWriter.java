@@ -698,7 +698,7 @@ public class ExcelWriter {
 				}
 
 				// Gene p-value
-				double genePvalue = ZScores.zToP(genePvalues.getElement(geneId, trait));
+				double genePvalue = genePvalues.getElement(geneId, trait);
 
 				XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
 				if (Double.isNaN(genePvalue)) {
