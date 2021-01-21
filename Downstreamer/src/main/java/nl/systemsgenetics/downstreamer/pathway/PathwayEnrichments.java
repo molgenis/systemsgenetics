@@ -25,6 +25,7 @@ import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.gene.GenePathwayAssociationStatistic;
+import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
@@ -509,6 +510,10 @@ public class PathwayEnrichments {
 			// Calculate FDR
 			LOGGER.debug("Calculating FDR");
 			qValues = calculateQValues(pValues, pValuesNullForFDR);
+
+			// Calculate null distribution metrics
+			DoubleMatrixDataset<String, String> nullDistributionMetrics = DownstreamerUtilities.calculateNullDistributionMetrics(betasNullForPvalue);
+			nullDistributionMetrics.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_nullDistMetrics.txt" : "_nullDistMetricsExHla.txt"));
 
 			// Write output
 			pValuesNullForFDR.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_empericalPvals" : "_empericalPvalsExHla"));

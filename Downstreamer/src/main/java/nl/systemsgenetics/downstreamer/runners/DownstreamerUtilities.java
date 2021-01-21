@@ -13,6 +13,8 @@ import nl.systemsgenetics.downstreamer.io.ExcelWriter;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.moment.Skewness;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.PcaColt;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -347,6 +349,39 @@ public class DownstreamerUtilities {
 
 		corMatrix.saveBinary(options.getOutputBasePath());
 
+	}
+
+	/**
+	 * Calculate skewness, kurtosis, mean and variance of the null distribution for a pathway database
+	 *
+	 * @param options
+	 * @throws Exception
+	 */
+	public static DoubleMatrixDataset<String, String> calculateNullDistributionMetrics(DoubleMatrixDataset<String, String> data) {
+
+		List<String> colnames = new ArrayList<>();
+		colnames.add("mean");
+		colnames.add("sd");
+		colnames.add("skewness");
+		colnames.add("kurtosis");
+		colnames.add("max");
+		colnames.add("min");
+
+		DoubleMatrixDataset<String, String> outputStats = new DoubleMatrixDataset<>(data.getRowObjects(), colnames);
+
+		for (int r=0; r < data.rows(); r++) {
+			DescriptiveStatistics curDesc = new DescriptiveStatistics(data.getRow(r).toArray());
+
+			int c=0;
+			outputStats.setElementQuick(r, c++, curDesc.getMean());
+			outputStats.setElementQuick(r, c++, curDesc.getStandardDeviation());
+			outputStats.setElementQuick(r, c++, curDesc.getSkewness());
+			outputStats.setElementQuick(r, c++, curDesc.getKurtosis());
+			outputStats.setElementQuick(r, c++, curDesc.getMax());
+			outputStats.setElementQuick(r, c++, curDesc.getMin());
+		}
+
+		return outputStats;
 	}
 
 	/**

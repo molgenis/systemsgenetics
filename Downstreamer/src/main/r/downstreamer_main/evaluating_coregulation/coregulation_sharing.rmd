@@ -4,12 +4,45 @@ source("../downstreamer_functions.r")
 source("data/source_olivier.r")
 
 library(UpSetR)
+# Cached 2021-01-06 13:01
 datasets <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
 
+# Remove redundant datasets
+redundant <- c("type_2_diabetes_2018_29632382",
+  "plt_2020_32888494",
+  "mpv_2020_32888494",
+  "parkinsons_disease_2019_31701892",
+  "coeliac_disease_2010_20190752", 
+  "multiple_sclerosis_2013_24076602")
 ```
 
 ```{r}
-make.upset.matrix <- function(datasets, trait="Coregulation", collumn="FDR.5..significant") {
+subset.no.metabo <- grep("metabolites", names(datasets), value=T, invert=T)
+subset.no.metabo <- subset.no.metabo[!subset.no.metabo %in% redundant]
+coreg.zscores <- make.zscore.matrix(datasets[subset.no.metabo])
+cor.m <- cor(coreg.zscores)
+
+pdf(width=15, height=15, file="output/plots/GenePriortization_correlation_heatmap_non_metabolite_traits_wardd2.pdf")
+
+dist.tmp <- function(x){as.dist(1 - cor(t(x), use = "pa"))}
+dist.m <- dist.tmp(cor.m)
+hm(cor.m, method="ward.D2",
+   clustering_distance_rows=dist.m,
+   clustering_distance_cols=dist.m)
+dev.off()
+```
+
+```{r}
+subset.immune  <- c("coeliac_disease_2011_22057235", 
+                    "asthma_2020_32296059",
+                    "rheumatoid_arthritis_2014_24390342",
+                    "inflammatory_bowel_disease_2017_29906448",
+                    "multiple_sclerosis_2019_31604244",
+                    "cellcounts_2020_32888494_BAS",
+                    "cellcounts_2020_32888494_EOS",
+                    "cellcounts_2020_32888494_LYM")
+
+make.upset.matrix <- function(datasets, trait="GenePrioritization", collumn="Bonferroni.significant") {
   out <- matrix()
   i=0
   for (dataset in names(datasets)) {
@@ -30,30 +63,24 @@ make.upset.matrix <- function(datasets, trait="Coregulation", collumn="FDR.5..si
   return(out)
 }
 
-datasets <- datasets[c("coeliac_disease_2010_20190752",
-                                                 "coeliac_disease_2011_22057235", 
-                                                 "asthma_2020_32296059",
-                                                 "rheumatoid_arthritis_2014_24390342",  
-                                                 "inflammatory_bowel_disease_2017_29906448")]
+raw.matrix           <- make.upset.matrix(datasets[subset.no.metabo])
+#bonf.sig.coreg.genes <- as.data.frame(apply(make.upset.matrix(datasets), 2, as.numeric))
+bonf.sig.coreg.genes <- as.data.frame(raw.matrix)
+bonf.sig.coreg.genes <- apply(bonf.sig.coreg.genes, 2, as.numeric)
+rownames(bonf.sig.coreg.genes) <- rownames(raw.matrix)
+#upset(bonf.sig.coreg.genes, nsets = ncol(bonf.sig.coreg.genes))
+hm(t(bonf.sig.coreg.genes[raw.matrix[,"coeliac_disease_2011_22057235"]==1,subset.immune]))
+hm(t(bonf.sig.coreg.genes[raw.matrix[,"inflammatory_bowel_disease_2017_29906448"]==1,subset.immune]))
+bonf.sig.coreg.genes.immune <- bonf.sig.coreg.genes[,subset.immune]
 
-raw.matrix           <- make.upset.matrix(datasets)
-bonf.sig.coreg.genes <- as.data.frame(apply(make.upset.matrix(datasets), 2, as.numeric))
-
-upset(bonf.sig.coreg.genes, nsets = ncol(bonf.sig.coreg.genes))
-
-
-bonf.sig.coreg.genes <- bonf.sig.coreg.genes[, c("coeliac_disease_2011_22057235", 
-                                                 "asthma_2020_32296059",
-                                                 "rheumatoid_arthritis_2014_24390342",  
-                                                 "inflammatory_bowel_disease_2017_29906448")]
-upset(bonf.sig.coreg.genes)
+#bonf.sig.coreg.genes <- bonf.sig.coreg.genes[, c("coeliac_disease_2011_22057235", 
+#                                                 "asthma_2020_32296059",
+#                                                 "rheumatoid_arthritis_2014_24390342",  
+#                                                 "inflammatory_bowel_disease_2017_29906448")]
+upset(as.data.frame(bonf.sig.coreg.genes.immune),
+      nsets=ncol(bonf.sig.coreg.genes.immune))
 
 
-zscores <- make.zscore.matrix(datasets)
-zscores <- zscores[rownames(raw.matrix), colnames(bonf.sig.coreg.genes)]
-
-zscore.correlation <- cor(zscores, method="spearman")
-pairs(zscores, col=alpha("black", 0.2))
-cor(zscores)
+pheatmap(t(bonf.sig.coreg.genes.immune[rowSums(bonf.sig.coreg.genes.immune) >= 1,]))
 ```
 
