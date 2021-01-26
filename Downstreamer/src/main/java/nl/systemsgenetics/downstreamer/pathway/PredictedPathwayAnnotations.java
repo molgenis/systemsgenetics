@@ -55,9 +55,18 @@ public class PredictedPathwayAnnotations {
 			
 			
 			//First load all genes in gene file so that they will be in output file
-			final DoubleMatrixDataset<String, String> pathwayMatrix = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(overlappingGenes);
-			
+			final DoubleMatrixDataset<String, String> pathwayMatrix = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(overlappingGenes);			
 			LOGGER.info("Term-gene annotation before expand: " + pathwayMatrix.getMatrix().cardinality());
+			
+			LinkedHashMap<String, Integer> geneCountMatrixCols = new LinkedHashMap<>();
+			geneCountMatrixCols.put("Raw", 0);
+			geneCountMatrixCols.put("Expanded", 1);
+			final DoubleMatrixDataset<String, String> geneCountMatrix = new DoubleMatrixDataset<>(pathwayMatrix.getHashColsCopy(), geneCountMatrixCols);
+			
+			final ArrayList<String> terms = pathwayMatrix.getColObjects();
+			
+
+			
 			
 			DoubleMatrixDatasetFastSubsetLoader predictionMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(gnp.getLocation());
 			
@@ -70,14 +79,13 @@ public class PredictedPathwayAnnotations {
 			LOGGER.info("Pathway: " + pathwayMatrix.rows() + " x " + pathwayMatrix.columns());
 			LOGGER.info("Predictions: " + predictionMatrix.rows() + " x " + predictionMatrix.columns());
 			
-			
 			final double bonfThresholdP = 0.05d / (double) overlappingGenes.size();
 			final double bonfThresholdZ = ZScores.pToZTwoTailed(bonfThresholdP) * -1;
 			LOGGER.info("Bonf threshold: " + bonfThresholdZ);
 			
 			
 			final int geneCount = pathwayMatrix2.rows(); 
-			final ArrayList<String> terms = pathwayMatrix.getColObjects();
+			
 				
 		
 			if(LOGGER.isDebugEnabled()){
@@ -95,9 +103,15 @@ public class PredictedPathwayAnnotations {
 				
 				final DoubleMatrix1D pathwayMatrixCol = pathwayMatrix2.getCol(term);
 				
-				if(pathwayMatrixCol.cardinality() < 10){
+				int count = pathwayMatrixCol.cardinality();
+				
+				geneCountMatrix.setElement(term, "Raw", count);
+				
+				if(count < 10){
+					geneCountMatrix.setElement(term, "Expanded", count);
 					continue;
 				}
+				
 				
 				termsIncludedInOutput.add(term);
 				
@@ -112,10 +126,13 @@ public class PredictedPathwayAnnotations {
 						if(pathwayMatrixCol.get(r) == 0 && predictionMatrixCol.get(r) >= bonfThresholdZ){
 							pathwayMatrixCol.set(r, 1);
 							annotationsUpdated++;
+							count++;
 						}
 					}
 					
 				}
+				
+				geneCountMatrix.setElement(term, "Expanded", count);
 	
 			}
 			
@@ -130,6 +147,7 @@ public class PredictedPathwayAnnotations {
 			}
 
 			pathwayMatrix.viewColSelection(termsIncludedInOutput).saveBinary(options.getOutputBasePath() + "_" + pd.getName());
+			geneCountMatrix.save(options.getOutputBasePath() + "_" + pd.getName() + "_counts.txt");
 			
 		}
 
