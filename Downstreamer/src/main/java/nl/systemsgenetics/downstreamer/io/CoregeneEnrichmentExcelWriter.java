@@ -101,7 +101,7 @@ public class CoregeneEnrichmentExcelWriter {
 				PathwayAnnotations geneAssociationsAnnotations = new PathwayAnnotations(new File(geneAssociations.getLocation() + ".colAnnotations.txt"));
 				int maxAnnotations = geneAssociationsAnnotations.getMaxNumberOfAnnotations();
 
-				XSSFSheet sh = (XSSFSheet) wb.createSheet(geneAssociations.getName());
+				XSSFSheet sh = (XSSFSheet) wb.createSheet(WorkbookUtil.createSafeSheetName(geneAssociations.getName()));
 				XSSFTable table = sh.createTable(new AreaReference(new CellReference(0, 0),
 						new CellReference(geneSets.size(), 13 + maxAnnotations),
 						SpreadsheetVersion.EXCEL2007));
