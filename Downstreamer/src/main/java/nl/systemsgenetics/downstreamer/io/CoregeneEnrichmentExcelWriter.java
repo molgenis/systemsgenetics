@@ -106,8 +106,11 @@ public class CoregeneEnrichmentExcelWriter {
 						new CellReference(geneSets.size(), 13 + maxAnnotations),
 						SpreadsheetVersion.EXCEL2007));
 
-				table.setName(geneAssociations.getName() + "_enrichment");
-				table.setDisplayName(geneAssociations.getName());
+				String tableName = geneAssociations.getName();
+				tableName = tableName.replace('-', '_');
+				
+				table.setName(tableName + "_enrichment");
+				table.setDisplayName(tableName);
 				table.setStyleName("TableStyleLight9");
 				table.getCTTable().getTableStyleInfo().setShowRowStripes(true);
 				table.getCTTable().addNewAutoFilter();
