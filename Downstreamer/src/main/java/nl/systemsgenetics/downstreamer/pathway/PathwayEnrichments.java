@@ -515,6 +515,10 @@ public class PathwayEnrichments {
 			DoubleMatrixDataset<String, String> nullDistributionMetrics = DownstreamerUtilities.calculateNullDistributionMetrics(betasNullForPvalue);
 			nullDistributionMetrics.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_nullDistMetrics.txt" : "_nullDistMetricsExHla.txt"));
 
+			// Calculate emprical pvalues
+			DoubleMatrixDataset<String, String>  trueEmpericalPvalues = calculateEmpericalPvaluesUsingNull(betas, betasNullForPvalue, true);
+			trueEmpericalPvalues.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_trueEmpericalPvals.txt" : "_trueEmpericalPvalsExHla.txt"));
+
 			// Write output
 			pValuesNullForFDR.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_empericalPvals" : "_empericalPvalsExHla"));
 			betas.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas.txt" : "_betasExHla.txt"));

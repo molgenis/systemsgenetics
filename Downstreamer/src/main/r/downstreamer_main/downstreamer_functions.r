@@ -191,6 +191,23 @@
   }
   
   # ------------------------------------------------------ 
+  read.enrichments.as.list <- function(files, trim.names=NULL) {
+    out <- list()
+  
+    i=0
+    for (dataset in files) {
+      tmp <- read.table(dataset, stringsAsFactors = F, row.names = 1, header=T, sep="\t")
+      out[[basename(dataset)]] <- tmp
+      i <- i+1
+    }
+    
+    if (!is.null(trim.names)) {
+      names(out) <- gsub(trim.names, "", names(out))
+    }
+    return(out)
+  }
+  
+  # ------------------------------------------------------ 
   read.genep.excel <- function(files, column=6) {
     out <- matrix()
     i=0

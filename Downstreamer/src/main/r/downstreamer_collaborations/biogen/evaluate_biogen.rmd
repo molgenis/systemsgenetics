@@ -53,6 +53,35 @@ plot.auc.comparison <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="AUC 
 
 ```
 
+# Hand grip strength
+```{r}
+h.dom <- read.depict2("~/Desktop/depict2/collaborations/biogen/hand_grip_strength/UKBB_hand_grip_strength_enrichtments_UKBB_dom_grip_abs_height_adj.xlsx")
+h.nondom <- read.depict2("~/Desktop/depict2/collaborations/biogen/hand_grip_strength/UKBB_hand_grip_strength_enrichtments_UKBB_nondom_grip_abs_height_adj.xlsx")
+
+plots <- list()
+
+for  (database in names(h.dom)) {
+  x <- h.dom[[database]]
+  y <- h.nondom[[database]]
+  
+  ol <- intersect(rownames(x), rownames(y))
+  
+  p <- xy.plot.pvalue.colored(x[ol,]$Enrichment.Z.score,
+                         x[ol,]$Enrichment.P.value,
+                         y[ol,]$Enrichment.Z.score,
+                         y[ol,]$Enrichment.P.value, 
+                         pval.col="all",
+                         xlab="Zscore dominant",
+                         ylab="Zscore non-dominant")
+    
+  plots[[datanabse]] <- p
+}
+
+```
+
+
+
+# Metabrain
 ```{r}
 
 make.plot <- function(trait) {
