@@ -207,3 +207,11 @@ pascalVsLofCor <- cor(-log10(pascalGeneP_l), -log10(ukbLof4_l), use = "pairwise.
 heatmap3(pascalVsCodingCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
 
 heatmap3(pascalVsCodingCor, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T, Rowv = NA, Colv= NA)
+
+
+
+str(ukbLof4)
+hist(-log10(ukbCoding4[,"height"]), ylim = c(0,100))
+
+
+?sample

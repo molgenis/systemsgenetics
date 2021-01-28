@@ -33,5 +33,6 @@ public enum DownstreamerMode {
 	TOP_HITS,
 	REMOVE_CIS_COEXP,
 	SPECIAL,
-	SUBSET_MATRIX;
+	SUBSET_MATRIX,
+	EXPAND_PATHWAYS;
 }

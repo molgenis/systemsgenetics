@@ -552,8 +552,11 @@ public class ExcelWriter {
 				new CellReference(databaseEnrichmentZscores.rows(), 5 + maxAnnotations + gwasAnnotations),
 				SpreadsheetVersion.EXCEL2007));
 
-		table.setName(pathwayDatabase.getName() + "_res");
-		table.setDisplayName(pathwayDatabase.getName());
+		String tableName = pathwayDatabase.getName();
+		tableName = tableName.replace('-', '_');
+			
+		table.setName(tableName+ "_res");
+		table.setDisplayName(tableName);
 		table.setStyleName("TableStyleLight9");
 		table.getCTTable().getTableStyleInfo().setShowRowStripes(true);
 		table.getCTTable().addNewAutoFilter();
