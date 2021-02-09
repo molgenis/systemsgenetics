@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
 import nl.systemsgenetics.downstreamer.containers.LeadVariant;
 import umcg.genetica.collections.ChrPosTreeMap;
@@ -87,6 +88,22 @@ public class DownstreamerUtilities {
 			LOGGER.info("Data row normalized and then column normalized");
 		}
 
+		String[] cols = options.getColumnsToExtract();
+
+		if (cols != null) {
+			Set<String> columnsToExtract = new HashSet<>();
+
+			for (String colname : cols) {
+				if (expressionMatrix.getColObjects().contains(colname)) {
+					columnsToExtract.add(colname);
+				} else {
+					LOGGER.warn(colname + " is missing in input matrix, ommiting col in output");
+				}
+			}
+
+			expressionMatrix = expressionMatrix.viewColSelection(columnsToExtract);
+		}
+		
 		LOGGER.info("Loaded expression matrix with " + expressionMatrix.rows() + " genes and " + expressionMatrix.columns() + " observations");
 		DoubleMatrixDataset<String, String> corMatrix = expressionMatrix.viewDice().calculateCorrelationMatrix();
 		LOGGER.info("Done calculating correlations");

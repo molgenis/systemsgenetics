@@ -246,8 +246,8 @@ cols = c("", "", "", "", "", "", "", "", "", "", "", "", "")
 
 
 source(paste0("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\main\\r\\downstreamer_main/downstreamer_functions.r"))
-ced <- read.depict2("final_paper/UKBB_hand_grip_strength_enrichtments_UKBB_dom_grip_abs_height_adj.xlsx")
-name <- "UKBB_dom_grip_abs_height_adj"
+ced <- read.depict2("final_paper/ALS_sumstats_EUR_ASIA_enrichtments_1.xlsx")
+name <- "ALS_sumstats_EUR_ASIA"
 
 #ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
 str(ced)
