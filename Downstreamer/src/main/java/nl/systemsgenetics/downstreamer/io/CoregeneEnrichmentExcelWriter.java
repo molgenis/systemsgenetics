@@ -61,7 +61,8 @@ public class CoregeneEnrichmentExcelWriter {
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2FdrOdds,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2FdrFisherP,
 			final List<String> traits,
-			List<PathwayDatabase> geneAnnotationDatabases
+			List<PathwayDatabase> geneAnnotationDatabases,
+			String predictionSource
 	) throws FileNotFoundException, IOException {
 
 		final String outputBasePath = options.getOutputBasePath();
@@ -74,7 +75,7 @@ public class CoregeneEnrichmentExcelWriter {
 			ExcelStyles styles = new ExcelStyles(wb);
 			CreationHelper createHelper = wb.getCreationHelper();
 
-			populateOverviewSheet(wb, trait, geneAnnotationDatabases, createHelper, options, styles);
+			populateOverviewSheet(wb, trait, geneAnnotationDatabases, createHelper, options, styles, predictionSource);
 
 			for (PathwayDatabase geneAssociations : geneAnnotationDatabases) {
 
@@ -262,10 +263,10 @@ public class CoregeneEnrichmentExcelWriter {
 
 			}
 
-			File excelFile = new File(outputBasePath + "_prioritizedEnrichment" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
+			File excelFile = new File(outputBasePath + "-" + predictionSource + "_Enrichment" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
 			int nr = 1;
 			while (excelFile.exists()) {
-				excelFile = new File(outputBasePath + "_prioritizedEnrichment" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
+				excelFile = new File(outputBasePath + "-" + predictionSource + "_Enrichment" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
 				nr++;
 			}
 			wb.write(new FileOutputStream(excelFile));
@@ -274,7 +275,7 @@ public class CoregeneEnrichmentExcelWriter {
 
 	}
 
-	private static void populateOverviewSheet(final Workbook wb, String trait, final List<PathwayDatabase> geneAnnotationDatabases, final CreationHelper createHelper, final DownstreamerOptions options, final ExcelStyles styles) {
+	private static void populateOverviewSheet(final Workbook wb, String trait, final List<PathwayDatabase> geneAnnotationDatabases, final CreationHelper createHelper, final DownstreamerOptions options, final ExcelStyles styles, String predictionSource) {
 		// -----------------------------------------------------------------------
 		// Create overview sheet
 		// -----------------------------------------------------------------------
@@ -283,7 +284,7 @@ public class CoregeneEnrichmentExcelWriter {
 		int r = 0;
 		XSSFRow row = overviewSheet.createRow(r++);
 		XSSFCell cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Enrichments of prioritized genes for: " + trait);
+		cell.setCellValue("Enrichments of " + predictionSource + " genes for: " + trait);
 		cell.setCellStyle(styles.getBoldStyle());
 
 		row = overviewSheet.createRow(r++);
