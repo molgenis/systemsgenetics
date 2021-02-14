@@ -263,10 +263,10 @@ public class CoregeneEnrichmentExcelWriter {
 
 			}
 
-			File excelFile = new File(outputBasePath + "-" + predictionSource + "_Enrichment" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
+			File excelFile = new File(outputBasePath + "_" + predictionSource + "_Enrichment" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
 			int nr = 1;
 			while (excelFile.exists()) {
-				excelFile = new File(outputBasePath + "-" + predictionSource + "_Enrichment" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
+				excelFile = new File(outputBasePath + "_" + predictionSource + "_Enrichment" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
 				nr++;
 			}
 			wb.write(new FileOutputStream(excelFile));

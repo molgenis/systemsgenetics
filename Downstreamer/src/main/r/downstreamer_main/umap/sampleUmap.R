@@ -70,13 +70,13 @@ sampleAnnotation$col = defaultCol
 
 
 
-meanX <- sapply(tissueColMap$PlotClass, function(plotClass){
-  mean(sampleUmap[sampleAnnotation$PlotClass == plotClass,1])
-})
+#meanX <- sapply(tissueColMap$PlotClass, function(plotClass){
+  #mean(sampleUmap[sampleAnnotation$PlotClass == plotClass,1])
+#})
 
-meanY <- sapply(tissueColMap$PlotClass, function(plotClass){
-  mean(sampleUmap[sampleAnnotation$PlotClass == plotClass,2])
-})
+#meanY <- sapply(tissueColMap$PlotClass, function(plotClass){
+  #mean(sampleUmap[sampleAnnotation$PlotClass == plotClass,2])
+#})
 
 #clusterLabels <- data.frame("PlotClass" = tissueColMap$PlotClass, "centerX" = meanX, "centerY" = meanY, "offsetX" = "", "offsetY" = "", "label" = tissueColMap$PlotClass)
 #write.table(clusterLabels, "Umap/lables.txt", sep = "\t", quote = F, row.names = F)
@@ -103,14 +103,23 @@ for(i in 1:nrow(tissueColMap)){
 
 #sampleAnnotation$col[sampleAnnotation$PlotClass == "skin"] <- adjustcolor("black", alpha.f = 0.5)
 
+predicted <- read.delim("Umap/predicted_celllines_165_component_logisitic_regression.tsv", header = F)$V1
+
+x <- sampleAnnotation[ predicted, "CellLine", drop = F]
+
+sampleAnnotation$colPredictedCell <- defaultCol
+sampleAnnotation[predicted, "colPredictedCell"] <- "dodgerblue"
+
+sampleAnnotation$colCelline <- defaultCol
+sampleAnnotation$colCelline[sampleAnnotation$CellLine!=""] <- "firebrick"
 
 sampleAnnotation$plotOrder <- 1
-sampleAnnotation$plotOrder[sampleAnnotation$col != defaultCol] <- 2
+sampleAnnotation$plotOrder[sampleAnnotation$colPredictedCell != defaultCol] <- 2
 
 plotOrder <- order(sampleAnnotation$plotOrder)
 
 sampleUmapPlot <- sampleUmap[plotOrder,]
-sampleCol <- sampleAnnotation$col[plotOrder]
+sampleCol <- sampleAnnotation$colPredictedCell[plotOrder]
 
 #all(row.names(sampleAnnotation) == row.names(sampleUmap))
 
@@ -119,7 +128,7 @@ str(sampleAnnotation)
 #X11()
 #rpng( width = 1200, height = 1000)
 
-pdf("Umap/sampleUmap.pdf", width = 14, height = 7.5, useDingbats = F, title = "GeneNetwork UMAP")
+pdf("Umap/sampleUmapPredicted.pdf", width = 14, height = 7.5, useDingbats = F, title = "GeneNetwork UMAP")
 
 
 createUmap(sampleUmapPlot, sampleCol)
