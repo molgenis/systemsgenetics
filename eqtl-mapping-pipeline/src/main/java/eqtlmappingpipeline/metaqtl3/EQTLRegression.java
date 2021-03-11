@@ -796,6 +796,7 @@ public class EQTLRegression {
 
         // remove the eqtl effects
         System.out.println("Removing eQTLs:");
+        int[] nrEQTLGenesRegressedOut = new int[gg.length];
         int[] nrEQTLsRegressedOut = new int[gg.length];
         int[][] explainedVariancePerEQTLProbe = new int[gg.length][101];
 
@@ -1146,7 +1147,8 @@ public class EQTLRegression {
                                         rawDataUpdated[s] += meanY;
                                     }
                                     System.arraycopy(rawDataUpdated, 0, rawData[geneId], 0, totalGGSamples);
-                                    nrEQTLsRegressedOut[d]++;
+                                    nrEQTLGenesRegressedOut[d]++;
+                                    nrEQTLsRegressedOut[d] += xcovars.columns();
                                 } else {
                                     String logln = "Error: " + gene + "\tNr SNPs: " + xcovars.columns() + "\tMeanY: " + meanY + "\tVarY: " + varianceY + "\trsq: " + rsq + "\tmeanUpdated: " + meanUpdated + "\tstdevRatio: " + stdDevRatio;
                                     if (logout != null) {
@@ -1194,7 +1196,7 @@ public class EQTLRegression {
         System.out.println("\n");
         System.out.println("eQTLs regressed per dataset:");
         for (int d = 0; d < gg.length; d++) {
-            System.out.println(gg[d].getSettings().name + "\t" + nrEQTLsRegressedOut[d]);
+            System.out.println(gg[d].getSettings().name + "\tGenes: " + nrEQTLGenesRegressedOut[d] + "\tTotal eQTLs: " + nrEQTLsRegressedOut[d]);
         }
 
         String output;

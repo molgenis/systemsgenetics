@@ -16,9 +16,11 @@ import java.util.stream.IntStream;
 
 public class TriTyperToDosageMatrix {
 
-    public void runTriTyper(String settingsfile) throws IOException, ConfigurationException {
+    public void runTriTyper(String settingsfile, String settingstexttoreplace, String settingstexttoreplacewith, boolean sortbyId) throws IOException, ConfigurationException {
         System.out.println("TriTyper to dosagematrix converter.");
         Settings settings = new Settings();
+        settings.settingsTextToReplace = settingstexttoreplace;
+        settings.settingsTextReplaceWith = settingstexttoreplacewith;
         settings.load(settingsfile);
 
         // initialize datasets
@@ -36,7 +38,7 @@ public class TriTyperToDosageMatrix {
             }
         });
 
-
+        System.out.println();
         System.out.println("Selecting samples per dataset");
         ArrayList<HashSet<String>> allowedSamplesPerDs = new ArrayList<HashSet<String>>();
         for (int d = 0; d < m_gg.length; d++) {
@@ -83,7 +85,6 @@ public class TriTyperToDosageMatrix {
         }
         String outdir = settings.outputReportsDir;
 
-
         TextFile indout = new TextFile(outdir + "Individuals.txt", TextFile.W);
         TextFile phenoout = new TextFile(outdir + "PhenotypeInformation.txt", TextFile.W);
         for (int i = 0; i < header.length; i++) {
@@ -93,21 +94,52 @@ public class TriTyperToDosageMatrix {
         indout.close();
         phenoout.close();
 
-        ArrayList<String> snpsToQuery = new ArrayList<>();
-        if (settings.tsSNPsConfine == null) {
-            HashSet<String> allSNPIds = new HashSet<String>();
-            for (int d = 0; d < m_gg.length; d++) {
-                String[] snps = m_gg[d].getSNPs();
-                for (String s : snps) {
-                    allSNPIds.add(s);
+        System.out.println("Inventorizing snps");
+        // sorting SNPs
+        Integer selectChr = null;
+        if (settings.confineToSNPsThatMapToChromosome != null) {
+            selectChr = (int) settings.confineToSNPsThatMapToChromosome;
+            System.out.println("Selecting variants from chr " + selectChr);
+        }
+
+        HashSet<String> allSNPsHash = new HashSet<String>();
+        for (int d = 0; d < m_gg.length; d++) {
+            String[] datasetSNPs = m_gg[d].getSNPs();
+            if (selectChr != null) {
+                for (int s = 0; s < datasetSNPs.length; s++) {
+                    int chr = m_gg[d].getChr(s);
+                    if (selectChr == chr) {
+                        allSNPsHash.add(datasetSNPs[s]);
+                    }
+                }
+            } else {
+                allSNPsHash.addAll(Arrays.asList(datasetSNPs));
+            }
+        }
+
+        System.out.println(allSNPsHash.size() + " unique SNPs");
+
+        System.out.println("Sorting SNPs");
+        ArrayList<String> allSNPs = new ArrayList<>();
+        allSNPs.addAll(allSNPsHash);
+
+        ArrayList<String> snpsToQuery = null;
+        if (settings.tsSNPsConfine != null) {
+            snpsToQuery = new ArrayList<>();
+            HashSet<String> confineset = settings.tsSNPsConfine;
+            for (String s : confineset) {
+                if (allSNPsHash.contains(s)) {
+                    snpsToQuery.add(s);
                 }
             }
-            snpsToQuery.addAll(allSNPIds);
         } else {
-            snpsToQuery.addAll(settings.tsSNPsConfine);
+            snpsToQuery = allSNPs;
         }
-        System.out.println(snpsToQuery.size() + " SNPs to output.");
-        snpsToQuery = sortSNPs(snpsToQuery);
+        System.out.println(snpsToQuery.size() + " SNPs remain after filtering for SNP confinement list");
+
+
+        snpsToQuery = sortSNPs(snpsToQuery, sortbyId, m_gg);
+        System.out.println(snpsToQuery.size() + " SNPs to output");
 
         double[] dosageData = new double[sampleIdMap.size()];
         double[] genotypeData = new double[sampleIdMap.size()];
@@ -293,78 +325,106 @@ public class TriTyperToDosageMatrix {
 
     }
 
-    private ArrayList<String> sortSNPs(ArrayList<String> snpsToQuery) {
+    private ArrayList<String> sortSNPs(ArrayList<String> snpsToQuery, boolean byId, TriTyperGenotypeData[] m_gg) {
+        if (byId) {
+            ArrayList<SNPObj> objs = new ArrayList<>();
+            for (String s : snpsToQuery) {
+                String[] elems = s.split(":");
+                if (elems.length < 2) {
+                    objs.add(new SNPObj(1, 1, s));
+                } else if (elems.length >= 3) {
+                    int chr = ChrAnnotation.parseChr(elems[0]);
 
-        class SNPObj implements Comparable<SNPObj> {
-            int chr;
-            int pos;
-            String id;
+                    int pos = Integer.parseInt(elems[1]);
+                    objs.add(new SNPObj(chr, pos, s));
 
-            public SNPObj(int chr, int pos, String s) {
-                this.chr = chr;
-                this.pos = pos;
-                this.id = s;
+                }
             }
 
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                SNPObj snpObj = (SNPObj) o;
-                return chr == snpObj.chr &&
-                        pos == snpObj.pos &&
-                        Objects.equals(id, snpObj.id);
+            Collections.sort(objs);
+            ArrayList<String> output = new ArrayList<>();
+            for (SNPObj s : objs) {
+                output.add(s.id);
             }
+            return output;
+        } else {
+            ArrayList<SNPObj> objs = new ArrayList<>();
+            for (String s : snpsToQuery) {
+                for (int d = 0; d < m_gg.length; d++) {
+                    int id = m_gg[d].getSnpToSNPId().get(s);
+                    if (id >= 0) {
+                        int chr = m_gg[d].getChr(id);
 
-            @Override
-            public int hashCode() {
-                return Objects.hash(chr, pos, id);
-            }
+                        int pos = m_gg[d].getChrPos(id);
+                        objs.add(new SNPObj(chr, pos, s));
+                        break;
 
-            @Override
-            public int compareTo(SNPObj snpObj) {
-                if (this.chr > snpObj.chr) {
-                    return 1;
-                } else if (this.chr < snpObj.chr) {
-                    return -1;
-                } else {
-                    if (this.pos > snpObj.pos) {
-                        return 1;
-                    } else if (this.pos < snpObj.pos) {
-                        return -1;
-                    } else {
-                        return this.id.compareTo(snpObj.id);
                     }
                 }
-
             }
-        }
 
-        ArrayList<SNPObj> objs = new ArrayList<>();
-        for (String s : snpsToQuery) {
-            String[] elems = s.split(":");
-            if (elems.length < 2) {
-                objs.add(new SNPObj(1, 1, s));
-            } else if (elems.length >= 3) {
-                int chr = ChrAnnotation.parseChr(elems[0]);
-                int pos = Integer.parseInt(elems[1]);
-                objs.add(new SNPObj(chr, pos, s));
+            Collections.sort(objs);
+            ArrayList<String> output = new ArrayList<>();
+            for (SNPObj s : objs) {
+                output.add(s.id);
             }
-        }
+            return output;
 
-        Collections.sort(objs);
-        ArrayList<String> output = new ArrayList<>();
-        for (SNPObj s : objs) {
-            output.add(s.id);
         }
-        return output;
-
     }
 
-    public void run(String settingsfile, boolean vcf) throws IOException, ConfigurationException {
+    class SNPObj implements Comparable<SNPObj> {
+        int chr;
+        int pos;
+        String id;
+
+        public SNPObj(int chr, int pos, String s) {
+            this.chr = chr;
+            this.pos = pos;
+            this.id = s;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            SNPObj snpObj = (SNPObj) o;
+            return chr == snpObj.chr &&
+                    pos == snpObj.pos &&
+                    Objects.equals(id, snpObj.id);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(chr, pos, id);
+        }
+
+        @Override
+        public int compareTo(SNPObj snpObj) {
+            if (this.chr > snpObj.chr) {
+                return 1;
+            } else if (this.chr < snpObj.chr) {
+                return -1;
+            } else {
+                if (this.pos > snpObj.pos) {
+                    return 1;
+                } else if (this.pos < snpObj.pos) {
+                    return -1;
+                } else {
+                    return this.id.compareTo(snpObj.id);
+                }
+            }
+
+        }
+    }
+
+    public void run(String settingsfile, String settingstexttoreplace, String settingstexttoreplacewith, boolean vcf, boolean sortbyId) throws IOException, ConfigurationException {
         System.out.println("TriTyper to dosagematrix converter.");
         Settings settings = new Settings();
+        settings.settingsTextToReplace = settingstexttoreplace;
+        settings.settingsTextReplaceWith = settingstexttoreplacewith;
         settings.load(settingsfile);
+
 
         // initialize datasets
         ArrayList<TriTyperGeneticalGenomicsDatasetSettings> datasetsettings = settings.datasetSettings;
@@ -387,7 +447,7 @@ public class TriTyperToDosageMatrix {
         for (int d = 0; d < m_gg.length; d++) {
             TriTyperGeneticalGenomicsDatasetSettings dataset = datasetsettings.get(d);
             HashSet<String> allowedSamples = new HashSet<String>();
-            if (dataset.genotypeToExpressionCoupling == null) {
+            if (dataset.genotypeToExpressionCoupling == null || dataset.genotypeToExpressionCoupling.length() == 0) {
                 allowedSamples.addAll(Arrays.asList(m_gg[d].getIndividuals()));
             } else {
                 TextFile tf = new TextFile(dataset.genotypeToExpressionCoupling, TextFile.R);
@@ -402,15 +462,6 @@ public class TriTyperToDosageMatrix {
             allowedSamplesPerDs.add(allowedSamples);
         }
 
-        HashSet<String> allSNPsHash = new HashSet<String>();
-        for (int d = 0; d < m_gg.length; d++) {
-            allSNPsHash.addAll(Arrays.asList(m_gg[d].getSNPs()));
-        }
-        ArrayList<String> allSNPs = new ArrayList<>();
-        allSNPs.addAll(allSNPsHash);
-        Collections.sort(allSNPs);
-
-
         // create sample index
         System.out.println("Creating sample index..");
         HashMap<String, Integer> sampleIdMap = new HashMap<String, Integer>();
@@ -424,13 +475,58 @@ public class TriTyperToDosageMatrix {
         }
         System.out.println(sampleIdMap.size() + " unique sample IDs.");
 
+        // sorting SNPs
+        Integer selectChr = null;
+        if (settings.confineToSNPsThatMapToChromosome != null) {
+            selectChr = (int) settings.confineToSNPsThatMapToChromosome;
+            System.out.println("Selecting variants from chr " + selectChr);
+        }
+
+        System.out.println("Inventorizing snps");
+        HashSet<String> allSNPsHash = new HashSet<String>();
+        for (int d = 0; d < m_gg.length; d++) {
+            String[] datasetSNPs = m_gg[d].getSNPs();
+            if (selectChr != null) {
+                for (int s = 0; s < datasetSNPs.length; s++) {
+                    int chr = m_gg[d].getChr(s);
+                    if (selectChr == chr) {
+                        allSNPsHash.add(datasetSNPs[s]);
+                    }
+                }
+            } else {
+                allSNPsHash.addAll(Arrays.asList(datasetSNPs));
+            }
+        }
+
+        System.out.println(allSNPsHash.size() + " unique SNPs");
+
+        System.out.println("Sorting SNPs");
+        ArrayList<String> allSNPs = new ArrayList<>();
+        allSNPs.addAll(allSNPsHash);
+
+        ArrayList<String> snpsToQuery = null;
+        if (settings.tsSNPsConfine != null) {
+            snpsToQuery = new ArrayList<>();
+            HashSet<String> confineset = settings.tsSNPsConfine;
+            for (String s : confineset) {
+                if (allSNPsHash.contains(s)) {
+                    snpsToQuery.add(s);
+                }
+            }
+        } else {
+            snpsToQuery = allSNPs;
+        }
+        System.out.println(snpsToQuery.size() + " SNPs remain after filtering for SNP confinement list");
+
+
+        snpsToQuery = sortSNPs(snpsToQuery, sortbyId, m_gg);
+        System.out.println(snpsToQuery.size() + " SNPs to output");
+
         // write data to disk
         String[] header = new String[sampleIdMap.size()];
         for (Map.Entry<String, Integer> samplePair : sampleIdMap.entrySet()) {
             header[samplePair.getValue()] = samplePair.getKey();
         }
-
-
         TextFile tf = null;
         TextFile log = new TextFile(settings.outputReportsDir + "MergeLog.txt.gz", TextFile.W);
         if (vcf) {
@@ -445,14 +541,6 @@ public class TriTyperToDosageMatrix {
             tf.writeln("SNP\tAlleles\tMinorAllele\t" + Strings.concat(header, Strings.tab));
         }
 
-        ArrayList<String> snpsToQuery = null;
-        if (settings.tsSNPsConfine != null) {
-            snpsToQuery = new ArrayList<>();
-            snpsToQuery.addAll(settings.tsSNPsConfine);
-            Collections.sort(snpsToQuery);
-        } else {
-            snpsToQuery = allSNPs;
-        }
 
         double[] data = new double[sampleIdMap.size()];
         log.write(snpsToQuery.size() + " SNPs to output");
@@ -589,7 +677,7 @@ public class TriTyperToDosageMatrix {
                     tf.writeln(snp + "\t" + refSNPAlleles + "\t" + refSNPAlleleAssessed + "\t" + Strings.concat(data, Strings.tab));
                 }
             }
-            pb.set(snpctr);
+            pb.iterate();
         }
         pb.close();
 

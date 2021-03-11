@@ -34,7 +34,7 @@ public class UtilConsoleGUI {
         GETSNPSFROMREGION, GETSNPSINPROBEREGION, FDR, GETMAF, MERGE, REGRESS, GETSNPSTATS, PROXYSEARCH, DOTPLOT, META,
         SORTEQTLFILEBYZSCORE, CONVERTTRITYPERTOMATRIX, CONVERTBINARYMATRIX, GETSNPPROBECOMBINATIONS, NONGENETICPCACORRECTION, REGRESSKNOWN, CREATTTFROMDOUBLEMAT,
         ADDANNOTATIONTOQTLFILE, LOOKUPEFFECTS, FDRPROBE, PHENOTYPESAMPLEFILTER, SPLITEQTLFILEBYCHR, QTLFILEMERGE, EQTLEQTMLINK, SPLITPHENO,
-        SORTEQTLFILEBYPVALUE, SORTEQTLFILEBYCHRPOS, SPLITTRITYPERBYCHR, GETMAFFROMQCLOG, CALCULATEBETA, CONVERTTOSMR, CONVERTBINMAT
+        SORTEQTLFILEBYPVALUE, SORTEQTLFILEBYCHRPOS, SPLITTRITYPERBYCHR, GETMAFFROMQCLOG, CALCULATEBETA, CONVERTTOSMR, CONVERTBINMAT, QQPLOT
     }
 
     ;
@@ -86,6 +86,7 @@ public class UtilConsoleGUI {
         boolean stringentFDR = false;
         boolean sortsnps = true;
         boolean vcf = false;
+        boolean sortById = false;
         boolean trityper = false;
         String sources = null;
         String keyValuePairs = null;
@@ -237,7 +238,9 @@ public class UtilConsoleGUI {
                 snpfile = val;
             } else if (args[i].equals("--vcf")) {
                 vcf = true;
-            }  else if (args[i].equals("--trityper")) {
+            } else if (args[i].equals("--sortbyid")) {
+                sortById = true;
+            } else if (args[i].equals("--trityper")) {
                 trityper = true;
             } else if (args[i].equals("--probeselectionlist")) {
                 probeselectionlist = val;
@@ -257,6 +260,8 @@ public class UtilConsoleGUI {
                 settingstexttoreplacewith = val;
             } else if (arg.equals("--converteqtlfiletosmr")) {
                 run = MODE.CONVERTTOSMR;
+            } else if (arg.equals("--qqplot")) {
+                run = MODE.QQPLOT;
             }
 //            }  else if (arg.equals("--inexpplatform")) {
 //                inexpplatform = val;
@@ -271,13 +276,13 @@ public class UtilConsoleGUI {
                 switch (run) {
                     case CONVERTTRITYPERTOMATRIX:
                         if (settingsfile == null) {
-                            System.out.println("Usage: --tritypertomatrix --settings settings.xml [--vcf|--trityper] ");
+                            System.out.println("Usage: --tritypertomatrix --settings settings.xml [--vcf|--trityper] [--sortbyid] ");
                         } else {
                             TriTyperToDosageMatrix ttd = new TriTyperToDosageMatrix();
                             if (trityper) {
-                                ttd.runTriTyper(settingsfile);
+                                ttd.runTriTyper(settingsfile, settingstexttoreplace, settingstexttoreplacewith, sortById);
                             } else {
-                                ttd.run(settingsfile, vcf);
+                                ttd.run(settingsfile, settingstexttoreplace, settingstexttoreplacewith, vcf, sortById);
                             }
                         }
                         break;
@@ -560,7 +565,7 @@ public class UtilConsoleGUI {
 
                     case REGRESSKNOWN:
                         if (settingsfile == null || fileQtlsToRegressOut == null) {
-                            System.out.println("Please specify --settings, --EQTLS");
+                            System.out.println("Please specify --settings, --QTLS");
                             break;
                         }
 
@@ -618,6 +623,17 @@ public class UtilConsoleGUI {
                             c.run(in, in2, out);
                         }
                         break;
+                    case QQPLOT:
+                        if (in == null || threshold == null || nreqtls == null || perm == 0) {
+                            System.out.println("To use --fdr, please use --in, --threshold, and --perm and --nreqtls");
+                            System.out.println("Optional: --snpselectionlist, --probeselectionlist, --snpprobeselectionlist");
+                            printUsage();
+                        } else {
+                            QQPlotter q = new QQPlotter();
+                            q.run(in, out, threshold, perm, nreqtls);
+                        }
+                        break;
+
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -661,7 +677,8 @@ public class UtilConsoleGUI {
                 + "--eqtmlink\t\tLink eQTM and eQTL files based on probe/gene name\n"
                 + "--fdrmethod\t\tEither probe, gene, snp or full\n"
                 + "--converteqtlfiletosmr\t\tConvert eQTL file to SMR format\n"
-                + "--tritypertomatrix\t\tConvert (set of) TriTyper files to a text-based dosage matrix. Use --vcf or --trityper to output in vcf or TriTyper formats");
+                + "--tritypertomatrix\t\tConvert (set of) TriTyper files to a text-based dosage matrix. Use --vcf or --trityper to output in vcf or TriTyper formats\n"
+                + "--qqplot\t\tCreate QQ plot from eQTL output dir");
         System.out.println("");
 
     }

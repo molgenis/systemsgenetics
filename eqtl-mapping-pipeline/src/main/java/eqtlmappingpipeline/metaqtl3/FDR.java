@@ -395,7 +395,7 @@ public class FDR {
                                     outputWriterAll.append(currentString.toString());
                                 }
 
-                                if (fdr <= fdrcutoff) {
+                                if (fdr < fdrcutoff) {
                                     if (!visitedProbes.contains(cachedEqtlsProbe)) {
                                         outputWriterEProbes.append(currentString.toString());
                                         visitedProbes.add(cachedEqtlsProbe);
@@ -541,7 +541,7 @@ public class FDR {
 
     }
 
-    private static void createQQPlots(String permutationDir, int nrPermutationsFDR, int maxNrMostSignificantEQTLs,
+    public static void createQQPlots(String permutationDir, int nrPermutationsFDR, int maxNrMostSignificantEQTLs,
                                       double fdrcutoff, FileFormat f, FDRMethod m, double[] pValueRealData, ArrayList<Boolean> significantPvalue, int nrSignificantEQTLs, String fileName) throws IOException {
         DoubleMatrix2D permutedPValues;
 
