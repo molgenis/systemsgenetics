@@ -80,6 +80,14 @@ public class Strings {
         return output.toString();
     }
 
+    public static String concat(double[] s, Pattern t, DecimalFormat f) {
+        String[] str = new String[s.length];
+        for (int i = 0; i < s.length; i++) {
+            str[i] = "" + f.format(s[i]);
+        }
+        return concat(str, t);
+    }
+
     public static String concat(double[] s, Pattern t) {
         String[] str = new String[s.length];
         for (int i = 0; i < s.length; i++) {
@@ -293,6 +301,10 @@ public class Strings {
 
     private static Map<String, String> cache;
 
+    public synchronized static boolean cacheContains(String s) {
+        return cache.containsKey(s);
+    }
+
     public synchronized static String cache(String s) {
         if (cache == null) {
             cache = new Object2ObjectOpenHashMap<>(1000000);
@@ -322,6 +334,7 @@ public class Strings {
 
         return concat(elems, tab, includeelem, null);
     }
+
     public static String concat(String[] s, Pattern t, boolean[] includeElem, String replaceNull) {
 
         if (s == null) {
