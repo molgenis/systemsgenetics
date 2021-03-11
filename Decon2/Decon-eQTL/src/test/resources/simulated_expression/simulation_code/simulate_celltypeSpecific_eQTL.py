@@ -18,10 +18,6 @@ args = parser.parse_args()
 
 if not os.path.exists(args.out_dir+'/betas/'):
     os.makedirs(args.out_dir+'/betas/')
-if not os.path.exists(args.out_dir+'/genotypes/'):
-    os.makedirs(args.out_dir+'/genotypes/')
-if not os.path.exists(args.out_dir+'/cellcounts/'):
-    os.makedirs(args.out_dir+'/cellcounts/')
 if not os.path.exists(args.out_dir+'/expression/'):
     os.makedirs(args.out_dir+'/expression/')
 if not os.path.exists(args.out_dir+'/snpsToTest/'):
@@ -70,9 +66,20 @@ class Expression_simulator():
             self.cellcount_names = input_file.readline().strip().split('\t')
             for line in input_file:
                 line = line.strip().split('\t')
+                
+                # skip negative cell counts
+                all_cc = [float(x) for x in line[1:]]
+                contains_negative = False
+                for index, cc in enumerate(all_cc):
+                    if cc < 0:
+                        contains_negative = True
+                        all_cc[index] = abs(all_cc[index])
+                if contains_negative:
+                    logging.info(line[0]+' contains negative cellcount (changing it to abs(value)): '+', '.join(line[1:]))
+                
                 self.samples.append(line[0])
-                self.cellcount_per_sample[line[0]] = [float(x) for x in line[1:]]
-                self.number_of_celltypes = len(line[1:])
+                self.cellcount_per_sample[line[0]] = all_cc
+                self.number_of_celltypes = len(all_cc)
                 
     def __read_genotype_data(self):
         '''Read the genotype data'''
@@ -145,18 +152,29 @@ class Expression_simulator():
         
     def __write_genotypes(self):
         outfile = self.out_dir+'/genotypes/genotypes_'+self.batch_name+'.txt'
-        with open(outfile,'w') as out:
+        permuted_outfile = self.out_dir+'/genotypesPermuted/genotypes_'+self.batch_name+'.txt'
+        with open(outfile,'w') as out, open(permuted_outfile,'w') as out_permuted:
             out.write('\t'+'\t'.join(self.samples)+'\n')
-
+            
+            # also write permuted genotypes
+            shuffled_samples = copy.deepcopy(self.samples)
+            random.shuffle(shuffled_samples)
+            out_permuted.write('\t'+'\t'.join(self.samples)+'\n')
+            
+            
             # since genotypes is an ordered dict we can just loop over keys
             for snp in self.genotypes:
                 out.write(snp)
+                out_permuted.write(snp)
                 # When reading in genotype file we check that the samples are in the same order as
                 # the samples in the cell counts file, so can just write out now
                 for dosage in self.genotypes[snp]:
                     out.write('\t'+dosage)
+                    out_permuted.write('\t'+dosage)
                 out.write('\n')
+                out_permuted.write('\n')
         logging.info('Genotypes written to '+outfile)
+        logging.info('Permuted genotypes written to '+permuted_outfile)
 
     def __make_errors(self):
         mu = 0
@@ -223,17 +241,24 @@ class Expression_simulator():
             end_index = start_index + self.number_of_celltypes
             
             # make 2 cell types have the same beta by select random index of value to change and one to change it with
-            # this makes it so that e.g. the gt beta of cell type 1 is same as cell type 4 (randomly selected) 
-            to_change = random.randint(start_index, end_index)
-            change_with = random.randint(start_index, end_index)
+            # this makes it so that e.g. the gt beta of cell type 1 is same as cell type 4 (randomly selected)
+            # take -1 because end_index isi closed form 
+            to_change = random.randint(start_index, end_index-1)
+            change_with = random.randint(start_index, end_index-1)
             while to_change == change_with:
-                change_with = random.randint(start_index, end_index)
-            cc_gt_betas[to_change] = cc_gt_betas[change_with]
-            
+                change_with = random.randint(start_index, end_index-1)
+            try:
+                cc_gt_betas[to_change] = cc_gt_betas[change_with]
+            except IndexError:
+                logging.info('to_change: '+str(to_change))
+                logging.info('change_with: '+str(change_with))
+                logging.info('len(cc_gt_betas): '+str(len(cc_gt_betas)))
+                logging.info('start_index: '+str(start_index))
+                logging.info('end_index: '+str(end_index))
+                raise
 
             cc_beta[snp] = cc_betas[start_index:end_index]
             cc_gt_beta[snp] = cc_gt_betas[start_index:end_index]
-            print(cc_gt_beta[snp])
             for beta_index, cc_beta_value in enumerate(cc_beta[snp]):
                 # make sure that for B1*cc + B2*cc*gt -> B1 + (2*B2) >= 0
                 combined_betas = cc_beta[snp][beta_index] + (2*cc_gt_beta[snp][beta_index])

@@ -1,0 +1,257 @@
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(readxl)
+library(pheatmap)
+library(RColorBrewer)
+library(gridExtra)
+
+source("../downstreamer_functions.r")
+
+# Read reference datasets
+ensembl <- read.table("~/Documents/data/reference/ensembl/ensembl_gene_position_b37_biotype.txt",sep="\t", header=T, row.names = 1, stringsAsFactors = F)
+ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
+rownames(ensembl) <- make.names(ensembl$Gene.name, unique=T)
+
+#Gnomad PLI
+gnomad <- read.table("~/Documents/data/reference/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt",sep="\t", header=T, stringsAsFactors = F)
+gnomad <- gnomad[!duplicated(gnomad$gene),]
+rownames(gnomad) <- make.names(gsub("\\.\\d+", "", ensembl[gnomad$gene, ]$Gene.stable.ID.version), unique=T)
+
+#path.54 <- "/home/work/Desktop/depict2/output/height_paper/v55/"
+path.55 <- "/home/work/Desktop/depict2/output/height_paper_v2/v56/"
+
+files <- c()
+#files <- list.files(path.54, pattern="*.xlsx", full.names = T)
+files <- c(files, list.files(path.55, pattern="*.xlsx", full.names = T))
+
+datasets <- list()
+for (file in files) {
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\.xlsx", "", basename(file))
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
+  name <- gsub("\\_hg19\\.txt\\_exHla\\.xlsx", "", name)
+  
+  if (length(grep("v55", file)) > 0) {
+    name <- paste0(name, "_v55")
+  }
+  
+  datasets[[name]] <- read.depict2(file)
+}
+
+coreg <- make.zscore.matrix(datasets)
+pvals <- make.zscore.matrix(datasets, collumn="Enrichment.P.value")
+
+files <- c()
+#files <- list.files(path.54, pattern="*_genePvalues.txt", full.names = T)
+files <- c(files, list.files(path.55, pattern="*_genePvalues.txt", full.names = T))
+
+genep <- read.enrichments(files)
+
+files <- c()
+#files <- list.files(path.54, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T)
+files <- c(files, list.files(path.55, pattern="*_coreGene_hpoAUC_hpo.txt", full.names = T))
+
+hpo.auc <- read.enrichments(files)
+
+#files <- list.files(path.54, pattern="*_genePvalue_hpoAUC_hpo.txt", full.names = T)
+files <- c()
+files <- c(files,  list.files(path.55, pattern="*_genePvalue_hpoAUC_hpo.txt", full.names = T))
+
+genep.auc <- read.enrichments(files)
+```
+
+# Correlation heatmap
+```{r}
+pdf("output/plots/height_vs_others_corrheatmap.pdf", width=40, height = 40)
+cors <- cor(coreg)
+diag(cors) <- 0.5
+hm(cors, main="coregualtion")
+dev.off()
+
+
+hpo.auc[hpo.auc==0] <- NA
+cors <- cor(hpo.auc, use="pairwise.complete.obs")
+hm(cors, main="coregulation HPO AUC")
+  
+genep <- -log10(genep)
+cors <- cor(genep, use="pairwise.complete.obs")
+hm(cors, main="geneP")
+
+
+dev.off()
+
+
+ol <- intersect(rownames(coreg), rownames(ensembl))
+genel <- t(apply(genep[ol,], 2, function(x){
+  return(cor(x, log10(ensembl[ol, "gene.length"]), use="pairwise.complete.obs"))
+  #return(summary(lm(x ~ log10(ensembl[ol, "gene.length"])))$coefficients)
+
+}))
+genel2 <- t(apply(coreg[ol,], 2, function(x){
+  return(cor(x, log10(ensembl[ol, "gene.length"]), use="pairwise.complete.obs"))
+  #return(summary(lm(x ~ ensembl[ol, "gene.length"]))$coefficients)
+
+}))
+
+par(mar=c(25,5,5,5))
+barplot(genel2, las=2, ylab="pearson R", main="Coreg vs gene length")
+
+
+plot(coreg[ol,"educational_attainment_2018_30038396"],log10(ensembl[ol, "gene.length"]))
+  
+plot(genep[ol,], ensembl[ol, "gene.length"])
+hm(genel)
+
+#genep.auc[genep.auc==0] <- NA
+#cors <- cor(genep.auc, use="pairwise.complete.obs")
+#hm(cors, main="geneP HPO AUC")
+
+simple.qq.plot(pvals[,"height_2018_30124842_v55"])
+simple.qq.plot(pvals[,"glomerular_filtration_rate_EUR_2019_31152163"])
+
+```
+
+# AUC histograms
+```{r}
+pdf("output/plots/AUC_histograms.pdf", width=20, height = 10)
+
+par(mfrow=c(4,4))
+sapply(colnames(hpo.auc), function(x){
+  hist(hpo.auc[,x], main=x, breaks=20, xlim=c(0,1), ylim=c(0,1500))
+})
+par(mfrow=c(1,1))
+
+dev.off()
+apply(hpo.auc,2, median, na.rm = T)
+
+
+pdf("output/plots/HPO_AUC_density.pdf", width=10, height = 5)
+
+plot(density(hpo.auc[,1], na.rm = T), ylim=c(0,12), col="white", main="HPO AUC distribution comparrison")
+sapply(grep("run", colnames(hpo.auc), value=T), function(x){
+  lines(density(hpo.auc[,x], na.rm=T), col="lightblue")
+})
+
+sapply(grep("run", colnames(hpo.auc), value=T, invert = T), function(x){
+  lines(density(hpo.auc[,x], na.rm=T), col="red", lwd=2)
+})
+abline(v=0.5, col="grey", lwd=2, lty=2)
+dev.off()
+
+pdf("output/plots/coreg_density.pdf", width=10, height = 5)
+
+plot(density(coreg[,1], na.rm = T), ylim=c(0,0.4), col="white", main="Coreg Z distribution comparrison")
+sapply(grep("run", colnames(coreg), value=T), function(x){
+  lines(density(coreg[,x], na.rm=T), col="lightblue")
+})
+
+sapply(grep("run", colnames(coreg), value=T, invert = T), function(x){
+  lines(density(coreg[,x], na.rm=T), col="red", lwd=2)
+})
+abline(v=0.5, col="grey", lwd=2, lty=2)
+dev.off()
+
+
+hist(genep$run_01_genePvalues.txt)
+hist(genep$educational_attainment_2018_30038396_hg19_genePvalues.txt)
+hist(genep$schizophrenia_2018_29906448_hg19_genePvalues.txt)
+
+```
+
+# Analytical vs permutation
+```{r}
+a55 <- tmp <- read.table("~/Desktop/depict2/output/height_paper/v55/height_Coregulation_Enrichment_analyticalPvalsExHla.txt", row.names=1, header=T)
+
+a56 <- tmp <- read.table("~/Desktop/depict2/output/height_paper/v56/height_Coregulation_Enrichment_analyticalPvalsExHla.txt", row.names=1, header=T)
+
+p55 <- pvals[,"height_2018_30124842_v55", drop=F]
+p56 <- pvals[,"height_2018_30124842", drop=F]
+
+par(mfrow=c(2,2))
+
+plot(-log10(p55[,1]), -log10(a55[rownames(p55), 1]))
+abline(a=0, b=1, col="red")
+
+plot(-log10(p56[,1]), -log10(a56[rownames(p56), 1]))
+abline(a=0, b=1, col="red")
+
+plot(-log10(p55[,1]), -log10(p56[rownames(p55), 1]))
+abline(a=0, b=1, col="red")
+
+plot(-log10(a55[,1]), -log10(a56[rownames(a55), 1]))
+abline(a=0, b=1, col="red")
+
+
+simple.qq.plot(p55[,1])
+simple.qq.plot(p56[,1])
+
+simple.qq.plot(a55[,1])
+simple.qq.plot(a56[,1])
+```
+
+#Simulated comparrison
+```{r}
+tmp <- read.table("~/Desktop/depict2/output/height_paper/v55/run_37_Coregulation_Enrichment_analyticalPvalsExHla.txt", row.names=1, header=T)
+par(mfrow=c(1,3))
+simple.qq.plot(pvals[,"run_37_enrichtments_exHla.xlsx_v55"])
+simple.qq.plot(tmp[,1])
+plot(-log10(tmp[rownames(pvals),1]), -log10(pvals[,"run_37_enrichtments_exHla.xlsx_v55"]))
+abline(a=0, b=1, col="blue")
+```
+
+# PLI vs Bonf significance
+```{r}
+genep[is.na(genep)] <- 1
+bonf.sig.gwas.genes <- rownames(genep)[rowSums(genep < (0.05 / (nrow(genep) * ncol(genep)))) >=1]
+
+bonf.sig.coreg.genes <- unique(unlist(lapply(datasets[grep("run", names(datasets), invert=T, value=T)], function(dataset){
+  coreg <- dataset$Coregulation
+  return(coreg$Gene.set[coreg$Bonferroni.significant])
+})))
+
+others <- unique(unlist(lapply(datasets, function(dataset){
+  coreg <- dataset$Coregulation
+  return(coreg$Gene.set[!coreg$Bonferroni.significant])
+})))
+
+bonf.sig.coreg.genes <- intersect(bonf.sig.coreg.genes, rownames(gnomad))
+others               <- intersect(others, rownames(gnomad))
+others               <- others[!others %in% bonf.sig.coreg.genes]
+
+
+df.plot <- data.frame(pli=c(gnomad[others,"pLI"],
+                            gnomad[bonf.sig.coreg.genes,"pLI"],
+                            gnomad[bonf.sig.gwas.genes, "pLI"]),
+                      annot=c(rep(paste0("Others N=", length(others)), length(others)), 
+                              rep(paste0("Core genes N=", length(bonf.sig.coreg.genes)), length(bonf.sig.coreg.genes)),
+                              rep(paste0("GWAS genes N=", length(bonf.sig.gwas.genes)), length(bonf.sig.gwas.genes))))
+
+pdf(width=10, height=7.5, file="~/Desktop/depict2/plots/PLI_bonfsig_vs_rest.pdf")
+p <- ggplot(df.plot, aes(y=pli, x=annot, fill=annot)) +
+geom_violin(color="white", scale="width") +
+  geom_boxplot(width=0.05, color="black") +
+  ylab("Gnomad Pli score (LoF intolerance)") +
+  xlab("")
+
+theme.nature(p)
+dev.off()
+
+#boxplot(gnomad[others,"pLI"], gnomad[bonf.sig.coreg.genes,"pLI"], names=c("~18k others", "164 bonf core genes"), ylab="pLI score")
+#boxplot(gnomad[others,"exac_pLI"], gnomad[bonf.sig.coreg.genes,"exac_pLI"], names=c("~18k others", "164 bonf core genes"), ylab="pLI score")
+
+#par(mfrow=c(1,3))
+#boxplot(gnomad[others,"syn_z"], gnomad[bonf.sig.coreg.genes,"syn_z"], names=c("~18k others", "164 bonf core genes"), ylab="Z score", main="Synonymous")
+#boxplot(gnomad[others,"mis_z"], gnomad[bonf.sig.coreg.genes,"mis_z"], names=c("~18k others", "164 bonf core genes"), ylab="Z score",
+#main="Missense")
+#boxplot(gnomad[others,"lof_z"], gnomad[bonf.sig.coreg.genes,"lof_z"], names=c("~18k others", "164 bonf core genes"), ylab="Z score",
+#main="LoF")
+
+#par(mfrow=c(1,1))
+
+#boxplot(gnomad[others,"oe_lof"], gnomad[bonf.sig.coreg.genes,"oe_lof"], names=c("~18k others", "164 bonf core genes"), ylab="pLI score")
+```
+
+
+
+

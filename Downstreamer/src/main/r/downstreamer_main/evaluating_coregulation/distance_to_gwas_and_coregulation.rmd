@@ -1,0 +1,104 @@
+```{r}
+setwd("evaluating_coregulation")
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+# Read reference datasets
+ensembl <- read.table(ensembl.file,sep="\t", header=T, row.names = 1, stringsAsFactors = F)
+ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
+rownames(ensembl) <- make.names(ensembl$Gene.name, unique=T)
+
+# Coregulation
+datasets <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+
+# Genepvalues
+files <- list.files(main.downstreamer.output.path, pattern="*_genePvalues_.*.xlsx", full.names = T)
+genep <- read.genep.excel(files)
+genep[is.na(genep)] <- 1
+```
+
+# Distance from SNP vs coreg zscore
+```{r}
+zscores                  <- make.zscore.matrix(datasets)
+distance.per.gene        <- lapply(names(datasets), function(dataset.name){
+  dataset <- datasets[[dataset.name]]
+  tmp <- dataset$Coregulation
+  tmp <- tmp[tmp$Bonferroni.significant==1 & tmp$Enrichment.Z.score > 0,]
+  x   <- tmp$Distance.to.indep.GWAS.hit  
+  x[x==">1mb"] <- 1000000
+  x <- as.numeric(x)
+  
+  y <- x
+  y[x == 0] <- "Gene body"
+  y[x > 0 & x < 10000] <- "10k"
+  y[x > 10000 & x < 50000] <- "50k"
+  y[x > 50000 & x < 250000] <- "250k"
+  y[x > 250000] <- ">500k"
+
+  names(y) <- tmp$Ensembl.Gene.ID
+  
+  y <- factor(y, levels=c("Gene body", "10k", "50k", "250k", ">500k"))
+  
+  #mean.per.bin <- sapply(c("Gene body", "10k", "50k", "250k", ">500k"), function(cur.bin){
+  #  max(zscores[names(y)[y==cur.bin], dataset.name])
+  #})
+  
+  #return(list(c("Gene body", "10k", "50k", "250k", ">500k"), mean.per.bin))
+  return(list(y, zscores[names(y), dataset.name]))
+})
+names(distance.per.gene) <- names(datasets)
+
+mean.zscore.per.bin <- sapply(datasets, function(dataset){
+  tmp <- dataset$Coregulation
+  x <- tmp$Distance.to.indep.GWAS.hit  
+  x[x==">1mb"] <- 1000000
+  x <- as.numeric(x)
+  
+  y <- tmp$Enrichment.Z.score
+  m1 <- mean(y[x == 0], na.rm=T)
+  m2 <- mean(y[x > 0 & x < 10000], na.rm=T)
+  m3 <- mean(y[x > 10000 & x < 50000] , na.rm=T)
+  m4 <- mean(y[x > 50000 & x < 250000], na.rm=T)
+  m5 <- mean(y[x > 250000], na.rm=T)
+
+
+  out <- c(m1, m2, m3, m4, m5)
+  names(out) <- c("Gene body", "10k", "50k", "250k", ">500k")
+  return(out)
+})
+mean.zscore.per.bin <- t(mean.zscore.per.bin)
+
+x <- factor(as.character(unlist(sapply(distance.per.gene, function(x){x[[1]]}))), levels=c("Gene body", "10k", "50k", "250k", ">500k"))
+y <- as.numeric(unlist(sapply(distance.per.gene, function(x){x[[2]]})))
+
+p1 <- ggplot(data=data.frame(x=x, y=y), mapping=aes(y=y, x=x)) +
+  geom_violin() +
+  geom_boxplot(width=0.05, color="black") +
+  ylab("Coregulation Z-score") +
+  xlab("Distance to GWAS hit") +
+  ggtitle("Bonf. sig. genes")
+p1 <- theme.nature(p1)
+
+#boxplot(mean.zscore.per.bin, ylab="Mean Coregulation zscore of genes mapping in winow", xlab="Genomic range compared to GWAS hit")
+
+df.plot <- data.frame(x=as.numeric(mean.zscore.per.bin),
+                      trait=rep(rownames(mean.zscore.per.bin), ncol(mean.zscore.per.bin)),
+                      bin=as.character(sapply(colnames(mean.zscore.per.bin), rep, nrow(mean.zscore.per.bin))))
+
+df.plot$bin <- factor(df.plot$bin, levels=colnames(mean.zscore.per.bin))
+
+
+p2 <- ggplot(data=df.plot, mapping=aes(y=x, x=bin)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, col="grey", lty=2) +
+  ylab("Mean coregulation Z-score per trait") +
+  xlab("Distance to GWAS hit") +
+  ggtitle("All genes")
+p2 <- theme.nature(p2)
+
+
+pdf(width=9, height=3.5, file="output/plots/coregulation_vs_nearest_gwas_tophit.pdf")
+grid.arrange(grobs=list(p2, p1), ncol=2)
+dev.off()
+
+```

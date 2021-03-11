@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.genenetworkbackend.hpo;
 
+import umcg.genetica.io.hpo.HpoOntology;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -39,7 +40,7 @@ public class InvestigateAucChildParent {
 
 		final File hpoOboFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\hp.obo");
 
-		Ontology hpoOntology = HpoFinder.loadHpoOntology(hpoOboFile);
+		Ontology hpoOntology = HpoOntology.loadHpoOntology(hpoOboFile);
 		final Term is_a = hpoOntology.getTerm("is_a");;
 
 		for (String hpo : hpoAuc.keySet()) {

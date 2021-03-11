@@ -1,0 +1,204 @@
+```{r}
+setwd("umap")
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+library(umap)
+
+#pc.file      <- "zcat /groups/umcg-wijmenga/prm02/data_projects/Gado/GeneNetwork_V2_01-02-2018/Covariates/PCA/pc-scores1588.txt.gz"
+pcs           <- fread(pc.file, data.table=F)
+rownames(pcs) <- pcs[,1]
+pcs           <- pcs[,-1]
+pcs.165       <- pcs[,1:165]
+
+tissue.cols <- read.table(tissue.file, stringsAsFactors = F, sep="\t", header=T)
+tissue.cols <- fread("data/new_tissue_cols.txt", stringsAsFactors = F, sep="\t", header=T, data.table=F)
+
+tissue.annot <- fread(sample.file, stringsAsFactors = F, sep="\t", header=T, data.table=F)
+
+#tmp <- fread("data/sampleAnnotations.txt", stringsAsFactors = F, data.table = F, sep="\t")
+#rownames(tmp) <- tmp$Sample
+
+tissue.annot$Annot <- tissue.annot$TissueType
+tissue.annot[tissue.annot$CellLine != "0", "Annot"] <- tissue.annot[tissue.annot$CellLine != "0", "CellLine"]
+tissue.annot[as.numeric(unlist(sapply(c("CD4", "T-cell", "T lymphocytes", "t  Na?»ve", "t  TEFF", "CD8"), grep, tissue.annot$CellType, fixed=T))), "Annot"] <- "T-cell"
+tissue.annot[as.numeric(unlist(sapply(c("B-cell","Purified normal B cells", "B lymphocytes"), grep, tissue.annot$CellType, fixed=T))), "Annot"] <- "B-cell"
+tissue.annot[as.numeric(unlist(sapply(c("NK", "NK-cell"), grep, tissue.annot$CellType, fixed=T))), "Annot"] <- "NK-cell"
+
+tissue.annot[as.numeric(unlist(sapply(c("leukocyte", "Leukocyte", "Lymphocytes", "Bone marrow"), grep, tissue.annot$CellType, fixed=T))), "Annot"] <- "Lymphoid"
+
+tissue.annot[as.numeric(unlist(sapply(c("neutrophil", "Neutrophil","Neutrophils", "myeloblast","myoblast","Monocytes"," monocyte-dervied macrophages", "monocyte", "Monocyte", "granulocyte"), grep, tissue.annot$CellType, fixed=T))), "Annot"] <- "Myeloid"
+
+filter <- table(tissue.annot$Annot)
+filter <- filter[filter < 100]
+
+tissue.annot[tissue.annot$Annot %in% names(filter), "Annot"] <- "0"
+rownames(tissue.annot)<- tissue.annot$Sample
+#tissue.annot[!tissue.annot$TissueType %in% tissue.cols$Tissues,"TissueType"] <- 0
+#rownames(tissue.annot) <- tissue.annot[,1]
+#tissue.cols            <- rbind(tissue.cols, c("0", "lightgrey"))
+#tissue.cols$alpha      <- c(rep(0.3, 18), 0.1)
+
+#cols.vec               <- tissue.cols$col
+#names(cols.vec)        <- tissue.cols[,1]
+#alpha.vec              <- tissue.cols$alpha
+#names(alpha.vec)       <- tissue.cols[,1]
+tissue.cols <- fread("data/new_tissue_cols.txt", stringsAsFactors = F, sep="\t", header=T, data.table=F)
+
+cols.vec               <- tissue.cols$color
+names(cols.vec)        <- tissue.cols$celltype
+alpha.vec              <- tissue.cols$is_cell_line
+names(alpha.vec)        <- tissue.cols$celltype
+alpha.vec[alpha.vec==1] <- 0.1
+alpha.vec[alpha.vec==0] <- 0.3
+
+```
+
+# New Umap
+```{r}
+um <- umap(pcs.165,
+           verbose=T,
+           n_neighbors=150,
+           n_epochs=1000,
+           min_dist=0.9,
+           spread=1,
+           random_state=5820785,
+           transform_state=5820785)
+save(um, file="output/umap_cache_v10.Rdata")
+
+
+km <- kmeans(um$layout, length(unique(tissue.annot$TissueType)), iter.max=1000)
+tissue.annot$Cluster <- km$cluster
+
+inferred.tissue.type <-
+sapply(km$cluster, function(cluster.nr) {
+  cur.tab <- table(tissue.annot[tissue.annot$Cluster == cluster.nr, "TissueType"])
+}) 
+
+df.plot <- data.frame(x=um$layout[,1],
+                      y=um$layout[,2],
+                      cols=tissue.annot[rownames(um$layout),"TissueType"])
+
+df.plot <- df.plot[order(df.plot$cols),]
+
+p1 <- ggplot(df.plot, aes(x=x, y=y, col=cols, alpha=cols)) +
+  geom_point() 
+theme.nature(p1) +
+  scale_color_manual(values=cols.vec) +
+  scale_alpha_manual(values = alpha.vec) + guides(colour = guide_legend(override.aes = list(alpha = 1)))
+```
+
+# Old t-sne
+```{r}
+df.plot         <- tissue.annot
+#tab             <- table(df.plot$Annot)
+#tab             <- tab[order(tab, decreasing = F)]
+df.plot         <- df.plot[order(df.plot$Annot),]
+#df.plot         <- df.plot[unlist(sapply(names(tab), grep, df.plot$Annot, fixed=T)),]
+
+library(hexbin)
+df.plot$hex.col <- df.plot$Annot
+df.plot$hex.col[!df.plot$hex.col %in% c("brain", "blood", "T-cell", "B-cell", "Monocyte", "intestine", "ileum", "heart", "muscle", "bone marrow", "kidney", "lung", "heart", "liver")] <- NA
+
+hexinfo          <- hexbin(df.plot[!is.na(df.plot$hex.col),]$TSNE1, df.plot[!is.na(df.plot$hex.col),]$TSNE2, xbins=20, IDs=T)
+df.plot[!is.na(df.plot$hex.col), "hex"]      <- hexinfo@cID
+df.plot[,"hexcount"]                         <- hexinfo@count[df.plot$hex] 
+
+tmp        <- unique(hexinfo@cID)
+col.hex    <- sapply(tmp, function(cur.hex)  {
+  cur.tab <- table(df.plot[df.plot$hex == cur.hex, "hex.col"])
+  if (length(cur.tab) == 0) {
+    return(NA)
+  }
+  return(names(cur.tab)[cur.tab==max(cur.tab)][1])
+})
+names(col.hex) <- tmp
+
+df.hex <- data.frame(hcell2xy(hexinfo),
+                     ID=hexinfo@cell,
+                     counts=hexinfo@count,
+                     color=col.hex[as.character(hexinfo@cell)])
+#df.hex <- df.hex[df.hex$counts > 1,]
+
+p1 <- ggplot(df.plot, mapping=aes(x=TSNE1, y=TSNE2)) +  
+    geom_point(col="lightgrey",alpha=0.4) +
+    geom_hex(data=df.hex,
+             mapping=aes(x=x, y=y, fill=color),
+             stat="identity",
+             lwd=1,
+             alpha=0.7) +
+  scale_color_manual(values = cols.vec) +
+  scale_fill_manual(values = cols.vec) 
+
+p1 <- theme.nature(p1)
+
+ced <- read.depict2("~/Desktop/depict2/output/final_paper/excels/coronary_artery_disease_2018_29212778_hg19_enrichtments_exHla.xlsx")
+
+expr               <- ced$expression
+expr               <- expr[row.names(df.plot)[!is.na(df.plot$hex.col)],]
+expr$hex           <- hexinfo@cID
+tmp                <- unique(expr$hex)
+zscores            <- sapply(tmp, function(curhex){
+  mean(expr[expr$hex==curhex,"Enrichment.Z.score"])
+})
+names(zscores)     <- tmp
+
+df.hex <- data.frame(hcell2xy(hexinfo),
+                     ID=hexinfo@cell,
+                     enrichment=zscores[as.character(hexinfo@cell)],
+                     counts=hexinfo@count)
+
+p2 <- ggplot() +
+   geom_point(data=df.plot,
+              mapping=aes(x=TSNE1, y=TSNE2),
+              col="lightgrey", alpha=0.4) +
+  geom_hex(data=df.hex,
+           mapping=aes(x=x, y=y,fill=enrichment),
+           stat="identity",
+           alpha=0.7) + 
+  scale_fill_gradient2(low="blue", mid="white", high="red")
+
+p2 <- theme.nature(p2)
+
+
+grid.arrange(grobs=list(p1, p2), ncol=2)
+
+```
+
+
+
+```{r}
+load("data/umap_cache_v4.Rdata")
+
+df.plot <- data.frame(x=um$layout[,1],
+                      y=um$layout[,2],
+                      Annot=tissue.annot[rownames(um$layout),"Annot"])
+df.plot <- df.plot[order(df.plot$Annot),]
+df.plot$hex.col <- df.plot$Annot
+df.plot$hex.col[df.plot$Annot %in% tissue.cols[tissue.cols$isCellLine==1, "celltype"]] <- NA
+df.plot$hex.col[df.plot$Annot == 0] <- NA
+
+library(hexbin)
+hexinfo          <- hexbin(df.plot$x, df.plot$y, xbins=40, IDs=T)
+df.plot$hex      <- hexinfo@cID
+df.plot$hexcount <- hexinfo@count[df.plot$hex] 
+
+df.plot$hex.col <- df.plot$Annot
+df.plot$hex.col[!df.plot$hex.col %in% c("brain", "blood", "T-cell", "B-cell", "Monocyte", "intestine", "ileum", "heart", "muscle", "bone marrow", "kidney", "lung", "heart", "liver")] <- NA
+df.plot$hex.col[df.plot$hexcount < 50] <- NA
+
+p <- ggplot(df.plot, mapping=aes(x=x, y=y)) +  
+    geom_point(col="lightgrey", alpha=0.3) +
+  geom_hex(data=df.plot[!is.na(df.plot$hex.col),],
+           mapping=aes(fill=hex.col),
+           bins=40,
+           lwd=1,
+           alpha=0.7) +
+  scale_color_manual(values = cols.vec) +
+  scale_fill_manual(values = cols.vec) 
+
+theme.nature(p) #+ylim(c(-20, 25)) + xlim(-25, 20)
+
+
+
+```
+

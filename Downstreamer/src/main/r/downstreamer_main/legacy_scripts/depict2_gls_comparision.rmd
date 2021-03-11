@@ -1,0 +1,788 @@
+# LOADING: Packages and function definitions
+```{r}
+library(data.table)
+library(ggplot2)
+
+rotate <- function(x) t(apply(x, 2, rev))
+
+custom.gls <- function(x, y, Sigi) {
+  x <- as.matrix(x, ncol=1)
+  
+  # Calculated beta on pre-computed inverse matrix
+  # xtxi = b1
+  xtxi <- solve(t(x) %*% Sigi %*% x)
+  #  part between brackets is b2
+  beta <- xtxi %*% (t(x) %*% Sigi %*% y)
+  
+  # Calculate SE
+  res       <- y - (x %*% beta)
+  sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
+  #sigma.sqr <- (t(res) %*% res) / (nrow(x) - ncol(x))
+  se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
+
+  # Below commented code is uncorrect, does not scale the residuals to the correlation matrix
+  #res <- y - (x %*% beta)
+  #sig <- sqrt(sum(res^2) / (nrow(x)-1))
+  #se  <- sqrt(diag(xtxi))*sig
+  
+  #sigma.sq <- sum((y - (x %*% beta))^2) / (nrow(x)-1)
+  #var.beta <- sigma.sq * xtxi
+  #se       <- sqrt(var.beta)
+
+  #vcov      <- c(sigma.sqr) * solve(t(x) %*% xtxi %*% x )
+  #se        <- sqrt(diag(vcov))
+  
+  # Calculate p
+  tstats <- abs(beta / se)
+  pval <- 2 * pt(tstats, df=nrow(x) - 1, lower=F)
+  return(c(beta, se, pval))
+}
+
+custom.gls.2 <- function(x, y, Sigi) {
+  x <- as.matrix(x, ncol=1)
+  
+  # Calculated beta on pre-computed inverse matrix
+  # xtxi = b1
+  xtxi <- solve(t(x) %*% Sigi %*% x)
+  #  part between brackets is b2
+  beta <- xtxi %*% (t(x) %*% Sigi %*% y)
+  
+  # Calculate SE
+  res       <- y - (x %*% beta)
+  #sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
+  sigma.sqr <- (sum(res^2)) / (nrow(x) - ncol(x))
+  se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
+  # Calculate p
+  tstats <- abs(beta / se)
+  pval <- 2 * pt(tstats, df=nrow(x)-1, lower=F)
+  return(c(beta, se, pval))
+}
+
+custom.gls.intercept <- function(x, y, Sigi) {ized
+  # Add intercept
+  x <- cbind(rep(1, length(x)), x)
+
+  # Calculated beta on pre-computed inverse matrix
+  xtxi <- solve(t(x) %*% Sigi %*% x )
+  beta <- xtxi %*% (t(x) %*% Sigi %*% y)
+  
+  # Calculate SE
+  res       <- y - (x %*% beta)
+  sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
+  se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
+
+  # Below commented code is uncorrect, does not scale the residuals to the correlation matrix
+  # Calculate p
+  tstats <- abs(beta[2] / se[2])
+  pval <- 2 * pt(tstats, df=nrow(x)-1, lower=F)
+  
+  return(c(beta[1], se[1], beta[2], se[2], pval))
+}
+
+custom.gls.per.arm <- function(x, y, Sigi) {
+  b1 <- t(x) %*% Sigi %*% x
+  b2 <- t(x) %*% Sigi %*% y
+  return(c(b1, b2))
+}
+```
+
+# LOADING: Gene gene correlation matrix
+```{r}
+path <- "~/Desktop/depict_gls_test/pheno_9_r0.8/"
+path <- "~/Desktop/depict_gls_test/pheno_9_r0.5/"
+
+path <- "~/Desktop/depict_gls_test/ibd_69/"
+path <- "~/Desktop/depict_gls_test/ibd_v70/"
+path <- "~/Desktop/depict_gls_test/pheno_9_v70//"
+
+trait <- "Coregulation"
+trait <- "rando"
+
+# Transformed gwas zscores (centered and scaled) for aggregated genes
+gwas <- data.frame(fread(paste0(path, trait, "_Enrichment_normalizedGwasGeneScores_ExHla.txt"), data.table = F), row.names = 1)
+
+e.pvals <- read.table(paste0(path, trait, "_Enrichment_empericalPvalesExHla.txt"), row.names=1, header=T)
+
+a.pvals <- data.frame(fread(paste0(path, trait, "_Enrichment_analyticalPvalsExHla.txt"), data.table = F), row.names = 1)
+# Cene coregulation zscores
+coreg <- data.frame(fread(paste0(path, trait, "_Enrichment_genePathwayZscoresExHla.txt"), data.table = F), row.names = 1)
+
+betas <- read.table(paste0(path, trait, "_Enrichment_betasExHla.txt"), row.names=1, header=T)
+
+#gene.cor.inv <- matrix(rep(0, nrow(gwas)^2), ncol=nrow(gwas), nrow=nrow(gwas))
+gene.cor <- matrix(rep(0, nrow(gwas)^2), ncol=nrow(gwas), nrow=nrow(gwas))
+gene.names <- c()
+#ident <- matrix(rep(0, nrow(gwas)^2), ncol=nrow(gwas), nrow=nrow(gwas))
+#diag(ident) <- 1
+index <- 1
+for (chr in 1:22) {
+  tmp.mat.q <- data.frame(fread(paste0(path, trait, "_", chr, "_q_Enrichment_geneInvCor.txt"), data.table = F), row.names = 1)
+
+  tmp.mat.p <- tryCatch({
+          tmp <- as.data.frame(fread(paste0(path, trait, "_", chr, "_p_Enrichment_geneInvCor.txt"), data.table = F))
+          rownames(tmp) <- tmp[,1]
+          tmp <- tmp[,-1, drop=F]
+          tmp
+        },
+        error=function(cond) {
+            return(NA)
+        })
+  tmp <- NULL
+
+  if (class(tmp.mat.p) == "data.frame") {
+      tmp.range <- index:((index + nrow(tmp.mat.p))-1)
+      gene.cor[tmp.range, tmp.range] <- as.matrix(tmp.mat.p)
+      #gene.cor.inv[tmp.range, tmp.range] <- solve(as.matrix(tmp.mat.p))
+
+      index <- index + nrow(tmp.mat.p)
+      gene.names <- c(gene.names, rownames(tmp.mat.p))
+  }
+  
+  tmp.range <- index:((index + nrow(tmp.mat.q))-1)
+  gene.cor[tmp.range, tmp.range] <- as.matrix(tmp.mat.q)
+ # gene.cor.inv[tmp.range, tmp.range] <- solve(as.matrix(tmp.mat.q))
+
+  index <- index + nrow(tmp.mat.q)
+  gene.names <- c(gene.names, rownames(tmp.mat.q))
+}
+
+rownames(gene.cor) <- gene.names
+colnames(gene.cor) <- gene.names
+#rownames(gene.cor.inv) <- gene.names
+#colnames(gene.cor.inv) <- gene.names
+#gene.cor.inv <- solve(gene.cor)
+```
+
+# GLS
+```{r}
+ibd.top50 <- c("ENSG00000113263","ENSG00000198851","ENSG00000130592","ENSG00000100906","ENSG00000110848","ENSG00000163599","ENSG00000116824","ENSG00000140368","ENSG00000167286","ENSG00000111537","ENSG00000178562","ENSG00000118503","ENSG00000197629","ENSG00000197329","ENSG00000162924","ENSG00000125735","ENSG00000125538","ENSG00000109471","ENSG00000079335","ENSG00000160593","ENSG00000175387","ENSG00000163600","ENSG00000181847","ENSG00000144655","ENSG00000107331","ENSG00000164691","ENSG00000169554","ENSG00000161405","ENSG00000163874","ENSG00000183813","ENSG00000091157","ENSG00000160654","ENSG00000117091","ENSG00000155926","ENSG00000155307","ENSG00000198821","ENSG00000160185","ENSG00000174946","ENSG00000131669","ENSG00000145779","ENSG00000213809","ENSG00000172578","ENSG00000049249","ENSG00000138964","ENSG00000102879","ENSG00000134516","ENSG00000110448","ENSG00000164674","ENSG00000184588","ENSG00000169508")
+
+ibd.top50 <- colnames(coreg)
+
+#gene.cor.inv <- gene.cor.inv[rownames(coreg), rownames(coreg)]
+gene.cor.inv <- gene.cor[rownames(coreg), rownames(coreg)]
+
+results <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
+  custom.gls(gwas, y, diag(length(y)))
+})
+
+results <- t(results)
+
+ol <- intersect(rownames(results), rownames(betas))
+plot(results[ol, 1], betas[ol, 1])
+plot(-log10(results[ol, 3]), -log10(a.pvals[ol, 1]))
+
+plot(-log10(results[ol, 3]), -log10(e.pvals[ol, 1]))
+abline(a=0, b=1)
+
+# V2 without applying correlation matrix to residuals
+results.2 <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
+  custom.gls.2(gwas, y, gene.cor.inv)
+})
+
+results.2 <- t(results.2)
+
+#results.2 <- results.2[results.2[,3] > 1e-10,]
+#ol <- intersect(rownames(results.2), rownames(e.pvals))
+#plot(-log10(results.2[ol, 3]), -log10(e.pvals[ol, 1]))
+#abline(a=0, b=1)
+
+x <- -log10(results.2[ol, 3])
+y <- -log10(e.pval[ol, 1])
+
+plot(x[x < 10],y[x < 10] )
+abline(a=0, b=1)
+abline(lm(y[x < 10] ~ x[x < 10]))
+
+# Linear model for reference
+results.lm <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
+  summary(lm(y ~ gwas[,1]))$coefficients[2,]
+})
+results.lm <- t(results.lm)
+
+x <- -log10(results.lm[ol, 4])
+y <- -log10(e.pval[ol, 1])
+
+plot(x[x < 10],y[x < 10] )
+abline(a=0, b=1)
+abline(lm(y[x < 10] ~ x[x < 10]))
+
+# Cholesky
+x <- gwas[,1]
+#y <- coreg[,"randPheno8"]
+c <- gene.cor[rownames(coreg), rownames(coreg)]
+
+C  <- chol(c)
+Ci <- solve(C)
+xi <- Ci %*% x
+
+# Linear model for reference
+results.chol <- apply(coreg[,ibd.top50, drop=F], 2, function(y){
+  yi <- Ci %*% y
+  summary(lm(yi ~ -1 + xi))$coefficients[1,]
+})
+results.chol <- t(results.chol)
+
+
+par(mfrow=c(1,2))
+plot(-log10(results[, 3]), -log10(results.2[, 3]), ylim=c(0,9), xlim=c(0,9),
+     main="Current vs PDF method", xlab="Current impl", ylab="PDF method")
+abline(a=0, b=1)
+plot(-log10(results[, 3]), -log10(results.chol[, 4]), ylim=c(0,9), xlim=c(0,9),
+     main="Current vs cholesky", xlab="Current impl", ylab=" cholesky")
+abline(a=0, b=1)
+plot(-log10(results[, 3]), -log10(results.lm[, 4]), ylim=c(0,9), xlim=c(0,9),
+     main="Current vs OLS", xlab="Current impl", ylab="OLS")
+abline(a=0, b=1)
+plot(-log10(results.2[, 3]), -log10(results.chol[, 4]), ylim=c(0,9), xlim=c(0,9),
+     main="PDF method vs cholesky", xlab="PDF method", ylab="cholesky")
+abline(a=0, b=1)
+
+
+
+plot(results[, 1], results.chol[, 1],
+     main="Current vs cholesky", xlab="Current impl", ylab=" cholesky")
+abline(a=0, b=1)
+
+
+x <- gwas[,1]
+y <- coreg[,"ENSG00000113263"]
+
+y <-y[x > 0]
+x <- x[x > 0]
+
+plot(x, y, main="Coregulation for ITK and IBD", ylab="Coregulation for ITK", xlab="Normalized GeneP for IBD")
+abline(a=0, b=0, col="blue")
+abline(lm(y ~ x), col="red", lwd=2)
+
+```
+
+
+# MASS test
+```{r}
+library(nlme)
+library(data.table)
+ibd.top50 <- "randPheno8"
+path <- "~/Desktop/depict_gls_test/pheno_9_v70//"
+
+trait <- "Coregulation"
+trait <- "rando"
+
+# Transformed gwas zscores (centered and scaled) for aggregated genes
+gwas <- data.frame(fread(paste0(path, trait, "_Enrichment_normalizedGwasGeneScores_ExHla.txt"), data.table = F), row.names = 1)
+
+e.pval <- read.table(paste0(path, trait, "_Enrichment_empericalPvalesExHla.txt"), row.names=1, header=T)
+
+a.pvals <- data.frame(fread(paste0(path, trait, "_Enrichment_analyticalPvalsExHla.txt"), data.table = F), row.names = 1)
+# Cene coregulation zscores
+coreg <- data.frame(fread(paste0(path, trait, "_Enrichment_genePathwayZscoresExHla.txt"), data.table = F), row.names = 1)
+
+betas <- read.table(paste0(path, trait, "_Enrichment_betasExHla.txt"), row.names=1, header=T)
+
+test <- coreg[,ibd.top50, drop=F]
+m <-   gls(yt ~ + xt, data=data.frame(yt=test[,1], xt=gwas[,1]), correlation=corSymm())
+
+results <- apply(coreg[,ibd.top50, drop=F], 2, function(y) {
+    summary(gls(y ~ x, data=data.frame(y=y[,1], x=gwas), correlation=corAR1()))
+})
+
+
+
+
+```
+
+
+
+# test
+```{r}
+data(longley)
+
+g     <- lm(Employed ~ GNP+ Population,data=longley)
+
+# Model matrix
+x     <- model.matrix(g)
+
+# Simulate correlation matrix
+Sigma <- diag(16)
+Sigma <- 0.31041^abs(row(Sigma)-col(Sigma))
+Sigi  <- solve(Sigma)
+
+# Calculate Beta's
+xtxi  <- solve(t(x) %*% Sigi %*% x)
+beta  <- xtxi %*% t(x) %*% Sigi %*% longley$Empl
+
+# Residuals
+res   <- longley$Empl- x %*% beta
+
+# Sigma volgens PDF method, identical to OLS
+sig <- sqrt(sum(res^2)/g$df)
+#
+# Sigma volgens huidige implementatitie
+sig <-  sqrt((t(res) %*% Sigi %*% res) / g$df)
+#
+
+# Se
+se <- sqrt(diag(xtxi))*sig
+
+# Cholesky based approach > pre transform data using inverse cholesky of correlation matrix, then run OLS
+sm     <- chol(Sigma)
+smi    <- solve(t(sm))
+sx     <- smi %*% x
+sy     <- smi%*% longley$Empl
+m.chol <- summary(lm(sy ~ sx-1))
+```
+
+
+# Emperical vs analytical pvalues
+```{r}
+path <- "~/Desktop/depict_gls_test/ibd_v70/"
+trait <- "Coregulation"
+trait <- "expression"
+
+path <- "~/Desktop/depict_gls_test/pheno_9_v70/"
+trait <- "rando"
+
+# Transformed gwas zscores (centered and scaled) for aggregated genes
+gwas <- data.frame(fread(paste0(path, trait, "_Enrichment_normalizedGwasGeneScores_ExHla.txt"), data.table = F), row.names = 1)
+
+# Cene coregulation zscores
+coreg <- data.frame(fread(paste0(path, trait, "_Enrichment_genePathwayZscoresExHla.txt"), data.table = F), row.names = 1)
+
+betas <- read.table(paste0(path, trait, "_Enrichment_betasExHla.txt"), row.names=1, header=T)
+
+a.pval <- read.table(paste0(path, trait, "_Enrichment_analyticalPvalsExHla.txt"), row.names=1, header=T)
+e.pval <- read.table(paste0(path, trait, "_Enrichment_empericalPvalesExHla.txt"), row.names=1, header=T)
+re.pval <- read.table(paste0(path, trait, "_Enrichment_rankedEmpericalPvalesExHla.txt"), row.names=1, header=T)
+
+
+a.pval <- -log10(a.pval)
+e.pval <- -log10(e.pval)
+re.pval <- -log10(re.pval * 2)
+
+
+plot(a.pval[,1], e.pval[,1], 
+     xlim=c(0,10),
+     ylim=c(0,10),
+     xlab="Analytical pvalue",
+     ylab="Emperical pvalue")
+abline(a=0, b=1, col="red", lwd=2)
+abline(lm(e.pval[,1] ~ a.pval[,1]), col="blue", lwd=2)
+
+
+
+plot(re.pval[,1], e.pval[,1], 
+     xlim=c(0,10),
+     ylim=c(0,10),
+     xlab="Emperical pvalue",
+     ylab="Emperical pvalue normal dist")
+abline(a=0, b=1, col="red", lwd=2)
+abline(lm(e.pval[,1] ~ re.pval[,1]), col="blue", lwd=2)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# LEGACY code
+
+
+# LOADING: Data loading
+```{r}
+# Ruwe GWAS gene pvalues
+gwas.x <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/height_2018_30124842_hg19_genePvalues.txt", data.table = F), row.names = 1)
+
+gwas.x.null <- data.frame(fread("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/height_2018_30124842_hg19_genePvaluesNullGwas.txt.gz", data.table = F), row.names = 1)
+
+gwas.x.null.norm <- data.frame(fread("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/genePvaluesNullGwas_as_zscores.txt.gz", data.table = F), row.names = 1)
+
+# Transformed gwas zscores (centered and scaled) for aggregated genes
+gwas <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/Coregulation_Enrichment_normalizedGwasGeneScores_ExHla.txt", data.table = F), row.names = 1)
+
+# GWAS null pvalues
+gwas.null<- data.frame(fread("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/Coregulation_Enrichment_normalizedNullGwasGeneScores_ExHla.txt.gz", data.table = F), row.names = 1)
+
+# Cene coregulation zscores
+coreg <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/Coregulation_Enrichment_normalizedPathwayScores_ExHla.txt.gz", data.table = F), row.names = 1)
+```
+
+# LOADING: Data loading v54
+```{r}
+# Transformed gwas zscores (centered and scaled) for aggregated genes
+gwas <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_54/Coregulation_Enrichment_normalizedGwasGeneScores_ExHla.txt", data.table = F), row.names = 1)
+
+# Cene coregulation zscores
+coreg <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_54/Coregulation_Enrichment_normalizedPathwayScores_ExHla.txt", data.table = F), row.names = 1)
+
+betas <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_54/Coregulation_Enrichment_betasExHla.txt", data.table = F), row.names = 1)
+
+ses <- data.frame(fread("/home/work/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_54/Coregulation_Enrichment_seExHla.txt", data.table = F), row.names = 1)
+
+pvals <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_54/Coregulation_Enrichment_analyticalPvalsExHla.txt", data.table = F), row.names = 1)
+```
+
+# LOADING: Chr1q
+```{r}
+# GWAS pvalues als Z-score die gecentered and gescaled is
+gwas.chr1q <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_1_q_Enrichment_geneScores.txt.gz", data.table = F), row.names = 1)
+
+# Cene coregulation zscores
+coreg.chr1q <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_1_q_Enrichment_pathwayScores.txt.gz", data.table = F), row.names = 1)
+
+# Cene gene correlations
+gene.cor.chr1q <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_1_q_Enrichment_geneCor.txt.gz", data.table = F), row.names = 1)
+```
+
+# LOADING: Gene gene correlation matrix
+```{r}
+gene.cor <- matrix(rep(0, nrow(gwas)^2), ncol=nrow(gwas), nrow=nrow(gwas))
+gene.names <- c()
+
+index <- 1
+for (chr in 1:22) {
+  tmp.mat.q <- data.frame(fread(paste0("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_54/per_arm/Coregulation_", chr, "_q_Enrichment_geneCor.txt"), data.table = F), row.names = 1)
+
+  tmp.mat.p <- tryCatch(
+        {
+          data.frame(fread(paste0("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_54/per_arm/Coregulation_", chr, "_p_Enrichment_geneCor.txt"), data.table = F), row.names = 1)
+        },
+        error=function(cond) {
+            return(NA)
+        })
+
+  if (class(tmp.mat.p) == "data.frame") {
+      tmp.range <- index:((index + nrow(tmp.mat.p))-1)
+      gene.cor[tmp.range, tmp.range] <- as.matrix(tmp.mat.p)
+      index <- index + nrow(tmp.mat.p)
+      gene.names <- c(gene.names, rownames(tmp.mat.p))
+  }
+
+  tmp.range <- index:((index + nrow(tmp.mat.q))-1)
+  gene.cor[tmp.range, tmp.range] <- as.matrix(tmp.mat.q)
+
+  index <- index + nrow(tmp.mat.q)
+  gene.names <- c(gene.names, rownames(tmp.mat.q))
+}
+
+rownames(gene.cor) <- gene.names
+colnames(gene.cor) <- gene.names
+
+gene.cor.inv <- solve(gene.cor)
+```
+
+# LOADING: Inverse Gene gene correlation matrix
+```{r}
+# Empty matrix of zeroes
+gene.cor.inv <- matrix(rep(0, 7713^2), ncol=7713, nrow=7713)
+gene.names <- c()
+
+# Used to keep track of current row number, is inclusive 1 indexed
+index <- 1
+for (chr in 1:22) {
+  
+  # Read matrix for q arm
+  tmp.mat.q <- data.frame(fread(paste0("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_", chr, "_q_Enrichment_geneInvCor.txt.gz"), data.table = F), row.names = 1)
+  
+  # Make sure order is identical
+  tmp.mat.q <- tmp.mat.q[rownames(tmp.mat.q), rownames(tmp.mat.q)]
+
+  # Define the range of the matrix to fill
+  # -1 because R indexing is inclusive and 1 indexed
+  tmp.range <- index:((index + nrow(tmp.mat.q))-1)
+  gene.cor.inv[tmp.range, tmp.range] <- as.matrix(tmp.mat.q)
+  
+  # Advance the index so the next matrix will be 1 diagonal down
+  index <- index + nrow(tmp.mat.q)
+  gene.names <- c(gene.names, rownames(tmp.mat.q))
+  
+  # Attempt to read matrix for P arm
+  tmp.mat.p <- tryCatch({
+          data.frame(fread(paste0("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_", chr, "_p_Enrichment_geneInvCor.txt.gz"), data.table = F), row.names = 1)
+        },
+        error=function(cond) {
+            return(NA)
+        })
+  
+  if (class(tmp.mat.p) == "data.frame") {
+      # Same as above
+      tmp.mat.p <- tmp.mat.p[rownames(tmp.mat.p), rownames(tmp.mat.p)]
+    
+      tmp.range <-index:((index + nrow(tmp.mat.p))-1)
+      gene.cor.inv[tmp.range, tmp.range] <- as.matrix(tmp.mat.p)
+      index <- index + nrow(tmp.mat.p)
+      gene.names <- c(gene.names, rownames(tmp.mat.p))
+  }
+}
+
+rownames(gene.cor.inv) <- gene.names
+colnames(gene.cor.inv) <- gene.names
+```
+
+# Comparing DEPICT inversion and R inversion
+```{r}
+tmp <- solve(gene.cor)
+
+png("~/Desktop/depict2/plots/pairs_plot_inverse_cor_matrix_depict_r_comparison.png", width=2000, height=2000)
+par(mfrow=c(10,10))
+for (i in 15000:16000) {
+  plot(tmp[,i], gene.cor.inv[,i], main=colnames(gene.cor.inv)[i], xlab=NA, ylab=NA)
+}
+dev.off()
+
+# Most values are identical, some not probably due to double precision stuff
+sum(tmp==gene.cor.inv)
+```
+
+# Comparing distributions of GWAS gene zscores
+```{r}
+par(mfrow=c(1,3))
+ol <- intersect(rownames(gwas.x), rownames(gwas.chr1q))
+plot(-log10(gwas.x[ol, 1]), gwas.chr1q[ol,1], main = "-log10 vs centered and scaled Zscore")
+hist(gwas.chr1q[,1], breaks=100, xlab="Centered and scaled GWAS gene Zscores", main="Centered and scaled zscore")
+hist(-log10(gwas.x[ol,1]), breaks=100, xlab="-log10 GWAS P", main="-log10 gene p")
+
+ol <- intersect(rownames(gwas.null), rownames(gwas))
+
+par(mfrow=c(1,3))
+hist(gwas[,1], breaks=100, xlab="Centered and scaled GWAS gene Zscores", main="Actual")
+hist(gwas.null[ol,1], breaks=100, xlab="Centered and scaled GWAS gene Zscores", main="Random 1")
+hist(gwas.null[ol,10000], breaks=100, xlab="Centered and scaled GWAS gene Zscores", main="Random 10.000")
+
+par(mfrow=c(1,4))
+hist(gwas.x.null.norm[,1], breaks=100, xlab="GWAS gene Zscores", main="Random 1")
+hist(scale(gwas.x.null.norm[,1]), breaks=100, xlab="Centerd and scaled GWAS gene Zscores", main="Random 1")
+hist(gwas.x.null.norm[,10000], breaks=100, xlab="GWAS gene Zscores", main="Random 10.000")
+hist(scale(gwas.x.null.norm[,10000]), breaks=100, xlab="Centerd and scaled GWAS gene Zscores", main="Random 10000")
+
+
+```
+
+# OLS
+```{r}
+par(mfrow=c(1,1))
+plot(gwas.chr1q[,1], coreg.chr1q[,"ENSG00000075420"])
+
+m.ols <- lm(coreg[,"ENSG00000075420"] ~ gwas[,1])
+plot(gwas[,1], coreg[,"ENSG00000075420"])
+abline(m.ols, col="blue")
+```
+
+# GLS
+```{r}
+# Chr1q
+#x     <- cbind(rep(1, nrow(gwas.chr1q)), coreg.chr1q[,1])
+#y     <- gwas.chr1q[,1]
+#Sigma <- gene.cor.chr1q
+
+# Test gene ENSG00000075420
+y     <- coreg[,"ENSG00000000003"]
+x     <- gwas[rownames(coreg),1]
+#Sigi  <- solve(gene.cor)
+Sigi  <- gene.cor.inv[rownames(coreg), rownames(coreg)]
+
+# Run GLS
+#gls.out.i <- custom.gls.intercept(x, y, Sigi)
+gls.out.o <- custom.gls(x, y, Sigi)
+
+# Pre transform, to use with base R OLS
+P  <- chol(Sigi)
+xp <- P %*% as.matrix(x)
+yp <- P %*% as.matrix(y)
+
+gls.out.r <- summary(lm(yp ~ 0 +  xp))$coefficients
+gls.out.r.i <- summary(lm(yp ~  xp))$coefficients
+
+# Cleanup to save mem
+rm(Sigma, gene.cor, gene.cor.chr1q, gwas.chr1q, tmp.mat.q, x, gwas.null, gwas.x, tmp.mat.p, tmp.range, index, gene.names)
+
+gls.out <- sapply(colnames(coreg)[1:1000], function(gene){
+  return(custom.gls(gwas[,1], coreg[,gene], Sigi))
+})
+gls.out <- t(gls.out)
+rownames(gls.out) <- colnames(coreg)[1:1000]
+
+xols.out <- sapply(colnames(coreg)[1:1000], function(gene){
+  return(summary(lm(coreg[,gene] ~ gwas[,1]))$coefficients[2,])
+})
+ols.out <- t(ols.out)
+rownames(ols.out) <- colnames(coreg)[1:1000]
+```
+
+# Comparrion plots between depict and r betas
+```{r}
+ol <- intersect(rownames(gls.out), rownames(betas))
+
+par(mfrow=c(1,3))
+plot(betas[ol,1], gls.out[ol,1], xlab="Betas DEPICT2", ylab="R GLS model", main=paste0("Beta comparrsion ", length(ol), " genes"), xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1))
+abline(a=0, b=1, col="red")
+abline(lm(gls.out[ol,1] ~ betas[ol,1]), col="blue")
+
+plot(betas[ol,1], ols.out[ol,1], xlab="Betas DEPICT2", ylab="R OLS model", main=paste0("Beta comparrsion ", length(ol), " genes"), xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1))
+abline(a=0, b=1, col="red")
+abline(lm(ols.out[ol,1] ~ betas[ol,1]), col="blue")
+
+plot(gls.out[ol,1], ols.out[ol,1], xlab="R GLS model", ylab="R OLS model", main=paste0("Beta comparrsion ", length(ol), " genes"), xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1))
+abline(a=0, b=1, col="red")
+abline(lm(ols.out[ol,1] ~ gls.out[ol,1]), col="blue")
+
+par(mfrow=c(1,1))
+
+boxplot(betas[ol,1], gls.out[ol,1], ols.out[ol,1], names = c("DEPICT", "GLS R", "OLS R"))
+abline(h=0, lty=2)
+
+df.plot <- data.frame(c(betas[ol,1], gls.out[ol,1], ols.out[ol,1]))
+df.plot$source <- c(rep("DEPICT", 1000), rep("GLS R", 1000), rep("OLS R", 1000))
+colnames(df.plot) <- c("beta", "source")
+
+df.plot<- df.plot[df.plot$source != "DEPICT", ]
+
+p <- ggplot(aes(x=beta,fill=source, color=source), data=df.plot) +
+  geom_histogram(position="identity",  alpha=0.5, bins=50, color="lightgrey") 
+
+theme.nature(p) + geom_vline(xintercept = 0, lty=2,)+ scale_fill_manual(values=c("red", "blue"))
+
+library(gridExtra)
+grid.arrange(grobs=plots, ncol=3)
+
+```
+
+# Comparrion plots between depict and r betas
+```{r}
+ol <- intersect(rownames(gls.out), rownames(betas))
+
+par(mfrow=c(1,3))
+plot(betas[ol,1], gls.out[ol,1], xlab="Betas DEPICT2", ylab="R GLS model", main=paste0("Beta comparrsion ", length(ol), " genes"), xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1))
+abline(a=0, b=1, col="red")
+
+plot(ses[ol,1], gls.out[ol,2], xlab="SE DEPICT2", ylab="SE R OLS model", main=paste0("SE comparrsion ", length(ol), " genes"))
+abline(a=0, b=1, col="red")
+
+plot(-log10(pvals[ol,1]), -log10(gls.out[ol, 3]), xlab="-log10(p depict)", ylab="-log10(p R OLS model) ", main=paste0("Pvalue comparrsion ", length(ol), " genes"))
+abline(a=0, b=1, col="red")
+
+```
+# Emperical vs analytical pvalues
+```{r}
+
+emp <- read.table("/home/work/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_54/height_2018_30124842_hg19_enrichtments_exHla_emperical_pvalues.tsv.csv", sep="\t", row.names=1, header=T)
+par(mfrow=c(1,1))
+
+ol <- intersect(rownames(emp), rownames(pvals))
+plot(-log10(pvals[ol,1]), -log10(emp[ol, 1]), xlab="-log10(analytical)", ylab="-log10(emperical) ", main=paste0("Pvalue comparrsion ", length(ol), " genes"), xlim=c(0,12), ylim=c(0,12))
+abline(a=0, b=1, col="red")
+
+
+hist(-log10(emp[ol, 1]))
+hist(-log10(pvals[ol,1]))
+```
+
+
+# Beta hist
+```{r}
+par(mfrow=c(1,4))
+betas <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/Coregulation_Enrichment_betasExHla.txt",data.table=F), row.names=1)
+betas.null <- data.frame(fread("~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/Coregulation_EnrichmentNull_betasExHla.txt",data.table=F), row.names=1)
+
+df.plot <- data.frame(c(betas[,1], unlist(betas.null[sample.int(n=10000, size=1000)])))
+df.plot <- cbind(df.plot, c(rep("Actual", nrow(betas)), rep("1000 random", nrow(betas)*1000)))
+colnames(df.plot) <- c("beta", "source")
+
+p <- ggplot(aes(x=beta, fill=source), data=df.plot) + geom_histogram(aes(y = ..density..), position="identity", alpha=0.5, bins=100)
+theme.nature(p)
+
+```
+
+# Calculate beta using depict model; calculate beta's per chromosome arm
+```{r}
+b1.all <- c()
+b2.all <- c()
+x.all <- c()
+y.all <- c()
+gene.names <- c()
+
+b1.all.depict <- c()
+b2.all.depict <- c()
+
+for (chr in 1:22) {
+  for(arm in c("p", "q")) {
+    
+      Sigi <- tryCatch({
+          data.frame(fread(paste0("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_", chr, "_", arm ,"_Enrichment_geneInvCor.txt.gz"), data.table = F), row.names = 1)
+      }, error=function(cond) {
+          return(NA)
+      })
+
+      x <- tryCatch({
+        data.frame(fread(paste0("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_", chr, "_", arm ,"_Enrichment_geneScores.txt.gz"), data.table = F), row.names = 1)
+      }, error=function(cond) {
+          return(NA)
+      })
+      
+      y <- tryCatch( {
+        data.frame(fread(paste0("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_", chr, "_", arm ,"_Enrichment_pathwayScores.txt.gz"), data.table = F), row.names = 1)
+      }, error=function(cond) {
+          return(NA)
+      })
+      
+      b1.depict <- tryCatch( {
+        data.frame(fread(paste0("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_", chr, "_", arm ,"_Enrichment_b1.txt.gz"), data.table = F), row.names = 1)
+      }, error=function(cond) {
+          return(NA)
+      })
+      
+      b2.depict <- tryCatch( {
+        data.frame(fread(paste0("zcat ~/Desktop/depict2/output/height_paper/debug_files/height_2018_30124842_hg19_51/per_arm/Coregulation_", chr, "_", arm ,"_Enrichment_b2.txt.gz"), data.table = F), row.names = 1)
+      }, error=function(cond) {
+          return(NA)
+      })
+
+      
+  if (class(Sigi) == "data.frame") {
+      Sigi <- Sigi[rownames(y), rownames(y)]
+      x   <- x[rownames(y),]
+    
+      x.all      <- c(x.all, x)
+      y.all      <- c(y.all, y[,1])
+      out        <- custom.gls.per.arm(x, y[,1], as.matrix(Sigi))
+      b1.all     <- c(b1.all, out[1])
+      b2.all     <- c(b2.all, out[2])
+      gene.names <- c(gene.names, colnames(y)[1])
+      
+      b1.all.depict <- c(b1.all.depict, b1.depict[1,2])
+      b2.all.depict <- c(b2.all.depict, b2.depict[1,colnames(y)[1]])
+
+  }
+  }
+}
+
+x.all <- as.matrix(x.all)
+
+# Calculate P-value
+beta.all <- sum(b2.all) / sum(b1.all)
+
+# Calculate SE
+res <- y.all - (x.all %*% beta.all)
+sig <- sqrt(sum(res^2) / (nrow(x.all)-2))
+se  <- sqrt(solve(sum(b1.all)))*sig
+
+# Calculate p
+tstats <- abs(beta.all / se)
+pval <- 2 * pt(tstats[1], df=nrow(x.all)-2, lower=F)
+
+
+plot(b1.all, b1.all.depict)
+plot(b2.all, b2.all.depict)
+
+sum(b2.all) / sum(b1.all) 
+
+
+```
+

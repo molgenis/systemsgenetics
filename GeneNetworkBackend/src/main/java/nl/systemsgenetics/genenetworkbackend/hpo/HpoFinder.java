@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.genenetworkbackend.hpo;
 
+import umcg.genetica.io.hpo.HpoOntology;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -12,12 +13,10 @@ import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
-import org.biojava.nbio.ontology.io.OboParser;
 
 /**
  *
@@ -54,7 +52,7 @@ public class HpoFinder {
 
 		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
 
-		Ontology hpoOntology = HpoFinder.loadHpoOntology(hpoOboFile);
+		Ontology hpoOntology = HpoOntology.loadHpoOntology(hpoOboFile);
 
 		HpoFinder hpoFinder = new HpoFinder(hpoOntology, predictionInfo);
 
@@ -127,13 +125,6 @@ public class HpoFinder {
 
 		writer.close();
 
-	}
-
-	public static Ontology loadHpoOntology(final File hpoOboFile) throws FileNotFoundException, IOException, ParseException {
-		OboParser parser = new OboParser();
-		BufferedReader oboFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(hpoOboFile)));
-		Ontology hpoOntology = parser.parseOBO(oboFileReader, "HPO", "HPO");
-		return hpoOntology;
 	}
 
 	public HpoFinder(Ontology hpoOntology, Map<String, PredictionInfo> predictionInfo) {

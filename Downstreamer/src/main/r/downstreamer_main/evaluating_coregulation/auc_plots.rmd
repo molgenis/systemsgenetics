@@ -1,0 +1,86 @@
+```{r}
+library(pROC)
+library(data.table)
+
+source("downstreamer_functions.r")
+setwd("evaluating_coregulation")
+source("data/source_olivier.r")
+
+# Read reference datasets
+ensembl <- read.table(ensembl.file,sep="\t", header=T, row.names = 1, stringsAsFactors = F)
+ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
+rownames(ensembl) <- make.names(ensembl$Gene.name, unique=T)
+
+# Gnomad PLI
+gnomad <- read.table(gnomad.file, sep="\t", header=T, stringsAsFactors = F)
+gnomad <- gnomad[!duplicated(gnomad$gene),]
+rownames(gnomad) <- make.names(gsub("\\.\\d+", "", ensembl[gnomad$gene, ]$Gene.stable.ID.version), unique=T)
+
+# HPO matrix
+hpo.matrix <- fread(hpo.file, data.table=F)
+rownames(hpo.matrix) <- hpo.matrix[,1]
+hpo.matrix <- hpo.matrix[,-1]
+```
+
+# Height 2018
+```{r}
+dir      <- "~/Desktop/depict2/output/height_paper_v2/"
+version  <- "v56"
+trait    <- "height_2018_30124842_hg19"
+hpo.term <- "HP:0002691" # Platybasia 
+hpo.term <- "HP:0001519" # Disproportionate tall stature
+hpo.term <- "HP:0004322" # Short stature
+base     <- paste0(dir, "/", version, "/", trait)
+
+# Gene pvalues
+genep    <- read.enrichments(paste0(base, "_genePvalues.txt"))
+genep    <- genep[!is.na(genep),, drop=F]
+
+# Coregulation Z
+coreg    <- read.depict2(paste0(base, "_enrichtments_exHla_1.xlsx"))$Coregulation
+
+# Overlap genes
+ol       <- intersect(intersect(rownames(coreg), rownames(genep)), rownames(hpo.matrix))
+
+# Calculate AUC
+auc.genep <- roc(as.factor(hpo.matrix[ol, hpo.term]), -log10(genep[ol, 1]))
+auc.coreg <- roc(as.factor(hpo.matrix[ol, hpo.term]), coreg[ol, ]$Enrichment.Z.score)
+```
+
+# IBD 2017
+```{r}
+dir      <- "~/Desktop/depict2/output/height_paper_v2/"
+version  <- "v56"
+trait    <- "inflammatory_bowel_disease_2017_29906448_hg19"
+hpo.term <- "HP:0005263" # Gastritis
+base     <- paste0(dir, "/", version, "/", trait)
+
+# Gene pvalues
+genep    <- read.enrichments(paste0(base, "_genePvalues.txt"))
+genep    <- genep[!is.na(genep),, drop=F]
+
+# Coregulation Z
+coreg    <- read.depict2(paste0(base, "_enrichtments_exHla_1.xlsx"))$Coregulation
+
+# Overlap genes
+ol       <- intersect(intersect(rownames(coreg), rownames(genep)), rownames(hpo.matrix))
+
+# Calculate AUC
+auc.genep <- roc(as.factor(hpo.matrix[ol, hpo.term]), -log10(genep[ol, 1]))
+auc.coreg <- roc(as.factor(hpo.matrix[ol, hpo.term]), coreg[ol, ]$Enrichment.Z.score)
+```
+
+# Plot
+```{r}
+roc.test(auc.genep, auc.coreg)
+
+pdf(width=5, height=5, file=paste0("output/plots/hpo_auc_plot_", trait, "_", hpo.term, ".pdf"))
+plot.roc(auc.genep, col = "goldenrod2", main = paste0(trait, " ~ ", hpo.term), mgp=c(2.6, 0.7, 0), lwd = 3, las=1)
+lines.roc(auc.coreg, col = "dodgerblue3", lwd = 3)
+legend("bottomright",
+       legend=c(paste0("IBD Core-gene prioritization (AUC: ", round(auc.coreg$auc,2),")"),
+                paste0("IBD GWAS gene p-values (AUC: ", round(auc.genep$auc,2),")")), 
+       col=c("dodgerblue3", "goldenrod2"), lwd=3, bty="n")
+dev.off()
+
+```

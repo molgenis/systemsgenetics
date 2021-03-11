@@ -50,7 +50,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 	public void write(String basePath) throws IOException, NotASnpException {
 
 		if (!genotypeData.isOnlyContaingSaveProbabilityGenotypes()) {
-			LOGGER.warn("WARNING!!! writing dosage genotype data to .gen posterior probabilities file. Using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
+			LOGGER.warn("Warning, for variants not containg a GP field, using heuristic method to convert to probabilities, this is not guaranteed to be accurate. See manual for more details.");
 		}
 
 		write(new File(basePath + ".bgen"), new File(basePath + ".sample"));

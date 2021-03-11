@@ -1,0 +1,81 @@
+```{r}
+library(nlme)
+
+custom.gls <- function(x, y, Sigi) {
+  x <- as.matrix(x, ncol=1)
+  
+  # Calculated beta on pre-computed inverse matrix
+  # xtxi = b1
+  xtxi <- solve(t(x) %*% Sigi %*% x)
+  #  part between brackets is b2
+  beta <- xtxi %*% (t(x) %*% Sigi %*% y)
+  
+  # Calculate SE
+  res       <- y - (x %*% beta)
+  sigma.sqr <- (t(res) %*% Sigi %*% res) / (nrow(x) - ncol(x))
+  #sigma.sqr <- (t(res) %*% res) / (nrow(x) - ncol(x))
+  se        <- c(sqrt(diag(xtxi))) * c(sqrt(sigma.sqr))
+
+  # Below commented code is uncorrect, does not scale the residuals to the correlation matrix
+  #res <- y - (x %*% beta)
+  #sig <- sqrt(sum(res^2) / (nrow(x)-1))
+  #se  <- sqrt(diag(xtxi))*sig
+  
+  #sigma.sq <- sum((y - (x %*% beta))^2) / (nrow(x)-1)
+  #var.beta <- sigma.sq * xtxi
+  #se       <- sqrt(var.beta)
+
+  #vcov      <- c(sigma.sqr) * solve(t(x) %*% xtxi %*% x )
+  #se        <- sqrt(diag(vcov))
+  
+  # Calculate p
+  tstats <- abs(beta / se)
+  pval <- 2 * pt(tstats, df=nrow(x) - 1, lower=F)
+  return(c(beta, se, pval))
+}
+
+set.seed(1701)
+load("~/Documents/data/gs_tcells/gene_expression/rpkm_Tcell_123samples.Rdata")
+
+rpkm <- t(na.omit(rpkm[rowSums(rpkm, na.rm=T) > 10,]))
+dim(rpkm)
+rpkm <- rpkm[,sample(1:ncol(rpkm), 100)]
+
+# Check eigen values, if N is too small with respect to the number of genes, you get the issues with singularity
+# Which is reflected in low eigen values
+e <- eigen(O)
+```
+
+
+```{r}
+# Correlation matrix and cholesky decomp
+O <- cor(rpkm)
+S <- t(chol(O))
+
+# Simulate N observations
+nGene <- 10
+n <- ncol(O)
+
+data <- matrix(rnorm(n * nGene, 0, 1), ncol=nGene, nrow=n)
+Y <- S %*% data
+
+data <- matrix(rnorm(n * nGene, 0, 1), ncol=nGene, nrow=n)
+X <- S %*% data
+
+
+y <- Y[,1]
+x <- X[,1]
+
+# Model fitting
+m.ols <- lm(y ~ x -1)
+summary(m.ols)
+
+# GLS
+m.gls <- gls(y ~ x -1, correlation=corSymm())
+summary(m.gls)
+
+
+m.gls.2 <- custom.gls(x, y, solve(O))
+m.gls.2
+```
+

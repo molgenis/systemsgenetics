@@ -4,8 +4,9 @@
  */
 package umcg.genetica.text;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+//import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;

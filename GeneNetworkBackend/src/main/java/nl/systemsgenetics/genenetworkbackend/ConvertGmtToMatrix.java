@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -35,22 +36,23 @@ public class ConvertGmtToMatrix {
 	 */
 	public static void main(String[] args) throws IOException, Exception {
 
-		final File gmtFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\KEGG\\c2.cp.kegg.v6.1.entrez.gmt");
-		final File ncbiToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
-		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
-		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + gmtFile.getName() + "_matrix.txt.gz");
-		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + gmtFile.getName() + "_genesInPathways.txt");
+		final File gmtFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\KEGG\\c2.cp.kegg.v7.1.entrez.gmt");
+		final File ncbiToEnsgMapFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiIdV98.txt");
+		final File geneOrderFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiIdV98.txt");
+		final File outputFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\KEGG\\" + gmtFile.getName() + "_matrix.txt.gz");
+		final File outputFile2 = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\KEGG\\" + gmtFile.getName() + "_genesInPathways.txt");
 
 		HashMap<String, String> ncbiToEnsgMap = loadNcbiToEnsgMap(ncbiToEnsgMapFile);
 
 		HashMap<String, HashSet<String>> gmtPathwayToGenes = readGmtFile(gmtFile, ncbiToEnsgMap);
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
+		LinkedHashSet<String> geneOrder2 = new LinkedHashSet<>(geneOrder);
 
 		System.out.println("Total genesets: " + gmtPathwayToGenes.size());
-		System.out.println("Genes in order file: " + geneOrder.size());
+		System.out.println("Genes in order file: " + geneOrder2.size());
 
-		DoubleMatrixDataset<String, String> gmtMatrix = new DoubleMatrixDataset(geneOrder, gmtPathwayToGenes.keySet());
+		DoubleMatrixDataset<String, String> gmtMatrix = new DoubleMatrixDataset(geneOrder2, gmtPathwayToGenes.keySet());
 
 		HashSet<String> genesWithPathway = new HashSet<>(10000);
 		BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));
@@ -69,7 +71,16 @@ public class ConvertGmtToMatrix {
 						geneWriter.write('\n');
 					}
 
+					if(!gmtMatrix.containsCol(gmtPathway)){
+						System.out.println("missing pathway: " + gmtPathway);
+					}
+					
+					if(!gmtMatrix.containsRow(gene)){
+						System.out.println("Missing gene: " + gene);
+					}
+					
 					gmtMatrix.setElement(gene, gmtPathway, 1);
+					
 				}
 			}
 
