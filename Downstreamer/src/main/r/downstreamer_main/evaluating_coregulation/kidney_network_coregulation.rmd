@@ -1,0 +1,82 @@
+```{r}
+setwd("evaluating_coregulation")
+source("../downstreamer_functions.r")
+
+tmp <- read.downstreamer.enrichments("../../downstreamer_main/data/pritchard_traits/")
+tmp <- read.downstreamer.batch("../../downstreamer_main/data/pritchard_traits/")
+```
+
+
+```{r}
+# P1
+x <- tmp$pritchard_traits_2021_33587031_Urate_1$GenePrioritizationKidneyNetwork
+y <- tmp$pritchard_traits_2021_33587031_Urate$GenePrioritization
+y <- y[rownames(x),]
+p <- xy.plot.pvalue.colored(x$Enrichment.Z.score,
+                       x$Enrichment.P.value,
+                       y$Enrichment.Z.score,
+                       y$Enrichment.P.value,
+                       pval.col="all",
+                       xlab="GenePrio Kidney",
+                       ylab="GenePrio", main="Coregulation")
+p1 <- theme.nature(p)
+
+# P2
+y <- tmp$pritchard_traits_2021_33587031_Urate$GenePrioritization200
+y <- y[rownames(x),]
+p <- xy.plot.pvalue.colored(x$Enrichment.Z.score,
+                            x$Enrichment.P.value,
+                            y$Enrichment.Z.score,
+                            y$Enrichment.P.value,
+                            pval.col="all",
+                            xlab="GenePrio Kidney",
+                            ylab="GenePrio 200", main="Coregulation")
+p2 <- theme.nature(p)
+
+# P3
+x <- tmp$pritchard_traits_2021_33587031_Urate$GenePrioritization200
+y <- tmp$pritchard_traits_2021_33587031_Urate$GenePrioritization
+y <- y[rownames(x),]
+p <- xy.plot.pvalue.colored(x$Enrichment.Z.score,
+                            x$Enrichment.P.value,
+                            y$Enrichment.Z.score,
+                            y$Enrichment.P.value,
+                            pval.col="all",
+                            xlab="GenePrio",
+                            ylab="GenePrio 200", main="Coregulation")
+p3 <- theme.nature(p)
+
+grid.arrange(grobs=list(p1, p2, p3), ncol=3)
+```
+
+
+```{r}
+
+a <- fread("data/urate_kidney_network_hpo/GeneNetwork-GeneSetAnalysis-21-Genes-GO_P.txt", stringsAsFactors = F, header=T, sep="\t", data.table = F)
+b <- fread("data/urate_kidney_network_hpo/KidneyNetwork-GeneSetAnalysis-20-Genes-GO_P.txt", stringsAsFactors = F, header=T, sep="\t", data.table = F)
+
+a <- fread("data/urate_kidney_network_hpo/GeneNetwork-GeneSetAnalysis-88-Genes.txt", stringsAsFactors = F, header=T, sep="\t", data.table = F)
+b <- fread("data/urate_kidney_network_hpo/KidneyNetwork-GeneSetAnalysis-88-Genes.txt", stringsAsFactors = F, header=T, sep="\t", data.table = F)
+
+
+a <- fread("~/Downloads/GeneNetwork-GeneSetAnalysis-343-Genes.txt", stringsAsFactors = F, header=T, sep="\t", data.table = F)
+b <- fread("~/Downloads/KidneyNetwork-GeneSetAnalysis-341-Genes.txt", stringsAsFactors = F, header=T, sep="\t", data.table = F)
+
+
+rownames(a) <- a$gene_set_id
+rownames(b) <- b$gene_set_id
+
+ol <- intersect(rownames(a), rownames(b))
+a$p.value <- -log10(a$`p-value`)
+b$p.value <- -log10(b$`p-value`)
+
+xy.plot.pvalue.colored(a[ol,]$p.value,
+                       rep(1, length(ol)),
+                       b[ol,]$p.value,
+                       rep(1, length(ol)),
+                       xlab="GeneNetwork -log10(p)",
+                       ylab="KidneyNetwork -log10(p)",
+                       main="GO P")
+
+```
+

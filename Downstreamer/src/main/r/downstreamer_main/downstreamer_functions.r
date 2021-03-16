@@ -148,7 +148,31 @@
     return(datasets)
   }
   
-  # ------------------------------------------------------
+  # ------------------------------------------------------ 
+  # Read a batch of downstreamer results
+  read.downstreamer.enrichments <- function(main.downstreamer.output.path, potential_traits=NULL) {
+    
+    if (!dir.exists("data")) {
+      dir.create("data")
+    }
+    
+    # Loads enrichment results
+    cat("[INFO] Loading downstreamer results from files\n")
+    files    <- list.files(main.downstreamer.output.path, pattern=".*\\_Enrichment\\_.*\\.xlsx", full.names = T)
+    datasets <- list()
+    for (file in files) {
+      name <- gsub("\\_Enrichtment", "", basename(file))
+      name <- gsub("\\_2016_27005778\\_hg19\\.txt\\.xlsx", "", name)
+      name <- gsub("\\.xlsx", "", name)
+      name <- gsub("\\.txt", "", name)
+      name <- gsub("\\_hg19", "", name)
+      
+      datasets[[name]] <- read.depict2(file, potential_traits = potential_traits)
+    }
+    
+    return(datasets)
+  }
+    # ------------------------------------------------------
   # Convert a list of downstreamer enrichments into a matrix
   make.zscore.matrix <- function(datasets, trait="GenePrioritization", collumn="Enrichment.Z.score") {
     out <- matrix()
@@ -383,6 +407,25 @@
       geom_smooth(method="lm") +
       xlim(lims) +
       ylim(lims)
+    
+    return(theme.nature(p))
+  }
+  
+  
+  #----------------------------------------------------------------------------------------
+  xy.plot <- function(auc.1, auc.2, xlab="X", ylab="Y", main=NULL) {
+
+    df.plot <- data.frame(auc.1=auc.1,
+                          auc.2=auc.2)
+    
+    df.plot                <- na.omit(df.plot)
+
+    p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2)) +
+      geom_point(alpha=0.75, col="#55B397") +
+      xlab(xlab) +
+      ylab(ylab) +
+      ggtitle(paste0(main, format(cor(auc.1, auc.2, use="complete.obs"), digits=2))) + 
+      geom_smooth(method="lm") 
     
     return(theme.nature(p))
   }

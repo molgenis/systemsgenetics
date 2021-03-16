@@ -1,0 +1,179 @@
+```{r}
+setwd("comparing_magma")
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+# Cached 2021-01-07 15:15
+datasets <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = F, potential_traits = c("GtexV8", "GenePrioritization"))
+
+read.magma <- function(path) {
+  genesets <- fread(paste0("grep -v \"#\" ", path, "/magma.gsa.out"), data.table=F)
+  gtex.v8 <-  fread(paste0("grep -v \"#\" ", path, "/magma_exp_gtex_v8_ts_avg_log2TPM.gsa.out"), data.table=F)
+  
+  output <- list()
+  for (database in c("reactome", "kegg", "GO_bp", "GO_cc", "GO_mf")) {
+  
+    sub.gs <- genesets[grep(database, genesets$FULL_NAME),]
+    sub.gs <- sub.gs[, -c(1,2,3)]
+    sub.gs$FULL_NAME <- gsub(paste0("Curated\\_gene\\_sets\\:", database, "\\_"), "", sub.gs$FULL_NAME)
+    sub.gs$FULL_NAME <- gsub(paste0(database, "\\:"), "", sub.gs$FULL_NAME)
+    rownames(sub.gs) <- sub.gs$FULL_NAME
+    output[[database]] <- sub.gs
+  }
+  
+  rownames(gtex.v8) <- tolower(gtex.v8$VARIABLE)
+  gtex.v8 <- gtex.v8[, -c(2,3)]
+  gtex.v8 <- gtex.v8[, c("BETA", "BETA_STD", "SE", "P", "VARIABLE")]
+
+  output$gtexv8 <- gtex.v8
+  
+  return(output)
+}
+
+read.magma.2 <- function(path) {
+  output <- list()
+  name.fix <- data.frame(name=c("Reactome", "KEGG", "GO_BP", "GO_CC", "GO_MF", "GtexV8"),
+                         row.names=c("Reactome", "KEGG", "GO_P", "GO_C", "GO_F", "GtexV8"),
+                         stringsAsFactors = F)
+  
+  for (database in c("Reactome","KEGG", "GO_P", "GO_C", "GO_F", "GtexV8")) {
+    sub.gs <- fread(paste0("grep -v \"#\" ", path, "/", database, ".gsa.out"), data.table=F)
+    
+    if ("FULL_NAME" %in% colnames(sub.gs)) {
+        rownames(sub.gs) <- sub.gs$FULL_NAME
+    } else {
+        rownames(sub.gs) <- sub.gs$VARIABLE
+    }
+    output[[name.fix[database, 1]]] <- sub.gs
+  }
+  
+  return(output)
+}
+
+read.magma.3 <- function(path) {
+  output <- list()
+
+  for (database in c("Reactome","KEGG", "GO_BP", "GO_CC", "GO_MF", "GtexV8", "GenePriortization")) {
+    sub.gs <- fread(paste0("grep -v \"#\" ", path, "/", database, ".gsa.out"), data.table=F)
+    
+    if ("FULL_NAME" %in% colnames(sub.gs)) {
+        rownames(sub.gs) <- sub.gs$FULL_NAME
+    } else {
+        rownames(sub.gs) <- sub.gs$VARIABLE
+    }
+    output[[database]] <- sub.gs
+  }
+  
+  return(output)
+}
+
+match.names <- function(cur.names) {
+  cur.names <- tolower(cur.names)
+  cur.names <- gsub("-", " ", cur.names)
+  cur.names <- gsub("\\(", "", cur.names)
+  cur.names <- gsub("\\)", "", cur.names)
+  cur.names <- gsub("\\,", "", cur.names)
+
+  cur.names <- gsub("/", "_", cur.names)
+  cur.names <- gsub(" +", "_", cur.names)
+  return(make.names(cur.names, unique=T))
+}
+
+name.fix <- data.frame(name=c("Reactome", "KEGG", "GO_BP", "GO_CC", "GO_MF", "GtexV8", "HPO"),
+                         row.names=c("Reactome_raw", "KEGG_raw", "GO_P_raw", "GO_C_raw", "GO_F_raw", "GtexV8", "HPO_raw"),
+                         stringsAsFactors = F)
+datasets.raw <- read.downstreamer.batch("data/raw_excels/", USE.CACHE = F)
+datasets.raw  <- lapply(datasets.raw, function(x){
+  names(x) <- name.fix[names(x),1]
+  return(x)
+})
+
+```
+
+
+```{r}
+plots.gene.prio          <- list()
+
+trait <- "height_2018"
+trait <- "inflammatory_bowel_disease_2017"
+trait <- "coeliac_disease_2011"
+
+ibd.downstreamer                    <- datasets.raw[[grep(trait, names(datasets.raw))]]
+ibd.downstreamer$GtexV8             <- datasets[[grep(trait, names(datasets))]]$GtexV8
+ibd.downstreamer$GenePriortization  <- datasets[[grep(trait, names(datasets))]]$GenePrioritization
+ibd.magma                           <- read.magma.3(paste0("data/no_hla/", trait, "*_hg19"))
+
+plots <- list()
+c("Reactome", "GO_BP", "GO_CC", "GO_MF", "KEGG", "GtexV8")
+for (database in c("GO_BP", "GO_CC", "GO_MF", "KEGG","GtexV8", "GenePriortization")) {
+  
+  if (database=="GtexV8") {
+      tmp <- rownames(ibd.downstreamer[[database]])
+      tmp <- gsub(" - ", "_", tmp)
+      tmp <- gsub(" ", "_", tmp)
+      rownames(ibd.downstreamer[[database]]) <- tmp
+}
+
+  ol <- intersect(rownames(ibd.magma[[database]]), rownames(ibd.downstreamer[[database]]))
+  
+  x <- ibd.downstreamer[[database]][ol,]$Enrichment.P.value
+  #x[ibd.downstreamer[[database]][ol,]$Enrichment.Z.score < 0] <- 1
+  y <- ibd.magma[[database]][ol,]$P
+  plots[[database]] <- xy.plot.pvalue.colored(-log10(x), x, -log10(y), y,
+                         xlab="-log10(p) Downstreamer",
+                         ylab="-log10(p) Magma",
+                         main=database,
+                         pval.col="all") 
+  
+}
+
+grid.arrange(grobs=plots, ncol=3)
+
+
+plots.gene.prio[[trait]] <- plots$GenePriortization
+grid.arrange(grobs=plots.gene.prio, ncol=3)
+
+```
+
+
+# Old online version
+```{r}
+ibd.downstreamer <- datasets$coeliac_disease_2011_22057235
+ibd.magma        <- read.magma("data/FUMA_job111822_ced//")
+
+# Match database names
+names(ibd.downstreamer) <- tolower(names(ibd.downstreamer))
+names(ibd.magma)        <- tolower(names(ibd.magma))
+
+plots <- list()
+
+for (database in c("reactome", "go_bp", "go_cc", "go_mf", "kegg", "gtexv8")) {
+  
+  if (database %in% c("kegg", "gtexv8")) {
+    colnames(ibd.downstreamer[[database]])[1] <- "Name"
+  }
+
+  rownames(ibd.downstreamer[[database]]) <- match.names(ibd.downstreamer[[database]]$Name)
+  rownames(ibd.downstreamer[[database]]) <- gsub("kegg\\_", "",
+                                                 rownames(ibd.downstreamer[[database]]))
+  rownames(ibd.magma[[database]])        <- gsub("go\\_", "",
+                                                 rownames(ibd.magma[[database]]))
+  ol <- intersect(rownames(ibd.magma[[database]]), rownames(ibd.downstreamer[[database]]))
+  
+  x <- ibd.downstreamer[[database]][ol,]$Enrichment.P.value
+  y <- ibd.magma[[database]][ol,]$P
+  plots[[database]] <- xy.plot.pvalue.colored(-log10(x), x, -log10(y), y,
+                         xlab="-log10(p) Downstreamer",
+                         ylab="-log10(p) Magma",
+                         main=database) 
+  
+}
+
+grid.arrange(grobs=plots, ncol=3)
+
+rownames(ibd.downstreamer[[database]])[!rownames(ibd.downstreamer[[database]]) %in% rownames(ibd.magma[[database]])]
+
+grep("ileum", rownames(ibd.magma[[database]]), value=T)
+```
+
+

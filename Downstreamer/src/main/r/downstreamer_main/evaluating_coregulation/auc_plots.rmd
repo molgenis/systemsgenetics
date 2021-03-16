@@ -1,9 +1,9 @@
 ```{r}
 library(pROC)
 library(data.table)
+setwd("../evaluating_coregulation")
 
-source("downstreamer_functions.r")
-setwd("evaluating_coregulation")
+source("../downstreamer_functions.r")
 source("data/source_olivier.r")
 
 # Read reference datasets
@@ -69,6 +69,55 @@ ol       <- intersect(intersect(rownames(coreg), rownames(genep)), rownames(hpo.
 auc.genep <- roc(as.factor(hpo.matrix[ol, hpo.term]), -log10(genep[ol, 1]))
 auc.coreg <- roc(as.factor(hpo.matrix[ol, hpo.term]), coreg[ol, ]$Enrichment.Z.score)
 ```
+
+# Urate 2021
+```{r}
+hpo.matrix <- fread("../data/raw_pathway_databases/MGI_2020_10_20_PhenoGenoMP_matrix.txt.gz", data.table=F)
+rownames(hpo.matrix) <- hpo.matrix[,1]
+hpo.matrix <- hpo.matrix[-1,-1]
+
+results <- read.depict2("../data/pritchard_traits/pritchard_traits_2021_33587031_hg19_enrichtments_Urate.xlsx", potential_traits = c("GenePrioritization200"))$GenePrioritization200
+results$GWAS.gene.P.value  <- (1- pnorm(results$GWAS.gene.P.value))*2
+
+hpo.term <- "MP:0011471"
+#hpo.term <- "MP:0009643"
+
+ol       <- intersect(rownames(results), rownames(hpo.matrix))
+
+results    <- results[ol,]
+hpo.matrix <- hpo.matrix[ol,]
+
+# Gene pvalues
+genep    <- results$GWAS.gene.P.value
+
+# Coregulation Z
+coreg    <- results$Enrichment.Z.score
+
+# Calculate AUC
+auc.genep <- roc(as.factor(hpo.matrix[, hpo.term]), -log10(genep))
+auc.coreg <- roc(as.factor(hpo.matrix[, hpo.term]), coreg)
+
+roc.test(auc.genep, auc.coreg)
+
+pdf(width=6.5, height=6.5, file="output/plots/urate_2021_mp_creatinine_in_urine.pdf")
+plot.roc(auc.genep,
+         col = "goldenrod2",
+         main = paste0("Urate GWAS ~ ", " MP: creatinine in urine"),
+         mgp=c(2.6, 0.7, 0),
+         lwd = 3,
+         las=1,
+         axes=F)
+axis(side=1, at=c(1, 0.5, 0), pos=-0.08)
+axis(side=2, at=c(1, 0.5, 0), pos=1.05)
+lines.roc(auc.coreg, col = "dodgerblue3", lwd = 3)
+legend(x=0.8, y=0.12,
+       legend=c(paste0("Urate gene prioritization (AUC: ", round(auc.coreg$auc,2),")"),
+                paste0("Urate GWAS gene p-values (AUC: ", round(auc.genep$auc,2),")")), 
+       col=c("dodgerblue3", "goldenrod2"), lwd=3, bty="n")
+dev.off()
+
+```
+
 
 # Plot
 ```{r}

@@ -1,20 +1,10 @@
 ```{r}
+setwd("../downstreamer_collaborations/biogen/")
 source("../../downstreamer_main/downstreamer_functions.r")
 
 # Read excel files
-path  <- "/home/work/Desktop/depict2/collaborations/biogen//"
-files <- list.files(path, pattern=".*_enrichtments.*.xlsx")
-
-datasets <- list()
-for (file in files) {
-  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", file)
-  name <- gsub("\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
-  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
-  name <- gsub("\\.txt\\_exHla\\.xlsx", "", name)
-  
-  datasets[[name]] <- read.depict2(paste0(path, file))
-}
-
+base <- read.downstreamer.batch("/home/work/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-02-11/")
+new <- read.downstreamer.batch("/home/work/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-03-09/")
 
 plot.auc.comparison <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="AUC 1", ylab="AUC 2", main=NULL) {
   auc.pval.1[auc.1 == 0] <- 1
@@ -55,9 +45,10 @@ plot.auc.comparison <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="AUC 
 
 # Hand grip strength
 ```{r}
-h.dom <- read.depict2("~/Desktop/depict2/collaborations/biogen/hand_grip_strength/UKBB_hand_grip_strength_enrichtments_UKBB_dom_grip_abs_height_adj.xlsx")
-h.nondom <- read.depict2("~/Desktop/depict2/collaborations/biogen/hand_grip_strength/UKBB_hand_grip_strength_enrichtments_UKBB_nondom_grip_abs_height_adj.xlsx")
+#h.dom <- read.depict2("~/Desktop/depict2/collaborations/biogen/hand_grip_strength/2020-02-11/UKBB_hand_grip_strength_enrichtments_UKBB_dom_grip_abs_height_adj_1.xlsx")
+#h.nondom <- read.depict2("~/Desktop/depict2/collaborations/biogen/hand_grip_strength/2020-02-11/UKBB_hand_grip_strength_enrichtments_UKBB_nondom_grip_abs_height_adj_1.xlsx")
 
+# Dom vs nondom
 plots <- list()
 
 for  (database in names(h.dom)) {
@@ -72,10 +63,54 @@ for  (database in names(h.dom)) {
                          y[ol,]$Enrichment.P.value, 
                          pval.col="all",
                          xlab="Zscore dominant",
-                         ylab="Zscore non-dominant")
+                         ylab="Zscore non-dominant",
+                         main=database)
     
-  plots[[datanabse]] <- p
+  plots[[database]] <- p
 }
+
+pdf(width=10, height=10, file="~/Desktop/depict2/collaborations/biogen/hand_grip_strength/2020-02-11/dominant_vs_nondominant_downstreamer_enrichment_results.pdf")
+grid.arrange(grobs=plots, ncol=3)
+dev.off()
+
+
+
+plots <- list()
+
+for (database in c("dom", "nondom")) {
+  
+  if (database=="dom") {
+    #x <- h.dom[["GenePrioritization"]]
+    #y <- h.dom[["GenePrioritization200"]]
+    x <- base$UKBB_hand_grip_strength_UKBB_dom_grip_abs_height_adj_1$GenePrioritization200
+    y <- new$UKBB_hand_grip_strength_UKBB_dom_grip_abs_height_adj_no_height_genes$GenePrioritization200
+  } else {
+    #x <- h.nondom[["GenePrioritization"]]
+    #y <- h.nondom[["GenePrioritization200"]]
+    x <- base$UKBB_hand_grip_strength_UKBB_nondom_grip_abs_height_adj_1$GenePrioritization200
+    y <- new$UKBB_hand_grip_strength_UKBB_nondom_grip_abs_height_adj_no_height_genes$GenePrioritization200
+  }
+
+  
+  ol <- intersect(rownames(x), rownames(y))
+  
+  p <- xy.plot.pvalue.colored(x[ol,]$Enrichment.Z.score,
+                         x[ol,]$Enrichment.P.value,
+                         y[ol,]$Enrichment.Z.score,
+                         y[ol,]$Enrichment.P.value, 
+                         pval.col="all",
+                         xlab="Zscore with height genes",
+                         ylab="Zscore wo height genes",
+                         main=database)
+    
+  plots[[database]] <- p
+}
+
+
+pdf(width=10, height=5, file="~/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-03-09/results_with_height_genes_vs_without.pdf")
+grid.arrange(grobs=plots, ncol=2)
+dev.off()
+
 
 ```
 

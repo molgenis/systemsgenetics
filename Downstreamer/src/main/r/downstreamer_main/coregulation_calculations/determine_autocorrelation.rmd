@@ -1,0 +1,35 @@
+```{r}
+setwd("coregulation_calculations")
+library(data.table)
+
+eigenvectors           <- fread("data/eigenvectors_gene_network_no_celllines_200_components.txt", data.table=F)
+rownames(eigenvectors) <- eigenvectors[,1]
+eigenvectors           <- eigenvectors[,-1]
+gene.info              <- read.table("data/ensgR75_protein_coding.txt", stringsAsFactors=F, sep="\t", header=T)
+
+rownames(gene.info)    <- gene.info$Ensembl.Gene.ID
+gene.info              <- gene.info[rownames(eigenvectors),]
+gene.info              <- gene.info[order(gene.info$Chromosome.Name, gene.info$Gene.Start..bp.),]
+eigenvectors           <- eigenvectors[gene.info$Ensembl.Gene.ID,]
+```
+
+```{r}
+
+cors <- sapply(1:ncol(eigenvectors), function(index){
+  
+  x         <- eigenvectors[, index]
+  names(x)  <- rownames(eigenvectors)
+  
+  x.1       <- x[-length(x)]
+  x.2       <- x[-1]
+    
+  return(cor(x.1, x.2, method="pearson"))
+})
+
+
+plot(1:length(cors), cors, xlab="Component", ylab="Autocorrelation (pearson)", pch=20)
+hist(cors, breaks=20)
+max(cors)
+
+```
+

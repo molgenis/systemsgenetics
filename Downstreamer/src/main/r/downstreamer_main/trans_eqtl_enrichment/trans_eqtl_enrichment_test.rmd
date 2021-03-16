@@ -1,0 +1,36 @@
+```{r}
+setwd("trans_eqtl_enrichment")
+source("../downstreamer_functions.r")
+
+
+
+ibd            <- read.depict2("data/inflammatory_bowel_disease_2017_29906448_hg19_enrichtments_5.xlsx")
+ibd.trans.eqtl <- read.table("data/ibd_2017_squared_transeqtl_zscore_sums.tsv",sep="\t", row.names=1)
+
+ibd            <- read.depict2("data/coeliac_disease_2011_22057235_hg19_enrichtments_5.xlsx")
+ibd.trans.eqtl <- read.table("data/ced_2011_squared_transeqtl_zscore_sums.tsv",sep="\t", row.names=1)
+
+```
+
+```{r}
+make.plot <- function(database) {
+  x        <- ibd[[database]]$Enrichment.Z.score
+  names(x) <- rownames(ibd[[database]])
+  y        <- log10(ibd.trans.eqtl[names(x),1])
+  
+  xy.plot(x,y, xlab=database, ylab="log10 (Sum(trans eqtl zscore^2))")
+}
+
+
+p1 <-  make.plot("GenePrioritization")
+p2 <-  make.plot("GenePrioritization200")
+p3 <-  make.plot("GenePrioritizationKidneyNetwork")
+p4 <-  make.plot("GenePrioritizationBios")
+p5 <-  make.plot("GenePrioritizationEqtlgen")
+p6 <-  make.plot("GenePrioritizationEqtlgen100")
+p7 <-  make.plot("GenePrioritizationEqtlgen500")
+
+
+grid.arrange(grobs=list(p1,p2,p3,p4, p5, p6, p7), ncol=4)
+```
+

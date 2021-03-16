@@ -4,7 +4,8 @@ source("../downstreamer_functions.r")
 source("data/source_olivier.r")
 library(ggsignif)
 
-datasets       <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = F, potential_traits = "Coregulation")
+datasets       <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = F, potential_traits = "GenePrioritization")
+datasets       <- read.downstreamer.batch("data/no_celline_gene_network_test_results/", USE.CACHE = F, potential_traits = "GenePrioritization200")
 
 # Genepvalues
 files <- list.files(main.downstreamer.output.path, pattern="*_genePvalues_.*.xlsx", full.names = T)
@@ -45,7 +46,7 @@ dev.off()
 
 # Specific examples of eQTS genes
 ```{r}
-zscores <- make.zscore.matrix(datasets)
+zscores <- make.zscore.matrix(datasets, trait="GenePrioritization200")
 
 #pmids        <- gsub(".*_\\d{4}_(\\d+)", "\\1", colnames(zscores))
 #names(pmids) <- colnames(zscores)
@@ -56,7 +57,7 @@ eqts.plot <- function(pgs, trait) {
   subset <- eqts[ eqts$PGS == pgs,]
   is.de.gene <- rownames(zscores) %in% unique(subset$Gene)
   df.plot <- data.frame(y=zscores[,trait], x=is.de.gene)
-  
+
   tmp.tab <- table(is.de.gene)
   a <- paste0("eQTS\nN=", tmp.tab["TRUE"])
   b <- paste0("Non eQTS \nN=", tmp.tab["FALSE"])
