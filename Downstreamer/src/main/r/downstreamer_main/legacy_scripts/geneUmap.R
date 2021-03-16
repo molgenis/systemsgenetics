@@ -91,16 +91,16 @@ colMapTissues2 <- adjustcolor(colMapTissues, alpha.f = 0.3)
 
 tissue <- "Brain - Cortex"
 for(tissue in colnames(gtex)){
-sharedGenes <- intersect(rownames(geneUmap), rownames(gtex))
-expression <- gtex[sharedGenes,tissue]
-m <- max(abs(expression))
-
-geneUmapShared <- geneUmap[sharedGenes,]
-
-colVec <- colMapTissues2[cut(expression, breaks = seq(-m,m,length.out = 20))]
-png(paste0("Umap/geneUmap/gtex/", tissue,".png"), width = 1000, height = 1000)
-plot(geneUmapShared, pch = 16, cex = 1, col = colVec, main = tissue)
-dev.off()
+  sharedGenes <- intersect(rownames(geneUmap), rownames(gtex))
+  expression <- gtex[sharedGenes,tissue]
+  m <- max(abs(expression))
+  
+  geneUmapShared <- geneUmap[sharedGenes,]
+  
+  colVec <- colMapTissues2[cut(expression, breaks = seq(-m,m,length.out = 20))]
+  png(paste0("Umap/geneUmap/gtex/", tissue,".png"), width = 1000, height = 1000)
+  plot(geneUmapShared, pch = 16, cex = 1, col = colVec, main = tissue)
+  dev.off()
 }
 
 
@@ -116,3 +116,25 @@ for(tissue in colnames(sca)){
   plot(geneUmapShared, pch = 16, cex = 1, col = colVec, main = tissue)
   dev.off()
 }
+
+
+
+
+reactome <- readRDS("pathwayDatabases/reactome_2020_07_18_raw.rds")
+str(reactome)
+colnames(reactome)
+sharedGenes <- intersect(rownames(geneUmap), rownames(reactome))
+reactome <- reactome[sharedGenes,]
+
+pathway <- "R-HSA-112316"
+
+colVec <- rep(adjustcolor("dodgerblue2", alpha.f = 0.2), times = nrow(reactome))
+colVec[reactome[,pathway] == 1] <- adjustcolor("firebrick", alpha.f = 0.5)
+
+plotOrder <- rep(0, times = nrow(geneUmap))
+plotOrder[reactome[,pathway] == 1] <- 1
+plotOrder <- order(plotOrder,decreasing = F)
+
+geneUmapShared <- geneUmap[sharedGenes,]
+
+plot(geneUmapShared[plotOrder ,], pch = 16, cex = 0.5, col = colVec[plotOrder], main = pathway)

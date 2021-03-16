@@ -71,7 +71,7 @@ public class DownstreamerOptions {
 	private final int geneCorrelationWindow;
 	private final boolean excludeHla;
 	private boolean corMatrixZscores = false;
-	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN or CONVERT_EXP
+	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN or CONVERT_EXP or correlate_genes
 	private final File variantFilterFile;
 	private boolean saveOuputAsExcelFiles;
 	private final File variantGeneLinkingFile;
@@ -582,6 +582,9 @@ public class DownstreamerOptions {
 					geneInfoFile = new File(commandLine.getOptionValue("ge"));
 				} else {
 					geneInfoFile = null;
+				}
+				if (commandLine.hasOption("cte")) {
+					columnsToExtract = commandLine.getOptionValues("cte");
 				}
 				corMatrixZscores = commandLine.hasOption("cz");
 				pathwayDatabases = null;
@@ -1236,6 +1239,9 @@ public class DownstreamerOptions {
 				LOGGER.info(" * Convert r to Z-score: " + (corMatrixZscores ? "on" : "off"));
 				if (geneInfoFile != null) {
 					LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
+				}
+				if (columnsToExtract != null) {
+					LOGGER.info(" * Columns to use for correlation: " + String.join(" ", columnsToExtract));
 				}
 				break;
 			case SPECIAL:

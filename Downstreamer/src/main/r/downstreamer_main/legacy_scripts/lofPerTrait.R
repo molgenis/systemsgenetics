@@ -39,6 +39,9 @@ names(genePascalPvalues)[!names(genePascalPvalues) %in% colnames(pascalGeneP)]
 dsGeneZ <- do.call(cbind, genePrioritizationsZscores)
 row.names(dsGeneZ) <- genePrioritizations[["Height"]]$Gene.ID
 
+dsBonSig <- do.call(cbind, genePrioritizationsBonfSig)
+row.names(dsBonSig) <- genePrioritizations[["Height"]]$Gene.ID
+
 dsGeneZ.max <- as.data.frame(dsGeneZ)
 dsGeneZ.max$Max <- apply(dsGeneZ, 1, max, na.rm = T) 
 
@@ -48,7 +51,9 @@ pascalGeneP.max$Max[is.infinite(pascalGeneP.max$Max)] <- 0
 
 
 library(heatmap3)
-#heatmap3(dsGeneZ, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
+pdf("allGeneZscore.pdf")
+heatmap3(dsGeneZ, scale= "none", balanceColor = T, method = "ward.D2", keep.dendro = T)
+dev.off()
 
 library(readr)
 pli <- as.data.frame(read_delim("./gnomad.v2.1.1.lof_metrics.by_gene.txt.gz", delim = "\t", quote = ""))

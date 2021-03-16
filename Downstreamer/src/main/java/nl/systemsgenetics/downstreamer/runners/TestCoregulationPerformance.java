@@ -322,7 +322,7 @@ public class TestCoregulationPerformance {
 				pathwayDatabase2BonfOverlap, pathwayDatabase2BonfOdds, pathwayDatabase2BonfFisherP, 
 				pathwayDatabase2BonfCisOverlap, pathwayDatabase2BonfCisOdds, pathwayDatabase2BonfCisFisherP, 
 				pathwayDatabase2BonfTransOverlap, pathwayDatabase2BonfTransOdds, pathwayDatabase2BonfTransFisherP, 
-				pathwayDatabase2FdrOdds, pathwayDatabase2FdrFisherP, predictionPvalues.getColObjects(), pathwayDatabases2);
+				pathwayDatabase2FdrOdds, pathwayDatabase2FdrFisherP, predictionPvalues.getColObjects(), pathwayDatabases2, predictionSource);
 
 	}
 
