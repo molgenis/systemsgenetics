@@ -515,7 +515,7 @@ public class PathwayEnrichments {
 			qValues = calculateQValues(pValues, pValuesNullForFDR);
 
 			// Calculate null distribution metrics
-			DoubleMatrixDataset<String, String> nullDistributionMetrics = DownstreamerUtilities.calculateNullDistributionMetrics(betasNullForPvalue);
+			DoubleMatrixDataset<String, String> nullDistributionMetrics = DownstreamerUtilities.calculateDistributionMetricsPerRow(betasNullForPvalue);
 			nullDistributionMetrics.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_nullDistMetrics.txt" : "_nullDistMetricsExHla.txt"));
 
 			// Calculate emprical pvalues

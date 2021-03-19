@@ -84,17 +84,17 @@ public class DownstreamerUtilities {
 			}
 		}
 
+		// Normalize the input data
 		if (options.isNormalizeEigenvectors()) {
 			expressionMatrix.normalizeRows();
 			expressionMatrix.normalizeColumns();
 			LOGGER.info("Data row normalized and then column normalized");
 		}
 
+		// Optionally select a subset of columns to use
 		String[] cols = options.getColumnsToExtract();
-
 		if (cols != null) {
 			Set<String> columnsToExtract = new HashSet<>();
-
 			for (String colname : cols) {
 				if (expressionMatrix.getColObjects().contains(colname)) {
 					columnsToExtract.add(colname);
@@ -105,25 +105,34 @@ public class DownstreamerUtilities {
 
 			expressionMatrix = expressionMatrix.viewColSelection(columnsToExtract);
 		}
-		
+
+		// Calculate the correlation matrix
 		LOGGER.info("Loaded expression matrix with " + expressionMatrix.rows() + " genes and " + expressionMatrix.columns() + " observations");
 		DoubleMatrixDataset<String, String> corMatrix = expressionMatrix.viewDice().calculateCorrelationMatrix();
 		LOGGER.info("Done calculating correlations");
 
+		// Convert Pearson R to Z-scores
 		if (options.isCorMatrixZscores()) {
 			PearsonRToZscoreBinned r2zScore = new PearsonRToZscoreBinned(10000000, expressionMatrix.columns());
 			r2zScore.inplaceRToZ(corMatrix);
 			LOGGER.info("Converted correlations to Z-scores");
 		}
 
+		// Set diagonal of matrix to zero
 		for (int i = 0; i < corMatrix.columns(); ++i) {
 			corMatrix.setElementQuick(i, i, 0);
 		}
 		LOGGER.info("Diagnonal set to zero as this might inflate coregulation towards genes in GWAS loci");
 
+		// Save
 		corMatrix.saveBinary(options.getOutputBasePath());
-
 		LOGGER.info("Correlation matrix saved to: " + options.getOutputBasePath() + ".dat");
+
+		// Calculate per gene distribution metrics
+		LOGGER.info("Calculating per gene distribution metrics");
+		DoubleMatrixDataset<String, String> perGeneDistMetrics = DownstreamerUtilities.calculateDistributionMetricsPerRow(corMatrix);
+		perGeneDistMetrics.save(options.getOutputBasePath() + ".coregulation.dist.metrics.txt");
+		LOGGER.info("Done");
 
 	}
 
@@ -374,7 +383,7 @@ public class DownstreamerUtilities {
 	 * @param options
 	 * @throws Exception
 	 */
-	public static DoubleMatrixDataset<String, String> calculateNullDistributionMetrics(DoubleMatrixDataset<String, String> data) {
+	public static DoubleMatrixDataset<String, String> calculateDistributionMetricsPerRow(DoubleMatrixDataset<String, String> data) {
 
 		List<String> colnames = new ArrayList<>();
 		colnames.add("mean");
