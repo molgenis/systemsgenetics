@@ -26,6 +26,7 @@ public class PearsonRToZscoreBinned {
 
 	/**
 	 * It is recommended to name instances of this class r2Zscore ;)
+	 * Max z-score returned is ~38.
 	 *
 	 * @param numberOfBins determines precision.
 	 * @param samplesUsedForCor
