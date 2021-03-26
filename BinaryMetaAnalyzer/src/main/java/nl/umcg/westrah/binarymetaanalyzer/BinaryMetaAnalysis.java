@@ -20,6 +20,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 
 /**
@@ -52,7 +53,7 @@ public class BinaryMetaAnalysis {
 	}
 
 
-	boolean DEBUG = false;
+
 
 	boolean fullpermutationoutput = false;
 	private String replaceTextWith;
@@ -65,6 +66,7 @@ public class BinaryMetaAnalysis {
 	protected int[][] snpIndex;
 	protected String[] snpList;
 	protected BinaryMetaAnalysisSettings settings;
+	boolean DEBUG = false;
 	protected String[] snpChr;
 	protected int[] snpPositions;
 	protected Integer[][] probeIndex;
@@ -413,14 +415,23 @@ public class BinaryMetaAnalysis {
 		datasets = new BinaryMetaAnalysisDataset[settings.getDatasetlocations().size()];
 
 		System.out.println("Loading datasets");
-		for (int d = 0; d < datasets.length; d++) {
+		// parallel all the things
+		IntStream.range(0,datasets.length).parallel().forEach(d->{
 			System.out.println("Dataset " + d + "/" + datasets.length);
-			datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d),
-					settings.getDatasetnames().get(d),
-					settings.getDatasetPrefix().get(d), permutation,
-					settings.getDatasetannotations().get(d), probeAnnotation, settings.getFeatureOccuranceScaleMaps().get(d),
-					loadsnpstats, null);
-		}
+			try {
+				datasets[d] = new BinaryMetaAnalysisDataset(settings.getDatasetlocations().get(d),
+						settings.getDatasetnames().get(d),
+						settings.getDatasetPrefix().get(d), permutation,
+						settings.getDatasetannotations().get(d), probeAnnotation,
+						settings.getFeatureOccuranceScaleMaps().get(d),
+						loadsnpstats, null);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
+//		for (int d = 0; d < datasets.length; d++) {
+//
+//		}
 
 		System.out.println("Loaded " + datasets.length + " datasets");
 

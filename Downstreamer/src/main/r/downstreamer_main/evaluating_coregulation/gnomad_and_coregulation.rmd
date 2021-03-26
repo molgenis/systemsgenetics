@@ -114,6 +114,11 @@ zscores <- make.zscore.matrix(datasets)
 ol      <- intersect(rownames(gnomad), rownames(zscores))
 zscores <- apply(zscores[ol,], 1, max)
 
+tmp <- gnomad[ol,c("syn_z", "mis_z", "lof_z", "pLI")]
+tmp$max_ds_zscore <- zscores[ol]
+write.table(tmp, "output/max_coregulation_zscore_and_gnomad_metrics.tsv", sep="\t", quote=F)
+
+
 make.gnomad.scatterplot <- function(trait) {
   df.plot <- data.frame(zscores=zscores[ol], gnomad=gnomad[ol, trait])
 

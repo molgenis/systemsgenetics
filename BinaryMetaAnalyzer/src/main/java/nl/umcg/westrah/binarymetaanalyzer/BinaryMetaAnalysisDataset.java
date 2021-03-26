@@ -96,21 +96,21 @@ public class BinaryMetaAnalysisDataset {
         int firstInt = f.readInt();
         f.close();
         isCisDataset = (firstInt == 1);
-        System.out.println("Matrix: " + matrix);
-        System.out.println("SNPFile: " + snpFile);
-        System.out.println("ProbeFile: " + probeFile);
+        System.out.println(name+"\tMatrix: " + matrix);
+        System.out.println(name+"\tSNPFile: " + snpFile);
+        System.out.println(name+"\tProbeFile: " + probeFile);
         if (isCisDataset) {
-            System.out.println("This dataset is a CIS dataset.");
+            System.out.println(name+"\tThis dataset is a CIS dataset.");
         } else {
-            System.out.println("This dataset is a full size dataset.");
+            System.out.println(name+"\tThis dataset is a full size dataset.");
         }
         loadProbes(probeFile);
 
-        System.out.println("Permutation: " + permutation + "\t" + probeList.length + " probes loaded");
+        System.out.println(name+"\tPermutation: " + permutation + "\t" + probeList.length + " probes loaded");
 
         loadSNPs(snpFile, loadsnpstats);
         if (snpctr == null) {
-            System.out.println("Permutation: " + permutation + "\t" + snps.length + " SNPs loaded");
+            System.out.println(name+"\tPermutation: " + permutation + "\t" + snps.length + " SNPs loaded");
         }
         if (featureOccuranceScaleMapFile != null) {
             TextFile readScaleInfo = new TextFile(featureOccuranceScaleMapFile, TextFile.R);
@@ -135,7 +135,7 @@ public class BinaryMetaAnalysisDataset {
 
         currentmapstart = 0;
         currentmapend = currentmapstart + nrBytesPerBuffer;
-        System.out.println("Permutation: " + permutation + "\t" + "File size: " + raf.length() + "\tNew buffer: " + bZs.length + "\tsta: " + currentmapstart + "\tsto: " + currentmapend +
+        System.out.println(name+"\tPermutation: " + permutation + "\t" + "File size: " + raf.length() + "\tNew buffer: " + bZs.length + "\tsta: " + currentmapstart + "\tsto: " + currentmapend +
                 "\tlen: " + (currentmapend - currentmapstart) + "\tnrbytes: " + nrBytesPerBuffer);
     }
 
@@ -197,22 +197,22 @@ public class BinaryMetaAnalysisDataset {
             try {
                 nrCalled = Integer.parseInt(elems[4]);
             } catch (NumberFormatException e) {
-                System.err.println("ERROR: nrCalled is not an int (input: " + elems[4] + ") for dataset: " + datasetLoc + " on line: " + ln);
+                System.err.println(name+"\tERROR: nrCalled is not an int (input: " + elems[4] + ") for dataset: " + datasetLoc + " on line: " + ln);
             }
             try {
                 maf = Float.parseFloat(elems[5]);
             } catch (NumberFormatException e) {
-                System.err.println("ERROR: maf is not a double (" + elems[5] + ") for dataset: " + datasetLoc + " on line: " + ln);
+                System.err.println(name+"\tERROR: maf is not a double (" + elems[5] + ") for dataset: " + datasetLoc + " on line: " + ln);
             }
             try {
                 cr = Float.parseFloat(elems[6]);
             } catch (NumberFormatException e) {
-                System.err.println("ERROR: cr is not a double (" + elems[6] + ") for dataset: " + datasetLoc + " on line: " + ln);
+                System.err.println(name+"\tERROR: cr is not a double (" + elems[6] + ") for dataset: " + datasetLoc + " on line: " + ln);
             }
             try {
                 hwe = Float.parseFloat(elems[7]);
             } catch (NumberFormatException e) {
-                System.err.println("ERROR: hwe is not a double (" + elems[7] + ") for dataset: " + datasetLoc + " on line: " + ln);
+                System.err.println(name+"\tERROR: hwe is not a double (" + elems[7] + ") for dataset: " + datasetLoc + " on line: " + ln);
             }
             hwesAl.add(hwe);
             mafsAl.add(maf);
@@ -222,7 +222,7 @@ public class BinaryMetaAnalysisDataset {
             try {
                 nrZScores = Integer.parseInt(elems[8]);
             } catch (NumberFormatException e) {
-                System.err.println("ERROR: nrZScores is not an int (input: " + elems[8] + ") for dataset: " + datasetLoc + " on line: " + ln);
+                System.err.println(name+"\tERROR: nrZScores is not an int (input: " + elems[8] + ") for dataset: " + datasetLoc + " on line: " + ln);
             }
 
 
@@ -254,7 +254,7 @@ public class BinaryMetaAnalysisDataset {
 
             ln++;
             if (ln % 1000000 == 0) {
-                System.out.print("Permutation: " + permutation + "\t" + ln + " lines parsed sofar.\r");
+                System.out.print(name+"\tPermutation: " + permutation + "\t" + ln + " lines parsed sofar.\r");
             }
         }
         tf.close();
@@ -335,7 +335,7 @@ public class BinaryMetaAnalysisDataset {
 
             currentmapstart = snpBytePos;
             currentmapend = currentmapstart + nrBytesPerBuffer;
-            System.out.println("New buffer: " + bZs.length + "\tsta: " + currentmapstart + "\tsto: " + currentmapend +
+            System.out.println(name+"\tNew buffer: " + bZs.length + "\tsta: " + currentmapstart + "\tsto: " + currentmapend +
                     "\tlen: " + (currentmapend - currentmapstart) + "\tnrbytes: " + nrBytesPerBuffer);
         }
 
