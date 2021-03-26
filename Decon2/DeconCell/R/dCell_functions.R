@@ -195,9 +195,14 @@ dCell.run <- function(exp,
 
     i.dCell.run <- dCell.run.single(exp = exp, iterations = iterations,
                      i.ct.proportions=i.ct.proportions)
-
-    deconCell.models.per.CT[[i.cellType]] <- i.dCell.run$decon.cell.models
-    deconCell.marker.genes[[i.cellType]] <- i.dCell.run$marker.genes.summary
+    if(length(i.dCell.run$marker.genes.summary) == 0){
+      deconCell.models.per.CT[[i.cellType]] <- NA
+      deconCell.marker.genes[[i.cellType]] <- NA
+      cat(paste0("WARNING: ", names(proportions[i.cellType])),' had no marker genes, possibly not enough training data given')
+    }else{
+      deconCell.models.per.CT[[i.cellType]] <- i.dCell.run$decon.cell.models
+      deconCell.marker.genes[[i.cellType]] <- i.dCell.run$marker.genes.summary  
+    }
   }
   names(deconCell.models.per.CT) <- colnames(proportions)
   names(deconCell.marker.genes) <- colnames(proportions)
@@ -223,6 +228,9 @@ dCell.run.single <- function(exp, i.ct.proportions,
   marker.gene.list <- list()
   cat(paste0("\nINFO\t Starting ",iterations," eNet iterations \n"))
   j <- 1
+  
+
+  
   while(j <= iterations) {
     cat(paste0("\nINFO\t Starting eNet iteration ",j, "\n"))
     ## Define samples used of iteratrion
