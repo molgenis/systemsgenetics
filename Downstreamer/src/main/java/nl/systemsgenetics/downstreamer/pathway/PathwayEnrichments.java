@@ -1185,7 +1185,7 @@ public class PathwayEnrichments {
 		return numberOfPathways;
 	}
 
-	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
+	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() {
 
 		DoubleMatrixDataset<String, String> zscores = pValues.duplicate();
 

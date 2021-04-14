@@ -6,7 +6,7 @@ source("../../downstreamer_main/downstreamer_functions.r")
 base <- read.downstreamer.batch("/home/work/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-02-11/")
 new <- read.downstreamer.batch("/home/work/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-03-09/")
 
-plot.auc.comparison <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="AUC 1", ylab="AUC 2", main=NULL) {
+  plot.auc.comparison <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="AUC 1", ylab="AUC 2", main=NULL) {
   auc.pval.1[auc.1 == 0] <- 1
   auc.pval.2[auc.2 == 0] <- 1
 

@@ -213,6 +213,37 @@
     
     return(out)
   }
+  # ------------------------------------------------------ 
+  read.genep <- function(files, trim.colnames=NULL) {
+    
+    cn  <- c()
+    out <- matrix()
+    i=0
+    for (dataset in files) {
+      tmp <- read.table(dataset, stringsAsFactors = F, row.names = 1, header=T, sep="\t")
+      if (ncol(tmp) > 1) {
+        cn <- c(cn, paste0(basename(dataset), "_", colnames(tmp)))
+      } else {
+        cn <- c(cn, basename(dataset))
+      }
+      if (i==0) {
+        out <- as.matrix(tmp)
+      } else {
+        out <- cbind(out, tmp[rownames(out),])
+      }
+      i <- i+1
+    }
+    #colnames(out) <- make.names(basename(files), unique=T)
+    colnames(out) <- cn
+    if (!is.null(trim.colnames)) {
+      for (pattern in trim.colnames) {
+        colnames(out) <- gsub(pattern, "", colnames(out))
+      }
+    }
+    
+    return(out)
+  }
+  
   
   # ------------------------------------------------------ 
   read.enrichments.as.list <- function(files, trim.names=NULL) {
@@ -319,6 +350,36 @@
              ...)
   }
   
+  ## ------------------------------------------------------------------------
+  # Simple heatmap with auto labels
+  simple.hm <- function(data, cellwidth=12, cellheight=12, limit=NULL, range="symmetric", min.value=0, palette=NULL, ...) {
+    
+    if (range == "symmetric") {
+      break.list <- seq(-max(abs(data)), max(abs(data)), by=max(abs(data))/100)
+      if (is.null(palette)) {palette="RdBu"}
+      cols       <- colorRampPalette(rev(brewer.pal(n=7, name=palette)))(length(break.list))
+    } else if (range == "absolute") {
+      if (is.null(palette)) {palette="Reds"}
+      break.list <- seq(min.value, max(abs(data)), by=max(abs(data))/100)
+      cols       <- colorRampPalette(brewer.pal(n=7, name =palette))(length(break.list))
+    } else if (range == "auto") {
+      break.list <- seq(-min(data), max(data), by=max(abs(data))/100)
+      if (is.null(palette)) {palette="RdBu"}
+      cols       <- colorRampPalette(rev(brewer.pal(n=7, name =palette)))(length(break.list))
+    } else  {
+      cat("[ERROR] range must be symmetric, auto, or aboslute\n")
+    }
+    
+    pheatmap(data,
+             breaks=break.list,
+             col=cols,
+             cellwidth=cellwidth,
+             cellheight=cellheight,
+             ...)
+    
+  }
+  
+  
   # ------------------------------------------------------ 
   simple.qq.plot <- function (observedPValues) {
     plot(-log10(1:length(observedPValues)/length(observedPValues)), 
@@ -413,19 +474,26 @@
   
   
   #----------------------------------------------------------------------------------------
-  xy.plot <- function(auc.1, auc.2, xlab="X", ylab="Y", main=NULL) {
+  xy.plot <- function(auc.1, auc.2, xlab="X", ylab="Y", main=NULL, col.by=NULL, size=1, alpha=0.75) {
 
     df.plot <- data.frame(auc.1=auc.1,
                           auc.2=auc.2)
     
     df.plot                <- na.omit(df.plot)
 
-    p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2)) +
-      geom_point(alpha=0.75, col="#55B397") +
-      xlab(xlab) +
-      ylab(ylab) +
-      ggtitle(paste0(main, format(cor(auc.1, auc.2, use="complete.obs"), digits=2))) + 
-      geom_smooth(method="lm") 
+    p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2))
+      
+    if (is.null(col.by)) {
+      p <- p +  geom_point(alpha=alpha, size=size, col="#55B397")
+    } else {
+      p <- p + geom_point(alpha=alpha, size=size, mapping=aes(col=col.by))    
+    }
+    
+    p <- p + 
+    xlab(xlab) +
+    ylab(ylab) +
+    ggtitle(paste0(main, format(cor(auc.1, auc.2, use="complete.obs"), digits=2))) +
+      geom_smooth(method="lm", mapping=aes(x=auc.1, y=auc.2))
     
     return(theme.nature(p))
   }

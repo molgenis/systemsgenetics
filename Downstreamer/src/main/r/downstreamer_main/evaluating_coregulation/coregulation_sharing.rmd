@@ -4,33 +4,162 @@ source("../downstreamer_functions.r")
 source("data/source_olivier.r")
 
 library(UpSetR)
-# Cached 2021-01-06 13:01
-datasets <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
 
-# Remove redundant datasets
-redundant <- c("type_2_diabetes_2018_29632382",
-  "plt_2020_32888494",
-  "mpv_2020_32888494",
-  "parkinsons_disease_2019_31701892",
-  "coeliac_disease_2010_20190752", 
-  "multiple_sclerosis_2013_24076602")
+#Cached 2021-04-12
+datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+
+meta.data           <- read.table("../data/downstreamer_summary_statistics.csv", sep="\t", stringsAsFactors = F, header=T)
+rownames(meta.data) <- gsub("_hg19", "", gsub("__", "_", gsub(".xlsx|.txt", "", gsub("_enrichtments", "", meta.data$EnrichmentExcel))))
+meta.data$class[is.na(meta.data$class)] <- "NA"
+
+gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
+ol                  <- intersect(names(datasets), colnames(gene.pvalues))
+
+
+class.cols <- c(`auto-immune`="#ebac23",
+          `cancer`="#008a20",
+          `cardiovascular`="#b24502",
+          `blood composition`="#b80058",
+          `kidney function`="#00bbad",
+          `lipid level`="#d163e6",
+          `neurodegenerative`="#008cf9",
+          `psychological`="#5954d6",
+          `skeletal`="#ff9287",
+          `NA`="#bdbdbd")
+
+```
+
+# Scatterplot of GWAS sample size vs #detected core genes
+```{r}
+bonf.sig.coreg.genes  <- lapply(datasets, function(dataset){
+  coreg <- dataset$GenePrioritization
+  coreg <- coreg[coreg$Enrichment.Z.score > 0,]
+  return(coreg$Gene.ID[coreg$Bonferroni.significant])
+})
+
+count.bonf.sig.genes  <- sapply(bonf.sig.coreg.genes, length)
+ol                    <- intersect(names(datasets), rownames(meta.data))
+
+df.plot <- data.frame(x=meta.data[ol,]$N,
+                      y=count.bonf.sig.genes[ol],
+                      class=meta.data[ol,]$class)
+
+
+pdf(width=5, height=3, file="output/plots/GenePriortization_number_of_key_genes_vs_gwas_samplesize.pdf", paper="a4")
+p <- ggplot(data=df.plot, mapping=aes(x=x, y=y)) + 
+  geom_smooth(method="lm", col="grey", fill="lightgrey") + 
+  geom_point(alpha=0.75, size=4, mapping=aes(col=class)) + 
+  xlab("GWAS sample size") +
+  ylab("Detected # of key-genes") +
+  ggtitle(paste0("Pearson correlation: ", format(cor(df.plot$x, df.plot$y, use="complete.obs"), digits=2))) +
+  scale_x_continuous(breaks=c(0, 500000, 1000000), labels=c("0", "500.000", "1.000.000")) +
+  scale_color_manual(values=class.cols, na.value="#bdbdbd")
+
+theme.nature(p)
+dev.off()
+```
+
+# Correlation heatmap of Enrichment zscores
+```{r}
+coreg.zscores <- make.zscore.matrix(datasets)
+cor.m <- cor(coreg.zscores, use="pairwise.complete.obs")
+
+cor.p <- cor(gene.pvalues[rownames(coreg.zscores), colnames(coreg.zscores)], use="pairwise.complete.obs")
+
+#pdf(width=15, height=15, file="output/plots/GenePriortization_correlation_heatmap_non_metabolite_traits_wardd2.pdf")
+
+dist.tmp                <- function(x){as.dist(1 - cor(t(x), use = "pa"))}
+dist.m                  <- dist.tmp(cor.m)
+clust.m                 <- hclust(dist.m, method="ward.D2")
+
+cor.m                   <- cor.m[clust.m$order, clust.m$order]
+cor.p                   <- cor.p[clust.m$order, clust.m$order]
+cor.m[lower.tri(cor.m)] <- cor.p[lower.tri(cor.p)]
+diag(cor.m) <- 0
+
+pdf(width=8, height=8, file="output/plots/GenePriortization_correlation_heatmap_key_genes_gene_pvalues_wardd2.pdf", paper="a4")
+
+simple.hm(cor.m,
+          cellwidth=5,
+          cellheight=5,
+          fontsize=4.5,
+          cluster_rows=F,
+          cluster_cols=F,
+          border=NA,
+          annotation_row=meta.data[rownames(cor.m), "class", drop=F],
+          annotation_colors=list(`class`=class.cols),
+          labels_row=meta.data[rownames(cor.m), "Name"],
+          labels_col=meta.data[colnames(cor.m),]$Name)
+dev.off()
+
+
+pdf(width=8, height=3, file="output/plots/GenePriortization_number_of_keygenes_heatmap_ordered.pdf", paper="a4")
+
+barplot(count.bonf.sig.genes[rownames(cor.m)],
+        border=NA,
+        ylab="Detected # of key-genes",
+        names.arg=c())
+
+dev.off()
+```
+
+
+
+
+# Network of shared traits
+```{r}
+ol.mat <- sapply(names(bonf.sig.coreg.genes), function(trait1){
+  sapply(names(bonf.sig.coreg.genes), function(trait2){
+     a <- bonf.sig.coreg.genes[trait1][[1]]
+     b <- bonf.sig.coreg.genes[trait2][[1]]
+     ol <- intersect(a, b)
+     
+     return(length(ol) / length(a))
+     #return(length(ol))
+  })
+})
+
+ol.mat[is.na(ol.mat)] <- 0
+rownames(ol.mat) <- meta.data[rownames(ol.mat),]$Name
+colnames(ol.mat) <- meta.data[colnames(ol.mat),]$Name
+ol.mat <-ol.mat[rownames(ol.mat), rownames(ol.mat)]
+
+
+ol.mat[upper.tri(ol.mat)] <- 0
+#clust.h <- hclust(dist(ol.mat))
+
+simple.hm(ol.mat,
+          cellwidth=8,
+          cellheight=8,
+          border=NA,
+          cluster_rows=F,
+          cluster_cols=F,
+          range="absolute")
+
+
 ```
 
 ```{r}
-subset.no.metabo <- grep("metabolites", names(datasets), value=T, invert=T)
-subset.no.metabo <- subset.no.metabo[!subset.no.metabo %in% redundant]
-coreg.zscores <- make.zscore.matrix(datasets[subset.no.metabo])
-cor.m <- cor(coreg.zscores)
+library(tidygraph)
+library(ggraph)
 
-pdf(width=15, height=15, file="output/plots/GenePriortization_correlation_heatmap_non_metabolite_traits_wardd2.pdf")
+graph <- as_tbl_graph(ol.mat)
 
-dist.tmp <- function(x){as.dist(1 - cor(t(x), use = "pa"))}
-dist.m <- dist.tmp(cor.m)
-hm(cor.m, method="ward.D2",
-   clustering_distance_rows=dist.m,
-   clustering_distance_cols=dist.m)
-dev.off()
+p1               <- ggraph(graph, layout="fr")
+
+p2 <- p1 +
+  geom_edge_link(alpha=0.1) +
+  geom_node_point(aes(colour="red", size=4), alpha=0.9) +
+  theme_graph(base_family = 'sans') 
+p2
 ```
+
+
+
+
+
+
+
 
 ```{r}
 subset.immune  <- c("coeliac_disease_2011_22057235", 

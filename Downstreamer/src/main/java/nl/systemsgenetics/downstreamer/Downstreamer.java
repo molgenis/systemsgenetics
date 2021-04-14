@@ -1,11 +1,7 @@
 package nl.systemsgenetics.downstreamer;
 
-import nl.systemsgenetics.downstreamer.runners.TestCoregulationPerformance;
-import nl.systemsgenetics.downstreamer.runners.NetworkProperties;
-import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
-import nl.systemsgenetics.downstreamer.runners.DownstreamerMainAnalysis;
-import nl.systemsgenetics.downstreamer.runners.PruneToIndependentTopHits;
-import nl.systemsgenetics.downstreamer.runners.DownstreamerConverters;
+import nl.systemsgenetics.downstreamer.runners.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -221,7 +217,8 @@ public class Downstreamer {
 					DownstreamerUtilities.doPcaOnBinMatrix(options);
 					break;
 				case PRIO_GENE_ENRICH:
-					TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
+					//TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
+					PathwayDatabaseEnrichments.testPredictionPerformance(options);
 					break;
 				case INVESTIGATE_NETWORK:
 					NetworkProperties.investigateNetwork(options);
@@ -234,6 +231,9 @@ public class Downstreamer {
 					break;
 				case EXPAND_PATHWAYS:
 					PredictedPathwayAnnotations.expandAnnotations(options);
+					break;
+				case GET_MARKER_GENES:
+					DownstreamerUtilities.generateMarkerGenes(options);
 					break;
 				case SPECIAL:
 					CorrelateExpressionToPredictions.run(options);

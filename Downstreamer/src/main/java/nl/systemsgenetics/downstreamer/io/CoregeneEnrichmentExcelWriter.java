@@ -41,6 +41,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  *
  * @author patri
  */
+@Deprecated
 public class CoregeneEnrichmentExcelWriter {
 
 	private static final Logger LOGGER = Logger.getLogger(CoregeneEnrichmentExcelWriter.class);
