@@ -1,0 +1,108 @@
+```{r}
+setwd("../coregulation_clustering")
+source("../downstreamer_functions.r")
+library(apcluster)
+library(tidygraph)
+library(ggraph)
+
+nodes   <- fread("data/44_traits/44_traits_nodes.tsv", data.table = F)
+edges   <- fread("data/44_traits/44_traits_named_edges.tsv", data.table = F)
+
+results <- read.depict2("../data/final_paper/coeliac_disease_2011_22057235_hg19_enrichtments.xlsx", potential_traits = c("GenePrioritization"))$GenePrioritization
+nodes$zscore <- results[nodes$gene_id, ]$Enrichment.Z.score
+nodes$genep  <- (1- pnorm(results[nodes$gene_id, ]$GWAS.gene.P.value))*2
+
+nodes$type   <-  results[nodes$gene_id, ]$Distance.to.lead.GWAS.variant
+nodes$type[nodes$type != "Trans (>250 kb)"] <- "Cis (<250 kb)"
+nodes$type[nodes$genep < 2.5e-6] <- "Cis (<250 kb)"
+
+nodes$type[nodes$annot == "both" | (nodes$annot == "cols" && nodes$zscore > 4.5)] <- "Both"
+
+# Set nodes with negative coregulation z-scores to zero
+nodes$zscore[nodes$zscore < 0] <- 0
+
+# Filter edges
+edges <- edges[abs(edges$zscore) > 7,]
+edges <- edges[edges$edge_type != "within_row",]
+
+# Remove edges with a node that appears only once
+tab           <- table(edges$to)
+nodes.to.keep <- names(tab)[tab >= 2]
+edges         <- edges[edges$from %in% nodes.to.keep,] 
+edges         <- edges[edges$to %in% nodes.to.keep,] 
+
+# Match the nodes and the edges, filter nodes wihout edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$gene_id %in% nodes.with.edges,]
+
+# Order nodes on annotation
+nodes            <- nodes[order(nodes$annot, decreasing = F),]
+
+
+nodes.orig <- nodes
+edges.orig <- edges
+```
+
+```{r}
+nodes <- nodes.orig
+edges <- edges.orig
+
+# Match the order to the edges
+edges$from       <- sapply(edges$from, function(x){which(x == nodes$gene_id)})
+edges$to         <- sapply(edges$to, function(x){which(x == nodes$gene_id)})
+
+# Construct graph object
+tbl              <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+p1               <- ggraph(tbl, layout="fr")
+```
+
+```{r}
+# Annotations
+trait <- "neutro"
+results <- read.depict2("../data/final_paper/cellcounts_2020_32888494_hg19_enrichtments_NEU.xlsx", potential_traits = c("GenePrioritization"))$GenePrioritization
+annots      <- results[nodes$gene_id,]$Bonferroni.significant & results[nodes$gene_id,]$Enrichment.Z.score > 0
+
+
+# Plot
+p2 <- p1 +
+  geom_edge_link(alpha=0.1) +
+  geom_node_point(aes(colour=annots, size=4), alpha=0.9) +
+  theme_graph(base_family = 'sans') +
+  scale_color_manual(values=c(`FALSE`="#376B65",`TRUE`="#F5CD55"), name=paste0("Signif. ", trait)) +
+
+
+png(width=1000, height=1000, file=paste0("output/plots/all_trait_network_", trait ,".png"))
+p2
+dev.off()
+
+```
+
+
+```{r}
+library(scales)
+marker.tstat <- read.table("data/gene_network_ttest_maker_genes.tstats.txt", row.names=1, header=T, sep="\t")
+marker.pval  <- read.table("data/gene_network_ttest_maker_genes.pvalues.txt", row.names=1, header=T, sep="\t")
+
+marker.zscore                       <- apply(marker.pval, 2, sapply, qnorm)
+marker.zscore                       <- marker.zscore*-1
+marker.zscore[marker.zscore == Inf] <- 38
+marker.zscore[marker.zscore < 4.54] <- 0
+marker.zscore                       <- sign(marker.tstat) * marker.zscore
+
+trait  <- "kidney"
+annots <- marker.zscore[nodes$gene_id,trait]
+
+# Plot
+p2 <- p1 +
+  geom_edge_link(alpha=0.1) +
+  geom_node_point(aes(colour=annots, size=4), alpha=0.9) +
+  theme_graph(base_family = 'sans') +
+  scale_color_gradient2(low=muted("blue"), high=muted("red"))
+
+
+png(width=1000, height=1000, file=paste0("output/plots/all_trait_network_", trait ,".png"))
+p2
+dev.off()
+```
+
+
