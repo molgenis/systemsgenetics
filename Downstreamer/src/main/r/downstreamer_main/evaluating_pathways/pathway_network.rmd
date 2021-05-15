@@ -5,7 +5,7 @@ source("../downstreamer_functions.r")
 library(tidygraph)
 library(ggraph)
 
-pathway.db <- "GenePrioritization"
+pathway.db <- "GO_BP"
 datasets <- read.downstreamer.batch("../data/final_paper", USE.CACHE=F, potential_traits = c(pathway.db))
 
 # ColAnnotations
@@ -114,8 +114,11 @@ p2 <- p1 +
                      colour="white",
                      show.legend = F,
                      label.size = 0,
-                     repel=F,
-                  size=1)
+                     label.padding=0.125,
+                     label.r=0.1,
+                     repel=T,
+                  alpha=1,
+                  size=2)
 
 pdf(width=10, height=5, file=paste0("output/plots/pathway_networks/", pathway.db, "_bonfsig_network.pdf"), paper="a4")
 p2

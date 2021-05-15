@@ -1,5 +1,5 @@
 ```{r}
-setwd("../coregulation_clustering")
+if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_clustering")} else {setwd("../coregulation_clustering")}
 source("../downstreamer_functions.r")
 library(apcluster)
 library(tidygraph)
@@ -80,8 +80,8 @@ dev.off()
 
 ```{r}
 library(scales)
-marker.tstat <- read.table("data/gene_network_ttest_maker_genes.tstats.txt", row.names=1, header=T, sep="\t")
-marker.pval  <- read.table("data/gene_network_ttest_maker_genes.pvalues.txt", row.names=1, header=T, sep="\t")
+marker.tstat <- read.table("../data/gene_network_ttest_maker_genes.tstats.txt", row.names=1, header=T, sep="\t")
+marker.pval  <- read.table("../data/gene_network_ttest_maker_genes.pvalues.txt", row.names=1, header=T, sep="\t")
 
 marker.zscore                       <- apply(marker.pval, 2, sapply, qnorm)
 marker.zscore                       <- marker.zscore*-1

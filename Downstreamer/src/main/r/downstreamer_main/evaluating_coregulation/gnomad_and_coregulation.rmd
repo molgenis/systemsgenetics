@@ -38,6 +38,9 @@ ol                  <- intersect(names(datasets), colnames(gene.pvalues))
 
 key.gene.stats <- as.data.frame(read_excel("data/GenePrioritization_key_gene_stats.xlsx", sheet = "only_key_genes"))
 rownames(key.gene.stats) <- key.gene.stats$`key-gene`
+
+degree <- read.table("data/coregulation_gene_network_cis_removed.degree.tsv", sep="\t", stringsAsFactors = F, row.names=1, header=T)
+
 ```
 
 # Max zscore vs gnomad Zscores / PLI
@@ -52,9 +55,13 @@ write.table(tmp, "output/max_coregulation_zscore_and_gnomad_metrics.tsv", sep="\
 
 gnomad$max_lof_z_mis_z <- sapply(1:nrow(gnomad), function(x){max(gnomad[x, "mis_z"], gnomad[x, "lof_z"])})
 
-make.gnomad.scatterplot <- function(trait) {
+make.gnomad.scatterplot <- function(trait, correctDegree=F) {
   df.plot <- data.frame(zscores=zscores[ol], gnomad=gnomad[ol, trait])
 
+  if (correctDegree) {
+    df.plot$zscores <- residuals(lm(df.plot$zscores ~ log10(degree[ol,]$sum_chi_sqr)))
+  }
+  
   p <- ggplot(data=df.plot, mapping=aes(x=zscores, y=gnomad)) + 
     geom_hex(bins=50, col=NA) + 
     geom_smooth(method="lm", col="grey", size=0.75) +
@@ -62,21 +69,29 @@ make.gnomad.scatterplot <- function(trait) {
     xlab("Max key-gene score") +
     scale_fill_gradientn(colors=c("#376B65","#0ae4f2")) + #"#2c6c70", "#0ae4f2"
     ggtitle(paste0("R: ",
-                   format(cor(zscores[ol], gnomad[ol, trait], use="complete.obs"), digits=2),
+                   format(cor(df.plot$zscores, df.plot$gnomad, use="complete.obs"), digits=2),
                    " p-value: ",
-                   format(cor.test(zscores[ol], gnomad[ol, trait], na.action=na.omit())$p.value, digits=2, scientific=T)))
+                   format(cor.test(df.plot$zscores, df.plot$gnomad, na.action=na.omit())$p.value, digits=2, scientific=T)))
   
   theme.nature(p, base_size=8)
 }
 
+# Not corrected for degree
 p1 <- make.gnomad.scatterplot("syn_z") + ylab("Gnomad Syn Z-score") + theme(legend.position = "none")
 p2 <- make.gnomad.scatterplot("mis_z") + ylab("Gnomad MiS Z-score") + theme(legend.position = "none")
 p3 <- make.gnomad.scatterplot("lof_z") + ylab("Gnomad LoF Z-score") + theme(legend.position = "none")
-#p4 <- make.gnomad.scatterplot("max_lof_z_mis_z") + ylab("Max Gnomad LoF Mis Z-score")
+
 pdf(width=6, height=2, file="output/plots/gnomad_zscore_vs_max_zscore.pdf", paper="a4")
-
 grid.arrange(grobs=list(p1, p2, p3), ncol=3)
+dev.off()
 
+# Corrected for degree
+p1 <- make.gnomad.scatterplot("syn_z", correctDegree = T) + ylab("Gnomad Syn Z-score") + theme(legend.position = "none")
+p2 <- make.gnomad.scatterplot("mis_z", correctDegree = T) + ylab("Gnomad MiS Z-score") + theme(legend.position = "none")
+p3 <- make.gnomad.scatterplot("lof_z", correctDegree = T) + ylab("Gnomad LoF Z-score") + theme(legend.position = "none")
+
+pdf(width=6, height=2, file="output/plots/gnomad_zscore_vs_max_zscore_degree_corrected.pdf", paper="a4")
+grid.arrange(grobs=list(p1, p2, p3), ncol=3)
 dev.off()
 ```
 

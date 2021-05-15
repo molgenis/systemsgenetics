@@ -6,6 +6,10 @@ source("data/source_olivier.r")
 library(UpSetR)
 library(tidygraph)
 library(ggraph)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(ReactomePA)
+library(ggrepel)
 
 # Cached 2021-04-28
 datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
@@ -32,9 +36,11 @@ ENSEMBLToEntrez <- function(gene) {
   return(gene.df$ENTREZID)
 }
 
+# Degree of genes in coreg-network
+degree <- read.table("data/coregulation_gene_network_cis_removed.degree.tsv", sep="\t", stringsAsFactors = F, row.names=1, header=T)
 ```
 
-# Scatterplot of GWAS sample size vs #detected core genes
+# Scatterplot: GWAS sample size vs #detected core genes
 ```{r}
 bonf.sig.coreg.genes  <- lapply(datasets, function(dataset){
   coreg <- dataset$GenePrioritization
@@ -85,6 +91,100 @@ theme.nature(p, base_size=8) + theme(legend.position = "none")
 dev.off()
 
 
+```
+
+# Scatterplot: Degree vs key-gene zscore
+```{r}
+key.genes  <- unique(unlist(lapply(datasets, function(dataset){
+  coreg <- dataset$GenePrioritization
+  coreg <- coreg[coreg$Enrichment.Z.score > 0,]
+  return(coreg$Gene.ID[coreg$Bonferroni.significant])
+})))
+
+zscores <- make.zscore.matrix(datasets)
+ol      <- intersect(rownames(degree), rownames(zscores))
+zscores <- apply(zscores[ol,], 1, max)
+
+df.plot <-  data.frame(x=zscores[ol],
+                       chisqr=degree[ol,]$sum_chi_sqr,
+                       zNominal=degree[ol,]$z_nominal,
+                       zBonf=degree[ol,]$z_bonf_sig,
+                       row.names = ol)
+
+#df.plot$y <- log10(df.plot$chisqr)
+df.plot$y <- df.plot$zNominal
+#df.plot$y <- df.plot$zBonf
+
+df.plot$is.key.gene <- rownames(df.plot) %in% key.genes
+
+ct <- cor.test(df.plot$x, df.plot$y, use="complete.obs")
+  
+# Regular scatterplot
+pdf(width=3, height=3, file="output/plots/GenePriortization_degree_vs_max_key_gene_score.pdf", paper="a4")
+p <- ggplot(data=df.plot, mapping=aes(x=x, y=y, col=is.key.gene)) + 
+  geom_point(size=1, alpha=0.25) +
+  geom_smooth(method="lm", col="grey", fill="lightgrey") + 
+  xlab("Max key-gene score") +
+  ylab("Degree in network") +
+  scale_color_manual(values=c(`TRUE`="#3b8a72", `FALSE`="#376B65")) +
+  ggtitle(paste0("Pearson R: ", format(ct$estimate, digits=2),
+                 " p-value: ", format(ct$p.value, digits=2, scientific=T))) 
+
+theme.nature(p, base_size=8) + theme(legend.position = "none")
+dev.off()
+
+# Hexbin
+pdf(width=3.8, height=3, file="output/plots/GenePriortization_degree_vs_max_key_gene_score_hexbin.pdf", paper="a4")
+p <- ggplot(data=df.plot, mapping=aes(x=x, y=y, col=is.key.gene)) + 
+  geom_hex(bins=50, col=NA) + 
+  geom_smooth(method="lm", col="grey", fill="lightgrey") + 
+  xlab("Max key-gene score") +
+  ylab("Degree in network") +
+  scale_fill_gradientn(colors=c("#376B65","#0ae4f2")) + 
+  ggtitle(paste0("Pearson R: ", format(ct$estimate, digits=2),
+                 " p-value: ", format(ct$p.value, digits=2, scientific=T))) 
+
+theme.nature(p, base_size=8)
+dev.off()
+
+write.table(rownames(df.plot[df.plot$y < 750,]), row.names=F, col.names=F, quote=F, file="output/degree_st_750_genes.txt")
+```
+
+# Scatterplot: Degree vs gene pvalues
+```{r}
+gwas.genes  <- unique(unlist(lapply(datasets, function(dataset){
+  coreg <- dataset$GenePrioritization
+  return(coreg$Gene.ID[coreg$GWAS.gene.P.value < 0.05/nrow(coreg)])
+})))
+
+ol        <- intersect(rownames(degree), rownames(gene.pvalues))
+max.genep <- apply(gene.pvalues[ol,], 1, max)
+
+df.plot   <-  data.frame(x=max.genep[ol],
+                       chisqr=degree[ol,]$sum_chi_sqr,
+                       zNominal=degree[ol,]$z_nominal,
+                       zBonf=degree[ol,]$z_bonf_sig,
+                       row.names = ol)
+
+df.plot$y <- df.plot$zNominal
+
+df.plot$is.key.gene <- rownames(df.plot) %in% key.genes
+
+ct <- cor.test(df.plot$x, df.plot$y, use="complete.obs")
+
+# Hexbin
+pdf(width=3.8, height=3, file="output/plots/GenePvalues_degree_vs_max_key_gene_score_hexbin.pdf", paper="a4")
+p <- ggplot(data=df.plot, mapping=aes(x=x, y=y, col=is.key.gene)) + 
+  geom_hex(bins=50, col=NA) + 
+  geom_smooth(method="lm", col="grey", fill="lightgrey") + 
+  xlab("Max GWAS gene p-value") +
+  ylab("Degree in network") +
+  scale_fill_gradientn(colors=c("#376B65","#0ae4f2")) + 
+  ggtitle(paste0("Pearson R: ", format(ct$estimate, digits=2),
+                 " p-value: ", format(ct$p.value, digits=2, scientific=T))) 
+
+theme.nature(p, base_size=8)
+dev.off()
 ```
 
 # Correlation heatmap of Enrichment zscores
@@ -248,11 +348,6 @@ dev.off()
 
 # Percentage of shared keygenes
 ```{r}
-library(clusterProfiler)
-library(org.Hs.eg.db)
-library(ReactomePA)
-library(ggrepel)
-
 protein.coding.bg <- ENSEMBLToEntrez(ensembl$Ensembl.Gene.ID)
 
 #tmp.datasets <- datasets[grep("cellcounts", names(datasets), value=T, invert=T)]
@@ -318,7 +413,7 @@ resGOBP <- enrichGO(gene = gene.list,
                     qvalueCutoff = 1)@result
 ```
 
-
+# Network plot
 ```{r}
 p2 <- p1 +
   geom_edge_link(alpha=0.1,

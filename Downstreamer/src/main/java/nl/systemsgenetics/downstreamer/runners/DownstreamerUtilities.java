@@ -339,6 +339,13 @@ public class DownstreamerUtilities {
 
     }
 
+    /**
+     * Load a co-regulation matrix and set any gene-gene correlation between genes closer than 250kb to zero.
+     *
+     * @param options
+     * @throws IOException
+     * @throws Exception
+     */
     public static void removeLocalGeneCorrelations(DownstreamerOptions options) throws IOException, Exception {
 
         LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
@@ -392,6 +399,8 @@ public class DownstreamerUtilities {
         corMatrix.saveBinary(options.getOutputBasePath());
 
     }
+
+
 
     /**
      * Calculate skewness, kurtosis, mean and variance of the null distribution for a pathway database
@@ -656,6 +665,7 @@ public class DownstreamerUtilities {
      * Adapted from: https://github.com/cBioPortal/cbioportal/blob/master/core/src/main/java/org/mskcc/cbio/portal/stats/BenjaminiHochbergFDR.java
      * and
      * https://stats.stackexchange.com/questions/238458/whats-the-formula-for-the-benjamini-hochberg-adjusted-p-value
+     *
      * @param pvalues
      * @return
      */
@@ -665,14 +675,14 @@ public class DownstreamerUtilities {
 
         for (int c = 0; c < rawPvalues.columns(); c++) {
 
-            String colname =  output.getColObjects().get(c);
+            String colname = output.getColObjects().get(c);
 
             // Sort the p-values preserving the ids
             List<DoubleElement> sortedPvalues = new ArrayList<>(rawPvalues.rows());
-            for (int r=0; r < rawPvalues.rows(); r++) {
+            for (int r = 0; r < rawPvalues.rows(); r++) {
                 sortedPvalues.add(new DoubleElement(rawPvalues.getElementQuick(r, c), rawPvalues.getRowObjects().get(r)));
             }
-            sortedPvalues.sort(Comparator.comparing(DoubleElement :: getValue));
+            sortedPvalues.sort(Comparator.comparing(DoubleElement::getValue));
 
             List<DoubleElement> adjustedPvalues = new ArrayList<>(sortedPvalues);
 
@@ -689,7 +699,7 @@ public class DownstreamerUtilities {
                 }
             }
 
-            for (DoubleElement curElement: adjustedPvalues) {
+            for (DoubleElement curElement : adjustedPvalues) {
                 output.setElement(curElement.id, colname, curElement.value);
             }
 

@@ -6,30 +6,28 @@
 package nl.systemsgenetics.downstreamer.runners;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
+import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
+import umcg.genetica.math.stats.ZScores;
 
 /**
  *
  * @author patri
  */
 public class NetworkProperties {
+
+	private static final Logger LOGGER = Logger.getLogger(NetworkProperties.class);
 	
-	public static void investigateNetwork(DownstreamerOptions options) throws IOException, Exception {
-		
-		
+	public static void investigateNetworkPatrick(DownstreamerOptions options) throws IOException, Exception {
+
 		List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
-		
-		
+
 		DoubleMatrixDatasetFastSubsetLoader networkLoader = new DoubleMatrixDatasetFastSubsetLoader(options.getGwasZscoreMatrixPath());
 
 		Set<String> genesInNetwork = networkLoader.getOriginalRowMap().keySet();
@@ -91,5 +89,73 @@ public class NetworkProperties {
 		connectivity.save(options.getOutputBasePath() + ".txt");
 		
 	}
-	
+
+
+	/**
+	 * Take a co-regulation matrix and for each gene determine the number of connections that gene has. Reports at
+	 * bonferoni significant z-scores, as well as the sumchisqr for each gene.
+	 * A bit redundant with above, but didnt realise it was implemented already, this has some extra features tough.
+	 */
+	public static void investigateNetwork(DownstreamerOptions options) throws Exception {
+		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+		LOGGER.info("Loaded " + genes.size() + " genes");
+
+		DoubleMatrixDataset<String, String> corMatrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+
+		List<String> genesToKeep = corMatrix.getRowObjects();
+		LOGGER.info("Read " + genesToKeep.size() + " genes in correlation matrix");
+		genesToKeep.retainAll(genes.keySet());
+		LOGGER.info("Retained " + genesToKeep.size() + " genes that overlap with --genes file");
+		corMatrix = corMatrix.viewSelection(genesToKeep, genesToKeep);
+
+		if (!corMatrix.getHashRows().keySet().containsAll(corMatrix.getHashCols().keySet())) {
+			throw new Exception("Co-expression matrix is not squared with same row and col names");
+		}
+
+		if (!genes.keySet().containsAll(corMatrix.getHashRows().keySet())) {
+			throw new Exception("Not all genes Co-expression matrix are found in gene mapping file");
+		}
+
+		final int genesInMatrix = corMatrix.rows();
+		Set<String> colnames = new HashSet<>();
+		colnames.add("sum_chi_sqr");
+		colnames.add("z_nominal");
+		colnames.add("z_bonf_sig");
+
+		double zNominal = Math.abs(ZScores.pToZTwoTailed(0.05));
+		double zBonfSig = Math.abs(ZScores.pToZTwoTailed(0.05/genesInMatrix));
+
+		DoubleMatrixDataset<String, String> output = new DoubleMatrixDataset<>(corMatrix.getRowObjects(), colnames);
+
+		for (int i = 0; i < genesInMatrix; ++i) {
+
+			double curSumChiSqr = 0;
+			double curZNominal = 0;
+			double curZBonfSig = 0;
+
+			for(int j =0 ; j < genesInMatrix; j++) {
+
+				double curVal = corMatrix.getElementQuick(i, j);
+				curSumChiSqr += (curVal * curVal);
+
+				if (Math.abs(curVal) > zNominal) {
+					curZNominal ++;
+				}
+
+				if (Math.abs(curVal) > zBonfSig) {
+					curZBonfSig ++;
+				}
+
+			}
+
+			output.setElementQuick(i, 0, curSumChiSqr);
+			output.setElementQuick(i, 1, curZNominal);
+			output.setElementQuick(i, 2, curZBonfSig);
+		}
+
+		LOGGER.info("Done, saving output");
+		output.save(options.getOutputBasePath() + ".degree.tsv");
+
+	}
+
 }
