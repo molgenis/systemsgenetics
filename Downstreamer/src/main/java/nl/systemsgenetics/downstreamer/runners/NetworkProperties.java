@@ -94,7 +94,7 @@ public class NetworkProperties {
 	/**
 	 * Take a co-regulation matrix and for each gene determine the number of connections that gene has. Reports at
 	 * bonferoni significant z-scores, as well as the sumchisqr for each gene.
-	 * A bit redundant with above, but didnt realise it was implemented already, this has some extra features tough.
+	 * A bit redundant with above, but didnt realise it was implemented already :'(
 	 */
 	public static void investigateNetwork(DownstreamerOptions options) throws Exception {
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
