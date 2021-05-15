@@ -1,10 +1,9 @@
 ```{r}
-setwd("comparing_magma")
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_pathways")} else {setwd("../evaluating_pathways/")}
 source("../downstreamer_functions.r")
-source("data/source_olivier.r")
 
 # Cached 2021-01-07 15:15
-datasets <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = F, potential_traits = c("GtexV8", "GenePrioritization"))
+datasets <- read.downstreamer.batch("../data/final_paper", USE.CACHE = F)#, potential_traits = c("GtexV8", "GenePrioritization"))
 
 read.magma <- function(path) {
   genesets <- fread(paste0("grep -v \"#\" ", path, "/magma.gsa.out"), data.table=F)
@@ -90,50 +89,81 @@ datasets.raw  <- lapply(datasets.raw, function(x){
 
 ```
 
-
+# Comparing annotated vs predicted pathway memberships
 ```{r}
-plots.gene.prio          <- list()
-
-trait <- "height_2018"
-trait <- "inflammatory_bowel_disease_2017"
-trait <- "coeliac_disease_2011"
-
-ibd.downstreamer                    <- datasets.raw[[grep(trait, names(datasets.raw))]]
-ibd.downstreamer$GtexV8             <- datasets[[grep(trait, names(datasets))]]$GtexV8
-ibd.downstreamer$GenePriortization  <- datasets[[grep(trait, names(datasets))]]$GenePrioritization
-ibd.magma                           <- read.magma.3(paste0("data/no_hla/", trait, "*_hg19"))
+for (trait in c("coeliac_disease_2011", "inflammatory_bowel_disease_2017", "height_2018")) {
+  
+results.x                    <- datasets.raw[[grep(trait, names(datasets.raw))]]
+#results.x$GtexV8             <- datasets[[grep(trait, names(datasets))]]$GtexV8
+#results.x$GenePriortization  <- datasets[[grep(trait, names(datasets))]]$GenePrioritization
+#results.y                           <- read.magma.3(paste0("data/no_hla/", trait, "*_hg19"))
+results.y                            <- datasets[[grep(trait, names(datasets))]]
 
 plots <- list()
-c("Reactome", "GO_BP", "GO_CC", "GO_MF", "KEGG", "GtexV8")
-for (database in c("GO_BP", "GO_CC", "GO_MF", "KEGG","GtexV8", "GenePriortization")) {
+for (database in c("GO_BP", "GO_CC", "GO_MF", "KEGG")) {
+  ol <- intersect(rownames(results.y[[database]]), rownames(results.x[[database]]))
   
-  if (database=="GtexV8") {
-      tmp <- rownames(ibd.downstreamer[[database]])
-      tmp <- gsub(" - ", "_", tmp)
-      tmp <- gsub(" ", "_", tmp)
-      rownames(ibd.downstreamer[[database]]) <- tmp
+  x <- results.x[[database]][ol,]$Enrichment.P.value
+  y <- results.y[[database]][ol,]$Enrichment.P.value
+  
+  plots[[database]] <- xy.plot.pvalue.colored(-log10(x), x, -log10(y), y,
+                         xlab="-log10(p) Annotated pathways",
+                         ylab="-log10(p) Predicted pathway",
+                         main=database,
+                         pval.col="all",
+                         base_size=8)
+  
 }
 
-  ol <- intersect(rownames(ibd.magma[[database]]), rownames(ibd.downstreamer[[database]]))
+pdf(width=5, height=4, paper="a4", file=paste0("output/plots/", trait, "_annotated_vs_predicted_pw.pdf"))
+grid.arrange(grobs=plots, ncol=2)
+dev.off()
+
+}
+```
+
+# Compare with Magma
+```{r}
+for (trait in c("coeliac_disease_2011", "inflammatory_bowel_disease_2017", "height_2018")) {
   
-  x <- ibd.downstreamer[[database]][ol,]$Enrichment.P.value
-  #x[ibd.downstreamer[[database]][ol,]$Enrichment.Z.score < 0] <- 1
-  y <- ibd.magma[[database]][ol,]$P
+results.x                    <- datasets.raw[[grep(trait, names(datasets.raw))]]
+#results.x$GtexV8             <- datasets[[grep(trait, names(datasets))]]$GtexV8
+#results.x$GenePriortization  <- datasets[[grep(trait, names(datasets))]]$GenePrioritization
+results.y                           <- read.magma.3(paste0("data/no_hla/", trait, "*_hg19"))
+
+plots <- list()
+for (database in c("GO_BP", "GO_CC", "GO_MF", "KEGG")) {
+  ol <- intersect(rownames(results.y[[database]]), rownames(results.x[[database]]))
+  
+    if (database=="GtexV8") {
+      tmp <- rownames(results.x[[database]])
+      tmp <- gsub(" - ", "_", tmp)
+      tmp <- gsub(" ", "_", tmp)
+      rownames(results.x[[database]]) <- tmp
+  }
+  
+  x <- results.x[[database]][ol,]$Enrichment.P.value
+  y <- results.y[[database]][ol,]$P
+  
   plots[[database]] <- xy.plot.pvalue.colored(-log10(x), x, -log10(y), y,
                          xlab="-log10(p) Downstreamer",
                          ylab="-log10(p) Magma",
                          main=database,
-                         pval.col="all") 
+                         pval.col="all",
+                         base_size=8)
   
 }
 
-grid.arrange(grobs=plots, ncol=3)
+pdf(width=5, height=4, paper="a4", file=paste0("output/plots/", trait, "_magma_vs_downstreamer.pdf"))
+grid.arrange(grobs=plots, ncol=2)
+dev.off()
 
-
-plots.gene.prio[[trait]] <- plots$GenePriortization
-grid.arrange(grobs=plots.gene.prio, ncol=3)
+}
 
 ```
+
+
+
 
 
 # Old online version

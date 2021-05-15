@@ -1,5 +1,5 @@
 ```{r}
-setwd("coregulation_clustering")
+if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_clustering")} else {setwd("../coregulation_clustering")}
 source("../downstreamer_functions.r")
 library(apcluster)
 library(tidygraph)

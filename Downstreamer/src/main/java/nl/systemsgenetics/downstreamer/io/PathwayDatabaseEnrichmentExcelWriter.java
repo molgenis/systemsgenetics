@@ -4,6 +4,7 @@ import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.runners.PathwayDatabaseEnrichments;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.apache.poi.common.usermodel.HyperlinkType;
@@ -16,6 +17,7 @@ import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.usermodel.*;
+import sun.swing.StringUIClientPropertyKey;
 import umcg.genetica.math.matrix2.DoubleMatrix1dOrder;
 import nl.systemsgenetics.downstreamer.runners.PathwayDatabaseEnrichments.PathwayDatabaseEnrichmentRecord;
 
@@ -64,7 +66,7 @@ public class PathwayDatabaseEnrichmentExcelWriter {
                 // Initialize the sheet
                 XSSFSheet sh = (XSSFSheet) wb.createSheet(WorkbookUtil.createSafeSheetName(geneAssociations.getName()));
                 XSSFTable table = sh.createTable(new AreaReference(new CellReference(0, 0),
-                        new CellReference(curRecords.size(), 10 + maxAnnotations),
+                        new CellReference(curRecords.size(), 11 + maxAnnotations),
                         SpreadsheetVersion.EXCEL2007));
 
                 String tableName = geneAssociations.getName();
@@ -98,6 +100,8 @@ public class PathwayDatabaseEnrichmentExcelWriter {
                 headerRow.createCell(hc++, CellType.STRING).setCellValue("P FDR");
                 headerRow.createCell(hc++, CellType.STRING).setCellValue("AUC");
                 headerRow.createCell(hc++, CellType.STRING).setCellValue("Utest");
+                headerRow.createCell(hc++, CellType.STRING).setCellValue("Bonf overlapping genes");
+                headerRow.createCell(hc++, CellType.STRING).setCellValue("FDR overlapping genes");
 
                 double v;
                 XSSFCell cell;
@@ -201,6 +205,23 @@ public class PathwayDatabaseEnrichmentExcelWriter {
                     cell.setCellValue(v);
                     cell.setCellStyle(v < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 
+                    // Bonferroni signficant genes overlapping the pathway
+                    String geneList = StringUtils.join(curRecord.getBonfSigResult().getSignificantOverlappingGenes(), ' ');
+                    if (geneList.length() >= 32766 || curRecord.getBonfSigResult().getSignificantOverlappingGenes().size() >= 500) {
+                        geneList = "TooManyGenes";
+                    }
+
+                    cell = row.createCell(c++, CellType.STRING);
+                    cell.setCellValue(geneList);
+
+                    // FDR signficant genes overlapping the pathway
+                    geneList = StringUtils.join(curRecord.getFdrSigResult().getSignificantOverlappingGenes(), ' ');
+                    cell = row.createCell(c++, CellType.STRING);
+                    if (geneList.length() >= 32766 || curRecord.getBonfSigResult().getSignificantOverlappingGenes().size() >= 500) {
+                        geneList = "TooManyGenes";
+                    }
+                    cell.setCellValue(geneList);
+
                     // Advance row one.
                     r++;
                 }
@@ -208,9 +229,14 @@ public class PathwayDatabaseEnrichmentExcelWriter {
                 // Auto-scale columns in sheet
                 for (int c = 0; c < hc; ++c) {
                     sh.autoSizeColumn(c);
-                    sh.setColumnWidth(c, sh.getColumnWidth(c) + 800); //compensate for with auto filter and inaccuracies
+                    //compensate for with auto filter and inaccuracies;
+                    int cw = sh.getColumnWidth(c) + 800;
+                    if (cw >= 65280) {
+                        cw = 15000;
+                    }
+                    sh.setColumnWidth(c, cw);
                     if (c >= 1 && sh.getColumnWidth(c) > 15000) {
-                        //max col width. Not for first column.
+                        // max col width. Not for first column.
                         sh.setColumnWidth(c, 15000);
                     }
                 }
@@ -228,4 +254,8 @@ public class PathwayDatabaseEnrichmentExcelWriter {
 
         }
     }
+
+
 }
+
+

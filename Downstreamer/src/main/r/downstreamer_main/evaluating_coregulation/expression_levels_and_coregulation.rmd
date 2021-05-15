@@ -1,0 +1,40 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+
+marker.tstat        <- read.table("../data/gene_network_ttest_maker_genes.tstats.txt", row.names=1, header=T, sep="\t")
+marker.pval         <- read.table("../data/gene_network_ttest_maker_genes.pvalues.txt", row.names=1, header=T, sep="\t")
+
+marker.zscore                       <- apply(marker.pval, 2, sapply, qnorm)
+marker.zscore                       <- marker.zscore*-1
+marker.zscore[marker.zscore == Inf] <- 38
+marker.zscore[marker.zscore < 4.54] <- 0
+marker.zscore                       <- sign(marker.tstat) * marker.zscore
+
+```
+
+```{r}
+zscores <- make.zscore.matrix(datasets)
+
+ol      <- intersect(rownames(zscores), rownames(marker.zscore))
+
+cor.m   <- cor(zscores[ol,], marker.zscore[ol,], use="complete.obs")
+
+pdf(width=9, height=9, file="output/plots/GenePrioritization_vs_expression_level.pdf", paper="a4")
+simple.hm(cor.m,
+          cellwidth=5,
+          cellheight=5,
+          fontsize=4.5,
+          cluster_rows=T,
+          cluster_cols=T,
+          border=NA,
+          annotation_row=meta.data[rownames(cor.m), "class", drop=F],
+          annotation_colors=list(`class`=class.cols),
+          labels_row=meta.data[rownames(cor.m), "Name"])
+dev.off()
+
+```
+

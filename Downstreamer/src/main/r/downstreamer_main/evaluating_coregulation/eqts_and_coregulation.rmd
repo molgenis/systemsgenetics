@@ -1,16 +1,17 @@
 ```{r}
-setwd("evaluating_coregulation")
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
 source("../downstreamer_functions.r")
 source("data/source_olivier.r")
 library(ggsignif)
 
-datasets       <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = F, potential_traits = "GenePrioritization")
-datasets       <- read.downstreamer.batch("data/no_celline_gene_network_test_results/", USE.CACHE = F, potential_traits = "GenePrioritization200")
+# Cached 2021-04-26
+datasets       <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T, potential_traits = "GenePrioritization")
+#datasets       <- read.downstreamer.batch("data/no_celline_gene_network_test_results/", USE.CACHE = F, potential_traits = "GenePrioritization200")
 
 # Genepvalues
-files <- list.files(main.downstreamer.output.path, pattern="*_genePvalues_.*.xlsx", full.names = T)
-genep <- read.genep.excel(files)
-genep[is.na(genep)] <- 1
+#files <- list.files(main.downstreamer.output.path, pattern="*_genePvalues_.*.xlsx", full.names = T)
+#genep <- read.genep.excel(files)
+#genep[is.na(genep)] <- 1
 
 # Eqts files
 eqts <-  fread(eqts.file, data.table = F)
@@ -23,30 +24,31 @@ freqs <- freqs[order(freqs$Freq, decreasing=T),]
 
 # Overall increase of coregulation Z-score among eQTS genes
 ```{r}
-zscores <- make.zscore.matrix(datasets)
-zscores <- apply(zscores, 1, max)
+zscores    <- make.zscore.matrix(datasets)
+zscores    <- apply(zscores, 1, max)
 
 is.de.gene <- names(zscores) %in% unique.eqts.genes
 
-df.plot <- data.frame(y=zscores, x=is.de.gene)
-df.plot <- na.omit(df.plot)
+df.plot    <- data.frame(y=zscores, x=is.de.gene)
+df.plot    <- na.omit(df.plot)
 
 p <- ggplot(data=df.plot, mapping=aes(y=y, x=x)) +
   geom_hline(yintercept = median(zscores[!is.de.gene]), lty=2, col="grey") +
   geom_violin() +
-  geom_boxplot(width=0.05, color="black") +
-  geom_signif(comparisons = list(c("TRUE", "FALSE")), tip_length = 0) + 
-  xlab("Is eQTS") +
-  ylab("Max core gene score")
+  geom_boxplot(width=0.2, color="black",  outlier.colour="#376B65") +
+  geom_signif(comparisons = list(c("TRUE", "FALSE")), tip_length = 0, textsize = 3) + 
+  scale_x_discrete(labels=c("Non eQTS genes\nN=17259", "eQTS genes\nN=2257")) + 
+  xlab("") +
+  ylab("Max key-gene score")
 
-pdf(width=4, height=4, file="output/plots/all_eqts_vs_max_coregulation_zscore.pdf")
-theme.nature(p)
+pdf(width=3, height=3, file="output/plots/eqts_vs_max_coregulation_zscore.pdf", paper="a4")
+theme.nature(p, base_size=8)
 dev.off()
 ```
 
-# Specific examples of eQTS genes
+# eQTS genes vs key-gene score per GWAS
 ```{r}
-zscores <- make.zscore.matrix(datasets, trait="GenePrioritization200")
+zscores <- make.zscore.matrix(datasets, trait="GenePrioritization")
 
 #pmids        <- gsub(".*_\\d{4}_(\\d+)", "\\1", colnames(zscores))
 #names(pmids) <- colnames(zscores)
@@ -70,27 +72,32 @@ eqts.plot <- function(pgs, trait) {
   p <- ggplot(data=df.plot, mapping=aes(y=y, x=x)) +
     geom_hline(yintercept = median(zscores[!is.de.gene]), lty=2, col="grey") +
     geom_violin() +
-    geom_boxplot(width=0.05, color="black") +
-    xlab("Is eQTS gene") +
-    geom_signif(comparisons = list(c(a, b)), tip_length = 0) + 
-    ylab(paste0( trait))
+    geom_boxplot(width=0.2, color="black", outlier.colour="#376B65") +
+    xlab("") +
+    geom_signif(comparisons = list(c(a, b)),textsize = 3,tip_length = 0) + 
+    ylab(paste0("Key-gene score: ", meta.data[trait, "Name"]))
   
-  theme.nature(p)
+  
+  df.plot$x <- gsub("\\n", " ", as.character(df.plot$x))
+  
+  write.table(df.plot[df.plot$x == gsub("\\n", " ", a),], file=paste0("output/plots/eqts_genes_", trait, ".tsv"), sep="\t", quote=F)
+  
+  return( theme.nature(p, base_size=8))
 }
 
 pairs <- matrix(ncol=2)
 pairs <- rbind(pairs, c("Celiac_disease_2011_22057235_hg19.txt.gz", "coeliac_disease_2011_22057235"))
 pairs <- rbind(pairs, c("Inflammatory_Bowel_Disease_EUR_2015_26192919_hg19.txt.gz", "inflammatory_bowel_disease_2017_29906448"))
-pairs <- rbind(pairs, c("Systemic_lupus_erythematosus_2015_26502338_hg19.txt.gz", "systemic_lupus_erythematosus_2017_28714469"))
 pairs <- rbind(pairs, c("Educational_attainment_2016_27225129_hg19.txt.gz", "educational_attainment_2018_30038396"))
 pairs <- rbind(pairs, c("Height_2014_25282103_rs.txt.gz", "height_2018_30124842"))
 pairs <- rbind(pairs, c("Extreme_height_2013_23563607_rs.txt.gz", "height_2018_30124842"))
 pairs <- rbind(pairs, c("Body_mass_index_EUR_2015_25673413_rs.txt.gz", "body_mass_index_2018_30124842"))
 pairs <- rbind(pairs, c("Rheumatoid_Arthritis_2014_24390342_hg19.txt.gz", "rheumatoid_arthritis_2014_24390342"))
-pairs <- rbind(pairs, c("Multiple_sclerosis_2013_24076602_hg19.txt.gz", "multiple_sclerosis_2013_24076602"))
+pairs <- rbind(pairs, c("Multiple_sclerosis_2013_24076602_hg19.txt.gz", "multiple_sclerosis_2019_31604244"))
 pairs <- rbind(pairs, c("Coronary_artery_disease_additive_2015_26343387_hg19.txt.gz", "coronary_artery_disease_2018_29212778"))
 pairs <- rbind(pairs, c("Major_depression_2016_27479909_hg19.txt.gz", "major_depressive_disorder_2018_29700475"))
 pairs <- rbind(pairs, c("Asthma_2010_860503_random_effects_hg18_hg19.txt.gz", "asthma_2020_32296059"))
+
 pairs <- na.omit(pairs)
 
 plots <- apply(pairs, 1, function(pair){
@@ -99,12 +106,26 @@ plots <- apply(pairs, 1, function(pair){
 })
 
 
-pdf(width=13, height=12, file="output/plots/eqts_vs_coregulation_per_trait.pdf")
+pdf(width=10, height=9, file="output/plots/eqts_vs_coregulation_per_trait.pdf")
 grid.arrange(grobs=plots, ncol=4)
 dev.off()
 
+
+pdf(width=9, height=2.5, file="output/plots/eqts_vs_coregulation_significant_traits.pdf", paper="a4")
+grid.arrange(grobs=plots[c(1, 2, 11)], ncol=3)
+dev.off()
+
+
+
 #grep("Inflamm", unique(eqts$PGS), value=T)
 ```
+
+
+
+
+
+
+
 
 
 ```{r}

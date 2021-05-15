@@ -1,11 +1,13 @@
 ```{r}
-setwd("evaluating_coregulation")
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
 source("../downstreamer_functions.r")
 source("data/source_olivier.r")
 
 library(UpSetR)
+library(tidygraph)
+library(ggraph)
 
-#Cached 2021-04-12
+# Cached 2021-04-28
 datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
 
 meta.data           <- read.table("../data/downstreamer_summary_statistics.csv", sep="\t", stringsAsFactors = F, header=T)
@@ -16,16 +18,19 @@ gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/"
 ol                  <- intersect(names(datasets), colnames(gene.pvalues))
 
 
-class.cols <- c(`auto-immune`="#ebac23",
-          `cancer`="#008a20",
-          `cardiovascular`="#b24502",
-          `blood composition`="#b80058",
-          `kidney function`="#00bbad",
-          `lipid level`="#d163e6",
-          `neurodegenerative`="#008cf9",
-          `psychological`="#5954d6",
-          `skeletal`="#ff9287",
-          `NA`="#bdbdbd")
+# Ensembl
+ensembl.file <- "../coregulation_calculations/data/ensgR75_protein_coding.txt"
+ensembl <- read.table(ensembl.file, sep="\t", header=T, stringsAsFactors = F)
+ensembl <- unique(ensembl[,c(1, 7)])
+rownames(ensembl) <- ensembl[,1]
+
+# Convert ensembl ids to entrez
+ENSEMBLToEntrez <- function(gene) {
+  gene.df <- bitr(gene, fromType = "ENSEMBL",
+                  toType = c("ENTREZID"),
+                  OrgDb = org.Hs.eg.db)
+  return(gene.df$ENTREZID)
+}
 
 ```
 
@@ -42,21 +47,44 @@ ol                    <- intersect(names(datasets), rownames(meta.data))
 
 df.plot <- data.frame(x=meta.data[ol,]$N,
                       y=count.bonf.sig.genes[ol],
+                      x2=meta.data[ol,]$N_indep_gws, 
                       class=meta.data[ol,]$class)
 
 
-pdf(width=5, height=3, file="output/plots/GenePriortization_number_of_key_genes_vs_gwas_samplesize.pdf", paper="a4")
+ct <- cor.test(df.plot$x, df.plot$y, use="complete.obs")
+
+pdf(width=3, height=3, file="output/plots/GenePriortization_number_of_key_genes_vs_gwas_samplesize.pdf", paper="a4")
 p <- ggplot(data=df.plot, mapping=aes(x=x, y=y)) + 
   geom_smooth(method="lm", col="grey", fill="lightgrey") + 
-  geom_point(alpha=0.75, size=4, mapping=aes(col=class)) + 
+  geom_point(alpha=0.75, size=2, mapping=aes(col=class)) + 
   xlab("GWAS sample size") +
   ylab("Detected # of key-genes") +
-  ggtitle(paste0("Pearson correlation: ", format(cor(df.plot$x, df.plot$y, use="complete.obs"), digits=2))) +
+  ggtitle(paste0("Pearson R: ", format(ct$estimate, digits=2),
+                 " p-value: ", format(ct$p.value, digits=2, scientific=T))) +
   scale_x_continuous(breaks=c(0, 500000, 1000000), labels=c("0", "500.000", "1.000.000")) +
   scale_color_manual(values=class.cols, na.value="#bdbdbd")
 
-theme.nature(p)
+theme.nature(p, base_size=8) + theme(legend.position = "none")
 dev.off()
+
+ct <- cor.test(df.plot$x2, df.plot$y, use="complete.obs")
+
+
+pdf(width=3, height=3, file="output/plots/GenePriortization_number_of_key_genes_vs_indep_gwas_hits.pdf", paper="a4")
+p <- ggplot(data=df.plot, mapping=aes(x=x2, y=y)) + 
+  geom_smooth(method="lm", col="grey", fill="lightgrey") + 
+  geom_point(alpha=0.75, size=2, mapping=aes(col=class)) + 
+  xlab("Independent genome wide signficant hits") +
+  ylab("Detected of key-genes") +
+  ggtitle(paste0("Pearson R: ", format(ct$estimate, digits=2),
+                 " p-value: ", format(ct$p.value, digits=2, scientific=T))) +
+  #scale_x_continuous(breaks=c(0, 500000, 1000000), labels=c("0", "500.000", "1.000.000")) +
+  scale_color_manual(values=class.cols, na.value="#bdbdbd")
+
+theme.nature(p, base_size=8) + theme(legend.position = "none")
+dev.off()
+
+
 ```
 
 # Correlation heatmap of Enrichment zscores
@@ -93,21 +121,31 @@ simple.hm(cor.m,
 dev.off()
 
 
-pdf(width=8, height=3, file="output/plots/GenePriortization_number_of_keygenes_heatmap_ordered.pdf", paper="a4")
+pdf(width=8, height=3.5, file="output/plots/GenePriortization_number_of_keygenes_heatmap_ordered.pdf", paper="a4")
 
+par(mar=c(10,5,3,1))
 barplot(count.bonf.sig.genes[rownames(cor.m)],
         border=NA,
         ylab="Detected # of key-genes",
-        names.arg=c())
+        names.arg=meta.data[rownames(cor.m), "Name"],
+        las=2,
+        col=class.cols[meta.data[rownames(cor.m), "class"]],
+        cex.axis = 1,
+        cex.lab=1,
+        cex.main=1,
+        cex.names=0.75)
 
 dev.off()
 ```
 
-
-
-
 # Network of shared traits
 ```{r}
+bonf.sig.coreg.genes  <- lapply(datasets, function(dataset){
+  coreg <- dataset$GenePrioritization
+  coreg <- coreg[coreg$Enrichment.Z.score > 0,]
+  return(coreg$Gene.ID[coreg$Bonferroni.significant])
+})
+
 ol.mat <- sapply(names(bonf.sig.coreg.genes), function(trait1){
   sapply(names(bonf.sig.coreg.genes), function(trait2){
      a <- bonf.sig.coreg.genes[trait1][[1]]
@@ -120,12 +158,12 @@ ol.mat <- sapply(names(bonf.sig.coreg.genes), function(trait1){
 })
 
 ol.mat[is.na(ol.mat)] <- 0
-rownames(ol.mat) <- meta.data[rownames(ol.mat),]$Name
-colnames(ol.mat) <- meta.data[colnames(ol.mat),]$Name
+#rownames(ol.mat) <- meta.data[rownames(ol.mat),]$Name
+#colnames(ol.mat) <- meta.data[colnames(ol.mat),]$Name
 ol.mat <-ol.mat[rownames(ol.mat), rownames(ol.mat)]
 
 
-ol.mat[upper.tri(ol.mat)] <- 0
+#ol.mat[lower.tri(ol.mat)] <- 0
 #clust.h <- hclust(dist(ol.mat))
 
 simple.hm(ol.mat,
@@ -134,30 +172,171 @@ simple.hm(ol.mat,
           border=NA,
           cluster_rows=F,
           cluster_cols=F,
-          range="absolute")
+          range="absolute",
+          labels_row=meta.data[rownames(ol.mat), "abbreviation"],
+          labels_col=meta.data[colnames(ol.mat), "abbreviation"])
 
 
-```
 
-```{r}
-library(tidygraph)
-library(ggraph)
+cur.df <- ol.mat
 
-graph <- as_tbl_graph(ol.mat)
+# Node df
+nodes           <- data.frame(id=unique(c(colnames(cur.df), rownames(cur.df))), stringsAsFactors = F)
+nodes$class     <- meta.data[nodes$id , "class"]
+nodes$name      <- meta.data[nodes$id , "Name"]
+nodes$abrv      <- meta.data[nodes$id , "abbreviation"]
 
-p1               <- ggraph(graph, layout="fr")
+# Construct edges at zscore threshold
+tmp.edges       <-  ol.mat > 0.25
+tmp.edges[lower.tri(tmp.edges)] <- F
+edges           <- as.data.frame(matrix(nrow=1, ncol=3))
+colnames(edges) <- c("from", "to", "effect")
+
+# Remove duplicated edges for nodes which appear in both columns and rows
+#tmp.edges[upper.tri(tmp.edges)]    <- F
+
+# Filter edges that only appear once
+tmp.edges[rowSums(tmp.edges) < 2,] <- rep(F, ncol(tmp.edges))
+
+#ol    <- intersect(rownames(cur.df), colnames(cur.df))
+#tmp.edges[ol, ol][upper.tri(tmp.edges[ol, ol])] <- F
+
+for (row in 1:nrow(tmp.edges)) {
+  for(col in 1:ncol(tmp.edges)) {
+    if (tmp.edges[row, col]) {
+      rowgene <- rownames(cur.df)[row]
+      colgene <- colnames(cur.df)[col]
+      edges   <- rbind(edges, c(
+        rowgene,
+        colgene,
+        cur.df[row, col]))
+    }
+  }
+}
+
+edges            <- na.omit(edges)
+
+# Match the nodes and the edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$id %in% nodes.with.edges,]
+edges$from       <- sapply(edges$from, function(x){which(x == nodes$id)})
+edges$to         <- sapply(edges$to, function(x){which(x == nodes$id)})
+edges$effect     <- as.numeric(edges$effect)
+
+graph <- tbl_graph(nodes=nodes, edges=edges, directed=T)
+#graph <- as_tbl_graph(binary.ol.mat, directed=F, nodes=meta.data)
+
+p1               <- ggraph(graph)
 
 p2 <- p1 +
-  geom_edge_link(alpha=0.1) +
-  geom_node_point(aes(colour="red", size=4), alpha=0.9) +
-  theme_graph(base_family = 'sans') 
+  geom_edge_link(alpha=0.1, mapping=aes(width=effect)) +
+  #geom_node_point(aes(colour=class), alpha=0.9, size=4) +
+  theme_graph(base_family = 'sans')  +
+  #geom_edge_density(n=10, mapping=aes(fill=effect)) + 
+  scale_color_manual(values=class.cols) +
+  scale_fill_manual(values=class.cols) +
+  geom_node_label(aes(label=abrv, fill=class),
+                     colour="white",
+                     show.legend = F,
+                     label.size = 0,
+                     repel=F, segment.colour="black")
+
+pdf(file="output/plots/GenePriortization_gene_sharing_25perc_edge_limit_bonfsig.pdf", width=9, height=5, paper="a4")
 p2
+dev.off()
+```
+
+# Percentage of shared keygenes
+```{r}
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(ReactomePA)
+library(ggrepel)
+
+protein.coding.bg <- ENSEMBLToEntrez(ensembl$Ensembl.Gene.ID)
+
+#tmp.datasets <- datasets[grep("cellcounts", names(datasets), value=T, invert=T)]
+tmp.datasets <- datasets
+
+# Per GWAS
+bonf.sig.coreg.genes  <- lapply(tmp.datasets, function(dataset){
+  coreg <- dataset$GenePrioritization
+  coreg <- coreg[coreg$Enrichment.Z.score > 0,]
+  return(coreg$Gene.ID[coreg$Bonferroni.significant])
+})
+sig.genes <- table(unlist(bonf.sig.coreg.genes))
+
+# Per class
+bonf.sig.genes.per.class <- list()
+for (class in unique(meta.data$class)) {
+  cur.genes <- unique(unlist(bonf.sig.coreg.genes[rownames(meta.data[meta.data$class==class,])]))
+  bonf.sig.genes.per.class[[class]] <- cur.genes
+}
+sig.genes <- table(unlist(bonf.sig.genes.per.class))
+
+sig.genes <- sig.genes[order(sig.genes, decreasing = T)]
+gene.list <- ENSEMBLToEntrez(names(sig.genes)[sig.genes > 1])
+  
+# Percentage of sharing
+length(gene.list) / length(sig.genes)
+
+# percentage of sharing over number of overlaps
+shared.count    <- sapply(1:10, function(i){sum(sig.genes == i)})
+shared.perc     <- sapply(1:10, function(i){sum(sig.genes == i)}) / length(sig.genes)
+#shared.count[0] <-  length(sig.genes) - sum(shared.count)
+#shared.perc[0]  <- (length(sig.genes) - sum(shared.count)) / length(sig.genes)
+
+pdf(width=5, height=2.5, file="output/plots/GenePriortization_percentage_of_shared_keygenes_per_class.pdf", paper="a4")
+p <- ggplot(data=data.frame(y=shared.perc, x=1:10, label=shared.count), mapping=aes(x=x, y=y, label=label)) +
+  geom_line(col="grey") +
+  geom_point(col="#376B65") +
+  xlab("Significant in # classes") +
+  ylab("Percentage of shared key-genes") +
+  scale_x_continuous(breaks=1:10) +
+  geom_text(col="grey", nudge_x=0.75)
+theme.nature(p, base_size=8)
+dev.off()
+
+gene.list <- ENSEMBLToEntrez(names(sig.genes)[1:100])
+
+resKEGG <- enrichKEGG(gene = gene.list,
+                      organism = 'hsa',
+                      universe = ENSEMBLToEntrez(ensembl$Ensembl.Gene.ID),
+                      pvalueCutoff = 1,
+                      qvalueCutoff = 1)@result
+  
+resReac <- enrichPathway(gene = gene.list,
+                         organism = 'human',
+                         universe = protein.coding.bg,
+                         pvalueCutoff = 1,
+                         qvalueCutoff = 1)@result
+  
+resGOBP <- enrichGO(gene = gene.list,
+                    OrgDb = org.Hs.eg.db,
+                    universe = protein.coding.bg,
+                    pvalueCutoff = 1,
+                    qvalueCutoff = 1)@result
 ```
 
 
-
-
-
+```{r}
+p2 <- p1 +
+  geom_edge_link(alpha=0.1,
+                 mapping=aes(width=effect,
+                             start_cap=label_rect(node1.name),
+                             end_cap=label_rect(node2.name)),
+                 arrow = arrow(length = unit(4, 'pt'), type=closed, width=2)) +
+  #geom_node_point(aes(colour=class), alpha=0.9, size=4) +
+  theme_graph(base_family = 'sans')  +
+  scale_color_manual(values=class.cols) +
+    scale_fill_manual(values=class.cols) +
+    geom_node_label(aes(label=abrv, fill=class),
+                     colour="white",
+                     show.legend = F,
+                     label.size = 0,
+                     repel=F, segment.colour="black")
+p2
+```
 
 
 

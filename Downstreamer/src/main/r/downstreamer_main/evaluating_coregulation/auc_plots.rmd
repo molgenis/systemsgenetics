@@ -1,15 +1,19 @@
 ```{r}
-library(pROC)
-library(data.table)
-setwd("../evaluating_coregulation")
-
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
 source("../downstreamer_functions.r")
 source("data/source_olivier.r")
 
-# Read reference datasets
-ensembl <- read.table(ensembl.file,sep="\t", header=T, row.names = 1, stringsAsFactors = F)
-ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
-rownames(ensembl) <- make.names(ensembl$Gene.name, unique=T)
+library(pROC)
+library(data.table)
+library(scales)
+
+
+# Cached 2021-04-28
+datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+
+gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
+ol                  <- intersect(names(datasets), colnames(gene.pvalues))
+
 
 # Gnomad PLI
 gnomad <- read.table(gnomad.file, sep="\t", header=T, stringsAsFactors = F)
@@ -22,22 +26,77 @@ rownames(hpo.matrix) <- hpo.matrix[,1]
 hpo.matrix <- hpo.matrix[,-1]
 ```
 
+
+
+```{r}
+# Top 10 AUC, bonfsig, min 20 genes in term
+hpo.terms <- c("HP:0002728", "HP:0011370", "HP:0001890", "HP:0001973", "HP:0005403", "HP:0004798", "HP:0020100", "HP:0002841", "HP:0001287", "HP:0002583") 
+
+hpo.term  <- "HP:0002583" # colitis
+trait     <- "inflammatory_bowel_disease_2017_29906448"
+coreg     <- datasets[[trait]]$GenePrioritization
+genep     <- gene.pvalues[,trait, drop=F]
+
+# Overlap genes
+ol       <- intersect(intersect(rownames(coreg), rownames(genep)), rownames(hpo.matrix))
+
+results  <- list()
+
+for (hpo.term in hpo.terms) {
+  # Calculate AUC
+  auc.genep <- roc(as.factor(hpo.matrix[ol, hpo.term]), genep[ol, 1])
+  auc.coreg <- roc(as.factor(hpo.matrix[ol, hpo.term]), coreg[ol, ]$Enrichment.Z.score)
+  
+  results[[hpo.term]] <- list(auc.coreg, auc.genep)
+}
+
+#roc.test(auc.genep, auc.coreg)
+
+col1 <- alpha("#376B65", 1)
+col2 <- alpha("#D4D952", 1)
+
+plot.roc(results[[1]][[2]],
+         col=col1,
+         main=paste0(meta.data[trait, "Name"]),
+         mgp=c(2.6, 0.7, 0),
+         lwd=3,
+         las=1)
+lines.roc(results[[1]][[1]], col=col2 , lwd = 3)
+legend("bottomright",
+       legend=c(paste0("Key-genes"),
+                paste0("GWAS gene p-values")), 
+       col=c(col2, col1), lwd=3, bty="n")
+
+for (hpo.term in hpo.terms[2:length(hpo.terms)]) {
+  
+  lines.roc(results[[hpo.term]][[2]], col = col1, lwd = 3)
+  lines.roc(results[[hpo.term]][[1]], col = col2, lwd = 3)
+}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# DEPRECATED
+
 # Height 2018
 ```{r}
 dir      <- "~/Desktop/depict2/output/height_paper_v2/"
-version  <- "v56"
 trait    <- "height_2018_30124842_hg19"
 hpo.term <- "HP:0002691" # Platybasia 
 hpo.term <- "HP:0001519" # Disproportionate tall stature
 hpo.term <- "HP:0004322" # Short stature
 base     <- paste0(dir, "/", version, "/", trait)
-
-# Gene pvalues
-genep    <- read.enrichments(paste0(base, "_genePvalues.txt"))
-genep    <- genep[!is.na(genep),, drop=F]
-
-# Coregulation Z
-coreg    <- read.depict2(paste0(base, "_enrichtments_exHla_1.xlsx"))$Coregulation
 
 # Overlap genes
 ol       <- intersect(intersect(rownames(coreg), rownames(genep)), rownames(hpo.matrix))
@@ -46,6 +105,7 @@ ol       <- intersect(intersect(rownames(coreg), rownames(genep)), rownames(hpo.
 auc.genep <- roc(as.factor(hpo.matrix[ol, hpo.term]), -log10(genep[ol, 1]))
 auc.coreg <- roc(as.factor(hpo.matrix[ol, hpo.term]), coreg[ol, ]$Enrichment.Z.score)
 ```
+
 
 # IBD 2017
 ```{r}

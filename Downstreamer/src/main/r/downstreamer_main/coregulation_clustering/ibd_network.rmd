@@ -1,0 +1,185 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_clustering")} else {setwd("../coregulation_clustering")}
+source("../downstreamer_functions.r")
+library(apcluster)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+
+nodes   <- fread("data/networks/ibd_for_paper_2021-20-04/ibd_for_paper_2021-20-04_nodes.tsv", data.table = F)
+edges   <- fread("data/networks/ibd_for_paper_2021-20-04/ibd_for_paper_2021-20-04_named_edges.tsv", data.table = F)
+
+results <- read.depict2("../data/final_paper/inflammatory_bowel_disease_2017_29906448_hg19_enrichtments.xlsx", potential_traits = c("GenePrioritization"))$GenePrioritization
+nodes$zscore <- results[nodes$gene_id, ]$Enrichment.Z.score
+nodes$genep  <- results[nodes$gene_id, ]$GWAS.gene.P.value
+
+nodes$type   <-  results[nodes$gene_id, ]$Distance.to.lead.GWAS.variant
+nodes$type[nodes$type != "Trans (>250 kb)"] <- "Cis (<250 kb)"
+nodes$type[nodes$genep < 2.5e-6] <- "Cis (<250 kb)"
+
+# Set nodes with negative coregulation z-scores to zero
+nodes$zscore[nodes$zscore < 0] <- 0
+
+# Filter edges
+edges <- edges[abs(edges$zscore) > 1.6,]
+
+# Match the nodes and the edges, filter nodes wihout edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$gene_id %in% nodes.with.edges,]
+
+# Order nodes on annotation
+nodes            <- nodes[order(nodes$annot, decreasing = F),]
+
+nodes.orig <- nodes
+edges.orig <- edges
+
+# Ensembl
+ensembl.file <- "../coregulation_calculations/data/ensgR75_protein_coding.txt"
+ensembl <- read.table(ensembl.file, sep="\t", header=T, stringsAsFactors = F)
+ensembl <- unique(ensembl[,c(1, 7)])
+rownames(ensembl) <- ensembl[,1]
+
+# HPO
+hpo <- fread("zcat ~/Documents/data/reference/HPO/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.txt.gz", data.table=F)
+
+rownames(hpo) <- hpo[,1]
+hpo           <- hpo[-1,-1]
+
+# Inflamation of the large intestine
+#pathway <- "HP:0002583"
+
+# Colits
+pathway <- "HP:0002037" 
+
+hpo     <- hpo[,pathway, drop=F]
+```
+
+# Plot overal
+```{r}
+nodes <- nodes.orig
+edges <- edges.orig
+
+# Filter edges
+edges            <- edges[edges$zscore > 3.5,]
+
+# Match the nodes and the edges, filter nodes wihout edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$gene_id %in% nodes.with.edges,]
+
+# Simplyfiy zscore annotations
+nodes$zscore[nodes$zscore < 4.55] <- "0"
+nodes$zscore[nodes$zscore > 4.55] <- "1"
+
+# Pathway annotations
+nodes$in.pathway <- nodes$gene_id %in% rownames(hpo[hpo[,pathway] == 1,, drop=F])
+nodes[!(nodes$in.pathway), "gene_name"] <- NA 
+
+# Order nodes on annotation
+nodes <- nodes[order(nodes$in.pathway, decreasing=F),]
+
+# Filter nodes to only keep those in the main network
+tbl                             <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+filter.nodes                    <- distances(tbl, algorithm = "unweighted")
+filter.nodes                    <- rowSums(filter.nodes==Inf) == min(rowSums(filter.nodes==Inf))
+nodes                           <- nodes[filter.nodes,]
+edges                           <- edges[edges$from %in% nodes$gene_id,]
+edges                           <- edges[edges$to %in% nodes$gene_id,]
+
+# Clean up the node labels
+selected                            <- nodes$in.pathway
+nodes$in.pathway[selected]          <- "yes"
+nodes$in.pathway[!selected]         <- "no"
+
+nodes$zscore[nodes$zscore == 1]     <- "yes"
+nodes$zscore[nodes$zscore == 0]     <- "no"
+
+# Constuct the graph
+tbl              <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+
+# Plot
+#p1 <- ggraph(tbl, layout="mds")#, weights=zscore)
+p1 <- ggraph(tbl, layout="fr", weights=zscore, niter = 10000)
+
+p1a <- p1 +  geom_edge_link(alpha=0.1, col="#376B65") +
+  geom_node_point(aes(colour=type, size=zscore, alpha=in.pathway)) +
+  theme_graph(base_family = 'sans') +
+  scale_color_manual(values=c(`Cis (<250 kb)`="#376B65", `Trans (>250 kb)`="#70B8AF"),
+                     name="Location") +
+  scale_fill_manual(values=c(`Cis (<250 kb)`="#376B65", `Trans (>250 kb)`="#70B8AF"),#values=c(`no`="#376B65", `yes`="#70B8AF"),#F5CD55"
+                     name="Location") +
+  scale_alpha_manual(values=c(`no`=0.5, `yes`=1)) +
+  scale_size_manual(values=c(`no`=1, `yes`=2.5),
+                    name="Significantly prioritized") +
+  geom_node_label(mapping=aes(label=gene_name, fill=type), alpha=1, repel=T, label.size=0, color="white")
+
+pdf(file="output/plots/ibd_network_colitis_hightlight.pdf", width=7, height=5, paper="a4")
+p1a
+dev.off()
+
+```
+
+
+
+
+
+
+
+# Plot for pathway genes
+```{r}
+nodes <- nodes.orig
+edges <- edges.orig
+
+highlight.genes <- c("ENSG00000118503") #c("ENSG00000099985")
+
+# Filter edges again
+edges <- edges[(edges$from %in% highlight.genes),]
+#edges <- rbind(edges, edges.orig[edges.orig$from %in% edges$to,])
+#edges <- edges[edges$edge_type == "within_row",]
+
+edges <- edges[edges$zscore > 4.55,]
+
+# Remove edges with a node that appears only once
+#tab           <- table(edges$to)
+#nodes.to.keep <- names(tab)[tab >= 1]
+#nodes.to.keep <- nodes.to.keep[nodes.to.keep %in% nodes[nodes$annot !="both","gene_id"]]
+#edges         <- edges[edges$from %in% nodes.to.keep,] 
+#edges         <- edges[edges$to %in% nodes.to.keep,] 
+
+
+# Match the nodes and the edges, filter nodes wihout edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$gene_id %in% nodes.with.edges,]
+
+# Order nodes on annotation
+nodes            <- nodes[order(nodes$annot, decreasing = F),]
+
+# Match the order to the edges
+edges$from       <- sapply(edges$from, function(x){which(x == nodes$gene_id)})
+edges$to         <- sapply(edges$to, function(x){which(x == nodes$gene_id)})
+
+nodes$annot <- nodes$gene_id %in% highlight.genes
+
+# Construct graph object
+tbl              <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+
+p2 <- ggraph(tbl, layout="focus", focus=22) +
+  geom_edge_link(aes(width=zscore), alpha=0.1) +
+  geom_node_point(aes(size=type, col=annot), alpha=0.9) +
+  theme_graph(base_family = 'sans') +
+  scale_edge_width(range=c(0.2, 4), name="Co-regulation\nZ-score") +
+  geom_node_label(aes(label=gene_name, fill=annot),
+                     colour="white",
+                     show.legend = F,
+                     label.size = 0,
+                     repel=T, segment.colour="black")
+
+#  scale_size_continuous(range=c(0.2, 4), limits=c(0,6), name="Coregulation\nZ-score") 
+#
+
+
+#pdf(width=13, height=6, useDingbats = F, file=paste0("output/plots/ibd_oncostatin_highlight.pdf"))
+p2
+#dev.off()
+```
+
+

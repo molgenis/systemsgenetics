@@ -7,9 +7,9 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
-import nl.systemsgenetics.downstreamer.io.PathwayDatabaseEnrichmentExcelWriter;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
+import nl.systemsgenetics.downstreamer.io.PathwayDatabaseEnrichmentExcelWriter;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -17,6 +17,8 @@ import umcg.genetica.math.stats.FisherExactTest;
 import umcg.genetica.math.stats.MannWhitneyUTest2;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.IntStream;
 
 public class PathwayDatabaseEnrichments {
@@ -25,15 +27,22 @@ public class PathwayDatabaseEnrichments {
     private static int minimalGeneCountInPathway = 10;
 
     public static void testPredictionPerformance(DownstreamerOptions options) throws Exception {
-        DownstreamerStep2Results step2Results = DownstreamerUtilities.loadExistingStep2Results(options);
+        PathwayDatabaseEnrichmentExcelWriter writer = new PathwayDatabaseEnrichmentExcelWriter(options);
+        DownstreamerStep2Results step2Results = DownstreamerUtilities.loadExistingStep2Results(options, true);
         List<PathwayDatabase> targetPathwayDatabases = options.getPathwayDatabases2();
 
+        // Sheet for databases that have been enriched (most likely just GenePriortization)
         for (PathwayEnrichments queryEnrichment : step2Results.getPathwayEnrichments()) {
-            PathwayDatabaseEnrichmentExcelWriter writer = new PathwayDatabaseEnrichmentExcelWriter(options);
             // Map is structured as follows: GWAS trait > Pathway database > pathway results
             Map<String, Map<String, List<PathwayDatabaseEnrichmentRecord>>> results = testPredictionPerformanceForGwasTrait(queryEnrichment, targetPathwayDatabases);
             writer.writeResultsExcel(results, queryEnrichment.getPathwayDatabase().getName());
         }
+
+        // Sheet for gene P-values
+        PathwayEnrichments genePvalues = PathwayEnrichments.createPathwayEnrichmentsFromGenePvalues(options, step2Results.getGenePvalues());
+
+        Map<String, Map<String, List<PathwayDatabaseEnrichmentRecord>>> results = testPredictionPerformanceForGwasTrait(genePvalues, targetPathwayDatabases);
+        writer.writeResultsExcel(results, genePvalues.getPathwayDatabase().getName());
 
     }
 
@@ -42,7 +51,7 @@ public class PathwayDatabaseEnrichments {
         // Determine the genes in the query set
         final Set<String> queryGenes = new HashSet<>(query.getEnrichmentZscores().getRowObjects());
         final List<String> gwasTraits = query.getEnrichmentZscores().getColObjects();
-        final Map<String, Map<String, List<PathwayDatabaseEnrichmentRecord>>> results = new HashMap<>();
+        final Map<String, Map<String, List<PathwayDatabaseEnrichmentRecord>>> results = new ConcurrentHashMap<>();
 
         for (PathwayDatabase curTarget : targetPathways) {
 
@@ -78,7 +87,8 @@ public class PathwayDatabaseEnrichments {
             try (ProgressBar pb = new ProgressBar(query.getPathwayDatabase().getName() + "_" + curTarget.getName(), pathwayMatrix.columns(), ProgressBarStyle.ASCII)) {
 
                 //TODO: threadpool is not well behaved here, it gobbles up all the threads, perhaps this is going wrong on the
-                // options
+                // options, also sometimes this randomly throws a nullpointer (maybe fixed?)
+                //IntStream.range(0, pathwayMatrix.columns()).parallel().forEach(pathwayI -> {
                 IntStream.range(0, pathwayMatrix.columns()).parallel().forEach(pathwayI -> {
 
                     // Pathway name
@@ -126,18 +136,15 @@ public class PathwayDatabaseEnrichments {
                         PathwayDatabaseEnrichmentRecord result = new PathwayDatabaseEnrichmentRecord(pathwayName, bonfResult, fdrResult, auc, pval);
 
                         // Add the result to the output
-                        if (results.get(gwasTrait) == null) {
-                            results.put(gwasTrait, new HashMap<>());
-                        }
-                        if (results.get(gwasTrait).get(curTarget.getName()) == null) {
-                            results.get(gwasTrait).put(curTarget.getName(), new ArrayList<>());
-                        }
+                        results.computeIfAbsent(gwasTrait, k -> new ConcurrentHashMap<>());
+                        results.get(gwasTrait).computeIfAbsent(curTarget.getName(), k -> Collections.synchronizedList(new ArrayList<>()));
 
                         results.get(gwasTrait).get(curTarget.getName()).add(result);
 
                     }
 
                     pb.step();
+
                 });
             }
         }

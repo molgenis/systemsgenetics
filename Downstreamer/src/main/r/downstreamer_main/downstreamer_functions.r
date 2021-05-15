@@ -413,7 +413,7 @@
   }
   
   #----------------------------------------------------------------------------------------
-  xy.plot.pvalue.colored <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="X", ylab="Y", main=NULL, pval.col="either", pval.name.x="x", pval.name.y="y") {
+  xy.plot.pvalue.colored <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="X", ylab="Y", main=NULL, pval.col="either", pval.name.x="x", pval.name.y="y", ...) {
     auc.pval.1[auc.1 == 0] <- 1
     auc.pval.2[auc.2 == 0] <- 1
     
@@ -469,12 +469,12 @@
       xlim(lims) +
       ylim(lims)
     
-    return(theme.nature(p))
+    return(theme.nature(p, ...))
   }
   
   
   #----------------------------------------------------------------------------------------
-  xy.plot <- function(auc.1, auc.2, xlab="X", ylab="Y", main=NULL, col.by=NULL, size=1, alpha=0.75) {
+  xy.plot <- function(auc.1, auc.2, xlab="X", ylab="Y", main=NULL, col="#376B65", col.by=NULL, size=1, alpha=0.75, ...) {
 
     df.plot <- data.frame(auc.1=auc.1,
                           auc.2=auc.2)
@@ -484,7 +484,7 @@
     p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2))
       
     if (is.null(col.by)) {
-      p <- p +  geom_point(alpha=alpha, size=size, col="#55B397")
+      p <- p +  geom_point(alpha=alpha, size=size, col=col)
     } else {
       p <- p + geom_point(alpha=alpha, size=size, mapping=aes(col=col.by))    
     }
@@ -492,10 +492,35 @@
     p <- p + 
     xlab(xlab) +
     ylab(ylab) +
-    ggtitle(paste0(main, format(cor(auc.1, auc.2, use="complete.obs"), digits=2))) +
-      geom_smooth(method="lm", mapping=aes(x=auc.1, y=auc.2))
+    ggtitle(paste0(main,
+                   "Pearson R: ", format(cor(auc.1, auc.2, use="complete.obs"), digits=2),
+                   " p-value: ", format(cor.test(auc.1, auc.2, use="complete.obs")$p.value, digits=2, scientific=T))) +
+      geom_smooth(method="lm", mapping=aes(x=auc.1, y=auc.2), col="grey")
     
-    return(theme.nature(p))
+    return(theme.nature(p, ...))
+  }
+  
+  
+  ## ------------------------------------------------------------------------
+  convert.pvalue.to.dits <- function(x, simple=F) {
+    
+    if (simple) {
+      if(x > 0.05) {
+        return("")
+      } else {
+        return("*")
+      }
+    }
+    
+    if (x > 0.05) {
+      return("")
+    } else if (x < 5e-4) {
+      return("***")
+    } else if (x < 5e-3) {
+      return("**")
+    } else if (x < 5e-2) {
+      return("*")
+    }
   }
   
   

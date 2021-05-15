@@ -310,9 +310,25 @@ public class DownstreamerUtilities {
      * @throws Exception
      */
     public static DownstreamerStep2Results loadExistingStep2Results(DownstreamerOptions options) throws Exception {
+        return loadExistingStep2Results(options, false);
+    }
+
+    /**
+     * Load existing results from step 2 from storage. If matchToNormalizedPvalues = true, the genePvalues and
+     * normalizedGenePvalues are matched.
+     *
+     * @param options
+     * @return
+     * @throws Exception
+     */
+    public static DownstreamerStep2Results loadExistingStep2Results(DownstreamerOptions options, boolean matchToNormalizedPvalues) throws Exception {
 
         DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
         DoubleMatrixDataset<String, String> normalizedGenePvalues = getNormalizedGwasGenePvaluesReturn(options);
+
+        if (matchToNormalizedPvalues) {
+            genePvalues = genePvalues.viewRowSelection(normalizedGenePvalues.getRowObjects());
+        }
 
         final List<PathwayDatabase> pathwayDatabases = options.getPathwayDatabases();
         ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
@@ -631,6 +647,77 @@ public class DownstreamerUtilities {
             return distance;
         }
 
+    }
+
+
+    /**
+     * Calculate the benjamini hochberg adjusted p-values form a doublematrixdataset. Preserves the order of the orginal
+     * input.
+     * Adapted from: https://github.com/cBioPortal/cbioportal/blob/master/core/src/main/java/org/mskcc/cbio/portal/stats/BenjaminiHochbergFDR.java
+     * and
+     * https://stats.stackexchange.com/questions/238458/whats-the-formula-for-the-benjamini-hochberg-adjusted-p-value
+     * @param pvalues
+     * @return
+     */
+    public static DoubleMatrixDataset<String, String> adjustPvaluesBenjaminiHochberg(DoubleMatrixDataset<String, String> rawPvalues) {
+        DoubleMatrixDataset<String, String> output = new DoubleMatrixDataset<>(rawPvalues.getRowObjects(), rawPvalues.getColObjects());
+        int m = rawPvalues.rows();
+
+        for (int c = 0; c < rawPvalues.columns(); c++) {
+
+            String colname =  output.getColObjects().get(c);
+
+            // Sort the p-values preserving the ids
+            List<DoubleElement> sortedPvalues = new ArrayList<>(rawPvalues.rows());
+            for (int r=0; r < rawPvalues.rows(); r++) {
+                sortedPvalues.add(new DoubleElement(rawPvalues.getElementQuick(r, c), rawPvalues.getRowObjects().get(r)));
+            }
+            sortedPvalues.sort(Comparator.comparing(DoubleElement :: getValue));
+
+            List<DoubleElement> adjustedPvalues = new ArrayList<>(sortedPvalues);
+
+            // iterate through all p-values:  largest to smallest
+            for (int i = m - 1; i >= 0; i--) {
+                if (i == m - 1) {
+                    adjustedPvalues.set(i, sortedPvalues.get(i));
+                } else {
+                    double unadjustedPvalue = sortedPvalues.get(i).value;
+                    int divideByM = i + 1;
+                    double left = adjustedPvalues.get(i + 1).value;
+                    double right = (m / (double) divideByM) * unadjustedPvalue;
+                    adjustedPvalues.set(i, new DoubleElement(Math.min(left, right), sortedPvalues.get(i).id));
+                }
+            }
+
+            for (DoubleElement curElement: adjustedPvalues) {
+                output.setElement(curElement.id, colname, curElement.value);
+            }
+
+        }
+
+        return output;
+    }
+
+
+    /**
+     * Links a double with an ID. Used in adjustPvaluesBenjaminiHochberg.
+     */
+    private static class DoubleElement {
+        protected double value;
+        protected String id;
+
+        public DoubleElement(double value, String id) {
+            this.value = value;
+            this.id = id;
+        }
+
+        public double getValue() {
+            return value;
+        }
+
+        public String getId() {
+            return id;
+        }
     }
 
 }
