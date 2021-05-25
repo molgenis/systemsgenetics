@@ -20,17 +20,6 @@ for (file in list.files("../data/final_paper/trans_eqtl_zscores/")) {
   
 }
 
-
-class.cols <- c(`immune`="#ebac23",
-          `cancer`="#008a20",
-          `cardiovascular`="#b24502",
-          `blood composition`="#b80058",
-          `kidney function`="#00bbad",
-          `metabolic`="#d163e6",
-          `neurodegenerative`="#008cf9",
-          `psychological`="#5954d6",
-          `skeletal`="#ff9287",
-          `NA`="#bdbdbd")
 ```
 
 # Bar and scatterplot of trans eqtl and DS score correlation

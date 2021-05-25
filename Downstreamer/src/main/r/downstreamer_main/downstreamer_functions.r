@@ -158,7 +158,7 @@
     
     # Loads enrichment results
     cat("[INFO] Loading downstreamer results from files\n")
-    files    <- list.files(main.downstreamer.output.path, pattern=".*\\_Enrichment\\_.*\\.xlsx", full.names = T)
+    files    <- list.files(main.downstreamer.output.path, pattern=".*\\_Enrichment.*\\.xlsx", full.names = T)
     datasets <- list()
     for (file in files) {
       name <- gsub("\\_Enrichtment", "", basename(file))
@@ -523,5 +523,16 @@
     }
   }
   
-  
+  ## ------------------------------------------------------------------------
+  class.cols <- c(`immune`="#ebac23",
+                  `cancer`="#008a20",
+                  `cardiovascular`="#b24502",
+                  `blood composition`="#b80058",
+                  `kidney function`="#00bbad",
+                  `metabolic`="#d163e6",
+                  `neurodegenerative`="#008cf9",
+                  `psychological`="#5954d6",
+                  `skeletal`="#ff9287",
+                  `NA`="#bdbdbd")
+
   

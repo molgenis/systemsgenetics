@@ -1,5 +1,5 @@
 ```{r}
-setwd("coregulation_calculations")
+if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_calculations")} else {setwd("../coregulation_calculations")}
 library(data.table)
 
 eigenvectors           <- fread("data/eigenvectors_gene_network_no_celllines_200_components.txt", data.table=F)

@@ -1,0 +1,31 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_calculations")} else {setwd("../coregulation_calculations")}
+source("../downstreamer_functions.r")
+
+gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
+
+
+# metadata
+meta.data           <- read.table("../data/downstreamer_summary_statistics.csv", sep="\t", stringsAsFactors = F, header=T)
+rownames(meta.data) <- gsub("_hg19", "", gsub("__", "_", gsub(".xlsx|.txt", "", gsub("_enrichtments", "", meta.data$EnrichmentExcel))))
+meta.data$class[is.na(meta.data$class)] <- "NA"
+
+```
+
+```{r}
+
+gene.pvalues <- scale(gene.pvalues)
+
+mean.per.class <- sapply(unique(meta.data$class), function(class) {
+  cur.gwas <- rownames(meta.data[meta.data$class == class,])
+  return(rowMeans(gene.pvalues[, cur.gwas, drop=F], na.rm=T))
+  
+})
+
+hm(cor(mean.per.class, use="complete.obs"))
+
+final.mean <- data.frame(gene=rownames(mean.per.class) ,mean=rowMeans(mean.per.class))
+
+write.table(final.mean, file="output/mean_gene_pvalues_44_traits_per_class_calculated.txt", row.names=F, col.names=T, quote=F, sep="\t")
+```
+

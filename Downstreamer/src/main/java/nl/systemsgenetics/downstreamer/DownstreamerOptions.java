@@ -45,6 +45,7 @@ public class DownstreamerOptions {
 	private final File run1BasePath;
 	private final File geneInfoFile;
 	private final File gwasZscoreMatrixPath;
+	private final File covariates;
 	private final int numberOfPermutations;
 	private final long numberOfPermutationsRescue;
 	private final int windowExtend;
@@ -214,6 +215,12 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm");
 		OptionBuilder.withLongOpt("genes");
 		OPTIONS.addOption(OptionBuilder.create("ge"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with covariates used to correct the gene p-values. Works in conjunction with -rgl. Residuals of this regression are used as input for the GLS");
+		OptionBuilder.withLongOpt("covariates");
+		OPTIONS.addOption(OptionBuilder.create("cov"));
 
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file and will save many intermediate results to files. Not recommended for large analysis.");
@@ -430,6 +437,12 @@ public class DownstreamerOptions {
 		regressGeneLengths = commandLine.hasOption("rgl");
 		run1BasePath = commandLine.hasOption("soo") ? new File(commandLine.getOptionValue("soo")) : outputBasePath;
 		trimGeneNames = commandLine.hasOption("tgn");
+
+		if (commandLine.hasOption("cov")) {
+			covariates = new File(commandLine.getOptionValue("cov"));
+		} else {
+			covariates = null;
+		}
 
 		if (quantileNormalizePermutations && forceNormalGenePvalues) {
 			throw new ParseException("Can't combine -qn with -fngp");
@@ -1568,4 +1581,7 @@ public class DownstreamerOptions {
 		return HLA;
 	}
 
+	public File getCovariates() {
+		return covariates;
+	}
 }

@@ -172,27 +172,15 @@ plot(1:9, x)
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
 # HPO genes and Pli
 ```{r}
 hpo.genes             <- intersect(hpo.genes, rownames(gnomad))
 bonf.sig.gwas.genes   <- rownames(genep)[rowSums(genep < (0.05 / (nrow(genep) * ncol(genep)))) >=1]
 
 bonf.sig.coreg.genes  <- unique(unlist(lapply(datasets, function(dataset){
-  coreg <- dataset$Coregulation
+  coreg <- dataset$GenePrioritization
   coreg <- coreg[coreg$Enrichment.Z.score > 0,]
-  return(coreg$Gene.set[coreg$Bonferroni.significant])
+  return(coreg$Gene.ID[coreg$Bonferroni.significant])
 })))
 
 others                <- rownames(gnomad)[!rownames(gnomad) %in% unique(c(hpo.genes, bonf.sig.coreg.genes))]
@@ -201,29 +189,24 @@ others                <- rownames(gnomad)[!rownames(gnomad) %in% unique(c(hpo.ge
 make.gnomad.violin.plot      <- function(trait) {
   df.plot <- data.frame(pli=c(gnomad[others,trait],
                             gnomad[bonf.sig.coreg.genes,trait],
-                            gnomad[bonf.sig.gwas.genes, trait],
                             gnomad[hpo.genes, trait]),
-                      annot=factor(c(rep(paste0("Not core|HPO gene N=", length(others)), length(others)), 
-                              rep(paste0("Core genes N=", length(bonf.sig.coreg.genes)), length(bonf.sig.coreg.genes)),
-                              rep(paste0("GWAS genes N=", length(bonf.sig.gwas.genes)), length(bonf.sig.gwas.genes)),
+                      annot=factor(c(rep(paste0("Not key|HPO gene N=", length(others)), length(others)), 
+                              rep(paste0("Key genes N=", length(bonf.sig.coreg.genes)), length(bonf.sig.coreg.genes)),
                               rep(paste0("HPO genes N=", length(hpo.genes)), length(hpo.genes))),
-                              levels=c(paste0("Core genes N=", length(bonf.sig.coreg.genes)),
+                              levels=c(paste0("Key genes N=", length(bonf.sig.coreg.genes)),
                                        paste0("HPO genes N=", length(hpo.genes)),
-                                       paste0("GWAS genes N=", length(bonf.sig.gwas.genes)),
-                                       rep(paste0("Not core|HPO gene N=", length(others))))))
+                                       rep(paste0("Not key|HPO gene N=", length(others))))))
 
 
   p <- ggplot(df.plot, aes(y=pli, x=annot, fill=annot)) +
   geom_violin(color="white", scale="width") +
     geom_boxplot(width=0.05, color="black") +
     xlab("") +
-      geom_signif(comparisons=list(c(paste0("Core genes N=", length(bonf.sig.coreg.genes)),
-                                 paste0("GWAS genes N=", length(bonf.sig.gwas.genes))),
-                               c(paste0("Core genes N=", length(bonf.sig.coreg.genes)),
-                                 paste0("Not core|HPO gene N=", length(others))),
-                               c(paste0("Core genes N=", length(bonf.sig.coreg.genes)),
-                                 paste0("HPO genes N=", length(hpo.genes)))),
-              tip_length = 0, step_increase=0.1)
+      geom_signif(comparisons=list(c(paste0("Key genes N=", length(bonf.sig.coreg.genes)),
+                                 paste0("HPO genes N=", length(hpo.genes))),
+                               c(paste0("Key genes N=", length(bonf.sig.coreg.genes)),
+                                 paste0("Not key|HPO gene N=", length(others)))),
+              tip_length = 0, step_increase=0.1, test="t.test")
   p <- theme.nature(p) + scale_fill_manual(values=c("dodgerblue3", "#3BB273", "goldenrod2", "#8576B6")) + theme(legend.position = "none")
 
 
@@ -232,19 +215,40 @@ return(p)
 
 gnomad$max_lof_z_mis_z <- sapply(1:nrow(gnomad), function(x){max(gnomad[x, "mis_z"], gnomad[x, "lof_z"])})
 
-pdf(width=8, height=3, file= "output/plots/pli_comparrison_all.pdf")
-make.violin.plot("pLI") + ylab("Gnomad pLI score")
+pdf(width=8, height=4, file= "output/plots/gnomad_pli_comparrison_all.pdf")
+make.gnomad.violin.plot("pLI") + ylab("Gnomad pLI score")
 dev.off()
 
-p1 <- make.gnomad.violin.plot("syn_z") + ylab("Gnomad Syn Z-score") + geom_hline(yintercept=0, col="grey", lty=2) 
-p2 <- make.gnomad.violin.plot("mis_z") + ylab("Gnomad Mis Z-score") + geom_hline(yintercept=0, col="grey", lty=2) 
-p3 <- make.gnomad.violin.plot("lof_z") + ylab("Gnomad LoF Z-score") + geom_hline(yintercept=0, col="grey", lty=2)
+p1 <- make.gnomad.violin.plot("syn_z") + ylab("Gnomad Syn Z-score") + geom_hline(yintercept=0, col="grey", lty=2)  + theme(axis.text.x = element_text(angle=45, hjust=1))
+p2 <- make.gnomad.violin.plot("mis_z") + ylab("Gnomad Mis Z-score") + geom_hline(yintercept=0, col="grey", lty=2) + theme(axis.text.x = element_text(angle=45, hjust=1))
+p3 <- make.gnomad.violin.plot("lof_z") + ylab("Gnomad LoF Z-score") + geom_hline(yintercept=0, col="grey", lty=2)+ theme(axis.text.x = element_text(angle=45, hjust=1))
 p4 <- make.gnomad.violin.plot("max_lof_z_mis_z") +
   ylab("Max Gnomad LoF Mis Z-score") +
-  geom_hline(yintercept=0, col="grey", lty=2)
+  geom_hline(yintercept=0, col="grey", lty=2)+ theme(axis.text.x = element_text(angle=45, hjust=1))
 
-pdf(width=16, height=5, file= "output/plots/gnomad_zscore_comparrison_all.pdf")
+pdf(width=16, height=6, file= "output/plots/gnomad_zscore_comparrison_all.pdf")
 grid.arrange(grobs=list(p1, p2, p3), ncol=3)
 dev.off()
 ```
 
+
+
+# Tables for lude
+```{r}
+zscores <- make.zscore.matrix(datasets)
+write.table(zscores, file="output/key_gene_zscores_all_traits.tsv", sep="\t", quote=F)
+
+
+# HP:0000925
+hpo           <- fread(hpo.file, stringsAsFactors = F, sep="\t", data.table=F)
+rownames(hpo) <- hpo[,1]
+hpo           <- hpo[,-1]
+
+ol      <- intersect(rownames(hpo), rownames(zscores))
+
+tmp <- cbind(hpo[ol,"HP:0000925"], zscores[ol,"height_2018_30124842"  ])
+write.table(tmp, file="output/key_gene_zscores_height_with_HP:0000925.tsv", sep="\t", quote=F)
+
+boxplot(tmp[,2] ~ tmp[,1], xlab="HPO abnormality of the vertibral collumn", ylab="Height key-gene score")
+t.test(tmp[,2] ~ tmp[,1])$`p.value`
+```

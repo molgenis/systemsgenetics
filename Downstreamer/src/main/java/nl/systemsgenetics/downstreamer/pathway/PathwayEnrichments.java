@@ -26,12 +26,12 @@ import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.gene.GenePathwayAssociationStatistic;
-import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -109,6 +109,7 @@ public class PathwayEnrichments {
                               DoubleMatrixDataset<String, String> geneMaxSnpZscore,
                               DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasCorrelation,
                               DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasBetas,
+                              DoubleMatrixDataset<String, String> covariatesToCorrect,
                               int geneCorrelationWindow,
                               int numberOfPermutationsForFDR
     ) throws Exception {
@@ -182,25 +183,60 @@ public class PathwayEnrichments {
             geneZscoresNullGwasNullBetas = geneZscoresNullGwasNullBetas.duplicate();
         }
 
-        // Do the regression with gene lengths and z-scores y/n
-        if (regressGeneLengths) {
-            LOGGER.info("Regressing gene lengths and determining residuals");
 
-            // Determine (log10) gene lengths
-            final double[] geneLengths = new double[sharedGenes.size()];
-            int i = 0;
-            // Ensures the geneLength vector is in the same order as the matrices
-            for (String geneInZscoreMatrix : sharedGenes) {
-                Gene geneInfo = genes.get(geneInZscoreMatrix);
-                geneLengths[i] = Math.log(geneInfo.getLength()) / Math.log(10);
-                i++;
+        // Determine (log10) gene lengths
+        final double[] geneLengths = new double[sharedGenes.size()];
+        int geneIndex = 0;
+        // Ensures the geneLength vector is in the same order as the matrices
+        for (String geneInZscoreMatrix : sharedGenes) {
+            Gene geneInfo = genes.get(geneInZscoreMatrix);
+            geneLengths[geneIndex] = Math.log(geneInfo.getLength()) / Math.log(10);
+            geneIndex++;
+        }
+
+        // Do the regression with gene lengths and z-scores y/n
+        if (regressGeneLengths && covariatesToCorrect == null) {
+            LOGGER.info("Regressing gene lengths");
+
+            // Determine residuals
+            inplaceDetermineRegressionResiduals(geneZscores, geneLengths);
+            inplaceDetermineRegressionResiduals(geneZscoresNullGwasCorrelation, geneLengths);
+            inplaceDetermineRegressionResiduals(geneZscoresNullGwasNullBetas, geneLengths);
+
+            geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+        } else if (covariatesToCorrect != null) {
+
+            covariatesToCorrect = covariatesToCorrect.viewRowSelection(sharedGenes);
+            final DoubleMatrixDataset<String, String> finalCovariates;
+
+            if (regressGeneLengths) {
+
+                List<String> columns = covariatesToCorrect.getColObjects();
+                columns.add("geneLength");
+                finalCovariates = new DoubleMatrixDataset<>(sharedGenes, columns);
+
+                LOGGER.info("Regressing covariates & gene lengths:");
+                LOGGER.info(String.join(" ", columns));
+
+                for (int r=0; r < sharedGenes.size(); r++) {
+                    for (int c=0; c < columns.size() -1; c++) {
+                        finalCovariates.setElementQuick(r, c, covariatesToCorrect.getElementQuick(r, c));
+                    }
+                    finalCovariates.setElementQuick(r, columns.size()-1, geneLengths[r]);
+                }
+
+            } else {
+                LOGGER.info("Regressing covariates:");
+                LOGGER.info(String.join(" ", covariatesToCorrect.getColObjects()));
+                finalCovariates = covariatesToCorrect;
             }
 
             // Determine residuals
-            inplaceDetermineGeneLengthRegressionResiduals(geneZscores, geneLengths);
-            inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasCorrelation, geneLengths);
-            inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasNullBetas, geneLengths);
+            inplaceDetermineRegressionResiduals(geneZscores, finalCovariates);
+            inplaceDetermineRegressionResiduals(geneZscoresNullGwasCorrelation, finalCovariates);
+            inplaceDetermineRegressionResiduals(geneZscoresNullGwasNullBetas, finalCovariates);
 
+            geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
         }
 
         // Determine which genes will be merged to metagenes based on their genetic correlation
@@ -273,8 +309,6 @@ public class PathwayEnrichments {
 
             // Save normalized gene scores to file, to check distribution later on
             geneZscoresPathwayMatched.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
-
-
             genePathwayZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
 
             if (LOGGER.isDebugEnabled()) {
@@ -556,17 +590,17 @@ public class PathwayEnrichments {
     }
 
     /**
-     * Determine the residuals of the gene pvalues regessed on the genelength to
+     * Determine the residuals of the gene pvalues regessed on the covariate to
      * correct for any systematic inflation. Residuals replace the original
      * values in the DoubleMatrixDataset geneZscores.
      *
      * @param geneZscores
-     * @param geneLengths
+     * @param covariate
      */
-    private static void inplaceDetermineGeneLengthRegressionResiduals(final DoubleMatrixDataset<String, String> geneZscores, final double[] geneLengths) {
+    private static void inplaceDetermineRegressionResiduals(final DoubleMatrixDataset<String, String> geneZscores, final double[] covariate) {
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Gene length vector: " + geneLengths.length);
+            LOGGER.debug("Covariate length vector: " + covariate.length);
             LOGGER.debug("Determining residuals for matrix of size: " + geneZscores.rows() + " x " + geneZscores.columns());
         }
 
@@ -574,19 +608,53 @@ public class PathwayEnrichments {
         final int genes = geneZscores.rows();
 
         IntStream.range(0, geneZscores.columns()).parallel().forEach(c -> {
+        //for (int c=0; c < geneZscores.columns(); c++) {
+
             // Build the regression model
             final SimpleRegression regression = new SimpleRegression();
             DoubleMatrix1D geneZscoresCol = geneZscoresMatrix.viewColumn(c);
 
             for (int r = 0; r < genes; ++r) {
-                regression.addData(geneLengths[r], geneZscoresCol.getQuick(r));
+                regression.addData(covariate[r], geneZscoresCol.getQuick(r));
             }
 
             // Apply model and inplace convert to residuals
             for (int r = 0; r < genes; ++r) {
-                double predictedY = regression.predict(geneLengths[r]);
+                double predictedY = regression.predict(covariate[r]);
                 geneZscoresCol.setQuick(r, (geneZscoresCol.getQuick(r) - predictedY));
             }
+        //}
+        });
+    }
+
+    /**
+     * Determine residuals of multiple regression and write the result inplace. Residuals replace the original
+     * values in the DoubleMatrixDataset geneZscores.
+     * @param geneZscores
+     * @param covariates
+     */
+    private static void inplaceDetermineRegressionResiduals(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> covariates) {
+
+        final DoubleMatrix2D geneZscoresMatrix = geneZscores.getMatrix();
+        final int genes = geneZscores.rows();
+        final double[][] covariateArray = covariates.getMatrixAs2dDoubleArray();
+
+        IntStream.range(0, geneZscores.columns()).parallel().forEach(c -> {
+
+        //for (int c=0; c < geneZscores.columns(); c++) {
+            // Build the regression model
+            final OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+            DoubleMatrix1D geneZscoresCol = geneZscoresMatrix.viewColumn(c);
+            regression.newSampleData(geneZscoresCol.toArray(), covariateArray);
+
+            // Estimate residuals
+            double[] residuals = regression.estimateResiduals();
+
+            // Apply model and inplace convert to residuals
+            for (int r = 0; r < genes; ++r) {
+                geneZscoresCol.setQuick(r, residuals[r]);
+            }
+        //}
         });
     }
 
