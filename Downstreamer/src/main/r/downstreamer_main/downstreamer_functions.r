@@ -141,8 +141,10 @@
         
         datasets[[name]] <- read.depict2(file, potential_traits = potential_traits)
       }
-      cat("[INFO] Done, saving cache for future use\n")
-      save(datasets, file="data/downstreamer_results_cache.RData")
+      if (USE.CACHE) {
+        cat("[INFO] Done, saving cache for future use\n")
+        save(datasets, file="data/downstreamer_results_cache.RData")
+      }
     }
   
     return(datasets)

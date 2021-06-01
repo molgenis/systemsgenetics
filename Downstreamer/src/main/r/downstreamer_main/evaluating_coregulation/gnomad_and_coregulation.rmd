@@ -25,11 +25,11 @@ hpo.genes           <- rownames(hpo.genes)
 #hpo.genes <- gsub("\\.\\d+", "", ensembl[unique(hpo.genes$V2), "Gene.stable.ID.version"])
 
 # Cached 2021-04-16
-datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+#datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
 
 # Gene pvalues
-gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
-ol                  <- intersect(names(datasets), colnames(gene.pvalues))
+#gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
+#ol                  <- intersect(names(datasets), colnames(gene.pvalues))
 
 # Genepvalues
 #files <- list.files(main.downstreamer.output.path, pattern="*_genePvalues_.*.xlsx", full.names = T)
@@ -51,7 +51,7 @@ zscores <- apply(zscores[ol,], 1, max)
 
 tmp <- gnomad[ol,c("syn_z", "mis_z", "lof_z", "pLI")]
 tmp$max_ds_zscore <- zscores[ol]
-write.table(tmp, "output/max_coregulation_zscore_and_gnomad_metrics.tsv", sep="\t", quote=F)
+write.table(tmp, "output/adjusted/max_coregulation_zscore_and_gnomad_metrics.tsv", sep="\t", quote=F)
 
 gnomad$max_lof_z_mis_z <- sapply(1:nrow(gnomad), function(x){max(gnomad[x, "mis_z"], gnomad[x, "lof_z"])})
 
@@ -81,7 +81,7 @@ p1 <- make.gnomad.scatterplot("syn_z") + ylab("Gnomad Syn Z-score") + theme(lege
 p2 <- make.gnomad.scatterplot("mis_z") + ylab("Gnomad MiS Z-score") + theme(legend.position = "none")
 p3 <- make.gnomad.scatterplot("lof_z") + ylab("Gnomad LoF Z-score") + theme(legend.position = "none")
 
-pdf(width=6, height=2, file="output/plots/gnomad_zscore_vs_max_zscore.pdf", paper="a4")
+pdf(width=6, height=2, file="output/plots/adjusted/gnomad_zscore_vs_max_zscore.pdf", paper="a4")
 grid.arrange(grobs=list(p1, p2, p3), ncol=3)
 dev.off()
 
@@ -90,7 +90,7 @@ p1 <- make.gnomad.scatterplot("syn_z", correctDegree = T) + ylab("Gnomad Syn Z-s
 p2 <- make.gnomad.scatterplot("mis_z", correctDegree = T) + ylab("Gnomad MiS Z-score") + theme(legend.position = "none")
 p3 <- make.gnomad.scatterplot("lof_z", correctDegree = T) + ylab("Gnomad LoF Z-score") + theme(legend.position = "none")
 
-pdf(width=6, height=2, file="output/plots/gnomad_zscore_vs_max_zscore_degree_corrected.pdf", paper="a4")
+pdf(width=6, height=2, file="output/plots/adjusted/gnomad_zscore_vs_max_zscore_degree_corrected.pdf", paper="a4")
 grid.arrange(grobs=list(p1, p2, p3), ncol=3)
 dev.off()
 ```
@@ -126,7 +126,7 @@ make.gnomad.scatterplot <- function(trait) {
 p1 <- make.gnomad.scatterplot("syn_z") + ylab("Gnomad Syn Z-score") + theme(legend.position = "none")
 p2 <- make.gnomad.scatterplot("mis_z") + ylab("Gnomad MiS Z-score") + theme(legend.position = "none")
 p3 <- make.gnomad.scatterplot("lof_z") + ylab("Gnomad LoF Z-score") + theme(legend.position = "none")
-pdf(width=6, height=2, file="output/plots/gnomad_zscore_vs_max_genep.pdf", paper="a4")
+pdf(width=6, height=2, file="output/plots/adjusted/gnomad_zscore_vs_max_genep.pdf", paper="a4")
 
 grid.arrange(grobs=list(p1, p2, p3), ncol=3)
 
@@ -159,7 +159,7 @@ p1 <- ggplot(data=df.plot, mapping=aes(x=class, y=lof.z)) +
   #geom_signif(comparisons = list(c(1, 9)), tip_length = 0)
 
 
-pdf(width=5, height=2.5,file="output/plots/GenePrioritization_classes_of_keygenes_vs_constraint.pdf", paper="a4")
+pdf(width=5, height=2.5,file="output/plots/adjusted/GenePrioritization_classes_of_keygenes_vs_constraint.pdf", paper="a4")
 theme.nature(p1)
 dev.off()
 
@@ -215,7 +215,7 @@ return(p)
 
 gnomad$max_lof_z_mis_z <- sapply(1:nrow(gnomad), function(x){max(gnomad[x, "mis_z"], gnomad[x, "lof_z"])})
 
-pdf(width=8, height=4, file= "output/plots/gnomad_pli_comparrison_all.pdf")
+pdf(width=8, height=4, file= "output/plots/adjusted/gnomad_pli_comparrison_all.pdf")
 make.gnomad.violin.plot("pLI") + ylab("Gnomad pLI score")
 dev.off()
 
@@ -226,7 +226,7 @@ p4 <- make.gnomad.violin.plot("max_lof_z_mis_z") +
   ylab("Max Gnomad LoF Mis Z-score") +
   geom_hline(yintercept=0, col="grey", lty=2)+ theme(axis.text.x = element_text(angle=45, hjust=1))
 
-pdf(width=16, height=6, file= "output/plots/gnomad_zscore_comparrison_all.pdf")
+pdf(width=16, height=6, file= "output/plots/adjusted/gnomad_zscore_comparrison_all.pdf")
 grid.arrange(grobs=list(p1, p2, p3), ncol=3)
 dev.off()
 ```
@@ -236,7 +236,7 @@ dev.off()
 # Tables for lude
 ```{r}
 zscores <- make.zscore.matrix(datasets)
-write.table(zscores, file="output/key_gene_zscores_all_traits.tsv", sep="\t", quote=F)
+write.table(zscores, file="output/adjusted/key_gene_zscores_all_traits.tsv", sep="\t", quote=F)
 
 
 # HP:0000925
@@ -247,7 +247,7 @@ hpo           <- hpo[,-1]
 ol      <- intersect(rownames(hpo), rownames(zscores))
 
 tmp <- cbind(hpo[ol,"HP:0000925"], zscores[ol,"height_2018_30124842"  ])
-write.table(tmp, file="output/key_gene_zscores_height_with_HP:0000925.tsv", sep="\t", quote=F)
+write.table(tmp, file="output/adjusted/key_gene_zscores_height_with_HP:0000925.tsv", sep="\t", quote=F)
 
 boxplot(tmp[,2] ~ tmp[,1], xlab="HPO abnormality of the vertibral collumn", ylab="Height key-gene score")
 t.test(tmp[,2] ~ tmp[,1])$`p.value`

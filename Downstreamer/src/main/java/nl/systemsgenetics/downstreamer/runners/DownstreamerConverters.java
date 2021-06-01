@@ -123,7 +123,7 @@ public class DownstreamerConverters {
                     double value = matrixContent.getQuick(r, c);
 
                     if (Double.isNaN(value)) {
-                        variantsToExclude.add(allVariants.get(c));
+                        variantsToExclude.add(allVariants.get(r));
                         continue rows;
                     }
                 }

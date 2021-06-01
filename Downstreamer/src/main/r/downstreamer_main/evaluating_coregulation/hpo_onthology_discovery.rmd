@@ -1,0 +1,185 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+library("ontologyIndex")
+library("ontologyPlot")
+library("ontologySimilarity")
+library(tidygraph)
+library(ggraph)
+library(umap)
+
+hpo <- get_ontology("~/Documents/data/reference/HPO/hp.obo")
+
+
+# Cached 2021-04-16
+#datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+
+enrichment <- read.downstreamer.enrichments("../data/final_paper/enrichments/", potential_traits = c("HPO"))
+```
+
+# Test
+```{r}
+# inflamation of large intestine
+pathway <- "HP:0002037" 
+
+# Colitis
+pathway <- "HP:0002583"
+
+cur.terms           <- get_ancestors(hpo, c(pathway))
+cur.enrichment      <- enrichment$inflammatory_bowel_disease_2017_29906448_GenePrioritization_Enrichment$HPO
+cur.min.terms       <- minimal_set(hpo, rownames(cur.enrichment))
+
+#auc                 <- enrichment$asthma_2020_32296059_GenePrioritization_Enrichment$HPO[cur.min.terms,]$AUC
+
+information_content <- descendants_IC(hpo)
+tmp                 <- get_term_sim_mat(hpo, information_content,  row_terms = cur.min.terms, col_terms = cur.min.terms)
+
+pdf(width=25, height=25, file="output/plots/hpo_test_plots.pdf")
+onto_plot(hpo, terms=cur.min.terms, fill = map2color(auc, pallete, limits=c(0,1)))
+dev.off()
+
+
+map2color <-function(x,pal,limits=NULL){
+    if(is.null(limits)) limits=range(x)
+    pal[findInterval(x,seq(limits[1],limits[2],length.out=length(pal)+1), all.inside=TRUE)]
+}
+
+pallete <- colorRampPalette( c( "blue", "red" ) )( 100 )
+```
+
+# Umap
+```{r}
+#information_content <- descendants_IC(hpo)
+#cur.df              <- get_term_sim_mat(hpo, information_content,  row_terms = rownames(cur.enrichment), col_terms = rownames(cur.enrichment))
+#pcs <- prcomp(cur.df)$x[,1:100]
+
+#um <- umap(pcs,
+#           verbose=T,
+#           n_neighbors=150,
+#           n_epochs=1000,
+#           min_dist=0.9,
+#           spread=1,
+#           random_state=5820785,
+#           transform_state=5820785)
+#save(um, pcs, file="output/HPO_similarity_umap.RData")
+load("output/HPO_similarity_umap.RData")
+
+
+df.plot             <- data.frame(x=um$layout[rownames(cur.enrichment),1],
+                                    y=um$layout[rownames(cur.enrichment),2])
+
+p1      <- theme.nature(ggplot(df.plot, aes(x=x, y=y)) +
+    geom_point(alpha=0.75) +
+    xlab("UMAP 1") +
+    ylab("UMAP 2") + ggtitle("All HPO terms"))
+
+plots <- list(p1)
+for (trait in grep(pattern = "GenePrioritization", names(enrichment), value=T)) {
+  cur.enrichment      <- enrichment[[trait]]$HPO
+  cur.enrichment      <- cur.enrichment[cur.enrichment$X..genes.in.pathway >= 20,]
+  name                <- meta.data[gsub("_GenePrioritization_Enrichment", "", trait), "Name"]
+  df.plot             <- data.frame(x=um$layout[rownames(cur.enrichment),1],
+                                    y=um$layout[rownames(cur.enrichment),2],
+                                    cols=cur.enrichment[, "AUC"])
+  
+  #df.plot <- df.plot[cur.enrichment$Utest < (0.05 / nrow(cur.enrichment)),]
+  df.plot$cols[cur.enrichment$Utest > (0.05 / nrow(cur.enrichment))] <- NA
+
+  df.plot <- df.plot[order(df.plot$cols, decreasing = F, na.last=F),]
+  
+  p1      <- ggplot(df.plot, aes(x=x, y=y, col=cols)) +
+    geom_point(alpha=1) +
+    xlab("UMAP 1") +
+    ylab("UMAP 2") +
+    scale_color_gradient2(low="blue",
+                          mid="white",
+                          high="red",
+                          limits=c(0,1),
+                          midpoint = 0.5,
+                          name="AUC",
+                          na.value = "#e6e6e6") +
+    xlim(-25, 15) +
+    ylim(-25, 25) +
+    ggtitle(name)
+  plots[[name]] <- theme.nature(p1) + theme(legend.position = "none")
+}
+
+pdf(width= 23, height=28, file="output/plots/hpo_test_plots.pdf")
+grid.arrange(grobs=plots, ncol=6)
+dev.off()
+
+
+pdf(width= 12, height=8, file="output/plots/hpo_test_plots_immune.pdf")
+grid.arrange(grobs=plots[c("Multiple sclerosis",
+                           "Rheumatoid arthritis",
+                           "Type 1 diabetes",
+                           "Inflammatory bowel disease",
+                           "Coeliac disease",
+                           "White blood cells")], ncol=3)
+dev.off()
+```
+
+
+
+
+
+# network
+```{r}
+bla          <- make.zscore.matrix(enrichment[grep(pattern = "GenePrioritization", names(enrichment), value=T)], trait="HPO", collum="Utest")
+signif.terms <- rownames(bla)[rowSums(bla < (0.05 / nrow(bla))) > 1]
+#signif.terms <- minimal_set(hpo, rownames(bla)[rowSums(bla < 0.05/nrow(bla))])
+
+
+signif.terms <- remove_uninformative_terms(hpo, signif.terms)
+signif.terms <- minimal_set(hpo, signif.terms)
+
+cur.enrichment      <- enrichment$inflammatory_bowel_disease_2017_29906448_GenePrioritization_Enrichment$HPO
+
+information_content <- descendants_IC(hpo)
+cur.df              <- get_term_sim_mat(hpo, information_content,  row_terms = signif.terms, col_terms = signif.terms)
+
+# Node df
+nodes           <- data.frame(id=unique(c(rownames(cur.df), colnames(cur.df))), stringsAsFactors = F)
+nodes$AUC       <- cur.enrichment[nodes$id, ]$AUC
+nodes$name      <- cur.enrichment[nodes$id, ]$Description
+
+# Construct edges at zscore threshold
+tmp.edges       <- cur.df > 0.1
+edges           <- as.data.frame(matrix(nrow=1, ncol=3))
+colnames(edges) <- c("from", "to", "effect")
+
+# Filter edges that only appear once
+#tmp.edges[rowSums(tmp.edges) < 2,] <- rep(F, ncol(tmp.edges))
+
+for (row in 1:nrow(tmp.edges)) {
+  for(col in 1:ncol(tmp.edges)) {
+    if (tmp.edges[row, col]) {
+      rowgene <- rownames(cur.df)[row]
+      colgene <- colnames(cur.df)[col]
+      edges   <- rbind(edges, c(
+        rowgene,
+        colgene,
+        cur.df[row, col]))
+    }
+  }
+}
+
+edges            <- na.omit(edges)
+
+# Match the nodes and the edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$id %in% nodes.with.edges,, drop=F]
+
+```
+
+# Plot
+```{r}
+graph            <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+p1               <- ggraph(graph, layout="fr", weights=effect, niter=10000)
+
+p1 + geom_node_point() + geom_edge_link()
+```
+
+

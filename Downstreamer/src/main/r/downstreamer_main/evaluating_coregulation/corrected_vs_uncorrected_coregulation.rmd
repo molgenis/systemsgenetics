@@ -1,0 +1,39 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+datasets.orig            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+datasets.corr            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = F)
+
+```
+
+
+```{r}
+
+t1 <- "body_mass_index_2018_30124842"
+
+plots <- list()
+
+for (t1 in names(datasets.corr)) {
+  a <- datasets.orig[[t1]]$GenePrioritization
+  b <- datasets.corr[[t1]]$GenePrioritization
+  
+  ol <- intersect(rownames(a), rownames(b))
+  
+  p <- xy.plot.pvalue.colored(a[ol,]$Enrichment.Z.score, 
+                         a[ol,]$Enrichment.P.value,
+                         b[ol,]$Enrichment.Z.score,
+                         b[ol,]$Enrichment.P.value,
+                         pval.col = "all",
+                         xlab="key-gene z-score",
+                         ylab="Corrected key-gene z-score",
+                         main=meta.data[t1, "Name"])
+  
+  plots[[t1]] <- p
+}
+
+grid.arrange(grobs=plots, ncol=2)
+
+```
+

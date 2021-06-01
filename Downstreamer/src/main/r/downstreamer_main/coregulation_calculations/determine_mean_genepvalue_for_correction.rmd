@@ -1,31 +1,152 @@
 ```{r}
 if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_calculations")} else {setwd("../coregulation_calculations")}
 source("../downstreamer_functions.r")
+library(GenomicRanges)
 
 gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
-
 
 # metadata
 meta.data           <- read.table("../data/downstreamer_summary_statistics.csv", sep="\t", stringsAsFactors = F, header=T)
 rownames(meta.data) <- gsub("_hg19", "", gsub("__", "_", gsub(".xlsx|.txt", "", gsub("_enrichtments", "", meta.data$EnrichmentExcel))))
 meta.data$class[is.na(meta.data$class)] <- "NA"
 
+ensembl.file <- "data/ensgR75_protein_coding.txt"
+
+# Read reference datasets
+ensembl <- read.table(ensembl.file, sep="\t", header=T, stringsAsFactors = F)
+rownames(ensembl) <- make.names(ensembl$Associated.Gene.Name, unique=T)
+
+ensembl.gr <- GRanges(seqnames=ensembl$Chromosome.Name, IRanges(start=ensembl$Gene.Start..bp., end=ensembl$Gene.End..bp.))
+
+#hla <- GRanges(6, IRanges(25e6, 36e6))
+hla <- GRanges(6, IRanges(20e6, 40e6))
+
+# filter hla
+hla.genes <- ensembl[findOverlaps(hla, ensembl.gr)@to, ]
+
+# Gnomad Pli
+gnomad.file <- "~/Documents/data/reference/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt"
+gnomad <- read.table(gnomad.file, sep="\t", header=T, stringsAsFactors = F)
+gnomad <- gnomad[!duplicated(gnomad$gene),]
+rownames(gnomad) <- make.names(gsub("\\.\\d+", "", ensembl[gnomad$gene, ]$Ensembl.Gene.ID), unique=T)
+
+rownames(ensembl)   <- ensembl$Ensembl.Gene.ID
+rownames(hla.genes) <- hla.genes$Ensembl.Gene.ID
 ```
 
+#Incl HLA
 ```{r}
-
-gene.pvalues <- scale(gene.pvalues)
+cur.genepvalues <- scale(gene.pvalues)
 
 mean.per.class <- sapply(unique(meta.data$class), function(class) {
   cur.gwas <- rownames(meta.data[meta.data$class == class,])
-  return(rowMeans(gene.pvalues[, cur.gwas, drop=F], na.rm=T))
+  return(rowMeans(cur.genepvalues[, cur.gwas, drop=F], na.rm=T))
   
 })
 
 hm(cor(mean.per.class, use="complete.obs"))
 
-final.mean <- data.frame(gene=rownames(mean.per.class) ,mean=rowMeans(mean.per.class))
+final.mean <- data.frame(gene=rownames(mean.per.class) ,mean=rowMeans(mean.per.class, na.rm=T), stringsAsFactors = F)
 
 write.table(final.mean, file="output/mean_gene_pvalues_44_traits_per_class_calculated.txt", row.names=F, col.names=T, quote=F, sep="\t")
+
+final.mean <- final.mean[order(final.mean$mean, decreasing=T),]
+write.table(final.mean[1:500, 1], file="output/top_500_mean_gene_pvalues.txt", row.names=F, col.names=F, quote=F, sep="\t")
+write.table(final.mean[1:1000, 1], file="output/top_1000_mean_gene_pvalues.txt", row.names=F, col.names=F, quote=F, sep="\t")
+write.table(final.mean[1:3000, 1], file="output/top_3000_mean_gene_pvalues.txt", row.names=F, col.names=F, quote=F, sep="\t")
+
+
+final.mean$rank   <- rank(final.mean$mean, na.last="keep")
+final.mean$int    <- qnorm((final.mean$rank-0.5)/sum(!is.na(final.mean$mean)))
+final.mean$pval   <- (1-pnorm(abs(final.mean$int)))*2
+
+par(mfrow=c(1,3))
+hist(final.mean$mean, breaks=100)
+hist(final.mean$int, breaks=100)
+plot(final.mean$mean, final.mean$int)
+par(mfrow=c(1,1))
+
+# Ordered on order of genes in ensembl file, with missing values
+final.mean <- data.frame(gene=ensembl$Ensembl.Gene.ID,
+                         int=final.mean[ensembl$Ensembl.Gene.ID, "int"],
+                         pval=final.mean[ensembl$Ensembl.Gene.ID, "pval"])
+
+
+write.table(final.mean[,c("gene", "int")], file="output/mean_gene_pvalues_44_traits_per_class_calculated_int_normalized.txt", row.names=F, col.names=T, quote=F, sep="\t", na="NaN")
+
+
+write.table(final.mean[,c("gene", "pval")], file="output/mean_gene_pvalues_44_traits_per_class_calculated_int_normalized_as_2tailed_pvalue.txt", row.names=F, col.names=T, quote=F, sep="\t", na="NaN")
+
+```
+
+# Exl HLA
+```{r}
+cur.genepvalues <- scale(gene.pvalues)
+cur.genepvalues <- cur.genepvalues[!rownames(cur.genepvalues) %in% rownames(hla.genes),]
+
+mean.per.class <- sapply(unique(meta.data$class), function(class) {
+  cur.gwas <- rownames(meta.data[meta.data$class == class,])
+  return(rowMeans(cur.genepvalues[, cur.gwas, drop=F], na.rm=T))
+  
+})
+mean.zscore <- rowMeans(mean.per.class, na.rm=T)
+
+median.per.class <- sapply(unique(meta.data$class), function(class) {
+  cur.gwas <- rownames(meta.data[meta.data$class == class,])
+  return(rowMedians(cur.genepvalues[, cur.gwas, drop=F], na.rm=T))
+  
+})
+median.zscore <- rowMedians(mean.per.class)
+
+# Mean vs Median
+xy.plot(mean.zscore,
+        median.zscore,
+        xlab="Mean gene p-value",
+        ylab="Median gene p-value") + geom_abline(intercept = 0, slope=1, col="grey", lty=2)
+
+# Correlation heatmap per class
+hm(cor(mean.per.class, use="complete.obs"))
+
+# Mean vs gnomad
+ol <- intersect(rownames(gnomad), names(mean.zscore))
+
+xy.plot(mean.zscore[ol],
+        gnomad[ol,"mis_z"],
+        xlab="Mean gene p-value",
+        ylab="Mis Z")
+
+
+final.mean <- data.frame(gene=rownames(mean.per.class) ,mean=rowMeans(mean.per.class, na.rm=T), stringsAsFactors = F)
+
+write.table(final.mean, file="output/mean_gene_pvalues_44_traits_per_class_calculated_exHLA.txt", row.names=F, col.names=T, quote=F, sep="\t")
+
+final.mean <- final.mean[order(final.mean$mean, decreasing=T),]
+write.table(final.mean[1:500, 1], file="output/top_500_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+write.table(final.mean[1:1000, 1], file="output/top_1000_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+write.table(final.mean[1:3000, 1], file="output/top_3000_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+```
+
+#GSEA
+```{r}
+library(clusterProfiler)
+library(org.Hs.eg.db)
+
+gene.list        <- final.mean$mean
+names(gene.list) <- final.mean$gene
+gene.list        <- na.omit(gene.list)
+gene.list        <- sort(gene.list, decreasing = TRUE)
+
+gse <- gseGO(geneList=gene.list[1:500], 
+             ont ="BP", 
+             keyType = "ENSEMBL", 
+             nPerm = 10000, 
+             minGSSize = 20, 
+             maxGSSize = 2000, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = "org.Hs.eg.db", 
+             pAdjustMethod = "none")
+
+View(gse@result)
 ```
 

@@ -133,10 +133,19 @@ public class PathwayEnrichments {
         sharedGenes = new LinkedHashSet<>();
 
         for (String gene : genesWithPvalue) {
-            if (pathwayGenes.contains(gene) && !excludeGenes.contains(gene) && genes.containsKey(gene)) {
-                sharedGenes.add(gene);
+
+            if (covariatesToCorrect != null) {
+                if (pathwayGenes.contains(gene) && !excludeGenes.contains(gene) && genes.containsKey(gene) && covariatesToCorrect.containsRow(gene)) {
+                    sharedGenes.add(gene);
+                }
+            } else {
+                if (pathwayGenes.contains(gene) && !excludeGenes.contains(gene) && genes.containsKey(gene)) {
+                    sharedGenes.add(gene);
+                }
             }
         }
+
+        LOGGER.info(sharedGenes.size() + " genes overlapping and used for analysis");
 
         if (LOGGER.isDebugEnabled()) {
             final CSVWriter sharedGeneWriter = new CSVWriter(new FileWriter(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_sharedGenes.txt")), '\t', '\0', '\0', "\n");
@@ -182,7 +191,6 @@ public class PathwayEnrichments {
             geneZscoresNullGwasCorrelation = geneZscoresNullGwasCorrelation.duplicate();
             geneZscoresNullGwasNullBetas = geneZscoresNullGwasNullBetas.duplicate();
         }
-
 
         // Determine (log10) gene lengths
         final double[] geneLengths = new double[sharedGenes.size()];

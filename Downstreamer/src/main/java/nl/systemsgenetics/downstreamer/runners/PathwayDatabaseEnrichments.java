@@ -84,6 +84,22 @@ public class PathwayDatabaseEnrichments {
             });
             pathwayMatrix = pathwayMatrixUnfiltered.viewColSelection(includedPathways);
 
+            // Determine the bonf and FDR sig geneset
+            final Map<String, Set<String>> bonfSigGenesPerGwas = new HashMap<>();
+            final Map<String, Set<String>> fdrSigGenesPerGwas = new HashMap<>();
+
+            for (String gwasTrait : gwasTraits) {
+                Set<String> bonfSigGenes = getSignficiantGeneIds(query.getpValues(), query.getEnrichmentZscores(), gwasTrait, 0.05 / query.getpValues().rows());
+                bonfSigGenes.retainAll(overlappingGenes);
+                bonfSigGenesPerGwas.put(gwasTrait, bonfSigGenes);
+
+                // Determine the FDR sig geneset
+                Set<String> fdrSigGenes = getSignficiantGeneIds(query.getqValues(), query.getEnrichmentZscores(), gwasTrait, 0.05);
+                fdrSigGenes.retainAll(overlappingGenes);
+                fdrSigGenesPerGwas.put(gwasTrait, fdrSigGenes);
+            }
+
+
             try (ProgressBar pb = new ProgressBar(query.getPathwayDatabase().getName() + "_" + curTarget.getName(), pathwayMatrix.columns(), ProgressBarStyle.ASCII)) {
 
                 //TODO: threadpool is not well behaved here, it gobbles up all the threads, perhaps this is going wrong on the
@@ -101,7 +117,6 @@ public class PathwayDatabaseEnrichments {
                     final DoubleArrayList nonZeroValues = new DoubleArrayList();
                     final Set<String> genesInPathway = new HashSet<>();
                     final Set<String> genesNotInPathway = new HashSet<>(pathwayMatrix.getRowObjects());
-
                     pathwayAnnotation.getNonZeros(nonZeroIndices, nonZeroValues);
 
                     for (int curIdx : nonZeroIndices.elements()) {
@@ -116,15 +131,8 @@ public class PathwayDatabaseEnrichments {
                     // Loop over the GWAS traits present for current run
                     for (String gwasTrait : gwasTraits) {
 
-                        // Determine the bonf sig geneset
-                        Set<String> bonfSigGenes = getSignficiantGeneIds(query.getpValues(), query.getEnrichmentZscores(), gwasTrait, 0.05 / query.getpValues().rows());
-                        bonfSigGenes.retainAll(overlappingGenes);
-                        FisherExactGenesetResult bonfResult = genesetFisherExact(overlappingGenes, genesInPathway, bonfSigGenes);
-
-                        // Determine the FDR sig geneset
-                        Set<String> fdrSigGenes = getSignficiantGeneIds(query.getqValues(), query.getEnrichmentZscores(), gwasTrait, 0.05);
-                        fdrSigGenes.retainAll(overlappingGenes);
-                        FisherExactGenesetResult fdrResult = genesetFisherExact(overlappingGenes, genesInPathway, fdrSigGenes);
+                        FisherExactGenesetResult bonfResult = genesetFisherExact(overlappingGenes, genesInPathway, bonfSigGenesPerGwas.get(gwasTrait));
+                        FisherExactGenesetResult fdrResult = genesetFisherExact(overlappingGenes, genesInPathway, fdrSigGenesPerGwas.get(gwasTrait));
 
                         // Mann-whitney U-test
                         final MannWhitneyUTest2 uTest = new MannWhitneyUTest2();
