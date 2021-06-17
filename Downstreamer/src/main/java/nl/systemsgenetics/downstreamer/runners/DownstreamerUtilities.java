@@ -6,6 +6,7 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import htsjdk.samtools.util.IntervalTreeMap;
 import me.tongfei.progressbar.ProgressBar;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
@@ -15,10 +16,12 @@ import nl.systemsgenetics.downstreamer.io.ExcelWriter;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
+import nl.systemsgenetics.downstreamer.summarystatistic.LdScore;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.moment.Skewness;
 import org.apache.commons.math3.stat.inference.TTest;
 import org.apache.log4j.Logger;
+import org.molgenis.genotype.util.Ld;
 import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.PcaColt;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -30,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
+import java.util.zip.GZIPInputStream;
 
 import nl.systemsgenetics.downstreamer.containers.LeadVariant;
 import umcg.genetica.collections.ChrPosTreeMap;
@@ -324,7 +328,12 @@ public class DownstreamerUtilities {
     public static DownstreamerStep2Results loadExistingStep2Results(DownstreamerOptions options, boolean matchToNormalizedPvalues) throws Exception {
 
         DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(options.getRun1BasePath() + "_genePvalues");
-        DoubleMatrixDataset<String, String> normalizedGenePvalues = getNormalizedGwasGenePvaluesReturn(options);
+        DoubleMatrixDataset<String, String> normalizedGenePvalues;
+        if (options.isForceNormalGenePvalues()) {
+            normalizedGenePvalues = getNormalizedGwasGenePvaluesReturn(options);
+        } else {
+            normalizedGenePvalues = null;
+        }
 
         if (matchToNormalizedPvalues) {
             genePvalues = genePvalues.viewRowSelection(normalizedGenePvalues.getRowObjects());
@@ -401,7 +410,6 @@ public class DownstreamerUtilities {
     }
 
 
-
     /**
      * Calculate skewness, kurtosis, mean and variance of the null distribution for a pathway database
      *
@@ -432,6 +440,23 @@ public class DownstreamerUtilities {
         }
 
         return outputStats;
+    }
+
+
+    public static void calculateMeanLdScorePerGene(DownstreamerOptions options) throws IOException {
+
+        List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
+        int window = options.getWindowExtend();
+
+        IntervalTreeMap<LdScore> ldScores = readLdScores(options);
+
+
+        for (Gene curGene : genes) {
+
+
+        }
+
+
     }
 
     /**
@@ -658,6 +683,33 @@ public class DownstreamerUtilities {
 
     }
 
+    /**
+     * Read LD score files into an IntervalTreeMap in the format provided by https://github.com/bulik/ldsc
+     * @param options
+     * @return
+     * @throws IOException
+     */
+    public static IntervalTreeMap<LdScore> readLdScores(DownstreamerOptions options) throws IOException {
+
+        IntervalTreeMap<LdScore> output = new IntervalTreeMap<>();
+        for (int i=1; i < 23; i++) {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(options.getGwasZscoreMatrixPath() + "/" + i + ".l2.ldscore.gz"))));
+            String[] line = reader.readLine().split("\t");
+
+            if (line[0].equals("CHR")) {
+                continue;
+            }
+
+            LdScore curLdscore =  new LdScore(line[0],
+                    Integer.parseInt(line[2]),
+                    line[1],
+                    Double.parseDouble(line[5]));
+
+            output.put(curLdscore, curLdscore);
+        }
+
+        return output;
+    }
 
     /**
      * Calculate the benjamini hochberg adjusted p-values form a doublematrixdataset. Preserves the order of the orginal

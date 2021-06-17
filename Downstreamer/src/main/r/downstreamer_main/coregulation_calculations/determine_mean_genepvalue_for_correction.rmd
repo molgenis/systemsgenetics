@@ -2,8 +2,11 @@
 if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_calculations")} else {setwd("../coregulation_calculations")}
 source("../downstreamer_functions.r")
 library(GenomicRanges)
+library(matrixStats)
 
 gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
+
+gene.pvalues.sim    <- read.genep(list.files("../data/simulated/gene_pvalues/", full.names=T), trim.colnames = c("_normalizedGenePvalues.txt"))
 
 # metadata
 meta.data           <- read.table("../data/downstreamer_summary_statistics.csv", sep="\t", stringsAsFactors = F, header=T)
@@ -21,8 +24,17 @@ ensembl.gr <- GRanges(seqnames=ensembl$Chromosome.Name, IRanges(start=ensembl$Ge
 #hla <- GRanges(6, IRanges(25e6, 36e6))
 hla <- GRanges(6, IRanges(20e6, 40e6))
 
+loci.to.exclude <- data.frame(
+  chr=c(6, 3, 11, 11),
+  start=c(20e6, 47.5e6, 36.4e6, 87.5e6),
+  end  =c(40e6, 50.0e6, 63.4e6, 90.5e6)
+)
+exclude <- GRanges(loci.to.exclude$chr, IRanges(start = loci.to.exclude$start, end=loci.to.exclude$end))
+
 # filter hla
-hla.genes <- ensembl[findOverlaps(hla, ensembl.gr)@to, ]
+hla.genes     <- ensembl[findOverlaps(hla, ensembl.gr)@to, ]
+exclude.genes <- ensembl[findOverlaps(exclude, ensembl.gr)@to, ]
+
 
 # Gnomad Pli
 gnomad.file <- "~/Documents/data/reference/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt"
@@ -30,23 +42,53 @@ gnomad <- read.table(gnomad.file, sep="\t", header=T, stringsAsFactors = F)
 gnomad <- gnomad[!duplicated(gnomad$gene),]
 rownames(gnomad) <- make.names(gsub("\\.\\d+", "", ensembl[gnomad$gene, ]$Ensembl.Gene.ID), unique=T)
 
-rownames(ensembl)   <- ensembl$Ensembl.Gene.ID
-rownames(hla.genes) <- hla.genes$Ensembl.Gene.ID
+rownames(ensembl)       <- ensembl$Ensembl.Gene.ID
+rownames(hla.genes)     <- hla.genes$Ensembl.Gene.ID
+rownames(exclude.genes) <- exclude.genes$Ensembl.Gene.ID
+
+# Mean LDSC 
+ld.score.per.gene <- read.table("output/mean_ldscore_eur_per_gene_25kb_window.tsv", sep="\t", header=T, stringsAsFactors = F)
+rownames(ld.score.per.gene) <- ld.score.per.gene$gene
+
+# Gene density
+gene.density <- read.table("output/ensembl_ensgR75_gene_density_500kb.txt", sep="\t", header=T, stringsAsFactors = F)
+rownames(gene.density) <- gene.density$genes
 ```
 
 #Incl HLA
 ```{r}
-cur.genepvalues <- scale(gene.pvalues)
+cur.genepvalues <- scale(gene.pvalues[,rownames(meta.data)])
 
+# Weighted mean by correlation
+weights <- rowSums(cor(cur.genepvalues, use="pairwise.complete.obs"))
+#weights <- 1 - (weights/sum(weights))
+weights <- 1 - ((weights - min(weights)) / (max(weights) - min(weights)))
+weights <- weights[colnames(cur.genepvalues)]
+
+weighted.means <- apply(cur.genepvalues, 1, weighted.mean, w=weights, na.rm=T)
+weighted.means <- data.frame(gene=names(weighted.means), mean=weighted.means, rownames = names(weighted.means), stringsAsFactors = F)
+
+xy.plot(rowMeans(cur.genepvalues[ol,]), weighted.means[ol, 2],
+        xlab="Mean gene pvalue",
+        ylab="Weighted mean gene pvalue")
+
+
+# Mean of means per class
 mean.per.class <- sapply(unique(meta.data$class), function(class) {
   cur.gwas <- rownames(meta.data[meta.data$class == class,])
   return(rowMeans(cur.genepvalues[, cur.gwas, drop=F], na.rm=T))
   
 })
 
-hm(cor(mean.per.class, use="complete.obs"))
-
 final.mean <- data.frame(gene=rownames(mean.per.class) ,mean=rowMeans(mean.per.class, na.rm=T), stringsAsFactors = F)
+
+median.per.class <- sapply(unique(meta.data$class), function(class) {
+  cur.gwas <- rownames(meta.data[meta.data$class == class,])
+  return(rowMedians(cur.genepvalues[, cur.gwas, drop=F], na.rm=T))
+})
+median.zscore <- rowMedians(mean.per.class)
+names(median.zscore) <-rownames(cur.genepvalues)
+
 
 write.table(final.mean, file="output/mean_gene_pvalues_44_traits_per_class_calculated.txt", row.names=F, col.names=T, quote=F, sep="\t")
 
@@ -69,20 +111,59 @@ par(mfrow=c(1,1))
 # Ordered on order of genes in ensembl file, with missing values
 final.mean <- data.frame(gene=ensembl$Ensembl.Gene.ID,
                          int=final.mean[ensembl$Ensembl.Gene.ID, "int"],
-                         pval=final.mean[ensembl$Ensembl.Gene.ID, "pval"])
-
+                         pval=final.mean[ensembl$Ensembl.Gene.ID, "pval"],
+                         mean=final.mean[ensembl$Ensembl.Gene.ID, "mean"],
+                         row.names=ensembl$Ensembl.Gene.ID)
 
 write.table(final.mean[,c("gene", "int")], file="output/mean_gene_pvalues_44_traits_per_class_calculated_int_normalized.txt", row.names=F, col.names=T, quote=F, sep="\t", na="NaN")
 
 
 write.table(final.mean[,c("gene", "pval")], file="output/mean_gene_pvalues_44_traits_per_class_calculated_int_normalized_as_2tailed_pvalue.txt", row.names=F, col.names=T, quote=F, sep="\t", na="NaN")
 
+# Plot LD score vs mean
+ol <- intersect(rownames(final.mean), rownames(ld.score.per.gene))
+xy.plot(final.mean[ol, "mean"], ld.score.per.gene[ol, 2],
+        xlab="Mean gene pvalue",
+        ylab="Mean LD score 25k window")
+
+# Plot median vs  mean
+ol <- intersect(rownames(cur.genepvalues), names(median.zscore))
+p1 <- xy.plot(rowMedians(cur.genepvalues[ol,]),rowMeans(cur.genepvalues[ol,]),
+        xlab="Median gene pvalue",
+        ylab="Mean gene pvalue")
+
+
+# Plot median vs  mean
+ol <- intersect(rownames(final.mean), names(median.zscore))
+p2 <- xy.plot(rowMedians(cur.genepvalues[ol,]), final.mean[ol, "mean"],
+        xlab="Median gene pvalue",
+        ylab="Mean of mean gene pvalue")
+
+# Plot median vs weighted mean
+ol <- intersect(names(median.zscore), rownames(weighted.means))
+p3 <- xy.plot(rowMedians(cur.genepvalues[ol,]), weighted.means[ol, 2],
+        xlab="Median gene pvalue",
+        ylab="Weighted mean gene pvalue")
+
+
+# Plot mean vs weighted mean
+ol <- intersect(rownames(final.mean), rownames(weighted.means))
+p4 <- xy.plot(final.mean[ol, "mean"], weighted.means[ol, 2],
+        xlab="Mean of mean gene pvalue",
+        ylab="Weighted mean gene pvalue")
+
+
+grid.arrange(grobs=list(p1, p2, p3, p4), ncol=2)
 ```
 
 # Exl HLA
 ```{r}
+#ol <- intersect(rownames(gene.pvalues), rownames(gene.pvalues.sim))
+#cur.genepvalues <- scale(cbind(gene.pvalues[ol,], gene.pvalues.sim[ol,]))
+
 cur.genepvalues <- scale(gene.pvalues)
 cur.genepvalues <- cur.genepvalues[!rownames(cur.genepvalues) %in% rownames(hla.genes),]
+#cur.genepvalues <- cur.genepvalues[!rownames(cur.genepvalues) %in% rownames(exclude.genes),]
 
 mean.per.class <- sapply(unique(meta.data$class), function(class) {
   cur.gwas <- rownames(meta.data[meta.data$class == class,])
@@ -91,21 +172,19 @@ mean.per.class <- sapply(unique(meta.data$class), function(class) {
 })
 mean.zscore <- rowMeans(mean.per.class, na.rm=T)
 
-median.per.class <- sapply(unique(meta.data$class), function(class) {
-  cur.gwas <- rownames(meta.data[meta.data$class == class,])
-  return(rowMedians(cur.genepvalues[, cur.gwas, drop=F], na.rm=T))
-  
-})
-median.zscore <- rowMedians(mean.per.class)
+#median.per.class <- sapply(unique(meta.data$class), function(class) {
+#  cur.gwas <- rownames(meta.data[meta.data$class == class,])
+#  return(rowMedians(cur.genepvalues[, cur.gwas, drop=F], na.rm=T))
+#  
+#})
+#median.zscore <- rowMedians(mean.per.class)
 
 # Mean vs Median
-xy.plot(mean.zscore,
-        median.zscore,
-        xlab="Mean gene p-value",
-        ylab="Median gene p-value") + geom_abline(intercept = 0, slope=1, col="grey", lty=2)
+#xy.plot(mean.zscore,
+#        median.zscore,
+#        xlab="Mean gene p-value",
+#        ylab="Median gene p-value") + geom_abline(intercept = 0, slope=1, col="grey", lty=2)
 
-# Correlation heatmap per class
-hm(cor(mean.per.class, use="complete.obs"))
 
 # Mean vs gnomad
 ol <- intersect(rownames(gnomad), names(mean.zscore))
@@ -118,12 +197,49 @@ xy.plot(mean.zscore[ol],
 
 final.mean <- data.frame(gene=rownames(mean.per.class) ,mean=rowMeans(mean.per.class, na.rm=T), stringsAsFactors = F)
 
+# Plot mean vs LD score
+ol <- intersect(rownames(final.mean), rownames(ld.score.per.gene))
+xy.plot(final.mean[ol, 2], ld.score.per.gene[ol, 2],
+        xlab="Mean gene pvalue",
+        ylab="Mean LD score 25k window")
+
+# Plot LDSC corrected mean vs mean
+final.mean$ld.corrected <- residuals(lm(final.mean[ol, 2] ~ ld.score.per.gene[ol, 2], na.action=na.exclude))
+
+xy.plot(final.mean$mean, final.mean$ld.corrected,
+        xlab="Mean over 44 traits",
+        ylab="Mean after correction for LDSC")
+
+# Barplot of correlation between mean and trait
+cur.cor <- cor(gene.pvalues[ol,], final.mean[ol, 2], use="pairwise.complete.obs")[,1]
+par(mar=c(15,5,5,5))
+barplot(cur.cor,
+        col=class.cols[meta.data[names(cur.cor),"class"]],
+        name=meta.data[names(cur.cor), "Name"],
+        las=2,
+        ylab="Pearson R with mean")
+
 write.table(final.mean, file="output/mean_gene_pvalues_44_traits_per_class_calculated_exHLA.txt", row.names=F, col.names=T, quote=F, sep="\t")
+
+write.table(final.mean[, 1], file="output/background_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+
 
 final.mean <- final.mean[order(final.mean$mean, decreasing=T),]
 write.table(final.mean[1:500, 1], file="output/top_500_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
 write.table(final.mean[1:1000, 1], file="output/top_1000_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
 write.table(final.mean[1:3000, 1], file="output/top_3000_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+
+l <- nrow(final.mean)
+write.table(final.mean[(l - 500):l, 1], file="output/last_500_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+write.table(final.mean[(l - 1000):l, 1], file="output/last_1000_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+write.table(final.mean[(l - 3000):l, 1], file="output/last_3000_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+
+
+final.mean <- final.mean[order(final.mean$ld.corrected, decreasing=T),]
+write.table(final.mean[1:500, 1], file="output/top_500_ldsc_corr_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+write.table(final.mean[1:1000, 1], file="output/top_1000_ldsc_corr_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+write.table(final.mean[1:3000, 1], file="output/top_3000_ldsc_corr_mean_gene_pvalues_exHLA.txt", row.names=F, col.names=F, quote=F, sep="\t")
+
 ```
 
 #GSEA
@@ -148,5 +264,59 @@ gse <- gseGO(geneList=gene.list[1:500],
              pAdjustMethod = "none")
 
 View(gse@result)
+```
+
+```{r}
+#cur.genepvalues <- scale(gene.pvalues.sim[,grep("random_trait",colnames(gene.pvalues.sim), value=T)])
+#cur.genepvalues <- cur.genepvalues[!rownames(cur.genepvalues) %in% rownames(hla.genes),]
+
+#means <- rowMeans(cur.genepvalues)
+#means <- means[order(means, decreasing = T)]
+
+#ol <- intersect(rownames(cur.genepvalues), names(means))
+#cur.genepvalues <- apply(cur.genepvalues[ol,], 2, function(x){
+#  return(residuals(lm(x ~ means[ol], na.action = na.exclude)))
+#})
+cur.genepvalues <- scale(gene.pvalues)
+
+# Adjust for LD score + gene density
+ol <- intersect(rownames(cur.genepvalues), rownames(ld.score.per.gene))
+genep.ldscore.density <- apply(cur.genepvalues[ol,], 2, function(x){
+    return(residuals(lm(x ~ ld.score.per.gene[ol, 2] + gene.density[ol, 2], na.action = na.exclude)))
+})
+
+# Adjust for weighted mean
+ol <- intersect(rownames(cur.genepvalues), rownames(weighted.means))
+genep.mean.weight <- apply(cur.genepvalues[ol,], 2, function(x){
+    return(residuals(lm(x ~ weighted.means[ol, 2], na.action = na.exclude)))
+})
+
+# Adjust for mean of means
+ol <- intersect(rownames(cur.genepvalues), rownames(final.mean))
+genep.mean.mean <- apply(cur.genepvalues[ol,], 2, function(x){
+    return(residuals(lm(x ~ final.mean[ol, 2], na.action = na.exclude)))
+})
+
+pdf(file="output/plots/gene_pvalue_correlation_corrected.pdf", width=20, height=20)
+cor.m   <- cor(genep.mean.weight, use="pairwise.complete.obs")
+cor.m.a <- cor(genep.ldscore.density, use="pairwise.complete.obs")
+cor.m.a <- cor.m.a[row.names(cor.m), colnames(cor.m)]
+diag(cor.m) <- 0
+
+cor.m[lower.tri(cor.m)] <- cor.m.a[lower.tri(cor.m.a)]
+simple.hm(cor.m, cellwidth = 8, cellheight = 8, border=NA, range="symmetric", cluster_rows=F, cluster_cols=F)
+
+dev.off()
+
+xy.plot(rowMeans(cur.genepvalues[ol, ]), rowMeans(gene.pvalues[ol, ]),
+        xlab="Adj Genep",
+        ylab="Genep")
+
+
+#ol <- intersect(names(means), rownames(final.mean))
+#xy.plot(means[ol], final.mean[ol,2], alpha=0.2)
+#xy.plot(means[ol], gene.density[ol,1], alpha=0.2)
+
+
 ```
 
