@@ -36,6 +36,7 @@ public class GadoOptions {
 	private final File predictionInfoFile;
 	private final File inputCaseHpoFile;
 	private final File processedCaseHpoFile;
+	private final File annotationMatrixFile;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -49,7 +50,8 @@ public class GadoOptions {
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("One of the following modes:\n"
 				+ "* PROCESS - Process the HPO terms of cases. Suggests  parent terms if needed.\n"
-				+ "* PRIORITIZE - Uses output of PROCESS to prioritize genes\n");
+				+ "* PRIORITIZE - Uses output of PROCESS to prioritize genes\n"
+				+ "* EXPAND_PREDICTIONS - Spike-in known HPO-Gene annotation into the prediction matrix \n");
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("m"));
@@ -68,7 +70,7 @@ public class GadoOptions {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("The output path. For mode PRIORITIZE supply a folder for the output files per case.");
+		OptionBuilder.withDescription("The output path. For mode PRIORITIZE supply a folder for the output files per case. For mode EXPAND_PREDICTIONS output matrix");
 		OptionBuilder.withLongOpt("output");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("o"));
@@ -90,6 +92,18 @@ public class GadoOptions {
 		OptionBuilder.withDescription("HPO prediction matrix in binary format");
 		OptionBuilder.withLongOpt("hpoPredictions");
 		OPTIONS.addOption(OptionBuilder.create("hp"));
+		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("HPO prediction matrix in binary format");
+		OptionBuilder.withLongOpt("hpoPredictions");
+		OPTIONS.addOption(OptionBuilder.create("hp"));
+		
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("HPO annotion matrix in txt or txt.gz format. Only for mode EXPAND_PREDICTIONS Rows: genes, cols: hpo. Must be exact same row and col order as prediction matrix ");
+		OptionBuilder.withLongOpt("hpoAnnotations");
+		OPTIONS.addOption(OptionBuilder.create("hpa"));
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
@@ -166,6 +180,19 @@ public class GadoOptions {
 			}
 			predictionMatrixFile = null;
 		}
+		
+		if (commandLine.hasOption("hpa")) {
+			String hp = commandLine.getOptionValue("hpa");
+			if(hp.endsWith(".dat")){
+				hp = hp.substring(0, hp.length()-4);
+			}
+			annotationMatrixFile = new File(hp);
+		} else {
+			if (mode == GadoMode.EXPAND_PREDICTIONS) {
+				throw new ParseException("Option --hpoAnnotations is requered for mode EXPAND_PREDICTIONS");
+			}
+			annotationMatrixFile = null;
+		}
 
 		if (commandLine.hasOption("chp")) {
 			processedCaseHpoFile = new File(commandLine.getOptionValue("chp"));
@@ -199,6 +226,10 @@ public class GadoOptions {
 				LOGGER.info(" * Processed case HPO terms:" + this.processedCaseHpoFile.getAbsolutePath());
 				LOGGER.info(" * HPO prediction matrix: " + this.predictionMatrixFile.getAbsolutePath());
 				LOGGER.info(" * Genes info: " + this.genesFile.getAbsolutePath());
+				break;
+			case EXPAND_PREDICTIONS:
+				LOGGER.info(" * HPO prediction matrix: " + this.predictionMatrixFile.getAbsolutePath());
+				LOGGER.info(" * HPO annotation matrix: " + this.annotationMatrixFile.getAbsolutePath());
 				break;
 		}
 
@@ -239,6 +270,10 @@ public class GadoOptions {
 
 	public File getProcessedCaseHpoFile() {
 		return processedCaseHpoFile;
+	}
+
+	public File getAnnotationMatrixFile() {
+		return annotationMatrixFile;
 	}
 
 }
