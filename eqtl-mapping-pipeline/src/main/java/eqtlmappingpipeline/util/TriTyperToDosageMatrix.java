@@ -3,6 +3,7 @@ package eqtlmappingpipeline.util;
 import eqtlmappingpipeline.metaqtl3.containers.Settings;
 import org.apache.commons.configuration.ConfigurationException;
 import umcg.genetica.console.ProgressBar;
+import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.*;
@@ -477,210 +478,230 @@ public class TriTyperToDosageMatrix {
 
         // sorting SNPs
         Integer selectChr = null;
-        if (settings.confineToSNPsThatMapToChromosome != null) {
-            selectChr = (int) settings.confineToSNPsThatMapToChromosome;
-            System.out.println("Selecting variants from chr " + selectChr);
-        }
 
-        System.out.println("Inventorizing snps");
-        HashSet<String> allSNPsHash = new HashSet<String>();
-        for (int d = 0; d < m_gg.length; d++) {
-            String[] datasetSNPs = m_gg[d].getSNPs();
-            if (selectChr != null) {
-                for (int s = 0; s < datasetSNPs.length; s++) {
-                    int chr = m_gg[d].getChr(s);
-                    if (selectChr == chr) {
-                        allSNPsHash.add(datasetSNPs[s]);
+        // tmp
+
+        for (int chrom = 1; chrom < 23; chrom++) {
+            String outdir = settings.outputReportsDir + "/chr" + chrom + "/";
+            Gpio.createDir(outdir);
+//            if (settings.confineToSNPsThatMapToChromosome != null) {
+//                selectChr = (int) settings.confineToSNPsThatMapToChromosome;
+//                System.out.println("Selecting variants from chr " + selectChr);
+//            }
+
+            selectChr = chrom;
+            System.out.println("Selecting variants from chr " + selectChr);
+            System.out.println("Inventorizing snps");
+            HashSet<String> allSNPsHash = new HashSet<String>();
+            for (int d = 0; d < m_gg.length; d++) {
+                String[] datasetSNPs = m_gg[d].getSNPs();
+                if (selectChr != null) {
+                    for (int s = 0; s < datasetSNPs.length; s++) {
+                        int chr = m_gg[d].getChr(s);
+                        if (selectChr == chr) {
+                            allSNPsHash.add(datasetSNPs[s]);
+                        }
+                    }
+                } else {
+                    allSNPsHash.addAll(Arrays.asList(datasetSNPs));
+                }
+            }
+
+            System.out.println(allSNPsHash.size() + " unique SNPs");
+
+            System.out.println("Sorting SNPs");
+            ArrayList<String> allSNPs = new ArrayList<>();
+            allSNPs.addAll(allSNPsHash);
+
+            ArrayList<String> snpsToQuery = null;
+            if (settings.tsSNPsConfine != null) {
+                snpsToQuery = new ArrayList<>();
+                HashSet<String> confineset = settings.tsSNPsConfine;
+                for (String s : confineset) {
+                    if (allSNPsHash.contains(s)) {
+                        snpsToQuery.add(s);
                     }
                 }
             } else {
-                allSNPsHash.addAll(Arrays.asList(datasetSNPs));
+                snpsToQuery = allSNPs;
             }
-        }
+            System.out.println(snpsToQuery.size() + " SNPs remain after filtering for SNP confinement list");
 
-        System.out.println(allSNPsHash.size() + " unique SNPs");
 
-        System.out.println("Sorting SNPs");
-        ArrayList<String> allSNPs = new ArrayList<>();
-        allSNPs.addAll(allSNPsHash);
+            snpsToQuery = sortSNPs(snpsToQuery, sortbyId, m_gg);
+            System.out.println(snpsToQuery.size() + " SNPs to output");
 
-        ArrayList<String> snpsToQuery = null;
-        if (settings.tsSNPsConfine != null) {
-            snpsToQuery = new ArrayList<>();
-            HashSet<String> confineset = settings.tsSNPsConfine;
-            for (String s : confineset) {
-                if (allSNPsHash.contains(s)) {
-                    snpsToQuery.add(s);
-                }
+            // write data to disk
+            String[] header = new String[sampleIdMap.size()];
+            for (Map.Entry<String, Integer> samplePair : sampleIdMap.entrySet()) {
+                header[samplePair.getValue()] = samplePair.getKey();
             }
-        } else {
-            snpsToQuery = allSNPs;
-        }
-        System.out.println(snpsToQuery.size() + " SNPs remain after filtering for SNP confinement list");
+            TextFile tf = null;
 
 
-        snpsToQuery = sortSNPs(snpsToQuery, sortbyId, m_gg);
-        System.out.println(snpsToQuery.size() + " SNPs to output");
-
-        // write data to disk
-        String[] header = new String[sampleIdMap.size()];
-        for (Map.Entry<String, Integer> samplePair : sampleIdMap.entrySet()) {
-            header[samplePair.getValue()] = samplePair.getKey();
-        }
-        TextFile tf = null;
-        TextFile log = new TextFile(settings.outputReportsDir + "MergeLog.txt.gz", TextFile.W);
-        if (vcf) {
-            tf = new TextFile(settings.outputReportsDir + "GenotypeData.vcf.gz", TextFile.W);
-            tf.writeln("##fileformat=VCFv4.3");
-            tf.writeln("##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Non phased Genotype\">");
-            tf.writeln("##FORMAT=<ID=DS,Number=1,Type=String,Description=\"Genotype dosage\">");
-            // #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT
-            tf.writeln("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + Strings.concat(header, Strings.tab));
-        } else {
-            tf = new TextFile(settings.outputReportsDir + "GenotypeData.txt.gz", TextFile.W);
-            tf.writeln("SNP\tAlleles\tMinorAllele\t" + Strings.concat(header, Strings.tab));
-        }
+            TextFile log = new TextFile(outdir + "MergeLog.txt.gz", TextFile.W);
+            if (vcf) {
+                tf = new TextFile(outdir + "GenotypeData.vcf.gz", TextFile.W);
+                tf.writeln("##fileformat=VCFv4.3");
+                tf.writeln("##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Non phased Genotype\">");
+                tf.writeln("##FORMAT=<ID=DS,Number=1,Type=String,Description=\"Genotype dosage\">");
+                // #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT
+                tf.writeln("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + Strings.concat(header, Strings.tab));
+            } else {
+                tf = new TextFile(outdir + "GenotypeData.txt.gz", TextFile.W);
+                tf.writeln("SNP\tAlleles\tAltAllele\t" + Strings.concat(header, Strings.tab));
+            }
 
 
-        double[] data = new double[sampleIdMap.size()];
-        log.write(snpsToQuery.size() + " SNPs to output");
-        ProgressBar pb = new ProgressBar(snpsToQuery.size(), "Querying SNPs...");
-        for (int snpctr = 0; snpctr < snpsToQuery.size(); snpctr++) {
-            String snp = snpsToQuery.get(snpctr);
-            SNP[] snpObjs = new SNP[m_gg.length];
-            // load genotype data per dataset
-            String refSNPAlleles = null;
-            String refSNPRefAllele = null;
-            String refSNPAlleleAssessed = null;
-            SNP refSNP = null;
-            Boolean[] flip = new Boolean[m_gg.length];
-            for (int d = 0; d < m_gg.length; d++) {
-                Integer id = m_gg[d].getSnpToSNPId().get(snp);
-                if (id >= 0) {
-                    SNP snpobj = m_gg[d].getSNPObject(id);
-                    loaders[d].loadGenotypes(snpobj);
-                    if (snpobj.getMAF() > settings.snpQCMAFThreshold && snpobj.getHWEP() > settings.snpQCHWEThreshold && snpobj.getCR() > settings.snpQCCallRateThreshold) {
-                        snpObjs[d] = snpobj;
-                        if (loaders[d].hasDosageInformation()) {
-                            loaders[d].loadDosage(snpObjs[d]);
-                        }
-                        if (refSNPAlleles == null) {
-                            refSNP = snpobj;
-                            refSNPAlleles = BaseAnnot.getAllelesDescription(snpobj.getAlleles());
-                            refSNPRefAllele = BaseAnnot.toString(snpobj.getAlleles()[0]);
-                            refSNPAlleleAssessed = BaseAnnot.toString(snpobj.getAlleles()[1]);
-                            flip[d] = false;
-                        } else {
-                            String SNPAlleles = BaseAnnot.getAllelesDescription(snpobj.getAlleles());
-                            String SNPAlleleAssessed = BaseAnnot.toString(snpobj.getAlleles()[1]);
-                            flip[d] = BaseAnnot.flipalleles(refSNPAlleles, refSNPAlleleAssessed, SNPAlleles, SNPAlleleAssessed);
-                            if (flip[d] == null) {
-                                snpobj.clearGenotypes();
+            double[] datagt = new double[sampleIdMap.size()];
+            double[] datads = new double[sampleIdMap.size()];
+            log.write(snpsToQuery.size() + " SNPs to output");
+            ProgressBar pb = new ProgressBar(snpsToQuery.size(), "Querying SNPs...");
+            for (int snpctr = 0; snpctr < snpsToQuery.size(); snpctr++) {
+                String snp = snpsToQuery.get(snpctr);
+                SNP[] snpObjs = new SNP[m_gg.length];
+                // load genotype data per dataset
+                String refSNPAlleles = null;
+                String refSNPRefAllele = null;
+                String refSNPAlleleAssessed = null;
+                SNP refSNP = null;
+                // flip alleles
+                Boolean[] flip = new Boolean[m_gg.length];
+                for (int d = 0; d < m_gg.length; d++) {
+                    Integer id = m_gg[d].getSnpToSNPId().get(snp);
+                    if (id >= 0) {
+                        SNP snpobj = m_gg[d].getSNPObject(id);
+                        loaders[d].loadGenotypes(snpobj);
+                        if (snpobj.passesQC() && snpobj.getMAF() >= settings.snpQCMAFThreshold && snpobj.getHWEP() >= settings.snpQCHWEThreshold && snpobj.getCR() >= settings.snpQCCallRateThreshold) {
+                            snpObjs[d] = snpobj;
+                            if (loaders[d].hasDosageInformation()) {
+                                loaders[d].loadDosage(snpObjs[d]);
                             }
-                        }
-                    } else {
-                        snpobj.clearGenotypes();
-                    }
-                }
-            }
-
-            // flip alleles
-
-            for (int d = 0; d < data.length; d++) {
-                data[d] = -1;
-            }
-
-            // get data per dataset
-            for (int d = 0; d < m_gg.length; d++) {
-                if (flip[d] != null) {
-                    boolean flipalleles = flip[d];
-                    String[] individuals = m_gg[d].getIndividuals();
-                    HashSet<String> allowedInds = allowedSamplesPerDs.get(d);
-
-                    double[] dosages = null;
-                    if (snpObjs[d].hasDosageInformation()) {
-                        dosages = snpObjs[d].getDosageValues();
-                    } else {
-                        byte[] genotypes = snpObjs[d].getGenotypes();
-                        dosages = new double[genotypes.length];
-                        for (int g = 0; g < dosages.length; g++) {
-                            dosages[g] = genotypes[g];
-                        }
-                    }
-
-
-                    for (int i = 0; i < individuals.length; i++) {
-                        String ind = individuals[i];
-                        if (allowedInds.contains(ind)) {
-                            Integer newId = sampleIdMap.get(ind);
-                            if (newId != null) {
-                                if (dosages[i] == -1) {
-                                    data[newId] = -1;
-                                } else {
-                                    if (flipalleles) {
-                                        data[newId] = 2 - dosages[i];
-                                    } else {
-                                        data[newId] = dosages[i];
-                                    }
+                            if (refSNPAlleles == null) {
+                                refSNP = snpobj;
+                                refSNPAlleles = BaseAnnot.getAllelesDescription(snpobj.getAlleles());
+                                refSNPRefAllele = BaseAnnot.toString(snpobj.getAlleles()[0]);
+                                refSNPAlleleAssessed = BaseAnnot.toString(snpobj.getAlleles()[1]);
+                                flip[d] = false;
+                            } else {
+                                String SNPAlleles = BaseAnnot.getAllelesDescription(snpobj.getAlleles());
+                                String SNPAlleleAssessed = BaseAnnot.toString(snpobj.getAlleles()[1]);
+                                flip[d] = BaseAnnot.flipalleles(refSNPAlleles, refSNPAlleleAssessed, SNPAlleles, SNPAlleleAssessed);
+                                if (flip[d] == null) {
+                                    snpobj.clearGenotypes();
                                 }
-                            } else {
-                                System.out.println("Sample " + ind + " has null id in index, but is present in GTE for dataset?");
-                                System.exit(-1);
                             }
-                        }
-                    }
-                } else if (snpObjs[d] != null) {
-                    log.writeln("Excluding\t" + snp + "\tin dataset\t" + datasetsettings.get(d).name + "\tsince it has incompatible alleles: " + BaseAnnot.getAllelesDescription(snpObjs[d].getAlleles()));
-                }
-            }
-
-            int missing = 0;
-            for (int d = 0; d < data.length; d++) {
-                if (data[d] == -1) {
-                    missing++;
-                }
-            }
-            if (missing == data.length) {
-                log.write(snp + " has no data");
-            } else if (missing != data.length) {
-                // System.out.println();
-                // System.out.println("Excluding\t" + snp + "\tsince it has no values");
-                if (vcf) {
-                    // #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT
-
-
-                    // ./.:0,0:0
-                    String[] gts = new String[data.length];
-                    for (int d = 0; d < data.length; d++) {
-                        double v = data[d];
-                        if (v < 0) {
-                            gts[d] = "./.:0";
                         } else {
-                            if (v < 0.5) {
-                                gts[d] = "0/0:" + data[d];
-                            } else if (v > 1.5) {
-                                gts[d] = "1/1:" + data[d];
-                            } else {
-                                gts[d] = "0/1:" + data[d];
-                            }
+                            snpobj.clearGenotypes();
                         }
                     }
-                    tf.writeln(refSNP.getChr()
-                            + "\t" + refSNP.getChrPos()
-                            + "\t" + refSNP.getName()
-                            + "\t" + refSNPRefAllele
-                            + "\t" + refSNPAlleleAssessed
-                            + "\t.\t.\t.\tGT:DS\t"
-                            + Strings.concat(gts, Strings.tab));
-
-                } else {
-                    tf.writeln(snp + "\t" + refSNPAlleles + "\t" + refSNPAlleleAssessed + "\t" + Strings.concat(data, Strings.tab));
                 }
-            }
-            pb.iterate();
-        }
-        pb.close();
 
-        tf.close();
+                // get data per dataset
+                int nrDatasetsWithData = 0;
+                Arrays.fill(datagt, -1);
+                Arrays.fill(datads, -1);
+                for (int d = 0; d < m_gg.length; d++) {
+                    if (flip[d] != null) {
+                        nrDatasetsWithData++;
+                        boolean flipalleles = flip[d];
+                        String[] individuals = m_gg[d].getIndividuals();
+                        HashSet<String> allowedInds = allowedSamplesPerDs.get(d);
+
+                        double[] dosages = null;
+
+                        byte[] genotypesb = snpObjs[d].getGenotypes();
+                        double[] genotypes = new double[genotypesb.length];
+                        if (snpObjs[d].hasDosageInformation()) {
+                            dosages = snpObjs[d].getDosageValues();
+                        } else {
+                            dosages = new double[genotypesb.length];
+                        }
+                        for (int g = 0; g < dosages.length; g++) {
+                            genotypes[g] = genotypesb[g];
+                            if (!snpObjs[d].hasDosageInformation()) {
+                                dosages[g] = genotypesb[g];
+                            }
+                        }
+
+                        for (int i = 0; i < individuals.length; i++) {
+                            String ind = individuals[i];
+                            if (allowedInds.contains(ind)) {
+                                Integer newId = sampleIdMap.get(ind);
+                                if (newId != null) {
+                                    if (genotypes[i] == -1) {
+                                        datagt[newId] = -1;
+                                        datads[newId] = -1;
+                                    } else {
+                                        if (flipalleles) {
+                                            datads[newId] = 2 - dosages[i];
+                                            datagt[newId] = 2 - genotypes[i];
+                                        } else {
+                                            datads[newId] = dosages[i];
+                                            datagt[newId] = genotypes[i];
+                                        }
+                                    }
+                                } else {
+                                    System.out.println("Sample " + ind + " has null id in index, but is present in GTE for dataset?");
+                                    System.exit(-1);
+                                }
+                            }
+                        }
+                    } else if (snpObjs[d] != null) {
+                        log.writeln("Excluding\t" + snp + "\tin dataset\t" + datasetsettings.get(d).name + "\tsince it has incompatible alleles: " + BaseAnnot.getAllelesDescription(snpObjs[d].getAlleles()));
+                    }
+                }
+
+                int missing = 0;
+                for (int d = 0; d < datagt.length; d++) {
+                    if (datagt[d] == -1) {
+                        missing++;
+                    }
+                }
+
+                if (nrDatasetsWithData < settings.requireAtLeastNumberOfDatasets) {
+                    log.write(snp + " excluded: present in " + nrDatasetsWithData + ", while " + settings.requireAtLeastNumberOfDatasets + " required.");
+                } else if (missing == datagt.length) {
+                    log.write(snp + " excluded: has no data");
+                } else if (missing != datagt.length) {
+                    // System.out.println();
+                    // System.out.println("Excluding\t" + snp + "\tsince it has no values");
+                    if (vcf) {
+                        // #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT
+                        // ./.:0,0:0
+                        String[] gts = new String[datagt.length];
+                        for (int d = 0; d < datagt.length; d++) {
+                            double v = datagt[d];
+                            if (v < 0) {
+                                gts[d] = "./.:."; // missing dosage values encoded as .
+                            } else {
+                                if (v < 0.5) {
+                                    gts[d] = "0/0:" + datads[d];
+                                } else if (v > 1.5) {
+                                    gts[d] = "1/1:" + datads[d];
+                                } else {
+                                    gts[d] = "0/1:" + datads[d];
+                                }
+                            }
+                        }
+                        tf.writeln(refSNP.getChr()
+                                + "\t" + refSNP.getChrPos()
+                                + "\t" + refSNP.getName()
+                                + "\t" + refSNPRefAllele
+                                + "\t" + refSNPAlleleAssessed
+                                + "\t.\t.\t.\tGT:DS\t"
+                                + Strings.concat(gts, Strings.tab));
+
+                    } else {
+                        tf.writeln(snp + "\t" + refSNPAlleles + "\t" + refSNPAlleleAssessed + "\t" + Strings.concat(datads, Strings.tab));
+                    }
+                }
+                pb.iterate();
+            }
+            pb.close();
+
+            tf.close();
+        }
+
     }
 }
