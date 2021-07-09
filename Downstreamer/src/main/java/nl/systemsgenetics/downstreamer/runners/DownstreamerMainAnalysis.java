@@ -123,19 +123,30 @@ public class DownstreamerMainAnalysis {
 			}
 		}
 
+		// Load step 1 results from disk
 		if (options.getMode() == DownstreamerMode.STEP2) {
 			LOGGER.info("Continuing previous analysis by loading gene p-values");
 			step1Res = DownstreamerStep1Results.loadFromDisk(options.getRun1BasePath());
 			LOGGER.info("Gene p-values loaded");
 		}
 
+		// Set the matrices containing step 1 results
 		DoubleMatrixDataset<String, String> genePvalues = step1Res.getGenePvalues();
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = step1Res.getGenePvaluesNullGwas();
 		DoubleMatrixDataset<String, String> geneVariantCount = step1Res.getGeneVariantCount();
 		DoubleMatrixDataset<String, String> geneMaxSnpZscore = step1Res.getGeneMaxSnpZscore();
 		DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = step1Res.getGeneMaxSnpZscoreNullGwas();
-		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
 
+		// Load optinal covariates
+		DoubleMatrixDataset<String, String> covariatesToCorrectGenePvalues;
+		if (options.getCovariates() != null) {
+			covariatesToCorrectGenePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getCovariates().getAbsolutePath(), '\t');
+		} else {
+			covariatesToCorrectGenePvalues = null;
+		}
+
+		// Load the genes to run the analysis on
+		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
 		// Identify genes with at least one variant in window
@@ -232,6 +243,7 @@ public class DownstreamerMainAnalysis {
 					geneMaxSnpZscore,
 					geneMaxSnpZscoreNullGwasCorrelation,
 					geneMaxSnpZscoreNullGwasBetas,
+					covariatesToCorrectGenePvalues,
 					options.getGeneCorrelationWindow(),
 					nrSamplesToUseForFDR
 			));

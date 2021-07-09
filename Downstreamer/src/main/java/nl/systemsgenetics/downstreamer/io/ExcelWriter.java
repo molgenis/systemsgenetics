@@ -701,7 +701,12 @@ public class ExcelWriter {
 				}
 
 				// Gene p-value
-				double genePvalue = genePvalues.getElement(geneId, trait);
+				double genePvalue;
+				try {
+					genePvalue = genePvalues.getElement(geneId, trait);
+				} catch (java.util.NoSuchElementException e) {
+					genePvalue = Double.NaN;
+				}
 
 				XSSFCell genePCell = row.createCell(9 + maxAnnotations, CellType.NUMERIC);
 				if (Double.isNaN(genePvalue)) {

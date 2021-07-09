@@ -45,6 +45,7 @@ public class DownstreamerOptions {
 	private final File run1BasePath;
 	private final File geneInfoFile;
 	private final File gwasZscoreMatrixPath;
+	private final File covariates;
 	private final int numberOfPermutations;
 	private final long numberOfPermutationsRescue;
 	private final int windowExtend;
@@ -214,6 +215,12 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm");
 		OptionBuilder.withLongOpt("genes");
 		OPTIONS.addOption(OptionBuilder.create("ge"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with covariates used to correct the gene p-values. Works in conjunction with -rgl. Residuals of this regression are used as input for the GLS");
+		OptionBuilder.withLongOpt("covariates");
+		OPTIONS.addOption(OptionBuilder.create("cov"));
 
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file and will save many intermediate results to files. Not recommended for large analysis.");
@@ -431,6 +438,12 @@ public class DownstreamerOptions {
 		run1BasePath = commandLine.hasOption("soo") ? new File(commandLine.getOptionValue("soo")) : outputBasePath;
 		trimGeneNames = commandLine.hasOption("tgn");
 
+		if (commandLine.hasOption("cov")) {
+			covariates = new File(commandLine.getOptionValue("cov"));
+		} else {
+			covariates = null;
+		}
+
 		if (quantileNormalizePermutations && forceNormalGenePvalues) {
 			throw new ParseException("Can't combine -qn with -fngp");
 		}
@@ -456,7 +469,7 @@ public class DownstreamerOptions {
 			throw new ParseException("Could not parse -cwe as integerer: " + commandLine.getOptionValue("cwe"));
 		}
 
-		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.SUBSET_MATRIX) {
+		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.SUBSET_MATRIX || mode == DownstreamerMode.GET_MARKER_GENES) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -594,6 +607,27 @@ public class DownstreamerOptions {
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+				break;
+			case GET_MARKER_GENES:
+				if (commandLine.hasOption("ge")) {
+					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				} else {
+					throw new IllegalArgumentException("--genes not specified");
+				}
+
+				columnsToExtract=null;
+				corMatrixZscores = false;
+				pathwayDatabases = null;
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
+				genePruningR = 0;
+				geneCorrelationWindow = 0;
+				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+				if (!commandLine.hasOption("x")) {
+					throw new IllegalArgumentException("-x (grouping file) not specified");
+				}
+
 				break;
 			case EXPAND_PATHWAYS:
 				geneInfoFile = new File(commandLine.getOptionValue("ge"));
@@ -1547,4 +1581,7 @@ public class DownstreamerOptions {
 		return HLA;
 	}
 
+	public File getCovariates() {
+		return covariates;
+	}
 }

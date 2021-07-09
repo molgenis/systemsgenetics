@@ -1,0 +1,45 @@
+```{r}
+setwd("../downstreamer_collaborations/biogen/")
+source("../../downstreamer_main/downstreamer_functions.r")
+
+# Read excel files
+base <- read.downstreamer.batch("/home/work/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-04-09/")
+
+
+```
+
+```{r}
+a <- read.table("/home/work/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-04-09/height_2018_30124842_hg19_normalizedGenePvalues.txt", row.names=1, header=1)
+
+b <- read.table("/home/work/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-04-09/UKBB_hand_grip_strength_normalizedGenePvalues.txt", row.names=1, header=1)
+
+ol <- intersect(rownames(a), rownames(b))
+
+p1 <- xy.plot(a[ol,1], b[ol, 1], ylab="Height norm. GeneP", xlab="Hand Grip Dom norm. GeneP")
+p2 <- xy.plot(a[ol,1], b[ol, 2], ylab="Height norm. GeneP", xlab="Hand Grip Nondom norm. GeneP")
+p3 <- xy.plot(b[ol,1], b[ol, 2], ylab="Hand Grip Dom norm. GeneP", xlab="Hand Grip Nondom norm. GeneP")
+
+pdf(width=12, height=4, file="~/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-04-09/heigth_vs_hand_grip_strength_gene_pvalue_comparison.pdf")
+grid.arrange(grobs=list(p1, p2, p3), ncol=3)
+dev.off()
+
+```
+
+
+```{r}
+a <- base$height_2018_30124842$GenePrioritization[ol, ]$Enrichment.Z.score
+b <- base$UKBB_hand_grip_strength_UKBB_dom_grip_abs_height_adj$GenePrioritization[ol, ]$Enrichment.Z.score
+
+p1 <- xy.plot(a, b, ylab="Height norm. GenePrio", xlab="Hand Grip Dom norm. GenePrio")
+
+b <- base$UKBB_hand_grip_strength_UKBB_nondom_grip_abs_height_adj$GenePrioritization[ol, ]$Enrichment.Z.score
+p2 <- xy.plot(a, b, ylab="Height norm. GenePrio", xlab="Hand Grip Nondom norm. GenePrio")
+
+a <- base$UKBB_hand_grip_strength_UKBB_dom_grip_abs_height_adj$GenePrioritization[ol, ]$Enrichment.Z.score
+p3 <- xy.plot(a, b, ylab="Hand Grip Dom norm. GenePrio", xlab="Hand Grip Nondom norm. GenePrio")
+
+pdf(width=12, height=4, file="~/Desktop/depict2/collaborations/biogen/hand_grip_strength/2021-04-09/heigth_vs_hand_grip_strength_gene_prioritization_comparison.pdf")
+grid.arrange(grobs=list(p1, p2, p3), ncol=3)
+dev.off()
+```
+
