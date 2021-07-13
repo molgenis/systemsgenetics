@@ -468,6 +468,13 @@ public class MetaQTL3 {
                         excludeSNP = true;
                     }
 
+                    if (m_settings.confineToSNPsThatMapToChromosome != null) {
+                        if (chr1 == null || !chr1.equals(m_settings.confineToSNPsThatMapToChromosome)) {
+                            reason.append("\tSNP does not map to chromosome ").append(m_settings.confineToSNPsThatMapToChromosome).append(": chr").append(chr1);
+                            excludeSNP = true;
+                        }
+                    }
+
                     if (excludeSNP) {
                         try {
                             excludedSNPs.writelnsynced(reason.toString());

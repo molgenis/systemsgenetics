@@ -43,11 +43,11 @@ public class StatisticsTest {
 	public void anovaTest() throws Exception {
 		double expectedPval = 4.09E-7;	
 		double observedPval = Statistics.anova(31, 22, 100, 101, true);
-		assertEquals(expectedPval, observedPval, 0.000000001);
+		assertEquals(expectedPval, observedPval, 1E-5);
 		
 		expectedPval = 4.67E-7;	
 		observedPval = Statistics.anova(31, 22, 100, 101, false);
-		assertEquals(expectedPval, observedPval, 0.000000001);
+		assertEquals(expectedPval, observedPval, 1E-5);
 	}
 	
 	@Test
