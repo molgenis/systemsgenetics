@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.genenetworkbackend.hpo;
 
+import umcg.genetica.io.hpo.HpoOntology;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
@@ -66,7 +67,7 @@ public class ImproveHpoPredictionBasedOnChildTerms {
 		DoubleMatrixDataset<String, String> predictionMatrixPredicted = predictionMatrixFull.viewColSelection(predictedHpoTerms);
 		DoubleMatrixDataset<String, String> annotationMatrixPredicted = annotationMatrixFull.viewColSelection(predictedHpoTerms);
 
-		Ontology hpoOntology = HpoFinder.loadHpoOntology(hpoOboFile);
+		Ontology hpoOntology = HpoOntology.loadHpoOntology(hpoOboFile);
 
 		ImproveHpoPredictionBasedOnChildTerms improver = new ImproveHpoPredictionBasedOnChildTerms(predictionMatrixPredicted, annotationMatrixPredicted, hpoOntology);
 

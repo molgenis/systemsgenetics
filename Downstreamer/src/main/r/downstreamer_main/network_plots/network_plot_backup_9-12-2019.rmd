@@ -1,0 +1,145 @@
+```{r}
+# Deprecated
+library(tidygraph)
+library(ggraph)
+library(data.table)
+
+path <- "/home/work/Desktop/depict2/coregulation_data/HP:0000991"
+phenotype <- "30690_raw"
+ngene <- 100
+
+ensembl <- read.table("~/Documents/data/reference/ensembl/ensembl_gene_position_export.txt", sep="\t", header=T, stringsAsFactors = F)
+ensembl <- unique(ensembl[,c(1, 5)])
+rownames(ensembl) <- ensembl[,1]
+
+read.coreg.data <- function(path, phenotype, ngene=100) {
+  
+  out <- list()
+  genep.tmp       <- fread(paste0(path, "/", phenotype, "_gene_pvalues.txt"), data.table = F)
+  genep           <- genep.tmp[,2]
+  names(genep)    <- genep.tmp[,1]
+  genep           <- genep[order(genep)]
+  
+  tmp <- sum(genep == min(genep, na.rm=T), na.rm=T)
+  if (tmp >= ngene) {
+    print(paste0("[WARN] Detected ", tmp, " ties"))
+    ngene <- tmp
+  }
+
+  genes.to.keep   <- names(genep[1:ngene])
+  coreg           <- fread(paste0(path, "/", phenotype, "_coreg_hpo_genes.txt"), data.table = F)
+  rownames(coreg) <- coreg[,1]
+  coreg.out       <- coreg[genes.to.keep,-1]
+  
+  coreg.tmp       <- fread(paste0(path, "/", phenotype, "_coregulation.txt"), data.table = F)
+  crg             <- coreg.tmp[,-1]
+  names(crg)      <- coreg.tmp[,1]
+
+  out$gene.pvalues <- genep
+  out$coregulation <- crg
+  out$data         <- coreg.out
+  out$full.matrix  <- coreg
+  
+  return(out)
+}
+
+depict.to.network <- function(cur.data, edge.threshold=2) {
+  cur.df          <- cur.data$data
+  nodes           <- as.data.frame(c(colnames(cur.df), rownames(cur.df)), stringsAsFactors = F)
+  nodes           <- cbind(nodes, c(rep("Mendelian gene", ncol(cur.df)), rep("GWAS gene", nrow(cur.df))))
+  colnames(nodes) <- c("gene_id", "annot")
+  nodes$annot     <- as.character(nodes$annot)
+  nodes$gene_name <- as.character(c(ensembl[colnames(cur.df), 2], rep(NA, nrow(cur.df))))
+  nodes$zscore    <- cur.data$coregulation[nodes$gene_id]
+  
+  # Set negative coregulation to zero
+  nodes[nodes$zscore < 0, ]$zscore <- 0
+  
+  # Remove duplicated nodes from node list, keeping the first (mendelian gene)
+  nodes           <- nodes[!duplicated(nodes$gene_id),]
+  rownames(nodes) <- NULL
+
+  # Construct edges at zscore threshold
+  tmp.edges       <- cur.df >= edge.threshold
+  edges           <- as.data.frame(matrix(nrow=1, ncol=3))
+  colnames(edges) <- c("from", "to", "zscore")
+  
+  for (row in 1:nrow(tmp.edges)) {
+    for(col in 1:ncol(tmp.edges)) {
+      if (tmp.edges[row, col]) {
+          #edges <- rbind(edges, c((ncol(tmp.edges) + row), col, cur.df[row, col]))
+          rowgene <- rownames(cur.df)[ncol(tmp.edges) + row]
+          colgene <- colnames(cur.df)[col]
+          edges   <- rbind(edges, c(
+            which(nodes$gene_id == rowgene),
+            which(nodes$gene_id == colgene),
+            cur.df[rowgene, colgene]))
+      }
+    }
+  }
+  
+  edges <- na.omit(edges)
+  #nodes <- nodes[unique(c(edges[,1], edges[,2])), ,drop=F]
+  tbl   <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+  
+  return(tbl)
+}
+
+
+
+#coreg <- read.table("~/Desktop/depict2/topCoregulation.txt")
+#genep <- read.table("~/Desktop/depict2/topGeneP.txt")
+#coreg.scores <- read.table("~/Desktop/coreg_edu_att_maf_filtred.csv", stringsAsFactors = F, sep="\t", header=T, row.names=1)
+
+cur.data <- read.coreg.data(path, phenotype)
+tbl <- depict.to.network(cur.data, edge.threshold = 5)
+
+ggraph(tbl,layout="linear", circular=T) +
+  geom_edge_arc(aes(width = zscore, alpha=zscore))+
+  geom_node_point(aes(colour=annot, size=zscore)) +
+  geom_node_label(aes(label=gene_name, fill=annot),
+                  colour="white",
+                  show.legend = F,
+                  label.size = 0, hjust=0,vjust=-1) +
+  theme_graph() +
+  scale_size(range=c(1,8)) +
+  scale_edge_width(range = c(0.5, 2))
+
+
+# Remove nodes without an edge
+sub_mygraph <- to_subgraph(tbl, gene_id %in% nodes[unique(c(edges[,1], edges[,2])), 1], subset_by = "nodes")$subgraph
+
+ggraph(sub_mygraph, layout="gem") +
+  geom_edge_link(aes(width = zscore, alpha=zscore))+
+  geom_node_point(aes(colour=annot, size=zscore)) +
+  geom_node_label(aes(label=gene_name, fill=annot),
+                  colour="white",
+                  show.legend = F,
+                  label.size = 0, hjust=-1.2, vjust=-1.2) +
+  theme_graph() +
+  scale_size(range=c(3,10)) +
+  scale_edge_width(range = c(0.5, 2))
+
+
+#  scale_color_manual(values=c(`GWAS gene`="#EDA344",
+#                              `Mendelian gene`="#3D2A57"))
+#
+#
+
+
+ggraph(tbl, layout = "linear") +
+  geom_edge_arc(aes(width = zscore, alpha=zscore)) +
+  geom_node_point(aes(col=annot), size=4) +
+  theme_graph() +
+  scale_edge_width(range = c(0.2, 2)) 
+
+
+ggraph(tbl, layout = "linear", circular=T) +
+  geom_edge_arc(aes(width = zscore, alpha=zscore))+
+  geom_node_point(aes(col=annot), size=4) +
+  theme_graph() +
+  scale_edge_width(range = c(0.2, 2)) 
+
+
+```
+

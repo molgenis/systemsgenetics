@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.genenetworkbackend.hpo;
 
+import umcg.genetica.io.hpo.HpoOntology;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -68,7 +69,7 @@ public class processCaseHpo {
 
 		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
 
-		Ontology hpoOntology = HpoFinder.loadHpoOntology(hpoOboFile);
+		Ontology hpoOntology = HpoOntology.loadHpoOntology(hpoOboFile);
 
 		HpoFinder hpoFinder = new HpoFinder(hpoOntology, predictionInfo);
 

@@ -1,0 +1,66 @@
+```{r}
+source("downstreamer_functions.r")
+setwd("gwas_simulations")
+source("data/source_olivier.r")
+
+files <- list.files(gwas.simulation.path, pattern=".*normalizedGenePvalues.txt", full.names = T)
+genep <- read.enrichments(files)
+
+# Read reference datasets
+ensembl <- read.table(ensembl.file, sep="\t", header=T, row.names = 1, stringsAsFactors = F)
+ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
+rownames(ensembl) <- make.names(gsub("\\..*", "", ensembl$Gene.stable.ID.version), unique=T)
+
+# Scatterplot function
+plot.auc.comparison <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="AUC 1", ylab="AUC 2", main=NULL) {
+  auc.pval.1[auc.1 == 0] <- 1
+  auc.pval.2[auc.2 == 0] <- 1
+
+  df.plot <- data.frame(auc.1=auc.1,
+                        auc.2=auc.2,
+                        signif.1 = auc.pval.1 < (0.05 / length(auc.1)), 
+                        signif.2 = auc.pval.2 < (0.05 / length(auc.2)))
+  
+  
+  df.plot$signif.both    <- (df.plot$signif.1 + df.plot$signif.2) == 2
+  df.plot$signif.either  <- (df.plot$signif.1 + df.plot$signif.2) > 0
+  df.plot <- df.plot[order(df.plot$signif.either),]
+
+  lims <- c(min(c(auc.1, auc.2), na.rm=T), max(c(auc.1, auc.2), na.rm=T))  
+
+  test <- cor.test(df.plot$auc.1, df.plot$auc.2, method="spearman")
+  
+  p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2)) +
+    geom_point(alpha=0.75, col="#2c6c70") +
+    geom_abline(slope=1, intercept=0, col="grey", lty=2) +
+    xlab(xlab) +
+    ylab(ylab) +
+    ggtitle(main) + 
+    geom_smooth(method="lm") +
+    ggtitle(paste0("Cor: ", format(test$estimate, digits = 2), " p:", format(test$p.value, scientific=T, digits = 2)))
+
+  
+  return(theme.nature(p))
+}
+```
+
+```{r}
+ol <- intersect(rownames(genep), rownames(ensembl))
+
+make.plot <- function(trait) {
+
+  curdata.x <- ensembl[ol,]
+  curdata.y <- genep[ol, trait]
+
+  p <- plot.auc.comparison(log10(curdata.x$gene.length), rep(1, length(curdata.y)), curdata.y, rep(1, length(curdata.y)), xlab="Gene length", ylab=paste0(trait))
+  
+  return(p)
+}
+
+plots <- lapply(colnames(genep), make.plot)
+
+pdf(width=15, height=5, file="output/plots/simulated_genep_vs_log10_gene_length.pdf")
+grid.arrange(grobs=plots, ncol=5)
+dev.off()
+```
+
