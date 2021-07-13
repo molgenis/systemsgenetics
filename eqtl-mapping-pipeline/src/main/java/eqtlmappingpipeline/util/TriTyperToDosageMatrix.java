@@ -434,8 +434,39 @@ public class TriTyperToDosageMatrix {
         System.out.println("Initializing " + datasetsettings.size() + " datasets in parallel.");
         IntStream.range(0, m_gg.length).parallel().forEach(i -> {
             m_gg[i] = new TriTyperGenotypeData();
+
+
             try {
+
                 m_gg[i].load(datasetsettings.get(i).genotypeLocation, datasetsettings.get(i).snpmapFileLocation, datasetsettings.get(i).snpFileLocation);
+
+                String gte = datasetsettings.get(i).genotypeToExpressionCoupling;
+                if (gte != null) {
+                    TextFile tf = null;
+
+                    tf = new TextFile(gte, TextFile.R);
+                    String[] elems = tf.readLineElems(TextFile.tab);
+                    HashSet<String> samples = new HashSet<>();
+                    while (elems != null) {
+                        samples.add(elems[0]);
+                        elems = tf.readLineElems(TextFile.tab);
+                    }
+                    tf.close();
+                    String[] individuals = m_gg[i].getIndividuals();
+                    Boolean[] inc = m_gg[i].getIsIncluded();
+                    for (int g = 0; g < individuals.length; g++) {
+                        if (samples.contains(individuals[g])) {
+                            if (inc[g] != null && inc[g]) {
+                                inc[g] = true;
+                            }
+                        } else {
+                            inc[g] = false;
+                        }
+                    }
+                    m_gg[i].setIsIncluded(inc);
+
+                }
+
                 loaders[i] = m_gg[i].createSNPLoader(1);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -478,10 +509,16 @@ public class TriTyperToDosageMatrix {
 
         // sorting SNPs
         Integer selectChr = null;
-
+        int startchr = 1;
+        int endchr = 23;
+        if (settings.confineToSNPsThatMapToChromosome != null) {
+            selectChr = (int) settings.confineToSNPsThatMapToChromosome;
+            startchr = selectChr;
+            endchr = selectChr + 1;
+        }
         // tmp
 
-        for (int chrom = 1; chrom < 23; chrom++) {
+        for (int chrom = startchr; chrom < endchr; chrom++) {
             String outdir = settings.outputReportsDir + "/chr" + chrom + "/";
             Gpio.createDir(outdir);
 //            if (settings.confineToSNPsThatMapToChromosome != null) {
@@ -557,6 +594,22 @@ public class TriTyperToDosageMatrix {
             double[] datads = new double[sampleIdMap.size()];
             log.write(snpsToQuery.size() + " SNPs to output");
             ProgressBar pb = new ProgressBar(snpsToQuery.size(), "Querying SNPs...");
+            TextFile snplog = new TextFile(outdir + "SNPLog.txt.gz", TextFile.W);
+            String snplogheader = "SNP";
+            for (int d = 0; d < m_gg.length; d++) {
+                snplogheader += "\t" + datasetsettings.get(d).name + "-ID";
+                snplogheader += "\t" + datasetsettings.get(d).name + "-PassQC";
+                snplogheader += "\t" + datasetsettings.get(d).name + "-Alleles";
+                snplogheader += "\t" + datasetsettings.get(d).name + "-A1";
+                snplogheader += "\t" + datasetsettings.get(d).name + "-A2";
+                snplogheader += "\t" + datasetsettings.get(d).name + "-A3";
+                snplogheader += "\t" + datasetsettings.get(d).name + "-Flip";
+                snplogheader += "\t" + datasetsettings.get(d).name + "-MAF";
+                snplogheader += "\t" + datasetsettings.get(d).name + "-CR";
+                snplogheader += "\t" + datasetsettings.get(d).name + "-HWEP";
+            }
+            snplog.write(snplogheader);
+
             for (int snpctr = 0; snpctr < snpsToQuery.size(); snpctr++) {
                 String snp = snpsToQuery.get(snpctr);
                 SNP[] snpObjs = new SNP[m_gg.length];
@@ -567,11 +620,40 @@ public class TriTyperToDosageMatrix {
                 SNP refSNP = null;
                 // flip alleles
                 Boolean[] flip = new Boolean[m_gg.length];
+                StringBuilder qcStr = new StringBuilder();
+                qcStr.append(snp);
                 for (int d = 0; d < m_gg.length; d++) {
                     Integer id = m_gg[d].getSnpToSNPId().get(snp);
                     if (id >= 0) {
+                        String alelelestr = "";
                         SNP snpobj = m_gg[d].getSNPObject(id);
                         loaders[d].loadGenotypes(snpobj);
+                        String SNPAlleles = BaseAnnot.getAllelesDescription(snpobj.getAlleles());
+                        String SNPAlleleAssessed = BaseAnnot.toString(snpobj.getAlleles()[1]);
+                        alelelestr = SNPAlleles + "-" + SNPAlleleAssessed;
+
+                        String a1str = "";
+                        String a2str = "";
+                        String a3str = "";
+                        int c1 = 0;
+                        int c2 = 0;
+                        int c3 = 0;
+                        byte[] gt = snpobj.getGenotypes();
+                        for (int g = 0; g < gt.length; g++) {
+                            if (gt[g] == 0) {
+                                c1++;
+                            } else if (gt[g] == 1) {
+                                c2++;
+                            } else if (gt[g] == 2) {
+                                c3++;
+                            }
+                        }
+                        String a1 = BaseAnnot.toString(snpobj.getAlleles()[0]);
+                        String a2 = BaseAnnot.toString(snpobj.getAlleles()[1]);
+                        a1str = c1 + " (" + a1 + a1 + ")";
+                        a2str = c2 + " (" + a1 + a2 + ")";
+                        a3str = c3 + " (" + a2 + a2 + ")";
+
                         if (snpobj.passesQC() && snpobj.getMAF() >= settings.snpQCMAFThreshold && snpobj.getHWEP() >= settings.snpQCHWEThreshold && snpobj.getCR() >= settings.snpQCCallRateThreshold) {
                             snpObjs[d] = snpobj;
                             if (loaders[d].hasDosageInformation()) {
@@ -579,13 +661,11 @@ public class TriTyperToDosageMatrix {
                             }
                             if (refSNPAlleles == null) {
                                 refSNP = snpobj;
-                                refSNPAlleles = BaseAnnot.getAllelesDescription(snpobj.getAlleles());
+                                refSNPAlleles = SNPAlleles;
                                 refSNPRefAllele = BaseAnnot.toString(snpobj.getAlleles()[0]);
-                                refSNPAlleleAssessed = BaseAnnot.toString(snpobj.getAlleles()[1]);
+                                refSNPAlleleAssessed = SNPAlleleAssessed;
                                 flip[d] = false;
                             } else {
-                                String SNPAlleles = BaseAnnot.getAllelesDescription(snpobj.getAlleles());
-                                String SNPAlleleAssessed = BaseAnnot.toString(snpobj.getAlleles()[1]);
                                 flip[d] = BaseAnnot.flipalleles(refSNPAlleles, refSNPAlleleAssessed, SNPAlleles, SNPAlleleAssessed);
                                 if (flip[d] == null) {
                                     snpobj.clearGenotypes();
@@ -594,8 +674,23 @@ public class TriTyperToDosageMatrix {
                         } else {
                             snpobj.clearGenotypes();
                         }
+                        qcStr.append("\t").append(id)
+                                .append("\t").append(snpobj.passesQC())
+                                .append("\t").append(alelelestr)
+                                .append("\t").append(a1str)
+                                .append("\t").append(a2str)
+                                .append("\t").append(a3str)
+
+                                .append("\t").append(flip[d])
+                                .append("\t").append(snpobj.getMAF())
+                                .append("\t").append(snpobj.getCR())
+                                .append("\t").append(snpobj.getHWEP());
+                    } else {
+                        qcStr.append("\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-");
                     }
+
                 }
+                snplog.writeln(qcStr.toString());
 
                 // get data per dataset
                 int nrDatasetsWithData = 0;
@@ -660,9 +755,9 @@ public class TriTyperToDosageMatrix {
                 }
 
                 if (nrDatasetsWithData < settings.requireAtLeastNumberOfDatasets) {
-                    log.write(snp + " excluded: present in " + nrDatasetsWithData + ", while " + settings.requireAtLeastNumberOfDatasets + " required.");
+                    log.writeln(snp + " excluded: present in " + nrDatasetsWithData + ", while " + settings.requireAtLeastNumberOfDatasets + " required.");
                 } else if (missing == datagt.length) {
-                    log.write(snp + " excluded: has no data");
+                    log.writeln(snp + " excluded: has no data");
                 } else if (missing != datagt.length) {
                     // System.out.println();
                     // System.out.println("Excluding\t" + snp + "\tsince it has no values");
@@ -698,8 +793,9 @@ public class TriTyperToDosageMatrix {
                 }
                 pb.iterate();
             }
+            snplog.close();
             pb.close();
-
+            log.close();
             tf.close();
         }
 
