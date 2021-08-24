@@ -28,25 +28,40 @@ import argparse
 from classes.Gene_pathway_analysis import Gene_Pathway_Analysis, analysis_types
 from utilities import create_output_dir_if_not_exists, create_output_dir_name
 
+# Class to perform the pathway analysis which calculate the gene
+# contribution per pathway based on a t-test approach (old gene network
+# implementation) or based on a logistic model fit.
+
 
 def main():
+    # Parse the arguments
     cmd_arguments = parse_arguments()
 
+    # The script can process multiple pathways by seperating the different
+    # pathway files though comma's. Check if multiple paths are given.
     if "," in cmd_arguments.pathway_matrix:
+        # Split up the different file paths
         pathway_paths = cmd_arguments.pathway_matrix.split(",")
+        # Check if the background gene input contains the same number of input paths
         if cmd_arguments.genes is not None and "," in cmd_arguments.genes:
             pathway_genes_paths = cmd_arguments.genes.split(",")
             if len(pathway_paths) == len(pathway_genes_paths):
+                # Check if the script runs in a multi node environment
                 if cmd_arguments.node is not None and cmd_arguments.num_nodes is not None:
+                    # Number of nodes per pathway
                     nodes_per_pathway = cmd_arguments.num_nodes // len(pathway_paths)
+                    # find the pathway id to know which pathway must be analysed by this node
                     pathway_id, node_id = divmod(cmd_arguments.node, nodes_per_pathway)
+                    # Get the pathway matrix and background genes paths
                     pathway_path = pathway_paths[pathway_id]
                     pathway_genes = pathway_genes_paths[pathway_id]
+                    # Get the pathway id name from the file name
                     pathway_name = "_".join(os.path.basename(pathway_path).split(".")[:-1])
+                    # Create the overall output dir
                     create_output_dir_if_not_exists(cmd_arguments.output)
                     base_dir = os.path.join(cmd_arguments.output, pathway_name)
 
-                    # create output dir
+                    # create output dir of the specific node
                     output_dir = create_output_dir_name(
                         base_dir,
                         node_id,
@@ -61,6 +76,7 @@ def main():
                                         level=logging.DEBUG,
                                         format='%(asctime)s %(message)s')
                     try:
+                        # Perform the analysis
                         analysis = Gene_Pathway_Analysis(
                             components_data_path=cmd_arguments.input,
                             matrix_path=pathway_path,
@@ -122,6 +138,7 @@ def main():
 
 
 def parse_arguments():
+    # Method to parse the arguments from the commandline
     parser = argparse.ArgumentParser(
         description='Perform a fastica or pca over the gene sample matrix '
                     'in the gene network pipeline')
