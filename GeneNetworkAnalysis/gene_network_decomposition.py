@@ -27,6 +27,40 @@ from utilities import create_output_dir_if_not_exists, create_logfile
 from classes.Decomposition import Decomposition, decomposition_types
 from classes.SVD_wrapper import SVD_types
 
+###
+# Script to perform the decomposition part of the gene network analysis.
+# Different decomposition algorithms are implemented which can be used, which
+# can be set by the analysis type parameter. Implemented options: ‘PCA’,
+# ‘FASTICA’, ‘FASTICA_STABLE’ or ‘FASTICA_STABLE_FROM_TEMP’
+# PCA: Use principal component analysis as decomposition method.
+# PCA is implemented by using SVD algorithms Different algorithms are
+# implemented and can be selected by using the ‘pca_type’ parameter.
+# FASTICA: Use the fastICA implementation to perform an independent component
+# analysis as decomposition method. The whiting step is done by the implemented
+# SVD algorithms and can be selected by using the ‘pca_type’ parameter.
+# FASTICA_STABLE: Use multiple different fastICA runs and calculate the
+# average gene eigenvector loadings of the independent components to get
+# sable independent components. The FastICA algorithms use a random
+# initialization which can result in slightly different outcomes per individual
+# run. This analysis can take a long time.
+# FASTICA_STABLE_FROM_TEMP: Method to finish up an uncomplete “FASTICA_STABLE”
+# run. The executed runs will be combined to the final independent components.
+# The method will not execute more FastCIA runs even if the number of set
+# iterations is not reached (the option: fastica_stable_iterations).
+#
+# Beside the different decomposition algorithms, the script contain also
+# multiple different implementations of the normal PCA analysis, which
+# can be set by the pca_type parameter, options:
+# - auto (auto choice), full (full svd),
+# - random (randomised svd implementation),
+# - svd_gesdd (lapack gesdd driver implementation),
+# - svd_gesvd (lapack gesvd driver implementation)
+#
+# De script contains also different preprocessing steps and the output can be
+# exported on different ways. See paramter description (--help)
+# for the possible options
+#
+###
 
 def main():
     # parse the commandline arguments
@@ -38,6 +72,7 @@ def main():
     # activate logging
     create_logfile(cmd_arguments.output)
 
+    # Perform the decomposition
     try:
         decomp = Decomposition(
             input_file_path=cmd_arguments.input,
@@ -64,6 +99,8 @@ def main():
 
 
 def parse_arguments():
+    # Method to parse the arguments from the commandline
+
     parser = argparse.ArgumentParser(
         description='Perform the decomposition step of the updated '
                     'geneNetwork pipeline. The decomposition can be done by '
