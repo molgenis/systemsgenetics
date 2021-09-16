@@ -1,6 +1,6 @@
 #remoter::server(verbose = T, port = 55557, password = "laberkak", sync = T)
 
-remoter::client("localhost", port = 55557, password = "laberkak")
+remoter::client("localhost", port = 55580, password = "laberkak")
 
 setwd("/groups/umcg-wijmenga/tmp04/projects/depict2/")
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs")

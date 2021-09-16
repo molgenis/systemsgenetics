@@ -1,50 +1,16 @@
-#remoter::server(verbose = T, port = 55557, password = "laberkak", sync = T)
-
-remoter::client("localhost", port = 55557, password = "laberkak")
-
-setwd("/groups/umcg-wijmenga/tmp04/projects/depict2/")
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
-
-library(gatepoints)
-
-#if(FALSE){
-#  #don't run by accident
-#  table_tmp <- read_delim("/groups/umcg-wijmenga/tmp04/umcg-obbakker/projects/pr_depict2/depict2_bundle/reference_datasets/human_b37/expression_databases/31.07.pc1.illumina.wantedgenes.DESeqNorm_log2.duplicatesRemoved.ProbesWithZeroVarianceRemoved.CovariatesRemoved.txt.gz", delim = "\t", quote = "")
-#  gnExp <- as.matrix(table_tmp[,-1])
-#  rownames(gnExp) <- table_tmp[,1][[1]]
-#  rm(table_tmp)
-#  saveRDS(gnExp, "/groups/umcg-wijmenga/tmp04/umcg-obbakker/projects/pr_depict2/depict2_bundle/reference_datasets/human_b37/expression_databases/31.07.pc1.illumina.wantedgenes.DESeqNorm_log2.duplicatesRemoved.ProbesWithZeroVarianceRemoved.CovariatesRemoved.rds")
-#}
-#gnExp <- readRDS("/groups/umcg-wijmenga/tmp04/umcg-obbakker/projects/pr_depict2/depict2_bundle/reference_datasets/human_b37/expression_databases/31.07.pc1.illumina.wantedgenes.DESeqNorm_log2.duplicatesRemoved.ProbesWithZeroVarianceRemoved.CovariatesRemoved.rds")
-
-ensg75pc <- read.delim("ensgR75_protein_coding.txt", stringsAsFactors = F)
-
-table_tmp <- read_delim("/groups/umcg-wijmenga/prm02/data_projects/Gado/GeneNetwork_V2_01-02-2018/Covariates/PCA/pc-scores250.txt.gz", delim = "\t", quote = "")
-pcs <- as.matrix(table_tmp[,-1])
-rownames(pcs) <- table_tmp[,1][[1]]
-rm(table_tmp)
-pcs <- pcs[,1:165]
-str(pcs)
-
-library(uwot)
-
-init <- pcs[,c(2,1)]
-init <- init * -1
-
-
-
- 
-#sampleUmap <- umap(pcs, n_threads = 24, n_epochs = 1000, init = init,  n_neighbors = 500, min_dist = 2, init_sdev = 1e-4, learning_rate = 1, spread = 40 ,scale = "none", nn_method = "fnn")
-#sampleUmap <- umap(pcs, n_threads = 24, n_epochs = 10000, init = init,  n_neighbors = 500, min_dist = 2, init_sdev = 1e-4, learning_rate = 2, spread = 40 ,scale = "none", nn_method = "fnn")
-
-
-#rownames(sampleUmap) <- rownames(pcs)
-#colnames(sampleUmap) <- colnames(c("UMAP1", "UMAP2"))
-
-#write.table(sampleUmap, file = "Umap/umap2.txt", sep = "\t", quote = F)
-
-
+library(plotfunctions)
 sampleUmap <- read.delim("Umap/umap2.txt")
+
+
+ensg <- read.delim("ensgR75_protein_coding.txt", stringsAsFactors = F)
+row.names(ensg) <- ensg$Ensembl.Gene.ID
+str(ensg)
+
+exp <- readRDS("31.07.pc1.illumina.wantedgenes.DESeqNorm_log2.duplicatesRemoved.ProbesWithZeroVarianceRemoved.CovariatesRemoved.rds")
+exp <- t(as.matrix(exp))
+exp <- exp[match(row.names(sampleUmap), row.names(exp)),,drop=F]
+str(exp)
 
 
 
@@ -71,18 +37,16 @@ sampleAnnotation$col = defaultCol
 
 
 #meanX <- sapply(tissueColMap$PlotClass, function(plotClass){
-  #mean(sampleUmap[sampleAnnotation$PlotClass == plotClass,1])
+#mean(sampleUmap[sampleAnnotation$PlotClass == plotClass,1])
 #})
 
 #meanY <- sapply(tissueColMap$PlotClass, function(plotClass){
-  #mean(sampleUmap[sampleAnnotation$PlotClass == plotClass,2])
+#mean(sampleUmap[sampleAnnotation$PlotClass == plotClass,2])
 #})
 
 #clusterLabels <- data.frame("PlotClass" = tissueColMap$PlotClass, "centerX" = meanX, "centerY" = meanY, "offsetX" = "", "offsetY" = "", "label" = tissueColMap$PlotClass)
 #write.table(clusterLabels, "Umap/lables.txt", sep = "\t", quote = F, row.names = F)
 
-
-str(clusterLabels)
 
 
 #sampleAnnotation$bg[sampleAnnotation$PlotClass == "osteoblastic cell"] <- adjustcolor("red", alpha.f = 0.5)
@@ -103,37 +67,19 @@ for(i in 1:nrow(tissueColMap)){
 
 #sampleAnnotation$col[sampleAnnotation$PlotClass == "skin"] <- adjustcolor("black", alpha.f = 0.5)
 
-predicted <- read.delim("Umap/predicted_celllines_165_component_logisitic_regression.tsv", header = F)$V1
-
-x <- sampleAnnotation[ predicted, "CellLine", drop = F]
-
-sampleAnnotation$colPredictedCell <- defaultCol
-sampleAnnotation[predicted, "colPredictedCell"] <- "dodgerblue"
-
-sampleAnnotation$colCelline <- defaultCol
-sampleAnnotation$colCelline[sampleAnnotation$CellLine!=""] <- "firebrick"
-
 sampleAnnotation$plotOrder <- 1
 sampleAnnotation$plotOrder[sampleAnnotation$colPredictedCell != defaultCol] <- 2
 
 plotOrder <- order(sampleAnnotation$plotOrder)
 
 sampleUmapPlot <- sampleUmap[plotOrder,]
-sampleCol <- sampleAnnotation$colPredictedCell[plotOrder]
+sampleCol <- sampleAnnotation$col[plotOrder]
 
-#all(row.names(sampleAnnotation) == row.names(sampleUmap))
 
-str(sampleAnnotation)
 
 #X11()
 #rpng( width = 1200, height = 1000)
 
-pdf("Umap/sampleUmapPredicted.pdf", width = 14, height = 7.5, useDingbats = F, title = "GeneNetwork UMAP")
-
-
-createUmap(sampleUmapPlot, sampleCol)
-
-dev.off()
 
 
 
@@ -142,8 +88,73 @@ dev.off()
 
 
 
+genesToPlot <- c("ENSG00000167034", "ENSG00000142515", "ENSG00000165929", "ENSG00000066813", "ENSG00000137731", "ENSG00000198398", "ENSG00000117091", "ENSG00000145287", "ENSG00000090104", "ENSG00000166589", "ENSG00000156413")
+#ENSG00000099985
+#ENSG00000090104
+#ENSG00000156413
 
+for(gene in genesToPlot){
 
+    gene <- "ENSG00000109182" 
+  geneSymbol <- ensg[gene, "Associated.Gene.Name"]
+  
+      
+  #pdf(paste0("expressionPlots/", gene, "_", geneSymbol , "_umap.pdf"), width = 14, height = 7.5, useDingbats = F, title = paste0("GeneNetwork UMAP, ", name, " enrichments"))
+
+  geneExp <- exp[,gene]
+  
+  #plot(geneExp, cedExp$Enrichment.Z.score, xlab = paste0(geneSymbol, "expression"), ylab = "Sample enrichment Z-score for prostate cancer", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.2))
+  
+  cor.test(geneExp, cedExp$Enrichment.Z.score)
+  
+  
+  breaks <- quantile(geneExp, probs = seq(0,1,0.01))
+  
+  all(names(geneExp) == cedExp$Sample)
+  
+  colfunc<-colorRampPalette(c("gold2","orange","orangered","red3"))
+  colMapEnrich <- adjustcolor(colfunc(20), alpha.f = 0.5)
+  colfunc<-colorRampPalette(c("lightblue1","dodgerblue4"))
+  colMapDepl <- adjustcolor(colfunc(20), alpha.f = 0.5)
+  
+  fullColGradient <- c(rev(colMapDepl), rep(defaultCol, 20), colMapEnrich)
+  
+  sampleCol <- fullColGradient[cut(geneExp, 60)]
+  
+  sampleAnnotation$plotOrder <- 1
+  sampleAnnotation$plotOrder[sampleAnnotation$colPredictedCell != defaultCol] <- 2
+  
+  plotOrder <- order(sampleAnnotation$plotOrder)
+  
+  sampleUmapPlot <- sampleUmap[plotOrder,]
+  sampleCol <- sampleCol[plotOrder]
+  
+  
+  createUmap(sampleUmapPlot, sampleCol)
+  
+  
+  posLegend = 0.89
+  gradientLegend(
+    c(-min(geneExp),max(geneExp)),
+    color = fullColGradient,
+    pos = c(0.25,posLegend,0.75,posLegend + 0.02),
+    side = 3,
+    dec = 1,
+    length = 0.5,
+    depth = 0.025,
+    inside = T,
+    coords = FALSE,
+    pos.num = NULL,
+    n.seg = 1,
+    border.col = NA,
+    tick.col = "gray30",
+    fit.margin = TRUE,
+  )
+  
+  mtext(paste0("Expression of: ", geneSymbol ), side = 3, line = -2.9, col = "gray30")
+
+  dev.off()
+}
 
 createUmap <- function(sampleUmapPlot, sampleCol){
   
@@ -204,59 +215,11 @@ createUmap <- function(sampleUmapPlot, sampleCol){
 
 
 
-
-
-#lines()  
-
-#lines <- locator(20)
-
-#lines2 <- data.frame(
-#x1 = lines$x[seq(1, to = length(lines$x), by = 2)],
-#x2 = lines$x[seq(2, to = length(lines$x), by = 2)] ,
-#y1 = lines$y[seq(1, to = length(lines$x), by = 2)],
-#y2 = lines$y[seq(2, to = length(lines$x), by = 2)]
-#)
-
-#zoomLines <- rbind(zoomLines, zoomLines2)
-
-#axis(1)
-  #axis(2)
-
-#write.table(lines2, "Umap/lines.txt", sep = "\t", quote = F, row.names = F)
-
-
-
-
-fhs(sampleUmap)
-
-library(grid)
-grid.locator(unit = "npc")
-  
-abline(h=-70)
-abline(h=-100)
-abline(v=-40)
-abline(v=-60)
-
-library(RColorBrewer)
-display.brewer.all()
-cat(RColorBrewer::brewer.pal(12, "Set3"), sep = "\n")
-
-
-
-colfunc <- colorRampPalette(c("khaki2", "orangered", "brown4"))
-
-
-cols = c("orangered1", "orchid1", "magenta", "indianred1", "hotpink2", "darkorange1", "darkorchid3", "deeppink4", "brown3", "darkred", "khaki2", "goldenrod1", "orange", "mediumorchid4")
-length(cols)
-plot(rep(1,14),col=cols,pch=19,cex=3)
-
-
-cols = c("", "", "", "", "", "", "", "", "", "", "", "", "")
-
-
 source(paste0("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\main\\r\\downstreamer_main/downstreamer_functions.r"))
 
 traits <- read.delim("traits.txt", stringsAsFactors = F)
+
+i <- which(traits$trait == "prostate_cancer")
 
 for(i in 1:nrow(traits)){
   
@@ -269,95 +232,95 @@ for(i in 1:nrow(traits)){
   
   file = paste0("D:\\UMCG\\FrankeSwertz - Documents\\Projects\\downstreamer\\Results\\",fileName)
   name = traits[i,"Name"]
-
-ced <- read.depict2(file)
-
-#ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
-str(ced)
-
-cedExp <- ced$SampleEnrichment
-cedExp <- cedExp[match(row.names(sampleUmap), cedExp$Sample),]
-
-all(cedExp$Sample == row.names(sampleUmap))
-
-str(cedExp)
-#colCed <- brewer.pal(9, "GnBu")[as.numeric(cut(cedExp$Enrichment.Z.score[match(row.names(sampleUmap), cedExp$Sample)],breaks = 9))]
-
-colCed <- rep("grey90", nrow(sampleUmap)) #lightblue1
-#colCed[cedExp$Enrichment.Z.score > 0 & cedExp$FDR.5..significant] <- "orange"
-#colCed[cedExp$Enrichment.Z.score > 0 & cedExp$Bonferroni.significant] <- "red4"
-
-
-fdrZthreshold <- min(abs(cedExp$Enrichment.Z.score[cedExp$FDR.5..significant]))
-maxZ <- max(cedExp$Enrichment.Z.score)
-if(!is.infinite(fdrZthreshold)){
   
-  bonfZscore <- min(abs(cedExp$Enrichment.Z.score[cedExp$Bonferroni.significant]))
+  ced <- read.depict2(file)
   
-  breaks <- seq(fdrZthreshold, maxZ, length.out = 21)
+  #ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
+  str(ced)
   
-  greyBreakCount <- round((fdrZthreshold + fdrZthreshold ) / (breaks[2] - breaks[1]))
+  cedExp <- ced$SampleEnrichment
+  cedExp <- cedExp[match(row.names(sampleUmap), cedExp$Sample),]
   
-  colfunc<-colorRampPalette(c("gold2","orange","orangered","red3"))
-  colMapEnrich <- colfunc(20)
-  colCed[cedExp$Enrichment.Z.score > 0 & cedExp$FDR.5..significant] <- colMapEnrich[as.numeric(cut(cedExp$Enrichment.Z.score[cedExp$Enrichment.Z.score > 0 & cedExp$FDR.5..significant],breaks))]
+  all(cedExp$Sample == row.names(sampleUmap))
+  
+  str(cedExp)
+  #colCed <- brewer.pal(9, "GnBu")[as.numeric(cut(cedExp$Enrichment.Z.score[match(row.names(sampleUmap), cedExp$Sample)],breaks = 9))]
+  
+  colCed <- rep("grey90", nrow(sampleUmap)) #lightblue1
+  #colCed[cedExp$Enrichment.Z.score > 0 & cedExp$FDR.5..significant] <- "orange"
+  #colCed[cedExp$Enrichment.Z.score > 0 & cedExp$Bonferroni.significant] <- "red4"
   
   
-  colfunc<-colorRampPalette(c("lightblue1","dodgerblue4"))
-  colMapDepl <- colfunc(20)
-  colCed[cedExp$Enrichment.Z.score < 0 & cedExp$FDR.5..significant] <- colMapDepl[as.numeric(cut(abs(cedExp$Enrichment.Z.score[cedExp$Enrichment.Z.score < 0 & cedExp$FDR.5..significant]),breaks))]
+  fdrZthreshold <- min(abs(cedExp$Enrichment.Z.score[cedExp$FDR.5..significant]))
+  maxZ <- max(cedExp$Enrichment.Z.score)
+  if(!is.infinite(fdrZthreshold)){
+    
+    bonfZscore <- min(abs(cedExp$Enrichment.Z.score[cedExp$Bonferroni.significant]))
+    
+    breaks <- seq(fdrZthreshold, maxZ, length.out = 21)
+    
+    greyBreakCount <- round((fdrZthreshold + fdrZthreshold ) / (breaks[2] - breaks[1]))
+    
+    colfunc<-colorRampPalette(c("gold2","orange","orangered","red3"))
+    colMapEnrich <- colfunc(20)
+    colCed[cedExp$Enrichment.Z.score > 0 & cedExp$FDR.5..significant] <- colMapEnrich[as.numeric(cut(cedExp$Enrichment.Z.score[cedExp$Enrichment.Z.score > 0 & cedExp$FDR.5..significant],breaks))]
+    
+    
+    colfunc<-colorRampPalette(c("lightblue1","dodgerblue4"))
+    colMapDepl <- colfunc(20)
+    colCed[cedExp$Enrichment.Z.score < 0 & cedExp$FDR.5..significant] <- colMapDepl[as.numeric(cut(abs(cedExp$Enrichment.Z.score[cedExp$Enrichment.Z.score < 0 & cedExp$FDR.5..significant]),breaks))]
+    
+    fullColGradient <- c(rev(colMapDepl), rep("grey90", greyBreakCount), colMapEnrich)
+    
+    library( plotfunctions)
+    
+    sampleCol <- adjustcolor(colCed[order(abs(cedExp$Enrichment.Z.score),decreasing = F)], alpha.f = 0.5)
+    
+    sampleUmaporder <- sampleUmap[order(abs(cedExp$Enrichment.Z.score),decreasing = F),]
+    
+  }  else {
+    fullColGradient <- rep("grey90", 52)
+    sampleCol <- adjustcolor(colCed, alpha.f = 0.5)
+    sampleUmaporder <- sampleUmap
+    fdrZthreshold <- maxZ
+    bonfZscore <- maxZ
+  }
   
-  fullColGradient <- c(rev(colMapDepl), rep("grey90", greyBreakCount), colMapEnrich)
   
-  library( plotfunctions)
+  pdf(paste0("Umap/sampleUmap", name , ".pdf"), width = 14, height = 7.5, useDingbats = F, title = paste0("GeneNetwork UMAP, ", name, " enrichments"))
   
-  sampleCol <- adjustcolor(colCed[order(abs(cedExp$Enrichment.Z.score),decreasing = F)], alpha.f = 0.5)
+  createUmap(sampleUmaporder, sampleCol)
   
-  sampleUmaporder <- sampleUmap[order(abs(cedExp$Enrichment.Z.score),decreasing = F),]
+  posLegend = 0.89
   
-}  else {
-  fullColGradient <- rep("grey90", 52)
-  sampleCol <- adjustcolor(colCed, alpha.f = 0.5)
-  sampleUmaporder <- sampleUmap
-  fdrZthreshold <- maxZ
-  bonfZscore <- maxZ
-}
-
-
-pdf(paste0("Umap/sampleUmap", name , ".pdf"), width = 14, height = 7.5, useDingbats = F, title = paste0("GeneNetwork UMAP, ", name, " enrichments"))
-
-createUmap(sampleUmaporder, sampleCol)
-
-posLegend = 0.89
-
-gradientLegend2(
-  c(-maxZ,maxZ),
-  color = fullColGradient,
-  pos = c(0.25,posLegend,0.75,posLegend + 0.02),
-  side = 3,
-  dec = 1,
-  length = 0.5,
-  depth = 0.025,
-  inside = T,
-  coords = FALSE,
-  pos.num = NULL,
-  n.seg = c(-maxZ,-bonfZscore,-fdrZthreshold,0,fdrZthreshold,bonfZscore,maxZ),
-  border.col = NA,
-  tick.col = "gray30",
-  fit.margin = TRUE,
-)
-
-mtext(paste0("Sample enrichment for: ", name ), side = 3, line = -2.9, col = "gray30")
-
-dev.off()
+  gradientLegend2(
+    c(-maxZ,maxZ),
+    color = fullColGradient,
+    pos = c(0.25,posLegend,0.75,posLegend + 0.02),
+    side = 3,
+    dec = 1,
+    length = 0.5,
+    depth = 0.025,
+    inside = T,
+    coords = FALSE,
+    pos.num = NULL,
+    n.seg = c(-maxZ,-bonfZscore,-fdrZthreshold,0,fdrZthreshold,bonfZscore,maxZ),
+    border.col = NA,
+    tick.col = "gray30",
+    fit.margin = TRUE,
+  )
+  
+  mtext(paste0("Sample enrichment for: ", name ), side = 3, line = -2.9, col = "gray30")
+  
+  dev.off()
 }
 
 
 #addapted from plotfunctions
 gradientLegend2 <- function (valRange, color = "terrain", nCol = 30, pos = 0.875, 
-          side = 4, dec = NULL, length = 0.25, depth = 0.05, inside = FALSE, 
-          coords = FALSE, pos.num = NULL, n.seg = 1, border.col = "black", 
-          tick.col = NULL, fit.margin = TRUE, ...) 
+                             side = 4, dec = NULL, length = 0.25, depth = 0.05, inside = FALSE, 
+                             coords = FALSE, pos.num = NULL, n.seg = 1, border.col = "black", 
+                             tick.col = NULL, fit.margin = TRUE, ...) 
 {
   loc <- c(0, 0, 0, 0)
   ticks <- c()
@@ -458,10 +421,10 @@ gradientLegend2 <- function (valRange, color = "terrain", nCol = 30, pos = 0.875
     if(is.na(border.col) & !is.na(tick.col)){
       segments(loc[1], loc[2], loc[3], loc[2], col = tick.col)
     } 
-      rect(loc[1], loc[2], loc[3], loc[4], border = border.col, 
-           xpd = T)
+    rect(loc[1], loc[2], loc[3], loc[4], border = border.col, 
+         xpd = T)
     
-      
+    
   }
   else {
     im <- rev(im)
