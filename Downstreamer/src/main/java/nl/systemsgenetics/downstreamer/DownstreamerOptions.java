@@ -386,7 +386,8 @@ public class DownstreamerOptions {
 		OptionBuilder.withArgName("String");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Name of Pathway databases that you want to annotate with GWAS info. Rownames MUST be enembl Id's");
-		OPTIONS.addOption(OptionBuilder.create("annotDb"));
+		OptionBuilder.withLongOpt("annotDb");
+		OPTIONS.addOption(OptionBuilder.create("adb"));
 
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
@@ -828,9 +829,16 @@ public class DownstreamerOptions {
 					}
 
 					if (numberOfPermutations > GenePvalueCalculator.MAX_ROUND_1_RESCUE) {
-						throw new ParseException("Error parsing --permutations max is: " + GenePvalueCalculator.MAX_ROUND_1_RESCUE);
+						throw new ParseException("Error parsing --permutations max is: " + LARGE_INT_FORMAT.format(GenePvalueCalculator.MAX_ROUND_1_RESCUE));
 					}
-
+					
+					if (numberOfPermutations < 100000) {
+						throw new ParseException("Error parsing --permutations min is: 100,000");
+					}
+					
+					if (numberOfPermutations % 10000 != 0){
+						throw new ParseException("Error parsing --permutations must be divisible by 10,000");
+					}
 				}
 				if (!commandLine.hasOption("pr")) {
 					numberOfPermutationsRescue = numberOfPermutations;
