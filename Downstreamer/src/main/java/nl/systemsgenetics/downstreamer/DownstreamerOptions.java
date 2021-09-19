@@ -235,14 +235,14 @@ public class DownstreamerOptions {
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
-		OptionBuilder.withDescription("Pathway databases, binary matrix with z-scores for predicted gene pathway associations");
+		OptionBuilder.withDescription("Pathway databases, binary matrix with either z-scores for predicted gene pathway associations or 0 / 1 for gene assignments");
 		OptionBuilder.withLongOpt("pathwayDatabase");
 		OPTIONS.addOption(OptionBuilder.create("pd"));
 
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
-		OptionBuilder.withDescription("Pathway databases, binary matrix with 0 or 1 for gene pathway assignments. Only used by calculate AUC mode");
+		OptionBuilder.withDescription("Pathway databases, binary matrix with 0 or 1 for gene pathway assignments. Only used by PRIO_GENE_ENRICH mode");
 		OptionBuilder.withLongOpt("pathwayDatabase2");
 		OPTIONS.addOption(OptionBuilder.create("pd2"));
 
