@@ -235,14 +235,14 @@ public class DownstreamerOptions {
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
-		OptionBuilder.withDescription("Pathway databases, binary matrix with z-scores for predicted gene pathway associations");
+		OptionBuilder.withDescription("Pathway databases, binary matrix with either z-scores for predicted gene pathway associations or 0 / 1 for gene assignments");
 		OptionBuilder.withLongOpt("pathwayDatabase");
 		OPTIONS.addOption(OptionBuilder.create("pd"));
 
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
-		OptionBuilder.withDescription("Pathway databases, binary matrix with 0 or 1 for gene pathway assignments. Only used by calculate AUC mode");
+		OptionBuilder.withDescription("Pathway databases, binary matrix with 0 or 1 for gene pathway assignments. Only used by PRIO_GENE_ENRICH mode");
 		OptionBuilder.withLongOpt("pathwayDatabase2");
 		OPTIONS.addOption(OptionBuilder.create("pd2"));
 
@@ -386,7 +386,8 @@ public class DownstreamerOptions {
 		OptionBuilder.withArgName("String");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Name of Pathway databases that you want to annotate with GWAS info. Rownames MUST be enembl Id's");
-		OPTIONS.addOption(OptionBuilder.create("annotDb"));
+		OptionBuilder.withLongOpt("annotDb");
+		OPTIONS.addOption(OptionBuilder.create("adb"));
 
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
@@ -828,9 +829,16 @@ public class DownstreamerOptions {
 					}
 
 					if (numberOfPermutations > GenePvalueCalculator.MAX_ROUND_1_RESCUE) {
-						throw new ParseException("Error parsing --permutations max is: " + GenePvalueCalculator.MAX_ROUND_1_RESCUE);
+						throw new ParseException("Error parsing --permutations max is: " + LARGE_INT_FORMAT.format(GenePvalueCalculator.MAX_ROUND_1_RESCUE));
 					}
-
+					
+					if (numberOfPermutations < 100000) {
+						throw new ParseException("Error parsing --permutations min is: 100,000");
+					}
+					
+					if (numberOfPermutations % 10000 != 0){
+						throw new ParseException("Error parsing --permutations must be divisible by 10,000");
+					}
 				}
 				if (!commandLine.hasOption("pr")) {
 					numberOfPermutationsRescue = numberOfPermutations;
