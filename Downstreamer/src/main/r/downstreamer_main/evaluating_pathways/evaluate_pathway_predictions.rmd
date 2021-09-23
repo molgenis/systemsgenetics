@@ -3,7 +3,9 @@ if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_pathways")} els
 source("../downstreamer_functions.r")
 
 # Cached 2021-01-07 15:15
-datasets <- read.downstreamer.batch("../data/final_paper", USE.CACHE = F)#, potential_traits = c("GtexV8", "GenePrioritization"))
+datasets     <- read.downstreamer.batch("../data/final_paper_cov_correct", USE.CACHE = F)
+datasets.raw <- read.downstreamer.batch("../data/final_paper_comparisons/", USE.CACHE = F)
+
 
 read.magma <- function(path) {
   genesets <- fread(paste0("grep -v \"#\" ", path, "/magma.gsa.out"), data.table=F)
@@ -50,21 +52,21 @@ read.magma.2 <- function(path) {
 }
 
 read.magma.3 <- function(path) {
-  output <- list()
-
-  for (database in c("Reactome","KEGG", "GO_BP", "GO_CC", "GO_MF", "GtexV8", "GenePriortization")) {
-    sub.gs <- fread(paste0("grep -v \"#\" ", path, "/", database, ".gsa.out"), data.table=F)
-    
-    if ("FULL_NAME" %in% colnames(sub.gs)) {
-        rownames(sub.gs) <- sub.gs$FULL_NAME
-    } else {
-        rownames(sub.gs) <- sub.gs$VARIABLE
-    }
-    output[[database]] <- sub.gs
-  }
+    output <- list()
   
-  return(output)
-}
+    for (database in c("Reactome","KEGG", "GO_BP", "GO_CC", "GO_MF", "GtexV8", "GenePriortization")) {
+      sub.gs <- fread(paste0("grep -v \"#\" ", path, "/", database, ".gsa.out"), data.table=F)
+      
+      if ("FULL_NAME" %in% colnames(sub.gs)) {
+          rownames(sub.gs) <- sub.gs$FULL_NAME
+      } else {
+          rownames(sub.gs) <- sub.gs$VARIABLE
+      }
+      output[[database]] <- sub.gs
+    }
+    
+    return(output)
+  }
 
 match.names <- function(cur.names) {
   cur.names <- tolower(cur.names)
@@ -81,8 +83,11 @@ match.names <- function(cur.names) {
 name.fix <- data.frame(name=c("Reactome", "KEGG", "GO_BP", "GO_CC", "GO_MF", "GtexV8", "HPO"),
                          row.names=c("Reactome_raw", "KEGG_raw", "GO_P_raw", "GO_C_raw", "GO_F_raw", "GtexV8", "HPO_raw"),
                          stringsAsFactors = F)
-datasets.raw <- read.downstreamer.batch("data/raw_excels/", USE.CACHE = F)
+#datasets.raw <- read.downstreamer.batch("data/raw_excels/", USE.CACHE = F)
+
+
 datasets.raw  <- lapply(datasets.raw, function(x){
+  names(x) <- gsub("_raw", "", names(x))
   names(x) <- name.fix[names(x),1]
   return(x)
 })
@@ -94,14 +99,13 @@ datasets.raw  <- lapply(datasets.raw, function(x){
 for (trait in c("coeliac_disease_2011", "inflammatory_bowel_disease_2017", "height_2018")) {
   
 results.x                    <- datasets.raw[[grep(trait, names(datasets.raw))]]
-#results.x$GtexV8             <- datasets[[grep(trait, names(datasets))]]$GtexV8
-#results.x$GenePriortization  <- datasets[[grep(trait, names(datasets))]]$GenePrioritization
-#results.y                           <- read.magma.3(paste0("data/no_hla/", trait, "*_hg19"))
-results.y                            <- datasets[[grep(trait, names(datasets))]]
+results.y                    <- datasets[[grep(trait, names(datasets))]]
+plots                        <- list()
 
-plots <- list()
 for (database in c("GO_BP", "GO_CC", "GO_MF", "KEGG")) {
   ol <- intersect(rownames(results.y[[database]]), rownames(results.x[[database]]))
+  
+  View(cbind(results.x$GO_BP[ol,], results.y$GO_BP[ol,]))
   
   x <- results.x[[database]][ol,]$Enrichment.P.value
   y <- results.y[[database]][ol,]$Enrichment.P.value
@@ -115,7 +119,7 @@ for (database in c("GO_BP", "GO_CC", "GO_MF", "KEGG")) {
   
 }
 
-pdf(width=5, height=4, paper="a4", file=paste0("output/plots/", trait, "_annotated_vs_predicted_pw.pdf"))
+pdf(width=5, height=4, paper="a4", file=paste0("output/mean_adjusted/plots/", trait, "_annotated_vs_predicted_pw.pdf"))
 grid.arrange(grobs=plots, ncol=2)
 dev.off()
 
@@ -126,38 +130,50 @@ dev.off()
 ```{r}
 for (trait in c("coeliac_disease_2011", "inflammatory_bowel_disease_2017", "height_2018")) {
   
-results.x                    <- datasets.raw[[grep(trait, names(datasets.raw))]]
-#results.x$GtexV8             <- datasets[[grep(trait, names(datasets))]]$GtexV8
+results.x                    <- datasets[[grep(trait, names(datasets))]]
 #results.x$GenePriortization  <- datasets[[grep(trait, names(datasets))]]$GenePrioritization
-results.y                           <- read.magma.3(paste0("data/no_hla/", trait, "*_hg19"))
+results.y                    <- read.magma.3(paste0("data/no_hla/", trait, "*_hg19"))
 
-plots <- list()
-for (database in c("GO_BP", "GO_CC", "GO_MF", "KEGG")) {
-  ol <- intersect(rownames(results.y[[database]]), rownames(results.x[[database]]))
-  
+make.plots <- function() {
+  plots <- list()
+  for (database in c("GO_BP", "GO_CC", "GO_MF", "KEGG", "GtexV8")) {
+    
     if (database=="GtexV8") {
-      tmp <- rownames(results.x[[database]])
-      tmp <- gsub(" - ", "_", tmp)
-      tmp <- gsub(" ", "_", tmp)
-      rownames(results.x[[database]]) <- tmp
-  }
-  
-  x <- results.x[[database]][ol,]$Enrichment.P.value
-  y <- results.y[[database]][ol,]$P
-  
-  plots[[database]] <- xy.plot.pvalue.colored(-log10(x), x, -log10(y), y,
-                         xlab="-log10(p) Downstreamer",
-                         ylab="-log10(p) Magma",
-                         main=database,
-                         pval.col="all",
-                         base_size=8)
-  
+        tmp <- rownames(results.x[[database]])
+        tmp <- gsub(" - ", "_", tmp)
+        tmp <- gsub(" ", "_", tmp)
+        rownames(results.x[[database]]) <- tmp
+    }
+    
+    ol <- intersect(rownames(results.y[[database]]), rownames(results.x[[database]]))
+    #View(cbind(results.x$GO_BP[ol,], results.y$GO_BP[ol,]))
+    x <- results.x[[database]][ol,]$Enrichment.P.value
+    y <- results.y[[database]][ol,]$P
+    
+    plots[[database]] <- xy.plot.pvalue.colored(-log10(x), x, -log10(y), y,  
+                           xlab="-log10(p) Downstreamer",
+                           ylab="-log10(p) Magma",
+                           main=database,
+                           pval.col="all",
+                           base_size=8)
+    }
+    return(plots)  
 }
 
-pdf(width=5, height=4, paper="a4", file=paste0("output/plots/", trait, "_magma_vs_downstreamer.pdf"))
-grid.arrange(grobs=plots, ncol=2)
+# Predicted plots
+pdf(width=9, height=6, paper="a4", file=paste0("output/mean_adjusted/plots/", trait, "_magma_vs_downstreamer.pdf"))
+  plots <- make.plots()
+  grid.arrange(grobs=plots, ncol=2)
 dev.off()
 
+# RAW plots
+results.x                    <- datasets.raw[[grep(trait, names(datasets.raw))]]
+results.x$GtexV8             <- datasets[[grep(trait, names(datasets))]]$GtexV8
+
+pdf(width=9, height=6, paper="a4", file=paste0("output/mean_adjusted/plots/", trait, "_magma_vs_downstreamer_raw.pdf"))
+  plots <- make.plots()
+  grid.arrange(grobs=plots, ncol=2)
+dev.off()
 }
 
 ```

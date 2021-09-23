@@ -5,8 +5,8 @@ source("../downstreamer_functions.r")
 library(tidygraph)
 library(ggraph)
 
-pathway.db <- "GO_BP"
-datasets <- read.downstreamer.batch("../data/final_paper", USE.CACHE=F, potential_traits = c(pathway.db))
+pathway.db <- "GenePrioritization"
+datasets <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE=F, potential_traits = c(pathway.db))
 
 # ColAnnotations
 pw.meta.data <- datasets[[1]][[1]]
@@ -92,9 +92,9 @@ edges$class.count <- sapply(edges$to, function(x){
 })
 
 # Save nodes and edges
-write.table(nodes, quote=F, row.names=F, sep="\t", file=paste0("output/plots/pathway_networks/", pathway.db, "_bonfsig_network.nodes.tsv"))
+write.table(nodes, quote=F, row.names=F, sep="\t", file=paste0("output/mean_adjusted/plots/pathway_networks/", pathway.db, "_bonfsig_network.nodes.tsv"))
 
-write.table(edges, quote=F, row.names=F, sep="\t", file=paste0("output/plots/pathway_networks/", pathway.db, "_bonfsig_network.edges.tsv"))
+write.table(edges, quote=F, row.names=F, sep="\t", file=paste0("output/mean_adjusted/plots/pathway_networks/", pathway.db, "_bonfsig_network.edges.tsv"))
 ```
 
 ```{r}
@@ -120,7 +120,7 @@ p2 <- p1 +
                   alpha=1,
                   size=2)
 
-pdf(width=10, height=5, file=paste0("output/plots/pathway_networks/", pathway.db, "_bonfsig_network.pdf"), paper="a4")
+pdf(width=10, height=5, file=paste0("output/mean_adjusted/plots/pathway_networks/", pathway.db, "_bonfsig_network.pdf"), paper="a4")
 p2
 p2 + theme(legend.position = "none")
 dev.off()

@@ -5,8 +5,9 @@ source("data/source_olivier.r")
 library(ggsignif)
 
 # Cached 2021-04-26
-datasets       <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T, potential_traits = "GenePrioritization")
+#datasets       <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T, potential_traits = "GenePrioritization")
 #datasets       <- read.downstreamer.batch("data/no_celline_gene_network_test_results/", USE.CACHE = F, potential_traits = "GenePrioritization200")
+datasets            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = T)
 
 # Genepvalues
 #files <- list.files(main.downstreamer.output.path, pattern="*_genePvalues_.*.xlsx", full.names = T)
@@ -41,7 +42,7 @@ p <- ggplot(data=df.plot, mapping=aes(y=y, x=x)) +
   xlab("") +
   ylab("Max key-gene score")
 
-pdf(width=3, height=3, file="output/plots/eqts_vs_max_coregulation_zscore.pdf", paper="a4")
+pdf(width=3, height=3, file="output/mean_adjusted/plots/eqts_vs_max_coregulation_zscore.pdf", paper="a4")
 theme.nature(p, base_size=8)
 dev.off()
 ```
@@ -80,7 +81,7 @@ eqts.plot <- function(pgs, trait) {
   
   df.plot$x <- gsub("\\n", " ", as.character(df.plot$x))
   
-  write.table(df.plot[df.plot$x == gsub("\\n", " ", a),], file=paste0("output/plots/eqts_genes_", trait, ".tsv"), sep="\t", quote=F)
+  write.table(df.plot[df.plot$x == gsub("\\n", " ", a),], file=paste0("output/mean_adjusted/plots/eqts_genes_", trait, ".tsv"), sep="\t", quote=F)
   
   return( theme.nature(p, base_size=8))
 }
@@ -106,12 +107,12 @@ plots <- apply(pairs, 1, function(pair){
 })
 
 
-pdf(width=10, height=9, file="output/plots/eqts_vs_coregulation_per_trait.pdf")
+pdf(width=10, height=9, file="output/mean_adjusted/plots/eqts_vs_coregulation_per_trait.pdf")
 grid.arrange(grobs=plots, ncol=4)
 dev.off()
 
 
-pdf(width=9, height=2.5, file="output/plots/eqts_vs_coregulation_significant_traits.pdf", paper="a4")
+pdf(width=9, height=2.5, file="output/mean_adjusted/plots/eqts_vs_coregulation_significant_traits.pdf", paper="a4")
 grid.arrange(grobs=plots[c(1, 2, 11)], ncol=3)
 dev.off()
 
@@ -127,7 +128,7 @@ dev.off()
 
 
 
-
+# DEPRECATED
 ```{r}
 raw.eqts <- fread(raw.eqts.file, data.table = F)
 
