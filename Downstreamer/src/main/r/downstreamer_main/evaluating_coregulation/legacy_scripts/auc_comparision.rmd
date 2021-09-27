@@ -1,0 +1,134 @@
+```{r}
+source("downstreamer_functions.r")
+setwd("evaluating_coregulation")
+source("data/source_olivier.r")
+
+# Read HPO enrichments
+files               <- list.files(hpo.prediction.path, pattern=".*_Coregulation_1588_auc_hpo.txt", full.names=T)
+auc.coreg.1588      <- read.enrichments(files, trim.colnames="_Coregulation_1588_auc_hpo.txt")
+
+files               <- list.files(hpo.prediction.path, pattern=".*_Coregulation_1588_aucPvals_hpo.txt", full.names=T)
+auc.pvals.coreg.1588 <- read.enrichments(files, trim.colnames="_Coregulation_1588_aucPvals_hpo.txt")
+
+files              <- list.files(hpo.prediction.path, pattern=".*_Coregulation_auc_hpo.txt", full.names=T)
+auc.coreg          <- read.enrichments(files, trim.colnames="_Coregulation_auc_hpo.txt")
+
+files              <- list.files(hpo.prediction.path, pattern=".*_Coregulation_aucPvals_hpo.txt", full.names=T)
+auc.pvals.coreg    <- read.enrichments(files, trim.colnames="_Coregulation_aucPvals_hpo.txt")
+
+files              <- list.files(hpo.prediction.path, pattern=".*_normalizedGenePvalues_auc_hpo.txt", full.names=T)
+auc.genep          <- read.enrichments(files, trim.colnames="_normalizedGenePvalues_auc_hpo.txt")
+
+files              <- list.files(hpo.prediction.path, pattern=".*_normalizedGenePvalues_aucPvals_hpo.txt", full.names=T)
+auc.pvals.genep    <- read.enrichments(files, trim.colnames="_normalizedGenePvalues_aucPvals_hpo.txt")
+
+
+ol                   <- rownames(auc.coreg.1588)
+auc.coreg.1588       <- auc.coreg.1588[ol,]
+auc.pvals.coreg.1588 <- auc.pvals.coreg.1588[ol,]
+auc.pvals.coreg.1588[auc.coreg.1588==0] <- 1
+
+auc.coreg            <- auc.coreg[ol,]
+auc.pvals.coreg      <- auc.pvals.coreg[ol,]
+auc.pvals.coreg[auc.coreg ==0] <- 1
+
+auc.genep            <- auc.genep[ol,]
+auc.pvals.genep      <- auc.pvals.genep[ol,]
+auc.pvals.genep[auc.genep ==0] <- 1
+
+plot.auc.comparison <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="AUC 1", ylab="AUC 2", main=NULL) {
+  auc.pval.1[auc.1 == 0] <- 1
+  auc.pval.2[auc.2 == 0] <- 1
+
+  df.plot <- data.frame(auc.1=auc.1,
+                        auc.2=auc.2,
+                        signif.1 = auc.pval.1 < (0.05 / length(auc.1)), 
+                        signif.2 = auc.pval.2 < (0.05 / length(auc.2)))
+  
+  
+  df.plot$signif.both    <- (df.plot$signif.1 + df.plot$signif.2) == 2
+  df.plot$signif.either  <- (df.plot$signif.1 + df.plot$signif.2) > 0
+  df.plot <- df.plot[order(df.plot$signif.either),]
+  
+  p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2, col=signif.either)) +
+    geom_point(alpha=0.75) +
+    geom_abline(slope=1, intercept=0, col="grey", lty=2) +
+    coord_fixed() +
+    xlab(xlab) +
+    ylab(ylab) +
+    ggtitle(main) + 
+    xlim(c(0,1)) +
+    ylim(c(0,1)) +
+    scale_color_manual(values=c(`FALSE`="#2c6c70", `TRUE`="#0ae4f2"))
+  
+  
+  return(theme.nature(p))
+}
+
+hpo.annot           <- fread(hpo.annot.file, sep="\t", data.table = F)
+hpo.annot           <- unique(hpo.annot)
+rownames(hpo.annot) <- hpo.annot[,1]
+```
+
+
+```{r}
+plots <- lapply(colnames(auc.coreg), function(trait) {
+  p <- plot.auc.comparison(auc.coreg.1588[,trait],
+                    auc.pvals.coreg.1588[,trait],
+                    auc.coreg[,trait],
+                    auc.pvals.coreg[,trait],
+                    xlab="Coreg 1588",
+                    ylab="Coreg 165",
+                    main=trait)
+  
+  return(p)
+  
+})
+
+pdf(width=20, height=20, file="output/plots/auc_comparision_165_1588.pdf")
+grid.arrange(grobs=plots)
+dev.off()
+
+plots <- lapply(colnames(auc.coreg), function(trait) {
+  p <- plot.auc.comparison(auc.coreg[,trait],
+                    auc.pvals.coreg[,trait],
+                    auc.genep[,trait],
+                    auc.pvals.genep[,trait],
+                    xlab="Coreg 165",
+                    ylab="Gene p-values",
+                    main=trait)
+  
+  return(p)
+  
+})
+
+pdf(width=20, height=20, file="output/plots/auc_comparision_coreg_genep.pdf")
+grid.arrange(grobs=plots)
+dev.off()
+```
+
+# Extract signif HPO terms per trait
+```{r}
+thresh <- 0.05/ nrow(auc.coreg)
+tmp    <- lapply(colnames(auc.coreg), function(trait){
+  
+  signifs <- auc.pvals.coreg[,trait] < thresh
+  cur     <- auc.coreg[signifs, trait, drop=F]
+  cur     <- cur[order(cur[,1], decreasing = T), ,drop=F]
+  
+  return(data.frame(cur, hpo.annot[rownames(cur), 2], stringsAsFactors = F))
+})
+names(tmp) <- colnames(auc.coreg)
+
+auc.coreg[auc.coreg ==0] <- NA
+cor <- cor(auc.coreg, method="spearman", use="complete.obs")
+hm(cor)
+
+cor(auc.coreg$amyotrophic_lateral_sclerosis_2018_29273806_hg19, auc.coreg$coeliac_disease_2011_22057235_hg19)
+
+
+#tmp <- read.depict2("~/Desktop/depict2/output/simulated_gwas/pheno_11_enrichtments_exHla.xlsx")
+#coreg <- tmp$Coregulation
+#theme.nature(fancy.qq.plot(coreg$Enrichment.P.value))
+```
+

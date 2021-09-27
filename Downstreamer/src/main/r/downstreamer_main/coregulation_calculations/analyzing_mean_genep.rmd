@@ -1,0 +1,241 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_calculations")} else {setwd("../coregulation_calculations")}
+source("../downstreamer_functions.r")
+library(GenomicRanges)
+
+# Read Ensembl
+ensembl.file      <- "data/ensgR75_protein_coding.txt"
+ensembl           <- read.table(ensembl.file, sep="\t", header=T, stringsAsFactors = F)
+rownames(ensembl) <- ensembl$Ensembl.Gene.ID
+
+# Calculate gene denisty (commented out as it takes a while and can be pre-caluclated)
+ensembl.gr        <- GRanges(seqnames=ensembl$Chromosome.Name, IRanges(start=ensembl$Gene.Start..bp., end=ensembl$Gene.End..bp.))
+#window <- 25000
+#gene.density <- sapply(rownames(ensembl), function(gene.id) {
+#  cur.range <- GRanges(ensembl[gene.id,2], IRanges(ensembl[gene.id, 3] - window, ensembl[gene.id, 4] + window))
+#  return(length(findOverlaps(cur.range, ensembl.gr)  ))
+#})
+
+#write.table(data.frame(genes=names(gene.density), density=gene.density, stringsAsFactors=F), file="output/ensembl_ensgR75_gene_density_25kb.txt", quote=F, sep="\t", col.names=T, row.names = F)
+
+# Gene density in 500kb window
+gene.density <- read.table("output/ensembl_ensgR75_gene_density_500kb.txt", stringsAsFactors = F, sep="\t", header=T, row.names = 1)
+
+# Read mean gene p-values
+mean.gene.p  <- read.table("output/mean_gene_pvalues_44_traits_per_class_calculated.txt", stringsAsFactors = F, header=T, row.names=1)
+
+# Read gene p-values
+gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
+
+# Metadata
+meta.data           <- read.table("../data/downstreamer_summary_statistics.csv", sep="\t", stringsAsFactors = F, header=T)
+rownames(meta.data) <- gsub("_hg19", "", gsub("__", "_", gsub(".xlsx|.txt", "", gsub("_enrichtments", "", meta.data$EnrichmentExcel))))
+meta.data$class[is.na(meta.data$class)] <- "NA"
+
+# LD score
+ld.score <- read.table("output/mean_ldscore_eur_per_gene_25kb_window.tsv", header=T, row.names=1)
+
+# Get genes overlapping HLA
+hla          <- GRanges(6, IRanges(20e6, 40e6))
+hla.genes    <- ensembl[findOverlaps(hla, ensembl.gr)@to, ]
+
+# Remove HLA
+gene.pvalues <- gene.pvalues[!rownames(gene.pvalues) %in% hla.genes$Ensembl.Gene.ID, rownames(meta.data),drop=F]
+gene.density <- gene.density[!rownames(gene.density) %in% hla.genes$Ensembl.Gene.ID,,drop=F]
+mean.gene.p  <- mean.gene.p[!rownames(mean.gene.p) %in% hla.genes$Ensembl.Gene.ID,,drop=F]
+
+# Transcription factors
+human.tfs    <- read.table("../data/human_tfs_lambert_2018.txt", stringsAsFactors = F)[,1]
+
+
+# Gnomad Pli
+gnomad.file <- "~/Documents/data/reference/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt"
+gnomad <- read.table(gnomad.file, sep="\t", header=T, stringsAsFactors = F)
+gnomad <- gnomad[!duplicated(gnomad$gene),]
+rownames(ensembl) <- make.names(ensembl$Associated.Gene.Name, unique=T)
+rownames(gnomad)  <- make.names(gsub("\\.\\d+", "", ensembl[gnomad$gene, ]$Ensembl.Gene.ID), unique=T)
+rownames(ensembl) <- ensembl$Ensembl.Gene.ID
+```
+
+# Gene density and LD score vs gene pvalue
+```{r}
+ol <- intersect(rownames(gene.density), rownames(mean.gene.p))
+
+hist(gene.density$density, breaks=40)
+
+# Gene density vs mean gene-p
+p1 <- theme.nature(xy.plot(gene.density[ol, 1], mean.gene.p[ol,1],
+        ylab="Mean gene p-pvalue",
+        xlab="Number of genes in a +-500kb window"))
+
+# LD score vs mean gene-p
+p2 <- theme.nature(xy.plot(log2(ld.score[ol, 1]), mean.gene.p[ol,1],
+        ylab="Mean gene p-pvalue",
+        xlab="log2(mean LD-score in +-25kb window)"))
+
+pdf(width = 9, height=3.5, paper="a4", file="output/plots/mean_genepvalue_vs_technical_parameters.pdf")
+grid.arrange(grobs=list(p1, p2), ncol=2)
+dev.off()
+
+# Caluclate R2 for both parameters
+summary(lm(mean.gene.p[ol,1] ~ gene.density[ol, 1] + log2(ld.score[ol, 1])))
+
+# Correlation of gene density per trait
+cor.m <- cor(gene.density[rownames(gene.pvalues),],
+             gene.pvalues[, rownames(meta.data)],
+             use="pairwise.complete.obs")
+
+par(mar=c(20,5,5,5))
+barplot(cor.m[1,], col = class.cols[meta.data[colnames(cor.m), "class"]],
+        names.arg = meta.data[colnames(cor.m), "Name"],
+        las=2,
+        ylab="Pearson R with gene density")
+```
+
+# Power vs correlation in gene pvalue
+```{r}
+cor.m    <- cor(gene.pvalues, use="pairwise.complete.obs")
+mean.cor <- apply(cor.m, 1, mean)
+
+pdf(width = 3.5, height=3.5, paper="a4", file="output/plots/mean_genep_correlation_vs_samplesize.pdf")
+p1 <- theme.nature(xy.plot(meta.data[names(mean.cor),"N_indep_gws"],
+        mean.cor,
+        xlab="Number of independent gws hits",
+        ylab="Mean correlation with other GWASs",
+        size=2,
+        col=class.cols[meta.data[names(mean.cor),"class"]]))
+p1
+dev.off()
+```
+
+# Correlation heatmap of gene p-values
+```{r}
+cor.m    <- cor(gene.pvalues, use="pairwise.complete.obs")
+
+cor.p <- sapply(colnames(gene.pvalues), function(x){
+  sapply(colnames(gene.pvalues), function(y){
+    cor.test(gene.pvalues[,x], gene.pvalues[,y], use="complete.obs")$`p.value`
+  })
+})
+cor.m[cor.p > (0.05 / 44^2)] <- 0
+
+
+pdf(width=8, height=8, file="output/plots/gene_pvalue_correlation_heatmap_bonfsig_cor_only.pdf", paper="a4")
+simple.hm(cor.m,
+          cellwidth=5,
+          cellheight=5,
+          fontsize=4.5,
+          cluster_rows=F,
+          cluster_cols=F,
+          border=NA,
+          annotation_row=meta.data[rownames(cor.m), "class", drop=F],
+          annotation_colors=list(`class`=class.cols),
+          labels_row=meta.data[rownames(cor.m), "Name"],
+          labels_col=meta.data[colnames(cor.m),]$Name)
+dev.off()
+```
+
+# Gnomad vs mean gene pvalue
+```{r}
+ol <- intersect(rownames(mean.gene.p), rownames(gnomad))
+
+make.gnomad.scatterplot <- function(trait) {
+  df.plot <- data.frame(zscores=mean.gene.p[ol,1], gnomad=gnomad[ol, trait])
+
+  p <- ggplot(data=df.plot, mapping=aes(x=zscores, y=gnomad)) + 
+    geom_hex(bins=50, col=NA) + 
+    geom_smooth(method="lm", col="grey", size=0.75) +
+    geom_hline(yintercept=0, col="grey", lty=2) +
+    xlab("Mean gene p-value") +
+    scale_fill_gradientn(colors=c("#376B65","#0ae4f2")) + #"#2c6c70", "#0ae4f2"
+    ggtitle(paste0("R: ",
+                   format(cor(df.plot$zscores, df.plot$gnomad, use="complete.obs"), digits=2),
+                   " p-value: ",
+                   format(cor.test(df.plot$zscores, df.plot$gnomad, na.action=na.omit())$p.value, digits=2, scientific=T)))
+  
+  theme.nature(p, base_size=8)
+}
+
+# Not corrected for degree
+p1 <- make.gnomad.scatterplot("syn_z") + ylab("Gnomad Syn Z-score") + theme(legend.position = "none")
+p2 <- make.gnomad.scatterplot("mis_z") + ylab("Gnomad MiS Z-score") + theme(legend.position = "none")
+p3 <- make.gnomad.scatterplot("lof_z") + ylab("Gnomad LoF Z-score") + theme(legend.position = "none")
+
+pdf(width=6, height=2, file="output/plots/gnomad_zscore_vs_mean_genep.pdf", paper="a4")
+grid.arrange(grobs=list(p1, p2, p3), ncol=3)
+dev.off()
+```
+
+
+# Transcription factor enrichment
+```{r}
+all.genes              <- rownames(mean.gene.p)
+
+do.fisher.test         <- function(key.genes, transcription.factors, background) {
+  key.genes              <- intersect(key.genes, background) 
+  transcription.factors  <- intersect(transcription.factors, background)
+
+  # Contingency table
+  #       key-gene    non-key-gene
+  # TF       a1             a2
+  # non-TF   b1             b2
+  a1 <- sum(key.genes %in% transcription.factors)
+  a2 <- sum(transcription.factors %in% background) - a1
+  b1 <- sum(!key.genes %in% transcription.factors)
+  b2 <- length(background) - b1 - a2 - a1
+
+  m   <- matrix(c(a1, a2, b1, b2), ncol=2, byrow = T)
+  res <- fisher.test(m)
+  
+  return(res)
+}
+
+# TF enrichment pre correction
+top.500.pre            <- rownames(mean.gene.p[order(mean.gene.p, decreasing = T),,drop=F])[1:500] 
+res.pre                <- do.fisher.test(top.500.pre, human.tfs, all.genes)
+overlap.pre            <- length(intersect(top.500.pre, human.tfs))
+
+# TF enrichment post correction
+post                   <- residuals(lm(mean.gene.p[ol, 1] ~ gene.density[ol, 1] + log2(ld.score[ol, 1]), na.action=na.exclude))
+names(post)            <- ol
+top.500.post           <- names(post[order(post, decreasing = T)])[1:500]
+res.post               <- do.fisher.test(top.500.post, human.tfs, all.genes)
+overlap.post           <- length(intersect(top.500.post, human.tfs))
+
+write.table(top.500.post, quote=F, row.names=F, col.names = F, file="output/top_500_ldsc+density_corr_mean_gene_pvalues_exHLA.txt")
+```
+
+# Correlation in gene p-values after correction
+```{r}
+ol <- intersect(rownames(gene.density), rownames(gene.pvalues))
+
+corrected.genep <- sapply(colnames(gene.pvalues), function(x) {
+  return(residuals(lm(gene.pvalues[ol, x] ~ gene.density[ol, 1], na.action = na.exclude)))
+  #return(gene.pvalues[ol, x])
+})
+rownames(corrected.genep) <- ol
+
+#corrected.genep <- corrected.genep[ol,]
+
+#colnames(corrected.genep) <- meta.data[colnames(corrected.genep), "Name"]
+
+p1 <- xy.plot(corrected.genep[ol,"cellcounts_2020_32888494_LYM"], gene.pvalues[ol,]$cellcounts_2020_32888494_LYM, xlab="Corrected Gene P", ylab="Gene P") +geom_abline(slope=1, intercept = 0)
+p2 <- xy.plot( gene.density[rownames(gene.pvalues),1],  gene.pvalues[,27], xlab="Density", ylab="Gene P")
+p3 <- xy.plot( gene.density[rownames(gene.pvalues),1],  corrected.genep[,27], xlab="Density", ylab="Corrected Gene P")
+
+grid.arrange(grobs=list(p1, p2, p3), ncol=3)
+
+cor.m.a <- cor(gene.pvalues, use="pairwise.complete.obs")
+cor.m.b <- cor(corrected.genep, use="pairwise.complete.obs")
+
+cor.m <- cor.m.a
+cor.m[lower.tri(cor.m)] <- cor.m.b[lower.tri(cor.m.b)]
+
+colnames(cor.m) <- meta.data[colnames(cor.m), "Name"]
+rownames(cor.m) <- meta.data[rownames(cor.m), "Name"]
+
+
+hm(cor.m, cellwidth = 6, cellheight = 6,cluster_rows=F, cluster_cols=F)
+
+```
+
