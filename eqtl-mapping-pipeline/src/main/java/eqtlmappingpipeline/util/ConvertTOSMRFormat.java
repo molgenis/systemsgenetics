@@ -131,7 +131,7 @@ public class ConvertTOSMRFormat {
             10    "\tOrientation" +
             11    "\tb" +
             12    "\tse" +
-            13ls    "\tp";
+            13    "\tp";
              */
 			
 			String snp = elems[1];

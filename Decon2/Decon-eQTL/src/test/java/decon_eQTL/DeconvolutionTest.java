@@ -191,7 +191,7 @@ public class DeconvolutionTest {
 		deconvolution.writeDeconvolutionResults(deconvolutionResults);
 
 		LineIterator deconResults = FileUtils.lineIterator(new File(outputDir+"deconvolutionSpearmanResults/deconvolutionResults.csv"), "UTF-8");
-		LineIterator deconExpected = FileUtils.lineIterator(new File("src/test/resources/expected_results/deconSpearmanExpected.txt"), "UTF-8");
+		LineIterator deconExpected = FileUtils.lineIterator(new File("src/test/resources/expected_results/v1.5/deconSpearmanExpected.txt"), "UTF-8");
 		//test if header is same
 		assertEquals("File header the same",deconExpected.next(),deconResults.next());
 		while (deconResults.hasNext() && deconExpected.hasNext()){
@@ -214,7 +214,7 @@ public class DeconvolutionTest {
 		deconvolution.writeDeconvolutionResults(deconvolutionResults);
 
 		LineIterator predictedResults = FileUtils.lineIterator(new File(outputDir+"deconvolutionPredictedExpression/predictedExpressionLevels.txt"), "UTF-8");
-		LineIterator predictedExpected = FileUtils.lineIterator(new File("src/test/resources/expected_results/expectedPredictedExpressionLevels.txt"), "UTF-8");
+		LineIterator predictedExpected = FileUtils.lineIterator(new File("src/test/resources/expected_results/v1.5/expectedPredictedExpressionLevels.txt"), "UTF-8");
 		//test if header is same
 		assertEquals("File header the same",predictedExpected.next(),predictedResults.next());
 		while (predictedResults.hasNext() && predictedExpected.hasNext()){
@@ -237,7 +237,8 @@ public class DeconvolutionTest {
 		deconvolution.writeDeconvolutionResults(deconvolutionResults);
 
 		LineIterator deconResults = FileUtils.lineIterator(new File(outputDir+"deconvolutionRoundedDosage/deconvolutionResults.csv"), "UTF-8");
-		LineIterator deconExpected = FileUtils.lineIterator(new File("src/test/resources/expected_results/deconRoundDosageExpected.txt"), "UTF-8");
+
+		LineIterator deconExpected = FileUtils.lineIterator(new File("src/test/resources/expected_results/v1.5/deconRoundDosageExpected.txt"), "UTF-8");
 		//test if header is same
 		assertEquals("File header the same",deconExpected.next(),deconResults.next());
 		while (deconResults.hasNext() && deconExpected.hasNext()){

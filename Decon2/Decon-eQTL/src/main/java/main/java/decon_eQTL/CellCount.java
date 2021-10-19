@@ -8,23 +8,32 @@ import main.java.decon_eQTL.Utils;
 
 public class CellCount {
 
-	private List<String> cellTypes = new ArrayList<String> ();
-	private List<String> sampleNames = new ArrayList<String> ();
+	private List<String> cellTypes = new ArrayList<String>();
+	private List<String> sampleNames = new ArrayList<String>();
 	private double[][] cellCountPercentages;
 	private List<List<String>> cellCountTable;
 	private int numberOfCelltypes;
 	private int numberOfSamples;
-	public CellCount() {};
+
+	public CellCount() {
+	}
+
+	public CellCount(double[][] actualCellcts, List<String> cellTypes, List<String> sampleNames) {
+		this.cellCountPercentages = actualCellcts;
+		this.numberOfCelltypes = actualCellcts[0].length;
+		this.numberOfSamples = actualCellcts.length;
+		this.sampleNames = sampleNames;
+		this.cellTypes = cellTypes;
+	}
 
 	/**
-	 * Read in cell count file 
-	 * 
-	 * @param cellCountFile File with cell count percentages, 
-	 * 		   with columns = cell type, rows is samples (includes column headers and row names)
+	 * Read in cell count file
 	 *
-	 * @throws IOException	If cell count file can not be read
+	 * @param cellCountFile File with cell count percentages,
+	 *                      with columns = cell type, rows is samples (includes column headers and row names)
+	 * @throws IOException If cell count file can not be read
 	 */
-	@SuppressWarnings("unchecked") 
+	@SuppressWarnings("unchecked")
 	public void readCellCountData(String cellCountFile) throws IOException {
 		// the cell type names are the first row of cell count file, extract for
 		// later printing is now saved as table of strings
@@ -33,40 +42,44 @@ public class CellCount {
 		cellCountTable = (List<List<String>>) cellCountData[1];
 		numberOfCelltypes = cellCountTable.size();
 		DeconvolutionLogger.log.info(String.format("Cell types to use:"));
-		for(int i = 0; i < numberOfCelltypes; i++){
+		for (int i = 0; i < numberOfCelltypes; i++) {
 			cellTypes.add(cellCountTable.get(i).get(0));
 			DeconvolutionLogger.log.info(cellCountTable.get(i).get(0));
 		}
 		DeconvolutionLogger.log.info(String.format("Number of cell types: %d", numberOfCelltypes));
-		
+
 		// minus one because the size includes the cell type header
-		numberOfSamples = cellCountTable.get(0).size()-1;
+		numberOfSamples = cellCountTable.get(0).size() - 1;
 		DeconvolutionLogger.log.info(String.format("Number of samples: %d", numberOfSamples));
 		cellCountPercentages = new double[numberOfSamples][numberOfCelltypes];
-		for (int j = 0; j <= numberOfSamples-1; j++) {
+		for (int j = 0; j <= numberOfSamples - 1; j++) {
 			for (int i = 0; i < numberOfCelltypes; i++) {
-				cellCountPercentages[j][i] =  Double.parseDouble(cellCountTable.get(i).get(j+1));
+				cellCountPercentages[j][i] = Double.parseDouble(cellCountTable.get(i).get(j + 1));
 			}
 		}
 	}
-	
-	public List<String> getSampleNames(){
+
+	public List<String> getSampleNames() {
 		return sampleNames;
 	}
-	
-	public List<String> getAllCelltypes(){
+
+	public List<String> getAllCelltypes() {
 		return cellTypes;
-	}	
-	public String getCelltype(int index){
+	}
+
+	public String getCelltype(int index) {
 		return cellTypes.get(index);
-	}	
-	public int getNumberOfCelltypes(){
+	}
+
+	public int getNumberOfCelltypes() {
 		return numberOfCelltypes;
-	}	
-	public int getNumberOfSamples(){
+	}
+
+	public int getNumberOfSamples() {
 		return numberOfSamples;
 	}
-	public double[][] getCellCountPercentages(){
+
+	public double[][] getCellCountPercentages() {
 		return cellCountPercentages;
 	}
 }
