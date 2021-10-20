@@ -812,6 +812,7 @@ public class Normalizer {
 				covarDs = covarDs.viewColSelection(include);
 
 				VIF vif = new VIF();
+				vif.setDebug(true);
 				covarDs = vif.vifCorrect(covarDs, (1 - 1E-4));
 				covariateDataMatrix = covarDs.getMatrixAs2dDoubleArray();
 
@@ -1492,6 +1493,7 @@ public class Normalizer {
 
 		// correct for variance inflation...
 		VIF vif = new VIF();
+		vif.setDebug(true);
 		finalCovariates = vif.vifCorrect(finalCovariates.viewDice(), (1 - 1E-4)); // code here has covariates on the rows; move them to the columns instead.
 
 		finalCovariates = finalCovariates.viewDice();

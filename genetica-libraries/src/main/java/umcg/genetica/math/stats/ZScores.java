@@ -21,7 +21,7 @@ public class ZScores {
         return r;
     }
 
-    private final static NormalDistribution NORM_DIST = new NormalDistribution();
+    private final static NormalDistribution NORM_DIST = new NormalDistribution(0, 1);
 
 
     /**
