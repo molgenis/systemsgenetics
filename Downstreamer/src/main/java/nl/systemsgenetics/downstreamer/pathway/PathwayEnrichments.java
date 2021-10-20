@@ -1338,7 +1338,7 @@ public class PathwayEnrichments {
 
 		//make dummy p-value matrix with 1 for not closest gene and 0 for the cloesest gene
 		DoubleMatrixDataset<String, String> closestGeneMatrix = genePvalues.duplicate();
-		closestGeneMatrix.getMatrix().assign(1);
+		closestGeneMatrix.getMatrix().assign(0);
 
 		for (String trait : traits) {
 
@@ -1350,7 +1350,6 @@ public class PathwayEnrichments {
 
 			for (LeadVariant leadVariant : independentVariants) {
 				final GwasLocus gwasLocus = new GwasLocus(leadVariant, leadVariant.getContig(), leadVariant.getPos() - windowExtent, leadVariant.getPos() + windowExtent);
-				final int leadVarPos = leadVariant.getPos();
 
 				Gene currentClosestGene = null;
 				int currentClosestDist = Integer.MAX_VALUE;
@@ -1363,30 +1362,51 @@ public class PathwayEnrichments {
 					} else {
 						dist = Math.min(Math.abs(gwasLocus.getLeadVariant().getPos() - overlappingGene.getStart()), Math.abs(gwasLocus.getLeadVariant().getPos() - overlappingGene.getEnd()));
 					}
-					
-					if(dist < currentClosestDist){
+
+//					if(overlappingGene.getGene().equals("ENSG00000152700")){
+//						System.out.println(gwasLocus.getLeadVariant().getVariantId());
+//						System.out.println("dist:" + dist);
+//					}
+					if (gwasLocus.getLeadVariant().getVariantId().equals("rs4958257")) {
+						System.out.println("gene:" + overlappingGene.getGene());
+						System.out.println("dist:" + dist);
+						System.out.println("in table: " + closestGeneMatrix.containsRow(overlappingGene.getGene()));
+					}
+
+					if (dist < currentClosestDist) {
 						currentClosestDist = dist;
 						currentClosestGene = overlappingGene;
 					}
 
 				}
-
-				if(currentClosestGene != null){
-					//found a nearby gene, this shoud be the closest gene
-					
-					//give this gene a dummy p-value of 0
-					closestGeneMatrix.setElement(trait, currentClosestGene.getGene(), 0);
-				}
 				
+				if (gwasLocus.getLeadVariant().getVariantId().equals("rs4958257")) {
+					System.out.println("closest");
+						System.out.println("gene:" + currentClosestGene.getGene());
+						System.out.println("dist:" + currentClosestDist);
+						System.out.println("in table: " + closestGeneMatrix.containsRow(currentClosestGene.getGene()));
+					}
+				
+				if (currentClosestGene != null) {
+					//found a nearby gene, this shoud be the closest gene
+
+					//give this gene a dummy p-value of 0
+					if (closestGeneMatrix.containsRow(currentClosestGene.getGene())) {
+						closestGeneMatrix.setElement(currentClosestGene.getGene(), trait, 10);
+					}
+
+				}
+
 			}
-			
 
 		}
 
-		DoubleMatrixDataset<String, String> geneQvalues  = closestGeneMatrix;
+		System.out.println(closestGeneMatrix.getElement("ENSG00000113615", traits.get(0)));
+		System.out.println(closestGeneMatrix.getElement("ENSG00000152700", traits.get(0)));
+
+		DoubleMatrixDataset<String, String> geneQvalues = closestGeneMatrix;
 		DoubleMatrixDataset<String, String> geneBetas = closestGeneMatrix;
 
-		
 		PathwayDatabase genePPathwayDatabase = new PathwayDatabase("closestGene", options.getRun1BasePath() + "_closestGene");
 
 		return new PathwayEnrichments(genePPathwayDatabase,

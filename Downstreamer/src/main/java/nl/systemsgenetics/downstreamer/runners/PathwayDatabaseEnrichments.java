@@ -48,7 +48,7 @@ public class PathwayDatabaseEnrichments {
 		PathwayEnrichments closestGene = PathwayEnrichments.createPathwayEnrichmentsFromClosestGene(options, step2Results.getGenePvalues());
 		
         results = testPredictionPerformanceForGwasTrait(closestGene, targetPathwayDatabases);
-        writer.writeResultsExcel(results, genePvalues.getPathwayDatabase().getName());
+        writer.writeResultsExcel(results, closestGene.getPathwayDatabase().getName());
 
     }
 
