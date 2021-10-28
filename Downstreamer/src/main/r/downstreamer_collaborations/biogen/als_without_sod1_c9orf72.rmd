@@ -1,0 +1,75 @@
+```{r}
+setwd("../downstreamer_collaborations/biogen")
+source("../../downstreamer_main/downstreamer_functions.r")
+
+
+
+als.wo <- read.depict2("~/Desktop/depict2/collaborations/biogen/als/without_SOD1_c90rf72/2020-04-28-ALS.replication_enrichtments.xlsx")
+als.asia.wo <- read.depict2("~/Desktop/depict2/collaborations/biogen/als/without_SOD1_c90rf72/ALS_sumstats_EUR_ASIA_enrichtments.xlsx")
+
+als <- read.depict2("~/Desktop/depict2/collaborations/biogen/als/previous_results/2020-04-28-ALS.replication_enrichtments_exHla.xlsx")
+als.asia <- read.depict2("~/Desktop/depict2/collaborations/biogen/als/previous_results/ALS_sumstats_EUR_ASIA_enrichtments_exHla.xlsx")
+
+
+fix.names <- function(x) {
+  names(x) <- gsub("GO_P", "GO_BP", names(x))
+  names(x) <- gsub("GO_F", "GO_MF", names(x))
+  names(x) <- gsub("GO_C", "GO_CC", names(x))
+  names(x) <- gsub("gtexV8", "GtexV8_relative", names(x))
+  names(x) <- gsub("expression", "SampleEnrichment", names(x))
+  names(x) <- gsub("Coregulation", "GenePrioritization", names(x))
+
+  return(x)
+}
+
+als <- fix.names(als)
+als.asia <- fix.names(als.asia)
+```
+
+
+```{r}
+plots <- list()
+
+ol <- intersect(names(als), names(als.wo))
+
+for  (database in ol) {
+  x <- als.wo[[database]]
+  y <- als.asia.wo[[database]]
+  
+  ol <- intersect(rownames(x), rownames(y))
+  
+  p <- xy.plot.pvalue.colored(x[ol,]$Enrichment.Z.score,
+                         x[ol,]$Enrichment.P.value,
+                         y[ol,]$Enrichment.Z.score,
+                         y[ol,]$Enrichment.P.value, 
+                         pval.col="all",
+                         xlab="Zscore without SOD1, C9orf",
+                         ylab="Zscore without SOD1, C9orf ASIA",
+                         main=database)
+    
+  plots[[database]] <- p
+}
+
+pdf(width=10, height=15, file="~/Desktop/depict2/collaborations/biogen/als/without_sod1_c9orf72_no_asia_vs_asia_downstreamer_enrichment_results.pdf")
+grid.arrange(grobs=plots, ncol=3)
+dev.off()
+
+```
+
+# Comparing base asia vs non
+```{r}
+x <- als.asia$Coregulation_MetaBrain
+y <- als$Coregulation_MetaBrain
+ol <- intersect(rownames(x), rownames(y))
+
+  p <- xy.plot.pvalue.colored(x[ol,]$Enrichment.Z.score,
+                         x[ol,]$Enrichment.P.value,
+                         y[ol,]$Enrichment.Z.score,
+                         y[ol,]$Enrichment.P.value, 
+                         pval.col="all",
+                         xlab="Zscore Asia",
+                         ylab="Zscore",
+                         main="Coregulation Metabrain")
+p
+```
+

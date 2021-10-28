@@ -1,0 +1,75 @@
+```{r}
+setwd("evaluating_pvalues")
+source("../downstreamer_functions.r")
+#source("data/source_olivier.r")
+
+
+height      <- read.depict2("data/height_2018_30124842_hg19/height_2018_30124842_hg19_enrichtments.xlsx")
+height.emp  <- read.enrichments.as.list(list.files("data/height_2018_30124842_hg19/", pattern="*true*", full.names = T),
+                                       trim.names = "_Enrichment_trueEmpericalPvalsExHla.txt")
+height.null <- read.enrichments.as.list(list.files("data/height_2018_30124842_hg19/", pattern="*null*", full.names = T),
+                                       trim.names = "_Enrichment_nullDistMetricsExHla.txt")
+
+ced        <- read.depict2("data/coeliac_disease_2011_22057235_hg19/coeliac_disease_2011_22057235_hg19_enrichtments.xlsx")
+ced.emp    <- read.enrichments.as.list(list.files("data/coeliac_disease_2011_22057235_hg19/", pattern="*true*", full.names = T),
+                                       trim.names = "_Enrichment_trueEmpericalPvalsExHla.txt")
+ced.null   <- read.enrichments.as.list(list.files("data/coeliac_disease_2011_22057235_hg19/", pattern="*null*", full.names = T),
+                                       trim.names = "_Enrichment_nullDistMetricsExHla.txt")
+```
+
+# Compare emperical with pseudo emperical
+```{r}
+cur     <- ced
+cur.emp <- ced.emp
+
+plots <- list()
+for (database in names(cur)) {
+  
+  ol <- intersect(rownames(cur[[database]]), rownames(cur.emp[[database]]))
+  
+  x <- cur[[database]][ol,]$Enrichment.P.value
+  #x[ibd.downstreamer[[database]][ol,]$Enrichment.Z.score < 0] <- 1
+  y <- cur.emp[[database]][ol,1]
+  y <- y[-log10(x) < 4]
+  x <- x[-log10(x) < 4]
+  y <- y*2
+  plots[[database]] <- xy.plot.pvalue.colored(-log10(x), x, -log10(y), y,
+                         xlab="-log10(p) Downstreamer",
+                         ylab="-log10(p) Emperisch",
+                         main=database,
+                         pval.col="all")   
+}
+
+grid.arrange(grobs=plots, ncol=4)
+```
+
+# Compare null distribution metrics
+```{r}
+
+pdf(width=10, height=25, file="output/plots/null_dist_metrics_coeliac.pdf")
+cur <- ced.null
+par(mfrow=c(length(cur),4))
+
+for (database in names(cur)) {
+  x <- cur[[database]]$mean
+  hist(x, freq=F, xlab="mean", main=database, breaks=50)
+  lines(density(rnorm(100000, mean=mean(x), sd=sd(x))))
+  
+  x <- cur[[database]]$sd
+  hist(x, freq=F, xlab="sd", main=database, breaks=50)
+  lines(density(rnorm(100000, mean=mean(x), sd=sd(x))))
+  
+  x <- cur[[database]]$skewness
+  hist(x, freq=F, xlab="skewness", main=database, breaks=50)
+  lines(density(rnorm(100000, mean=mean(x), sd=sd(x))), )
+  
+  
+  x <- cur[[database]]$kurtosis
+  hist(x, freq=F, xlab="kurtosis", main=database, breaks=50)
+  lines(density(rnorm(100000, mean=mean(x), sd=sd(x))))
+  
+}
+dev.off()
+
+```
+

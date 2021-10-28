@@ -1,0 +1,166 @@
+```{r}
+setwd("evaluating_coregulation")
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+cur.data <- read.depict2("~/Desktop/ibd_sub_network_coregulation//inflammatory_bowel_disease_2017_29906448_hg19_enrichtments_exHla.xlsx", potential_traits = c("Coregulation", "Coregulation_eqtlGen"))
+
+cur.data.eqtlgen <- read.depict2("~/Desktop/ibd_sub_network_coregulation/inflammatory_bowel_disease_2017_29906448_hg19_enrichtments_exHla_2.xlsx", potential_traits = c("Coregulation_eqtlGen500"))
+
+cur.data.bios <- read.depict2("~/Desktop/ibd_sub_network_coregulation/inflammatory_bowel_disease_2017_29906448_hg19_enrichtments_exHla_3.xlsx", potential_traits = c("Coregulation_bios"))
+
+```
+
+```{r}
+curdata.x <- cur.data$Coregulation
+curdata.y <- cur.data.eqtlgen$Coregulation_eqtlGen500
+  
+ol        <- intersect(rownames(curdata.x), rownames(curdata.y))
+curdata.x <- curdata.x[ol,]
+curdata.y <- curdata.y[ol,]
+
+p <- xy.plot.pvalue.colored(curdata.x$Enrichment.Z.score,
+                            curdata.x$Enrichment.P.value,
+                            curdata.y$Enrichment.Z.score,
+                            curdata.y$Enrichment.P.value,
+                            xlab=paste0("IBD zscore GN"), ylab=paste0("IBD zscore", " eqtlGen 500"))
+
+p1 <- theme.nature(p)
+
+# GN vs vios
+curdata.y <- cur.data.bios$Coregulation_bios
+
+ol        <- intersect(rownames(curdata.x), rownames(curdata.y))
+curdata.x <- curdata.x[ol,]
+curdata.y <- curdata.y[ol,]
+
+p <- xy.plot.pvalue.colored(curdata.x$Enrichment.Z.score,
+                            curdata.x$Enrichment.P.value,
+                            curdata.y$Enrichment.Z.score,
+                            curdata.y$Enrichment.P.value,
+                            xlab=paste0("IBD zscore GN"), ylab=paste0("IBD zscore", " BIOS"))
+
+p2 <- theme.nature(p)
+
+curdata.x <- cur.data.eqtlgen$Coregulation_eqtlGen500
+curdata.y <- cur.data.bios$Coregulation_bios
+
+ol        <- intersect(rownames(curdata.x), rownames(curdata.y))
+curdata.x <- curdata.x[ol,]
+curdata.y <- curdata.y[ol,]
+
+p <- xy.plot.pvalue.colored(curdata.x$Enrichment.Z.score,
+                            curdata.x$Enrichment.P.value,
+                            curdata.y$Enrichment.Z.score,
+                            curdata.y$Enrichment.P.value,
+                            xlab=paste0("IBD zscore eQTLgen"), ylab=paste0("IBD zscore", " BIOS"))
+
+p3 <- theme.nature(p)
+
+grid.arrange(grobs=list(p1,p2, p3), ncol=3)
+```
+
+# eqts in eqtlgen
+```{r}
+cur.eqts <- eqts[eqts$PGS=="Inflammatory_Bowel_Disease_EUR_2015_26192919_hg19.txt.gz",]
+curdata.y <- cur.data$Coregulation_eqtlGen
+curdata.x <- cur.data$Coregulation
+
+par(mfrow=c(1,2))
+boxplot(curdata.y$Enrichment.Z.score ~ c(rownames(curdata.y) %in% cur.eqts$Gene), main="Coregulation eqtlgen", xlab="eqts IBD")
+boxplot(curdata.x$Enrichment.Z.score ~ c(rownames(curdata.x) %in% cur.eqts$Gene), main="Coregulation", xlab="eqts IBD")
+
+```
+
+```{r}
+cur.data <- read.depict2("~/Desktop/metabrain_scrna_for_lude/schizophrenia_ripke2014_harm_jan_enrichtments_exHla_scRNA_corrected.xlsx")
+
+curdata.x <- cur.data$coregulation_MetaBrain_scRNA
+curdata.y <- cur.data$coexpression_MetaBrain_scRNA
+
+curdata.x <- cur.data$coregulation_MetaBrain_scRNA_co
+curdata.y <- cur.data$coexpression_MetaBrain_scRNA_co
+
+curdata.x <- cur.data$coregulation_MetaBrain_scRNA
+curdata.y <- cur.data$coregulation_MetaBrain_scRNA_co
+
+curdata.x <- cur.data$coexpression_MetaBrain_scRNA
+curdata.y <- cur.data$coexpression_MetaBrain_scRNA_co
+
+rownames(curdata.x) <- gsub("(ENSG[0-9]*)\\.[0-9]*", "\\1", rownames(curdata.x))
+rownames(curdata.y) <- gsub("(ENSG[0-9]*)\\.[0-9]*", "\\1", rownames(curdata.y))
+
+ol        <- intersect(rownames(curdata.x), rownames(curdata.y))
+curdata.x <- curdata.x[ol,]
+curdata.y <- curdata.y[ol,]
+
+p <- xy.plot.pvalue.colored(curdata.x$Enrichment.Z.score,
+                            curdata.x$Enrichment.P.value,
+                            curdata.y$Enrichment.Z.score,
+                            curdata.y$Enrichment.P.value,
+                            xlab=paste0("Schizo zscore coregulation"), ylab=paste0("Schizo zscore", " coexpression"))
+
+p1 <- theme.nature(p)
+p1
+```
+
+```{r}
+
+cur.data <- read.depict2("~/Desktop/metabrain_scrna_for_lude/schizophrenia_ripke2014_harm_jan_enrichtments_exHla_scRNA_corrected.xlsx")
+
+gene.metrics <- read.table("~/Desktop/metabrain_scrna_for_lude/summary.txt", header=T)
+
+curdata.x <- cur.data$coregulation_MetaBrain_scRNA_co
+curdata.y <- cur.data$coexpression_MetaBrain_scRNA_co
+
+rownames(curdata.x)    <- gsub("(ENSG[0-9]*)\\.[0-9]*", "\\1", rownames(curdata.x))
+rownames(curdata.y)    <- gsub("(ENSG[0-9]*)\\.[0-9]*", "\\1", rownames(curdata.y))
+rownames(gene.metrics) <- gsub("(ENSG[0-9]*)\\.[0-9]*", "\\1", gene.metrics$X.)
+
+ol        <- intersect(rownames(curdata.x), rownames(curdata.y))
+curdata.x <- curdata.x[ol,]
+curdata.y <- curdata.y[ol,]
+
+
+gene.metrics[gene.metrics[,"skewness"] > 10, "skewness"] <- NA
+gene.metrics[gene.metrics[,"variance"] > 10, "variance"] <- NA
+
+df.plot <- data.frame(y=curdata.y$Enrichment.Z.score,  x=gene.metrics[rownames(curdata.x), "skewness"])
+df.plot <- na.omit(df.plot)
+p <- ggplot(data=df.plot, mapping=aes(x=x, y=y)) +
+    geom_point(alpha=0.5, col="#2c6c70") +
+    ylab("Downstreamer score") +
+    xlab("Skewness") +
+    geom_smooth(method="lm", formula=y ~ poly(x, 3, raw=TRUE))
+
+
+
+p1 <- theme.nature(p)
+
+p1
+
+
+df.plot <- data.frame(y=curdata.y$Enrichment.Z.score,  x=gene.metrics[rownames(curdata.x), "variance"])
+df.plot <- na.omit(df.plot)
+p <- ggplot(data=df.plot, mapping=aes(x=x, y=y)) +
+    geom_point(alpha=0.5, col="#2c6c70") +
+    ylab("Downstreamer score") +
+    xlab("Skewness") +
+    geom_smooth(method="lm", formula=y ~ poly(x, 3, raw=TRUE))
+
+
+
+p2 <- theme.nature(p)
+
+p2
+
+grid.arrange(grobs=list(p1, p2), ncol=2)
+
+
+df.corr <-  cbind(curdata.y,  gene.metrics[rownames(curdata.x), ])
+
+df.corr$adj.zscore <- residuals(lm(Enrichment.Z.score ~ skewness + variance + mean, data=df.corr, na.action = na.exclude))
+
+```
+
+

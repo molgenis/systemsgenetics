@@ -5,27 +5,20 @@
  */
 package nl.systemsgenetics.downstreamer.pathway;
 
-import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleCholeskyDecomposition;
-import cern.colt.matrix.tdouble.algo.decomposition.SparseDoubleCholeskyDecomposition;
-import cern.colt.matrix.tdouble.impl.SparseCCDoubleMatrix2D;
-import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
-import nl.systemsgenetics.downstreamer.gene.GenePathwayAssociationStatistic;
-import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-import umcg.genetica.graphics.panels.HistogramPanel;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;

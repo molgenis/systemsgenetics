@@ -264,8 +264,7 @@ public class LocusUtils {
 
         // first sort the statistics by pvalue
         List<SummaryStatisticRecord> statisticsList = new ArrayList<>(records.values());
-        Collections.sort(statisticsList);
-        //LOGGER.warn("Sorting pvalues. Does not properly support ties & 0 p-values");
+        statisticsList.sort(Comparator.comparingDouble(SummaryStatisticRecord::getPvalue));
 
         for (SummaryStatisticRecord curRecord : statisticsList) {
 
@@ -354,6 +353,7 @@ public class LocusUtils {
      * @param b range b
      * @return
      */
+    @Deprecated
     public static boolean partialGenomicRangeOverlap(OverlappableGenomicRange a, OverlappableGenomicRange b) {
         return partialGenomicRangeOverlapWindow(a, b, 0);
     }

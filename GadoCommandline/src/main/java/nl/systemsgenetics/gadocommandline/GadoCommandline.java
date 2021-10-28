@@ -113,6 +113,9 @@ public class GadoCommandline {
 				case PRIORITIZE:
 					HpoGenePrioritisation.prioritize(options);
 					break;
+				case EXPAND_PREDICTIONS:
+					SpikeInKnownAnnotations.spikeIn(options);
+					break;
 			}
 		} catch (IOException e) {
 			System.err.println("Problem running mode: " + options.getMode());

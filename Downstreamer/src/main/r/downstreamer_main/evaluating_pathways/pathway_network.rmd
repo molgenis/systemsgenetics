@@ -1,0 +1,128 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_pathways")} else {setwd("../evaluating_pathways/")}
+source("../downstreamer_functions.r")
+
+library(tidygraph)
+library(ggraph)
+
+pathway.db <- "GO_BP"
+datasets <- read.downstreamer.batch("../data/final_paper", USE.CACHE=F, potential_traits = c(pathway.db))
+
+# ColAnnotations
+pw.meta.data <- datasets[[1]][[1]]
+pw.meta.data <- pw.meta.data[,1:(which(colnames(pw.meta.data) == "Enrichment.Z.score") - 1), drop=F]
+
+# metadata
+meta.data           <- read.table("../data/downstreamer_summary_statistics.csv", sep="\t", stringsAsFactors = F, header=T)
+rownames(meta.data) <- gsub("_hg19", "", gsub("__", "_", gsub(".xlsx|.txt", "", gsub("_enrichtments", "", meta.data$EnrichmentExcel))))
+meta.data$class[is.na(meta.data$class)] <- "NA"
+
+class.cols <- c(`immune`="#ebac23",
+          `cancer`="#008a20",
+          `cardiovascular`="#b24502",
+          `blood composition`="#b80058",
+          `kidney function`="#00bbad",
+          `metabolic`="#d163e6",
+          `neurodegenerative`="#008cf9",
+          `psychological`="#5954d6",
+          `skeletal`="#ff9287",
+          `NA`="darkgrey")#"#609691")#"#bdbdbd")
+
+ol.mat <- make.zscore.matrix(datasets, trait=pathway.db)
+
+z.threshold <- -1*qnorm((0.05 / nrow(ol.mat)) / 2)
+
+ol.mat <- ol.mat[rowSums(ol.mat > z.threshold) >= 1,]
+ol.mat <- na.omit(ol.mat)
+cur.df <- ol.mat
+
+# Node df
+nodes           <- data.frame(id=unique(c(rownames(cur.df), colnames(cur.df))), stringsAsFactors = F)
+nodes$class     <- meta.data[nodes$id , "class"]
+nodes$abrv      <- meta.data[nodes$id , "abbreviation"]
+nodes[is.na(nodes$class), "class"] <- "NA"
+#nodes[is.na(nodes$abrv), "abrv"]   <- ""
+
+nodes$type      <- c(rep("pathway", nrow(cur.df)), rep("gwas", ncol(cur.df)))
+#nodes$name      <- meta.data[nodes$id , "Name"]
+#nodes$abrv      <- meta.data[nodes$id , "abbreviation"]
+
+# Construct edges at zscore threshold
+tmp.edges       <-  cur.df > z.threshold
+edges           <- as.data.frame(matrix(nrow=1, ncol=3))
+colnames(edges) <- c("from", "to", "effect")
+
+# Filter edges that only appear once
+#tmp.edges[rowSums(tmp.edges) < 2,] <- rep(F, ncol(tmp.edges))
+
+for (row in 1:nrow(tmp.edges)) {
+  for(col in 1:ncol(tmp.edges)) {
+    if (tmp.edges[row, col]) {
+      rowgene <- rownames(cur.df)[row]
+      colgene <- colnames(cur.df)[col]
+      edges   <- rbind(edges, c(
+        rowgene,
+        colgene,
+        cur.df[row, col]))
+    }
+  }
+}
+
+edges            <- na.omit(edges)
+
+# Match the nodes and the edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$id %in% nodes.with.edges,, drop=F]
+
+# Flip direction
+edges$effect     <- as.numeric(edges$effect)
+tmp              <- edges$from
+edges$from       <- edges$to
+edges$to         <- tmp
+
+# Annotate edges with usefull info for interpreation, not used for plotting
+edges$class      <- meta.data[edges$from, "class"]
+tmp.tab          <- table(edges$to)
+edges$pw.count   <- tmp.tab[edges$to]
+edges            <- cbind(edges, pw.meta.data[edges$to, ])
+
+edges$class.count <- sapply(edges$to, function(x){
+  return(length(unique(edges[edges$to == x, "class"])))
+
+})
+
+# Save nodes and edges
+write.table(nodes, quote=F, row.names=F, sep="\t", file=paste0("output/plots/pathway_networks/", pathway.db, "_bonfsig_network.nodes.tsv"))
+
+write.table(edges, quote=F, row.names=F, sep="\t", file=paste0("output/plots/pathway_networks/", pathway.db, "_bonfsig_network.edges.tsv"))
+```
+
+```{r}
+# Construct graph
+graph            <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+p1               <- ggraph(graph, layout="fr", weights=effect, niter=10000)
+
+# Plot
+p2 <- p1 +
+  geom_edge_link(alpha=0.1, color="grey", mapping=aes(width=effect)) +
+  geom_node_point(mapping=aes(shape=type, color=class), alpha=0.9, size=2, stroke=0) +
+  theme_graph(base_family = 'sans') +
+  scale_color_manual(values=class.cols) +
+  scale_fill_manual(values=class.cols) +
+  scale_shape_manual(values=c(`pathway`=16, `gwas`=18)) +
+  geom_node_label(aes(label=abrv, fill=class),
+                     colour="white",
+                     show.legend = F,
+                     label.size = 0,
+                     label.padding=0.125,
+                     label.r=0.1,
+                     repel=T,
+                  alpha=1,
+                  size=2)
+
+pdf(width=10, height=5, file=paste0("output/plots/pathway_networks/", pathway.db, "_bonfsig_network.pdf"), paper="a4")
+p2
+p2 + theme(legend.position = "none")
+dev.off()
+```
+

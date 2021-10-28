@@ -5,40 +5,29 @@
  */
 package nl.systemsgenetics.downstreamer.gene;
 
-import nl.systemsgenetics.downstreamer.summarystatistic.Locus;
-import nl.systemsgenetics.downstreamer.summarystatistic.LocusUtils;
-import nl.systemsgenetics.downstreamer.summarystatistic.OverlappableGenomicRange;
-import umcg.genetica.collections.intervaltree.Range;
+import htsjdk.samtools.util.Interval;
 
 import java.util.Objects;
 
 /**
  * @author patri
  */
-public class Gene implements OverlappableGenomicRange, Range {
+public class Gene extends Interval {
 
     private final String gene;
     private final String geneSymbol;
-    private final String chr;
-    private final int start;
-    private final int end;
     private final String band;
 
-
     public Gene(String gene, String chr, int start, int stop, String band) {
+        super(chr.intern(), start, stop);
         this.gene = gene;
-        this.chr = chr.intern();
-        this.start = start;
-        this.end = stop;
         this.band = band;
         this.geneSymbol = null;
     }
 
     public Gene(String gene, String chr, int start, int stop, String band, String geneSymbol) {
+        super(chr.intern(), start, stop);
         this.gene = gene;
-        this.chr = chr.intern();
-        this.start = start;
-        this.end = stop;
         this.band = band;
         this.geneSymbol = geneSymbol;
     }
@@ -51,40 +40,12 @@ public class Gene implements OverlappableGenomicRange, Range {
         return geneSymbol;
     }
 
-    public String getChr() {
-        return chr;
-    }
-
-    public int getStart() {
-        return start;
-    }
-
-    public int getEnd() {
-        return end;
-    }
-
-    @Override
-    public String getSequenceName() {
-        return getChr();
-    }
-
-    @Override
-    public boolean isOverlapping(OverlappableGenomicRange other) {
-        return LocusUtils.partialGenomicRangeOverlap(this, other);
-    }
-
-    @Override
-    public boolean isOverlapping(OverlappableGenomicRange other, int window) {
-        return LocusUtils.partialGenomicRangeOverlapWindow(this, other, window);
-    }
-
     public String getBand() {
         return band;
     }
 
     public String getChrAndArm() {
-
-        StringBuilder sb = new StringBuilder(chr);
+        StringBuilder sb = new StringBuilder(getContig());
         if (!this.band.equals("")) {
             sb.append('_');
             sb.append(band.charAt(0));
@@ -116,16 +77,16 @@ public class Gene implements OverlappableGenomicRange, Range {
             return false;
         }
         final Gene other = (Gene) obj;
-        if (this.start != other.start) {
+        if (getStart() != other.getStart()) {
             return false;
         }
-        if (this.end != other.end) {
+        if (getStart() != other.getEnd()) {
             return false;
         }
         if (!Objects.equals(this.gene, other.gene)) {
             return false;
         }
-        if (!Objects.equals(this.chr, other.chr)) {
+        if (!Objects.equals(getContig(), other.getContig())) {
             return false;
         }
         if (!Objects.equals(this.band, other.band)) {

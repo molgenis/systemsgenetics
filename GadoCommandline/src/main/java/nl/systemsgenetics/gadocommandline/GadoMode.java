@@ -11,5 +11,6 @@ package nl.systemsgenetics.gadocommandline;
  */
 public enum GadoMode {
 	PROCESS,
-	PRIORITIZE;
+	PRIORITIZE,
+	EXPAND_PREDICTIONS;
 }
