@@ -1,8 +1,10 @@
 package betaqtl;
 
+import org.apache.bcel.generic.LDC;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
+import java.sql.SQLOutput;
 
 public class Main {
 
@@ -10,7 +12,7 @@ public class Main {
 
         Options options = new Options();
         options.addOption(OptionBuilder.withLongOpt("mode")
-                .withDescription("Mode: [metaqtl|betaqtl|betaqtlsingleds|betaqtlplot|regressqtl|sortfile]")
+                .withDescription("Mode: [metaqtl|betaqtl|betaqtlsingleds|betaqtlplot|regressqtl|sortfile|determineld|concatconditional]")
                 .isRequired()
                 .hasArg()
                 .withArgName("STRING")
@@ -97,6 +99,11 @@ public class Main {
                 .hasArg()
                 .withArgName("FLOAT")
                 .create());
+        options.addOption(OptionBuilder.withLongOpt("snpannotation")
+                .withDescription("SNP annotation file, tab separated: SNPID chr pos")
+                .hasArg()
+                .withArgName("FILE")
+                .create());
         options.addOption(OptionBuilder.withLongOpt("minobservations")
                 .withDescription("Require at least this many observations per dataset (i.e. non-NaN genotypes/phenotypes) [default: 10]")
                 .hasArg()
@@ -107,6 +114,12 @@ public class Main {
                 .create());
         options.addOption(OptionBuilder.withLongOpt("outputall")
                 .withDescription("Output all associations, not just top association per gene")
+                .create());
+        options.addOption(OptionBuilder.withLongOpt("outputallpermutations")
+                .withDescription("Output all permuted associations, not just top association per gene")
+                .create());
+        options.addOption(OptionBuilder.withLongOpt("snplog")
+                .withDescription("Output SNP summary stats per snp/gene pair.")
                 .create());
         options.addOption(OptionBuilder.withLongOpt("nrdatasets")
                 .withDescription("Minimum number of datasets required in meta-analysis [default: 2]")
@@ -119,6 +132,15 @@ public class Main {
 
         options.addOption(OptionBuilder.withLongOpt("input")
                 .withDescription("Input file")
+                .hasArg()
+                .create());
+        options.addOption(OptionBuilder.withLongOpt("input2")
+                .withDescription("Input file 2")
+                .hasArg()
+                .create());
+        options.addOption(OptionBuilder.withLongOpt("nriters")
+                .withDescription("Nr iters to concatenate using concatconditional")
+                .hasArg()
                 .create());
         options.addOption(OptionBuilder.withLongOpt("sortbyz")
                 .withDescription("Sort by Z-score")
@@ -130,12 +152,10 @@ public class Main {
 
             String mode = cmd.getOptionValue("mode");
 
-
             String vcf = null;
             if (cmd.hasOption("vcf")) {
                 vcf = cmd.getOptionValue("vcf");
             }
-
 
             int chrom = -1;
             if (cmd.hasOption("chr")) {
@@ -146,7 +166,6 @@ public class Main {
             if (cmd.hasOption("gte")) {
                 linkfile = cmd.getOptionValue("gte");
             }
-
 
             String genelimit = null;
             if (cmd.hasOption("genelimit")) {
@@ -182,23 +201,63 @@ public class Main {
 
             System.out.println(mode);
             switch (mode) {
+                case "concatconditional":
+                    Integer nriters = null;
+                    if (cmd.hasOption("nriters")) {
+                        nriters = Integer.parseInt(cmd.getOptionValue("nriters"));
+                    }
+                    if (input == null || vcf == null || linkfile == null || nriters == null || output == null) {
+                        System.out.println("Usage: --input qtlfilestr --vcf vcffile.vcf.gz --out output --gte samplelinkfile.txt --nriters nriters ");
+                        System.out.println("Input: " + input);
+                        System.out.println("VCF: " + vcf);
+                        System.out.println("Output: " + output);
+                        System.out.println("SampleLink: " + linkfile);
+                        System.out.println("Nr Iters: " + nriters);
+                    } else {
+                        ConcatenateConditionalResults c = new ConcatenateConditionalResults();
+                        c.run(input, vcf, linkfile, nriters, output);
+                    }
+                    break;
+                case "determineld":
+                    System.out.println("Determine LD between SNPs in two QTL files");
+                    String input2 = null;
+                    if (cmd.hasOption("input2")) {
+                        input2 = cmd.getOptionValue("input2");
+                    }
+                    if (input == null || input2 == null || output == null || vcf == null) {
+                        System.out.println("Usage: --input qtlfile1 --input2 qtlfile2 --vcf vcffile.vcf.gz --out output [--gte samplelinkfile.txt]");
+                        System.out.println("Input: " + input);
+                        System.out.println("Input2 " + input2);
+                        System.out.println("Output: " + output);
+                        System.out.println("VCF: " + vcf);
+                        System.out.println("GTE: " + linkfile);
+                    } else {
+                        LDCalculator calc = new LDCalculator();
+                        calc.run(input, input2, vcf, linkfile, output);
+                    }
+                    break;
                 case "sortfile":
                     System.out.println("QTL file sorter sorts by position by default; use --sortz to sort by Z-score");
                     QTLFileSorter sorter = new QTLFileSorter();
                     if (input == null || output == null) {
-                        System.out.println("Usage: --input infile.txt[.gz] --out outfile.txt[.gz] [--sortbyz]");
+                        System.out.println("Usage: --input infile.txt[.gz] --out outfile.txt[.gz] [--sortbyz|--sortbysnppos|--sortbygenepos]");
+                        System.out.println("Input: " + input);
+                        System.out.println("Output: " + output);
+                        System.out.println("Sort by Z: " + cmd.hasOption("sortbyz"));
                     } else {
                         if (cmd.hasOption("sortbyz")) {
                             sorter.run(input, output, QTLFileSorter.SORTBY.Z);
+                        } else if (cmd.hasOption("sortbysnppos")) {
+                            sorter.run(input, output, QTLFileSorter.SORTBY.SNPPOS);
                         } else {
-                            sorter.run(input, output, QTLFileSorter.SORTBY.POS);
+                            sorter.run(input, output, QTLFileSorter.SORTBY.GENEPOS);
                         }
                     }
                     break;
                 case "regressqtl":
                     if (vcf == null || linkfile == null || geneannotation == null || genexpression == null || output == null || snpgenelimit == null) {
                         System.err.println("Usage: -m regressqtl --vcf tabix.vcf.gz, --chr [1-22], --gte linkfile.txt, --annotation annotation.txt.gz, --exp expfile.txt.gz and --out /outdir/ --snpgenelimit snpgenecombos.txt.gz");
-                        System.err.println("Optional: --replacemissinggenotypes, --norank, --minobservations 10 --maf 0.01 --cr 0.95 --hwep 0.001 --ciswindow 1E6 --nrdatasets 2 --genelimit");
+                        System.err.println("Optional: --snpannotation snpannotation.txt.gz --replacemissinggenotypes, --norank, --minobservations 10 --maf 0.01 --cr 0.95 --hwep 0.001 --ciswindow 1E6 --nrdatasets 2 --genelimit");
                         System.out.println("VCF: " + vcf);
                         System.out.println("Linkfile: " + linkfile);
                         System.out.println("Annotation: " + geneannotation);
@@ -242,6 +301,9 @@ public class Main {
                         if (cmd.hasOption("nrdatasets")) {
                             int t = Integer.parseInt(cmd.getOptionValue("nrdatasets"));
                             qtlr.setMinNumberOfDatasets(t);
+                        }
+                        if (cmd.hasOption("snpannotation")) {
+                            qtlr.loadSNPAnnotation(cmd.getOptionValue("snpannotation"));
                         }
                         qtlr.run();
                     }
@@ -297,7 +359,7 @@ public class Main {
                     if (vcf == null || chrom == -1 || linkfile == null || geneannotation == null || genexpression == null || output == null) {
                         System.err.println("Usage: --vcf tabix.vcf.gz, --chr [1-22], --gte linkfile.txt, --annotation annotation.txt.gz, --exp expfile.txt.gz and --out /outdir/ ");
                         System.err.println("Optional: --replacemissinggenotypes, --norank, --minobservations 10 --maf 0.01 --cr 0.95 --hwep 0.001 --ciswindow 1E6 --nrdatasets 2");
-                        System.err.println("Optional: --seed 123456789 --outputall --perm 1000 ");
+                        System.err.println("Optional: --seed 123456789 --outputall --perm 1000 --snplog --outputallpermutations");
 
                         System.out.println("You've set the following:");
                         System.out.println("VCF: " + vcf);
@@ -308,7 +370,9 @@ public class Main {
                         System.out.println("Output: " + output);
                     } else {
                         BetaQTL2ParallelCis bQTL = new BetaQTL2ParallelCis(vcf, chrom, linkfile, snplimit, genelimit, snpgenelimit, genexpression, geneannotation, output);
-
+                        if (cmd.hasOption("snpannotation")) {
+                            bQTL.loadSNPAnnotation(cmd.getOptionValue("snpannotation"));
+                        }
                         if (cmd.hasOption("replacemissinggenotypes")) {
                             bQTL.setReplaceMissingGenotypes(true);
                         }
@@ -318,6 +382,12 @@ public class Main {
                         // bQTL.setMinObservations();
                         if (cmd.hasOption("outputall")) {
                             bQTL.setOutputAll(true);
+                        }
+                        if (cmd.hasOption("outputallpermutations")) {
+                            bQTL.setOutputAllPermutations(true);
+                        }
+                        if (cmd.hasOption("snplog")) {
+                            bQTL.setOutputSNPLog(true);
                         }
                         if (cmd.hasOption("minobservations")) {
                             int t = Integer.parseInt(cmd.getOptionValue("minobservations"));

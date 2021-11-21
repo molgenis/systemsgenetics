@@ -128,8 +128,8 @@ public class BetaQTLPlot extends QTLAnalysis {
                                 if (qcobj.passqc) {
                                     if (replaceMissingGenotypes) {
                                         // only replace missing genotypes on variants that pass the qc thresholds
-                                        double meanDosage = JSci.maths.ArrayMath.mean(dosagesPerDataset[d]);
-                                        double meanGenotype = Math.round(JSci.maths.ArrayMath.mean(genotypesPerDataset[d]));
+                                        double meanDosage = Util.meanGenotype(dosagesPerDataset[d]);
+                                        double meanGenotype = Util.meanGenotype(genotypesPerDataset[d]);
                                         for (int i = 0; i < dosagesPerDataset[d].length; i++) {
                                             if (genotypesPerDataset[d][i] == -1) {
                                                 genotypesPerDataset[d][i] = meanGenotype;

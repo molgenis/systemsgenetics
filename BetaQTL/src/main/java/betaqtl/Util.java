@@ -38,7 +38,18 @@ public class Util {
         return output;
     }
 
-
+    public static double meanGenotype(double[] dosagesForDataset) {
+        double sum = 0;
+        int ctr = 0;
+        for (int v = 0; v < dosagesForDataset.length; v++) {
+            double q = dosagesForDataset[v];
+            if (q != -1 && !Double.isNaN(q)) {
+                sum += dosagesForDataset[v];
+                ctr++;
+            }
+        }
+        return sum / ctr;
+    }
 
 
 }

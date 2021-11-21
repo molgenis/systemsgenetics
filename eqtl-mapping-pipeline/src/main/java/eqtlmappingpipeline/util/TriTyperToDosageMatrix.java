@@ -441,7 +441,7 @@ public class TriTyperToDosageMatrix {
                 m_gg[i].load(datasetsettings.get(i).genotypeLocation, datasetsettings.get(i).snpmapFileLocation, datasetsettings.get(i).snpFileLocation);
 
                 String gte = datasetsettings.get(i).genotypeToExpressionCoupling;
-                if (gte != null) {
+                if (gte != null && Gpio.exists(gte)) {
                     TextFile tf = null;
 
                     tf = new TextFile(gte, TextFile.R);
@@ -629,7 +629,7 @@ public class TriTyperToDosageMatrix {
                 snplogheader += "\t" + datasetsettings.get(d).name + "-CR";
                 snplogheader += "\t" + datasetsettings.get(d).name + "-HWEP";
             }
-            snplog.write(snplogheader);
+            snplog.writeln(snplogheader);
 
             for (int snpctr = 0; snpctr < snpsToQuery.size(); snpctr++) {
                 String snp = snpsToQuery.get(snpctr);
