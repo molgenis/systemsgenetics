@@ -1,0 +1,15 @@
+```{r}
+setwd("coregulation_clustering")
+source("../downstreamer_functions.r")
+
+
+data <- read.downstreamer.batch("../data/final_paper/", potential_traits = c("GenePrioritization"))
+
+bonf.sig.genes <- unique(unlist(sapply(data, function(x){
+  x <- x$GenePrioritization
+  return( rownames(x)[x$Bonferroni.significant & x$Enrichment.Z.score > 0])
+})))
+
+write.table(bonf.sig.genes, file="output/bonf_sig_pos_downstreamer_coregulated_genes_44_traits.txt", quote=F, row.names=F, col.names=F)
+```
+

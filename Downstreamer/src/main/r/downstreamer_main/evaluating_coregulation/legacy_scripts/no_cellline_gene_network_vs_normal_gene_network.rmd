@@ -1,0 +1,45 @@
+```{r}
+setwd("evaluating_coregulation")
+source("../downstreamer_functions.r")
+
+
+datasets <- read.downstreamer.batch("data/no_celline_gene_network_test_results/", potential_traits = c("GenePrioritization", "GenePrioritization200"), USE.CACHE = F)
+
+
+```
+
+```{r}
+make.plot <- function(trait, main="") {
+  curdata.x <- curset[[paste0(trait)]]
+  curdata.y <- curset[[paste0(trait, "200")]]
+  ol        <- intersect(rownames(curdata.x), rownames(curdata.y))
+  curdata.x <- curdata.x[ol,]
+  curdata.y <- curdata.y[ol,]
+  
+  p <- xy.plot.pvalue.colored(curdata.x$Enrichment.Z.score,
+                              curdata.x$Enrichment.P.value,
+                              curdata.y$Enrichment.Z.score,
+                              curdata.y$Enrichment.P.value,
+                              xlab=paste0(trait),
+                              ylab=paste0(trait, "200"),
+                              pval.col="all",
+                              main=main
+                              )
+  
+  return(p)
+}
+
+
+names(datasets)
+curset <- datasets[["coeliac_disease_2011_22057235_1"]]
+p1 <- make.plot("GenePrioritization", main="CeD 2011")
+
+curset <- datasets[["inflammatory_bowel_disease_2017_29906448_1"]]
+p2 <- make.plot("GenePrioritization", main="IBD 2017")
+
+curset <- datasets[["height_2018_30124842_1"]]
+p3 <- make.plot("GenePrioritization", main="Height 2018")
+
+grid.arrange(grobs=list(p1, p2, p3), ncol=3)
+```
+

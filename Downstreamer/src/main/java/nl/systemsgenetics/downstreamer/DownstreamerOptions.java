@@ -6,6 +6,7 @@
 package nl.systemsgenetics.downstreamer;
 
 import edu.emory.mathcs.utils.ConcurrencyUtils;
+import htsjdk.tribble.SimpleFeature;
 
 import java.io.File;
 import java.util.*;
@@ -33,6 +34,7 @@ public class DownstreamerOptions {
 	private static final Options OPTIONS;
 	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();//Might be changed
 	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptions.class);
+	private static final SimpleFeature HLA = new SimpleFeature("6", 20000000, 40000000);
 
 	private final DownstreamerMode mode;
 
@@ -43,6 +45,7 @@ public class DownstreamerOptions {
 	private final File run1BasePath;
 	private final File geneInfoFile;
 	private final File gwasZscoreMatrixPath;
+	private final File covariates;
 	private final int numberOfPermutations;
 	private final long numberOfPermutationsRescue;
 	private final int windowExtend;
@@ -51,6 +54,7 @@ public class DownstreamerOptions {
 	private final boolean debugMode;
 	private final File debugFolder;
 	private final File intermediateFolder;
+	private final File leadSnpsFolder;
 	private final boolean pvalueToZscore;
 	private final List<PathwayDatabase> pathwayDatabases;
 	private List<PathwayDatabase> pathwayDatabases2 = null;
@@ -68,7 +72,7 @@ public class DownstreamerOptions {
 	private final int geneCorrelationWindow;
 	private final boolean excludeHla;
 	private boolean corMatrixZscores = false;
-	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN or CONVERT_EXP
+	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN or CONVERT_EXP or correlate_genes
 	private final File variantFilterFile;
 	private boolean saveOuputAsExcelFiles;
 	private final File variantGeneLinkingFile;
@@ -83,6 +87,7 @@ public class DownstreamerOptions {
 	private List<String> pathwayDatabasesToAnnotateWithGwas;
 	private Map<String, File> alternativeTopHitFiles;
 	private final boolean trimGeneNames; //for convert expression data mode
+	private final int cisWindowExtend;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -189,7 +194,7 @@ public class DownstreamerOptions {
 
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("Number of bases to add left and right of gene window, use -1 to not have any variants in window");
+		OptionBuilder.withDescription("Number of bases to add left and right of gene window for step 1, use -1 to not have any variants in window");
 		OptionBuilder.withLongOpt("window");
 		OPTIONS.addOption(OptionBuilder.create("w"));
 
@@ -211,6 +216,12 @@ public class DownstreamerOptions {
 		OptionBuilder.withLongOpt("genes");
 		OPTIONS.addOption(OptionBuilder.create("ge"));
 
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("File with covariates used to correct the gene p-values. Works in conjunction with -rgl. Residuals of this regression are used as input for the GLS");
+		OptionBuilder.withLongOpt("covariates");
+		OPTIONS.addOption(OptionBuilder.create("cov"));
+
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file and will save many intermediate results to files. Not recommended for large analysis.");
 		OptionBuilder.withLongOpt("debug");
@@ -224,14 +235,14 @@ public class DownstreamerOptions {
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
-		OptionBuilder.withDescription("Pathway databases, binary matrix with z-scores for predicted gene pathway associations");
+		OptionBuilder.withDescription("Pathway databases, binary matrix with either z-scores for predicted gene pathway associations or 0 / 1 for gene assignments");
 		OptionBuilder.withLongOpt("pathwayDatabase");
 		OPTIONS.addOption(OptionBuilder.create("pd"));
 
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
-		OptionBuilder.withDescription("Pathway databases, binary matrix with 0 or 1 for gene pathway assignments. Only used by calculate AUC mode");
+		OptionBuilder.withDescription("Pathway databases, binary matrix with 0 or 1 for gene pathway assignments. Only used by PRIO_GENE_ENRICH mode");
 		OptionBuilder.withLongOpt("pathwayDatabase2");
 		OPTIONS.addOption(OptionBuilder.create("pd2"));
 
@@ -240,7 +251,7 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("Optional file with columns to select during conversion");
 		OptionBuilder.withLongOpt("cols");
 		OPTIONS.addOption(OptionBuilder.create("co"));
-		
+
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Optional file with rows to select during conversion");
@@ -355,8 +366,7 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("For mode CONVERT_EXP trim train .## from the gene names");
 		OptionBuilder.withLongOpt("trimGeneNames");
 		OPTIONS.addOption(OptionBuilder.create("tgn"));
-		
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Only relevant for MODE: R_2_Z_SCORE to specify the number of samples used to create the correlation matrix");
@@ -376,7 +386,8 @@ public class DownstreamerOptions {
 		OptionBuilder.withArgName("String");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Name of Pathway databases that you want to annotate with GWAS info. Rownames MUST be enembl Id's");
-		OPTIONS.addOption(OptionBuilder.create("annotDb"));
+		OptionBuilder.withLongOpt("annotDb");
+		OPTIONS.addOption(OptionBuilder.create("adb"));
 
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
@@ -384,6 +395,12 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("Alternative file with top GWAS hits id\tchr\tpos\tp-value. name must be name as in oter output files for trait");
 		OptionBuilder.withLongOpt("alternaitveTopHits");
 		OPTIONS.addOption(OptionBuilder.create("ath"));
+
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Cis window is defined as [startOfGene-cwe, endOfGene+cwe]. Defaults to: 250000");
+		OptionBuilder.withLongOpt("cisWindowExtent");
+		OPTIONS.addOption(OptionBuilder.create("cwe"));
 
 	}
 
@@ -402,14 +419,13 @@ public class DownstreamerOptions {
 			}
 		}
 
-		//TODO: implement option
-		assignPathwayGenesToCisWindow = true;
-
+		assignPathwayGenesToCisWindow = commandLine.hasOption("annotDb");
 		outputBasePath = new File(commandLine.getOptionValue('o'));
 		logFile = new File(outputBasePath + ".log");
 		debugMode = commandLine.hasOption('d');
 		debugFolder = new File(outputBasePath + "_debugFiles");
 		intermediateFolder = new File(outputBasePath + "_intermediates");
+		leadSnpsFolder = new File(outputBasePath + "_leadSnps");
 		ignoreGeneCorrelations = commandLine.hasOption("igc");
 		correctForLambdaInflation = commandLine.hasOption("cl");
 		forceNormalGenePvalues = commandLine.hasOption("fngp");
@@ -422,6 +438,12 @@ public class DownstreamerOptions {
 		regressGeneLengths = commandLine.hasOption("rgl");
 		run1BasePath = commandLine.hasOption("soo") ? new File(commandLine.getOptionValue("soo")) : outputBasePath;
 		trimGeneNames = commandLine.hasOption("tgn");
+
+		if (commandLine.hasOption("cov")) {
+			covariates = new File(commandLine.getOptionValue("cov"));
+		} else {
+			covariates = null;
+		}
 
 		if (quantileNormalizePermutations && forceNormalGenePvalues) {
 			throw new ParseException("Can't combine -qn with -fngp");
@@ -442,7 +464,13 @@ public class DownstreamerOptions {
 			throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
 		}
 
-		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.CREATE_EXCEL || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP) {
+		try {
+			cisWindowExtend = Integer.parseInt(commandLine.getOptionValue("cwe", "250000"));
+		} catch (NumberFormatException e) {
+			throw new ParseException("Could not parse -cwe as integerer: " + commandLine.getOptionValue("cwe"));
+		}
+
+		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.SUBSET_MATRIX || mode == DownstreamerMode.GET_MARKER_GENES) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -453,7 +481,7 @@ public class DownstreamerOptions {
 			gwasZscoreMatrixPath = null;
 		}
 
-		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.CONVERT_EXP) {
+		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.SUBSET_MATRIX) {
 			pvalueToZscore = commandLine.hasOption("p2z");
 			if (commandLine.hasOption("co")) {
 				conversionColumnIncludeFilter = new File(commandLine.getOptionValue("co"));
@@ -569,6 +597,9 @@ public class DownstreamerOptions {
 				} else {
 					geneInfoFile = null;
 				}
+				if (commandLine.hasOption("cte")) {
+					columnsToExtract = commandLine.getOptionValues("cte");
+				}
 				corMatrixZscores = commandLine.hasOption("cz");
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
@@ -577,6 +608,42 @@ public class DownstreamerOptions {
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+				break;
+			case GET_MARKER_GENES:
+				if (commandLine.hasOption("ge")) {
+					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				} else {
+					throw new IllegalArgumentException("--genes not specified");
+				}
+
+				columnsToExtract=null;
+				corMatrixZscores = false;
+				pathwayDatabases = null;
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
+				genePruningR = 0;
+				geneCorrelationWindow = 0;
+				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+				if (!commandLine.hasOption("x")) {
+					throw new IllegalArgumentException("-x (grouping file) not specified");
+				}
+
+				break;
+			case EXPAND_PATHWAYS:
+				geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				pathwayDatabases = parsePd(commandLine, "pd", "pathwayDatabase");
+				pathwayDatabases2 = parsePd(commandLine, "pd2", "pathwayDatabase2");
+				if (pathwayDatabases2.isEmpty()) {
+					throw new ParseException("--pathwayDatabase2 not specified");
+				}
+				permutationGeneCorrelations = 0;
+				permutationPathwayEnrichment = 0;
+				permutationFDR = 0;
+				genePruningR = 0;
+				geneCorrelationWindow = 0;
+				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+
 				break;
 			case PRIO_GENE_ENRICH:
 				if (commandLine.hasOption("ge")) {
@@ -595,6 +662,37 @@ public class DownstreamerOptions {
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+
+				if (commandLine.hasOption("ath")) {
+
+					String[] athValues = commandLine.getOptionValues("ath");
+
+					if (athValues.length % 2 != 0) {
+						throw new ParseException("Error parsing --alternaitveTopHits. Must be in name=path format");
+					}
+
+					alternativeTopHitFiles = new HashMap<>(athValues.length / 2);
+
+					for (int i = 0; i < athValues.length; i += 2) {
+
+						if (alternativeTopHitFiles.containsKey(athValues[i])) {
+							throw new ParseException("Error parsing --alternaitveTopHits. Duplicate names found");
+						}
+
+						File hitsFile = new File(athValues[i + 1]);
+
+						if (!hitsFile.canRead()) {
+							throw new ParseException("Error parsing --alternaitveTopHits. Can't find: " + hitsFile.getAbsolutePath());
+						}
+
+						alternativeTopHitFiles.put(athValues[i], hitsFile);
+
+					}
+
+				} else {
+					alternativeTopHitFiles = Collections.EMPTY_MAP;
+				}
+
 				break;
 			case GET_NORMALIZED_GENEP:
 				if (commandLine.hasOption("ge")) {
@@ -731,9 +829,16 @@ public class DownstreamerOptions {
 					}
 
 					if (numberOfPermutations > GenePvalueCalculator.MAX_ROUND_1_RESCUE) {
-						throw new ParseException("Error parsing --permutations max is: " + GenePvalueCalculator.MAX_ROUND_1_RESCUE);
+						throw new ParseException("Error parsing --permutations max is: " + LARGE_INT_FORMAT.format(GenePvalueCalculator.MAX_ROUND_1_RESCUE));
 					}
-
+					
+					if (numberOfPermutations < 100000) {
+						throw new ParseException("Error parsing --permutations min is: 100,000");
+					}
+					
+					if (numberOfPermutations % 10000 != 0){
+						throw new ParseException("Error parsing --permutations must be divisible by 10,000");
+					}
 				}
 				if (!commandLine.hasOption("pr")) {
 					numberOfPermutationsRescue = numberOfPermutations;
@@ -946,6 +1051,46 @@ public class DownstreamerOptions {
 				mafFilter = 0;
 
 				break;
+			case PRIO_GENE_ENRICH:
+				if (!commandLine.hasOption('r')) {
+					throw new ParseException("--referenceGenotypes not specified");
+				} else {
+
+					genotypeBasePath = commandLine.getOptionValues('r');
+
+					if (commandLine.hasOption("rs")) {
+						genotypeSamplesFile = new File(commandLine.getOptionValue("rs"));
+					} else {
+						genotypeSamplesFile = null;
+					}
+
+					try {
+						if (commandLine.hasOption('R')) {
+							genotypeType = RandomAccessGenotypeDataReaderFormats.valueOfSmart(commandLine.getOptionValue('R').toUpperCase());
+						} else {
+							if (genotypeBasePath[0].endsWith(".vcf")) {
+								throw new ParseException("Only vcf.gz is supported. Please see manual on how to do create a vcf.gz file.");
+							}
+							try {
+								genotypeType = RandomAccessGenotypeDataReaderFormats.matchFormatToPath(genotypeBasePath);
+							} catch (GenotypeDataException e) {
+								throw new ParseException("Unable to determine reference type based on specified path. Please specify --refType");
+							}
+						}
+
+					} catch (IllegalArgumentException e) {
+						throw new ParseException("Error parsing --refType \"" + commandLine.getOptionValue('R') + "\" is not a valid reference data format");
+					}
+
+				}
+				maxRBetweenVariants = 0d;
+				numberOfPermutations = 0;
+				numberOfPermutationsRescue = 0;
+				windowExtend = 0;
+				variantFilterFile = null;
+				variantGeneLinkingFile = null;
+				mafFilter = 0;
+				break;
 			default:
 				genotypeBasePath = null;
 				genotypeType = null;
@@ -1036,8 +1181,9 @@ public class DownstreamerOptions {
 
 		switch (mode) {
 			case CREATE_EXCEL:
-				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
+				LOGGER.info(" * Cis window extend: " + cisWindowExtend);
+				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
 				break;
 			case CONVERT_EQTL:
 				LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -1056,10 +1202,19 @@ public class DownstreamerOptions {
 				if (conversionColumnIncludeFilter != null) {
 					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
 				}
-				if (conversionRowIncludeFilter != null){
+				if (conversionRowIncludeFilter != null) {
 					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
 				}
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
+				break;
+			case SUBSET_MATRIX:
+				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				if (conversionColumnIncludeFilter != null) {
+					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
+				}
+				if (conversionRowIncludeFilter != null) {
+					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
+				}
 				break;
 			case CONVERT_TXT_MERGE:
 				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());
@@ -1082,8 +1237,19 @@ public class DownstreamerOptions {
 				break;
 			case PRIO_GENE_ENRICH:
 				//LOGGER.info(" * GWAS core gene prediction matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
+				LOGGER.info(" * Cis window extend: " + cisWindowExtend);
+				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
 				logPathwayDatabases();
 				LOGGER.info(" * The following pathway annotation databases have been specified to base AUC on:");
+				for (PathwayDatabase database2 : pathwayDatabases2) {
+					LOGGER.info("    - " + database2.getName() + " at: " + database2.getLocation());
+				}
+				break;
+			case EXPAND_PATHWAYS:
+				LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
+				logPathwayDatabases();
+				LOGGER.info(" * The following prediction Z-score matrices are used to expand pathways:");
 				for (PathwayDatabase database2 : pathwayDatabases2) {
 					LOGGER.info("    - " + database2.getName() + " at: " + database2.getLocation());
 				}
@@ -1099,10 +1265,10 @@ public class DownstreamerOptions {
 				if (conversionColumnIncludeFilter != null) {
 					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
 				}
-				if (conversionRowIncludeFilter != null){
+				if (conversionRowIncludeFilter != null) {
 					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
 				}
-				if(trimGeneNames){
+				if (trimGeneNames) {
 					LOGGER.info("Trimming gene names to remove .## from the name");
 				}
 				break;
@@ -1115,6 +1281,9 @@ public class DownstreamerOptions {
 				LOGGER.info(" * Convert r to Z-score: " + (corMatrixZscores ? "on" : "off"));
 				if (geneInfoFile != null) {
 					LOGGER.info(" * Genes to include file: " + geneInfoFile.getAbsolutePath());
+				}
+				if (columnsToExtract != null) {
+					LOGGER.info(" * Columns to use for correlation: " + String.join(" ", columnsToExtract));
 				}
 				break;
 			case SPECIAL:
@@ -1168,6 +1337,7 @@ public class DownstreamerOptions {
 				break;
 			case STEP2:
 				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
+				LOGGER.info(" * Cis window extend: " + cisWindowExtend);
 				logSharedRun1Run2();
 
 				break;
@@ -1387,10 +1557,6 @@ public class DownstreamerOptions {
 		return permutationFDR;
 	}
 
-	public File getGwasTopHitsFile() {
-		return new File(run1BasePath + "_independentTopVariants.txt");
-	}
-
 	public boolean isAssignPathwayGenesToCisWindow() {
 		return assignPathwayGenesToCisWindow;
 	}
@@ -1411,4 +1577,19 @@ public class DownstreamerOptions {
 		return trimGeneNames;
 	}
 
+	public int getCisWindowExtend() {
+		return cisWindowExtend;
+	}
+
+	public File getLeadSnpsFolder() {
+		return leadSnpsFolder;
+	}
+
+	public SimpleFeature getHla() {
+		return HLA;
+	}
+
+	public File getCovariates() {
+		return covariates;
+	}
 }

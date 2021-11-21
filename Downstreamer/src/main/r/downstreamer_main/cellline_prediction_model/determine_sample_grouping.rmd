@@ -1,0 +1,16 @@
+```{r}
+setwd("../coregulation_clustering/")
+
+sample.annot   <- fread("../cellline_prediction_model/data/sample_annotations_updated_by_patrick.csv", stringsAsFactors = F, sep="\t", header=T, data.table=F)
+
+tab <- table(sample.annot$PlotClass)
+tab <- tab[tab > 100]
+
+sample.annot <- sample.annot[sample.annot$PlotClass %in% names(tab),]
+sample.annot <- sample.annot[sample.annot$PlotClass != "",]
+
+
+write.table(sample.annot[,c(6, 1)], file="output/sample_grouping_for_maker_gene_ttest.tsv", sep="\t", row.names=F, col.names = F, quote=F)
+
+```
+

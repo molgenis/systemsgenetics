@@ -1,11 +1,7 @@
 package nl.systemsgenetics.downstreamer;
 
-import nl.systemsgenetics.downstreamer.runners.TestCoregulationPerformance;
-import nl.systemsgenetics.downstreamer.runners.NetworkProperties;
-import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
-import nl.systemsgenetics.downstreamer.runners.DownstreamerMainAnalysis;
-import nl.systemsgenetics.downstreamer.runners.PruneToIndependentTopHits;
-import nl.systemsgenetics.downstreamer.runners.DownstreamerConverters;
+import nl.systemsgenetics.downstreamer.runners.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -16,6 +12,7 @@ import java.util.*;
 import nl.systemsgenetics.downstreamer.development.CorrelateExpressionToPredictions;
 import nl.systemsgenetics.downstreamer.development.First1000qtl;
 import nl.systemsgenetics.downstreamer.io.ExcelWriter;
+import nl.systemsgenetics.downstreamer.pathway.PredictedPathwayAnnotations;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -130,6 +127,9 @@ public class Downstreamer {
 				case CONVERT_TXT:
 					DownstreamerConverters.convertTxtToBin(options);
 					break;
+				case SUBSET_MATRIX:
+					DownstreamerConverters.subsetMatrix(options);
+					break;
 				case CONVERT_BIN:
 					DownstreamerConverters.convertBinToTxt(options);
 					break;
@@ -217,7 +217,8 @@ public class Downstreamer {
 					DownstreamerUtilities.doPcaOnBinMatrix(options);
 					break;
 				case PRIO_GENE_ENRICH:
-					TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
+					//TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
+					PathwayDatabaseEnrichments.testPredictionPerformance(options);
 					break;
 				case INVESTIGATE_NETWORK:
 					NetworkProperties.investigateNetwork(options);
@@ -227,6 +228,12 @@ public class Downstreamer {
 					break;
 				case REMOVE_CIS_COEXP:
 					DownstreamerUtilities.removeLocalGeneCorrelations(options);
+					break;
+				case EXPAND_PATHWAYS:
+					PredictedPathwayAnnotations.expandAnnotations(options);
+					break;
+				case GET_MARKER_GENES:
+					DownstreamerUtilities.generateMarkerGenes(options);
 					break;
 				case SPECIAL:
 					CorrelateExpressionToPredictions.run(options);
