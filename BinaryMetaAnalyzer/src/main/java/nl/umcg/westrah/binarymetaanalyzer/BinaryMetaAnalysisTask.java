@@ -237,30 +237,37 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 
 						double metaZ = ZScores.getWeightedZ(finalZScores[probe], sampleSizes);
 						int metaZNrSamples = 0;
+
+						int metaAnalysisNrDatasets = 0;
+
 						for (int s = 0; s < sampleSizes.length; s++) {
 							if (!Float.isNaN(finalZScores[probe][s])) {
 								metaZNrSamples += sampleSizes[s];
+								metaAnalysisNrDatasets++;
 							}
 						}
-						double p = Descriptives.convertZscoreToPvalue(metaZ);
+						if (metaAnalysisNrDatasets >= settings.minimalNumberOfDatasets) {
+							double p = Descriptives.convertZscoreToPvalue(metaZ);
 
-						if (settings.isMakezscoretable()) {
-							// get the correct index for trait t
-							int metaid = t.getCurrentMetaId();
-							zscoretableoutput[metaid] = metaZ;
-							zscorenrsamplestableoutput[metaid] = metaZNrSamples;
-						}
-
-						if (!Double.isNaN(p) && !Double.isNaN(metaZ)) {
-							// create output object
-							QTL q = null;
-							if (fulloutput) {
-								q = new QTL(p, t, snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
-							} else {
-								q = new QTL(p, t, snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), null, null); // sort buffer if needed.
+							if (settings.isMakezscoretable()) {
+								// get the correct index for trait t
+								int metaid = t.getCurrentMetaId();
+								zscoretableoutput[metaid] = metaZ;
+								zscorenrsamplestableoutput[metaid] = metaZNrSamples;
 							}
-							qtlOutput.add(q);
+
+							if (!Double.isNaN(p) && !Double.isNaN(metaZ)) {
+								// create output object
+								QTL q = null;
+								if (fulloutput) {
+									q = new QTL(p, t, snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), finalZScores[probe], sampleSizes); // sort buffer if needed.
+								} else {
+									q = new QTL(p, t, snp, BaseAnnot.toByte(alleleAssessed), metaZ, BaseAnnot.toByteArray(alleles), null, null); // sort buffer if needed.
+								}
+								qtlOutput.add(q);
+							}
 						}
+
 					}
 				}
 			} else {
@@ -440,7 +447,10 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 
 						int metaAnalysisZNrSamples = 0;
 						int metaAnalysisNrDatasets = 0;
+
 						for (int s = 0; s < sampleSizes.length; s++) {
+
+
 							if (!Float.isNaN(datasetZScores[s])) {
 								metaAnalysisZNrSamples += sampleSizes[s];
 								metaAnalysisNrDatasets++;
@@ -466,6 +476,9 @@ public class BinaryMetaAnalysisTask implements Callable<Triple<ArrayList<QTL>, S
 									q = new QTL(metaAnalysisP, t, snp, BaseAnnot.toByte(alleleAssessed), metaAnalysisZ, BaseAnnot.toByteArray(alleles), datasetZScores, sampleSizes); // sort buffer if needed.
 								}
 
+								if (debug) {
+									System.out.println("Adding the following to results:\n" + q);
+								}
 								qtlOutput.add(q);
 							}
 						}

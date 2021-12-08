@@ -24,7 +24,7 @@ import java.util.stream.IntStream;
 public class PathwayDatabaseEnrichments {
     private static final Logger LOGGER = Logger.getLogger(PathwayDatabaseEnrichments.class);
 
-    private static int minimalGeneCountInPathway = 10;
+    private static final int minimalGeneCountInPathway = 10;
 
     public static void testPredictionPerformance(DownstreamerOptions options) throws Exception {
         PathwayDatabaseEnrichmentExcelWriter writer = new PathwayDatabaseEnrichmentExcelWriter(options);
@@ -41,8 +41,14 @@ public class PathwayDatabaseEnrichments {
         // Sheet for gene P-values
         PathwayEnrichments genePvalues = PathwayEnrichments.createPathwayEnrichmentsFromGenePvalues(options, step2Results.getGenePvalues());
 
-        Map<String, Map<String, List<PathwayDatabaseEnrichmentRecord>>> results = testPredictionPerformanceForGwasTrait(genePvalues, targetPathwayDatabases);
+		Map<String, Map<String, List<PathwayDatabaseEnrichmentRecord>>> results = testPredictionPerformanceForGwasTrait(genePvalues, targetPathwayDatabases);
         writer.writeResultsExcel(results, genePvalues.getPathwayDatabase().getName());
+		
+		// Sheet for closest gene
+		PathwayEnrichments closestGene = PathwayEnrichments.createPathwayEnrichmentsFromClosestGene(options, step2Results.getGenePvalues());
+		
+        results = testPredictionPerformanceForGwasTrait(closestGene, targetPathwayDatabases);
+        writer.writeResultsExcel(results, closestGene.getPathwayDatabase().getName());
 
     }
 

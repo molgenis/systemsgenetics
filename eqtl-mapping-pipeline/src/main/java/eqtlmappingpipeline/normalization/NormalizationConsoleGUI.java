@@ -20,6 +20,8 @@ public class NormalizationConsoleGUI {
 		String probeIncludeList = null;
 		String out = null;
 		String cov = null;
+		String sampleToDatasetFile = null;
+		String datasetSpecificCovariates = null;
 
 		boolean fullNorm = true;
 		boolean prerank = false;
@@ -28,6 +30,7 @@ public class NormalizationConsoleGUI {
 		boolean runQQNorm = false;
 		boolean runCenterScale = false;
 		boolean runCovariateAdjustment = false;
+		boolean runDatasetCovariateAdjustment = false;
 		boolean runPCAdjustment = false;
 		boolean orthogonalizecovariates = false;
 		boolean useOLSforCovariates = false;
@@ -80,6 +83,10 @@ public class NormalizationConsoleGUI {
 				runCovariateAdjustment = true;
 				fullNorm = false;
 			}
+			if (arg.equals("--adjustdatasetcovariates")) {
+				runDatasetCovariateAdjustment = true;
+				fullNorm = false;
+			}
 			if (arg.equals("--adjustPCA")) {
 				runPCAdjustment = true;
 				fullNorm = false;
@@ -88,6 +95,13 @@ public class NormalizationConsoleGUI {
 			if (arg.equals("--cov")) {
 				cov = val;
 			}
+			if (arg.equals("--datasetcov")) {
+				datasetSpecificCovariates = val;
+			}
+			if (arg.equals("--sampletodataset")) {
+				sampleToDatasetFile = val;
+			}
+
 			if (arg.equals("--covpca")) {
 				orthogonalizecovariates = true;
 			}
@@ -172,15 +186,16 @@ public class NormalizationConsoleGUI {
 			}
 
 			if (!fullNorm) {
-				p.normalize(in, probeIncludeList, sampleIncludeList, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, useOLSforCovariates, out,
+				p.normalize(in, probeIncludeList, sampleIncludeList, maxPcaToRemove, stepSizePcaRemoval, cov, datasetSpecificCovariates, sampleToDatasetFile,
+						orthogonalizecovariates, useOLSforCovariates, out,
 						runQQNorm, runLogTransform, runMTransform, runCenterScale, runPCAdjustment,
-						runCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues,
+						runCovariateAdjustment, runDatasetCovariateAdjustment, forceMissingValues, forceReplacementOfMissingValues,
 						forceReplacementOfMissingValues2, treatZerosAsNulls, forceNormalDistribution);
 			} else {
 
 				// run full normalization
-				p.normalize(in, null, null, maxPcaToRemove, stepSizePcaRemoval, cov, orthogonalizecovariates, useOLSforCovariates, out,
-						true, true, false, true, true, true, false, false, false,
+				p.normalize(in, null, null, maxPcaToRemove, stepSizePcaRemoval, cov, datasetSpecificCovariates, sampleToDatasetFile,
+						orthogonalizecovariates, useOLSforCovariates, out,true, true, false, true, true, true, true, false, false, false,
 						false, false);
 			}
 
@@ -204,6 +219,7 @@ public class NormalizationConsoleGUI {
 				+ "--logtransform\t\t\t\tRun log2 transformation\n"
 				+ "--Mtransform\t\t\t\tRun M-val (log) transformation for methylation Beta values\n"
 				+ "--adjustcovariates\t\t\tRun covariate adjustment\n"
+				+ "--adjustdatasetcovariates\t\t\tRun covariate adjustment per dataset\n"
 				+ "--centerscale\t\t\t\tCenter the mean to 0, linearly scale using standard deviation\n"
 				+ "--adjustPCA\t\t\t\tRun PCA adjustment \n"
 				+ "--forceNormalDist\t\t\t\tConvert the data to a normal distribution per gene \n"
@@ -214,6 +230,9 @@ public class NormalizationConsoleGUI {
 				+ "--cov\t\t\tstring\t\tCovariates to remove\n"
 				+ "--covpca\t\t\t\tOrthogonalize covariates using PCA before regression\n"
 				+ "--covols\t\t\t\tUse multivariate OLS based approach in stead of PCA\n"
+				+ "--datasetcov\t\t\t\tCovariates to remove per dataset\n"
+				+ "--sampletodataset\t\t\t\tMapping file linking sample IDs to datasets (required for --datasetcov)\n"
+
 				+ "\n"
 				+ "PCA parameters\n"
 				+ "--maxnrpcaremoved\tinteger\t\tMaximum number of PCs to remove\n"
