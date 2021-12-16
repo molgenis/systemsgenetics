@@ -237,6 +237,9 @@ public class Downstreamer {
 					break;
 				case SPECIAL:
 					CorrelateExpressionToPredictions.run(options);
+				case PREPARE_GENE_PVALUES:
+					PrepareExternalGenePvalues.prepare(options);
+		
 			}
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Problem running mode: " + options.getMode());
