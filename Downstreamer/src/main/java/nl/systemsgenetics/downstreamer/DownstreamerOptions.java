@@ -107,11 +107,11 @@ public class DownstreamerOptions {
 				+ "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output optionally --columnsToExtract\n"
 				+ "* CONVERT_EXP - Convert a tab seperated expression matrix and normalize genes. Use --gwas (for exp data) and --output optionally --columnsToExtract\n"
 				+ "* TRANSPOSE - Transposes a binary matrix. Use --gwas and --output\n"
-				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output"
-				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output"
-				+ "* CORRELATE_GENES - Create gene correlation matrix with 0 on diagnonal. Use --gwas as input matrix (genes on row, tab sepperated), --output and --genes. Optionally use --corZscore to create Z-score matrix"
-				+ "* R_2_Z_SCORE - Convert correlation matrix with r values to Z-score matrix. Must be used together with -ns"
-				+ "* MERGE_BIN - Merge multiple bin matrix on overlapping rows"
+				+ "* CONVERT_EQTL - Convert binary matrix with eQTL z-scores from our pipeline. Use --gwas and --output\n"
+				+ "* CONVERT_GTEX - Convert Gtex median tissue GCT file. Use --gwas for the GCT file and --output\n"
+				+ "* CORRELATE_GENES - Create gene correlation matrix with 0 on diagnonal. Use --gwas as input matrix (genes on row, tab sepperated), --output and --genes. Optionally use --corZscore to create Z-score matrix\n"
+				+ "* R_2_Z_SCORE - Convert correlation matrix with r values to Z-score matrix. Must be used together with -ns\n"
+				+ "* MERGE_BIN - Merge multiple bin matrix on overlapping row\n"
 		);
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
@@ -470,7 +470,7 @@ public class DownstreamerOptions {
 			throw new ParseException("Could not parse -cwe as integerer: " + commandLine.getOptionValue("cwe"));
 		}
 
-		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.SUBSET_MATRIX || mode == DownstreamerMode.GET_MARKER_GENES) {
+		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.SUBSET_MATRIX || mode == DownstreamerMode.GET_MARKER_GENES || mode == DownstreamerMode.PREPARE_GENE_PVALUES) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -616,7 +616,7 @@ public class DownstreamerOptions {
 					throw new IllegalArgumentException("--genes not specified");
 				}
 
-				columnsToExtract=null;
+				columnsToExtract = null;
 				corMatrixZscores = false;
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
@@ -737,6 +737,46 @@ public class DownstreamerOptions {
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				break;
+			case PREPARE_GENE_PVALUES:
+				if (!commandLine.hasOption("ge")) {
+					throw new ParseException("--genes not specified");
+				} else {
+					geneInfoFile = new File(commandLine.getOptionValue("ge"));
+				}
+				pathwayDatabases = null;
+				
+				if (!commandLine.hasOption("pgc")) {
+					throw new ParseException("--permutationGeneCorrelations not specified");
+				} else {
+					try {
+						permutationGeneCorrelations = Integer.parseInt(commandLine.getOptionValue("pgc"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutationGeneCorrelations \"" + commandLine.getOptionValue("pgc") + "\" is not an int");
+					}
+				}
+				if (!commandLine.hasOption("ppe")) {
+					throw new ParseException("--permutationPathwayEnrichment not specified");
+				} else {
+					try {
+						permutationPathwayEnrichment = Integer.parseInt(commandLine.getOptionValue("ppe"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutationPathwayEnrichment \"" + commandLine.getOptionValue("ppe") + "\" is not an int");
+					}
+				}
+				if (!commandLine.hasOption("pfdr")) {
+					throw new ParseException("--permutationFDR not specified");
+				} else {
+					try {
+						permutationFDR = Integer.parseInt(commandLine.getOptionValue("pfdr"));
+					} catch (NumberFormatException e) {
+						throw new ParseException("Error parsing --permutationFDR \"" + commandLine.getOptionValue("pfdr") + "\" is not an int");
+					}
+				}
+				
+				genePruningR = 0;
+				geneCorrelationWindow = 0;
+				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
+				break;
 			default:
 				pathwayDatabases = null;
 				permutationGeneCorrelations = 0;
@@ -831,12 +871,12 @@ public class DownstreamerOptions {
 					if (numberOfPermutations > GenePvalueCalculator.MAX_ROUND_1_RESCUE) {
 						throw new ParseException("Error parsing --permutations max is: " + LARGE_INT_FORMAT.format(GenePvalueCalculator.MAX_ROUND_1_RESCUE));
 					}
-					
+
 					if (numberOfPermutations < 100000) {
 						throw new ParseException("Error parsing --permutations min is: 100,000");
 					}
-					
-					if (numberOfPermutations % 10000 != 0){
+
+					if (numberOfPermutations % 10000 != 0) {
 						throw new ParseException("Error parsing --permutations must be divisible by 10,000");
 					}
 				}

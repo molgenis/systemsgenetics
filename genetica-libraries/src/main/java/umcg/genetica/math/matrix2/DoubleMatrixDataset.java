@@ -1799,6 +1799,32 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 	}
+	
+	/**
+	 * Prints number of rows and cols and top left corner of the matrix
+	 * 
+	 */
+	public void printSummary(){
+		
+		System.out.println("rows: " + rows() + " cols: " + columns());
+		System.out.println("Top left corner:");
+		
+		ArrayList<C> colNames = new ArrayList(hashRows.keySet());
+		ArrayList<R> rowNames = new ArrayList(hashRows.keySet());
+
+		for (int c = 0; c < Math.min(3, matrix.columns()); ++c) {
+			System.out.print("\t" + colNames.get(c).toString());
+		}
+		System.out.println();
+		for (int r = 0; r < Math.min(3, matrix.rows()); ++r) {
+			System.out.print(rowNames.get(r));
+			for (int c = 0; c < Math.min(3, matrix.columns()); ++c) {
+				System.out.print("\t" + matrix.getQuick(r, c));
+			}
+			System.out.println();
+		}
+		
+	}
 
 	/**
 	 * Assumes that columns in both dataset have mean 0 and sd 1

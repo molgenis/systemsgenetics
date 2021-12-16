@@ -211,9 +211,11 @@ createUmap <- function(sampleUmapPlot, sampleCol){
   
 }
 
-
-
-
+library(rasterpdf)
+#pdf("Umap/sampleUmap.pdf", width = 14, height = 7.5, useDingbats = F, title = "GeneNetwork UMAP")
+raster_pdf("Umap/combined.pdf", width = 14, height = 7.5, res = 150)
+createUmap(sampleUmapPlot, sampleCol)
+#dev.off()
 
 source(paste0("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\main\\r\\downstreamer_main/downstreamer_functions.r"))
 
@@ -233,17 +235,20 @@ for(i in 1:nrow(traits)){
   file = paste0("D:\\UMCG\\FrankeSwertz - Documents\\Projects\\downstreamer\\Results\\",fileName)
   name = traits[i,"Name"]
   
+  print(name)
+  print(i)
+  
   ced <- read.depict2(file)
   
   #ced <- read.depict2("multiple_sclerosis_patsopoulos_harm_jan_enrichtments_exHla_1.xlsx")
-  str(ced)
+  #str(ced)
   
   cedExp <- ced$SampleEnrichment
   cedExp <- cedExp[match(row.names(sampleUmap), cedExp$Sample),]
   
   all(cedExp$Sample == row.names(sampleUmap))
   
-  str(cedExp)
+  #str(cedExp)
   #colCed <- brewer.pal(9, "GnBu")[as.numeric(cut(cedExp$Enrichment.Z.score[match(row.names(sampleUmap), cedExp$Sample)],breaks = 9))]
   
   colCed <- rep("grey90", nrow(sampleUmap)) #lightblue1
@@ -287,7 +292,7 @@ for(i in 1:nrow(traits)){
   }
   
   
-  pdf(paste0("Umap/sampleUmap", name , ".pdf"), width = 14, height = 7.5, useDingbats = F, title = paste0("GeneNetwork UMAP, ", name, " enrichments"))
+  #pdf(paste0("Umap/sampleUmap", name , ".pdf"), width = 14, height = 7.5, useDingbats = F, title = paste0("GeneNetwork UMAP, ", name, " enrichments"))
   
   createUmap(sampleUmaporder, sampleCol)
   
@@ -312,8 +317,13 @@ for(i in 1:nrow(traits)){
   
   mtext(paste0("Sample enrichment for: ", name ), side = 3, line = -2.9, col = "gray30")
   
-  dev.off()
+  #dev.off()
 }
+
+dev.off()
+
+
+
 
 
 #addapted from plotfunctions
