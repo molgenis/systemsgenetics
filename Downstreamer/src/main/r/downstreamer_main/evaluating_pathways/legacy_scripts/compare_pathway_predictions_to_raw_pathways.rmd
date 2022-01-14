@@ -1,0 +1,72 @@
+```{r}
+setwd("evaluating_pathway_predictions")
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+# Read excel files
+path  <- "/home/work/Desktop/depict2/output/final_paper/excels/"
+files <- list.files(path, pattern=".*_enrichtments.*.xlsx")
+
+datasets <- list()
+for (file in files) {
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", file)
+  name <- gsub("\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
+  name <- gsub("\\.txt\\_exHla\\.xlsx", "", name)
+  
+  datasets[[name]] <- read.depict2(paste0(path, file))
+  }
+
+plot.auc.comparison <- xy.plot.pvalue.colored
+```
+
+```{r}
+make.plot <- function(trait) {
+
+  curdata.x <- curset[[paste0(trait)]]
+  curdata.y <- curset[[paste0(trait, "_raw")]]
+  ol        <- intersect(rownames(curdata.x), rownames(curdata.y))
+  curdata.x <- curdata.x[ol,]
+  curdata.y <- curdata.y[ol,]
+  
+  p <- plot.auc.comparison(curdata.x$Enrichment.Z.score, curdata.x$Enrichment.P.value, curdata.y$Enrichment.Z.score, curdata.y$Enrichment.P.value, xlab=paste0(trait), ylab=paste0(trait, "_raw"))
+  
+  return(p)
+}
+
+
+curset <- datasets[["height_2018_30124842_hg19"]]
+
+p1 <- make.plot("GO_F")
+p2 <- make.plot("GO_C")
+p3 <- make.plot("GO_P")
+p4 <- make.plot("KEGG")
+p5 <- make.plot("HPO")
+p6 <- make.plot("Reactome")
+
+grid.arrange(grobs=list(p1,p2,p3,p4,p5,p6), ncol=3)
+
+
+curset <- datasets[["coeliac_disease_2011_22057235_hg19"]]
+
+p1 <- make.plot("GO_F")
+p2 <- make.plot("GO_C")
+p3 <- make.plot("GO_P")
+p4 <- make.plot("KEGG")
+p5 <- make.plot("HPO")
+p6 <- make.plot("Reactome")
+
+grid.arrange(grobs=list(p1,p2,p3,p4,p5,p6), ncol=3)
+
+curset <- datasets[["inflammatory_bowel_disease_2017_29906448_hg19"]]
+
+p1 <- make.plot("GO_F")
+p2 <- make.plot("GO_C")
+p3 <- make.plot("GO_P")
+p4 <- make.plot("KEGG")
+p5 <- make.plot("HPO")
+p6 <- make.plot("Reactome")
+
+grid.arrange(grobs=list(p1,p2,p3,p4,p5,p6), ncol=3)
+```
+

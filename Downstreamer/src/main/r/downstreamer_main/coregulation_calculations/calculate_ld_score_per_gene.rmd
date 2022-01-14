@@ -1,0 +1,60 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_calculations")} else {setwd("../coregulation_calculations")}
+source("../downstreamer_functions.r")
+library(GenomicRanges)
+
+ensembl.file <- "data/ensgR75_protein_coding.txt"
+
+# Read reference datasets
+ensembl <- read.table(ensembl.file, sep="\t", header=T, stringsAsFactors = F)
+rownames(ensembl) <- make.names(ensembl$Associated.Gene.Name, unique=T)
+window <- 25000
+
+ensembl.gr <- GRanges(seqnames=ensembl$Chromosome.Name, IRanges(start=ensembl$Gene.Start..bp. - window, end=ensembl$Gene.End..bp. + window))
+
+
+all.ldscores <- data.frame()
+
+for (i in 1:22) {
+  
+  cur.ld <- fread(paste0("zcat ../data/eur_w_ld_chr/", i, ".l2.ldscore.gz"), data.table=F)
+  
+  if (i == 1) {
+    all.ldscores <- cur.ld
+  } else {
+    all.ldscores <- rbind(all.ldscores, cur.ld)
+  }
+  
+}
+
+ldscores <- GRanges(seqnames = all.ldscores$CHR, IRanges(start=all.ldscores$BP, width=1))
+```
+
+
+```{r}
+overlaps <- findOverlaps(ensembl.gr, ldscores)
+
+
+genes    <- c()
+mean.ldsc <- c()
+
+for(cur.gene.idx in 1:nrow(ensembl)) {
+  cur.variants <- data.frame(overlaps[overlaps@from == cur.gene.idx], stringsAsFactors = F)
+  cur.ld       <- all.ldscores[cur.variants$subjectHits, ]
+  cur.gene     <- ensembl[cur.gene.idx,]
+  
+  
+  genes <- c(genes, cur.gene$Ensembl.Gene.ID)
+  mean.ldsc <- c(mean.ldsc, mean(cur.ld$L2))
+  
+  if ((cur.gene.idx %% 1000) == 0) {
+    cat("[INFO] 1k records\n")
+  }
+  
+}
+
+output <- data.frame(gene=genes, ldscore=mean.ldsc, stringsAsFactors = F)
+
+write.table(output, file="output/mean_ldscore_eur_per_gene_25kb_window.tsv", row.names=F, quote=F, sep="\t")
+```
+

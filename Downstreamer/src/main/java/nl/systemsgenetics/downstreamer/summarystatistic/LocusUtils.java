@@ -197,7 +197,7 @@ public class LocusUtils {
                     }
                 }
 
-                // If the LD is lower then the threshold add a new independent effect to the locus
+                // If the LD is lower than the threshold add a new independent effect to the locus
                 if (isIndependentVariant) {
                     topLocus.addIndepVariant(record.getPrimaryVariantId());
                 }
@@ -348,6 +348,7 @@ public class LocusUtils {
 
     /**
      * Checks if A overlaps B.
+     * Deprecated, now use HTSJDK interval implementation
      *
      * @param a range a
      * @param b range b
@@ -361,11 +362,13 @@ public class LocusUtils {
 
     /**
      * Checks if A overlaps B.
+     * Deprecated, now use HTSJDK interval implementation
      *
      * @param a The smaller range
      * @param b The larger range
      * @return
      */
+    @Deprecated
     public static boolean partialGenomicRangeOverlapWindow(OverlappableGenomicRange a, OverlappableGenomicRange b, int window) {
 
         if (a.getSequenceName().toLowerCase().replace("chr", "").equals(b.getSequenceName().toLowerCase().replace("chr", ""))) {
