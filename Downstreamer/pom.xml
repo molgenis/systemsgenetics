@@ -7,7 +7,7 @@
 		<version>1.0.4-SNAPSHOT</version>
 	</parent>
 	<artifactId>Downstreamer</artifactId> 
-	<version>1.24-SNAPSHOT</version>
+	<version>1.25-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<build>
 		<resources>
@@ -117,9 +117,9 @@
 			<version>0.7.2</version>
 		</dependency>
 		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
-			<version>1.2.17</version>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.16.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.poi</groupId>

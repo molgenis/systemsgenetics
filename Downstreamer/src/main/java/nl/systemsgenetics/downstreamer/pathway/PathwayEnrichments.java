@@ -998,8 +998,17 @@ public class PathwayEnrichments {
 					throw new RuntimeException();
 				}
 			}
-			DenseDoubleEigenvalueDecomposition e = new DenseDoubleEigenvalueDecomposition(x.getMatrix());
-
+			
+			DenseDoubleEigenvalueDecomposition e ;
+			try {
+				e = new DenseDoubleEigenvalueDecomposition(x.getMatrix());
+			} catch(Exception ex){
+				x.printSummary();
+				throw ex;
+			}
+				
+			
+			
 			minEigenValue = e.getRealEigenvalues().aggregate(DoubleFunctions.min, DoubleFunctions.identity);
 
 			//} while (minEigenValue <= 0.5 && (currentMaxCorrelationBetweenGenes -= 0.05) > 0.00001);

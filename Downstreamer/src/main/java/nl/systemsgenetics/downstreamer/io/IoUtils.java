@@ -163,18 +163,22 @@ public class IoUtils {
 
 			File[] leadVariantFiles = leadVariantFolder.listFiles(new LeadVariantFileNameFilter());
 
-			for (File leadVariantFile : leadVariantFiles) {
+			if (leadVariantFiles == null) {
+				LOGGER.info("Lead variant folder not found");
+			} else {
 
-				String trait = leadVariantFile.getName().substring(0, leadVariantFile.getName().length() - 10);
+				for (File leadVariantFile : leadVariantFiles) {
 
-				if (!leadVariantsPerTrait.containsKey(trait)) {
-					ChrPosTreeMap<LeadVariant> leadVariants = readLeadVariantFile(leadVariantFile);
-					leadVariantsPerTrait.put(trait, leadVariants);
-					LOGGER.info("Loaded " + leadVariants.size() + " for " + trait + " lead variants");
+					String trait = leadVariantFile.getName().substring(0, leadVariantFile.getName().length() - 10);
+
+					if (!leadVariantsPerTrait.containsKey(trait)) {
+						ChrPosTreeMap<LeadVariant> leadVariants = readLeadVariantFile(leadVariantFile);
+						leadVariantsPerTrait.put(trait, leadVariants);
+						LOGGER.info("Loaded " + leadVariants.size() + " for " + trait + " lead variants");
+					}
+
 				}
-
 			}
-
 			leadVariantsPerTraitCache = leadVariantsPerTrait;
 
 			return leadVariantsPerTrait;
@@ -288,7 +292,7 @@ public class IoUtils {
 
 		ArrayList<VariantFilter> variantFilters = new ArrayList<>();
 		variantFilters.add(new VariantFilterBiAllelic());
-		
+
 		if (variantsToInclude != null) {
 			variantFilters.add(new VariantIdIncludeFilter(new HashSet<>(variantsToInclude)));
 		}
@@ -298,12 +302,12 @@ public class IoUtils {
 		}
 
 		final VariantFilter variantFilter;
-		if(variantFilters.size() == 1){
+		if (variantFilters.size() == 1) {
 			variantFilter = variantFilters.get(0);
 		} else {
 			variantFilter = new VariantCombinedFilter(variantFilters);
 		}
-		
+
 		referenceGenotypeData = options.getGenotypeType().createFilteredGenotypeData(options.getGenotypeBasePath(), 10000, variantFilter, sampleFilter, null, 0.34f);
 
 		return referenceGenotypeData;
