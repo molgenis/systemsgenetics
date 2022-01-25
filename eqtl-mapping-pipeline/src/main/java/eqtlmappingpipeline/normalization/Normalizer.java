@@ -1574,7 +1574,7 @@ public class Normalizer {
             } else {
                 newData.save(outputFileName + ".txt.gz");
             }
-            return new Pair<String, DoubleMatrixDataset<String, String>>(outputFileNamePrefix, newData);
+            return new Pair<String, DoubleMatrixDataset<String, String>>(outputFileName, newData);
         }
 //
         return new Pair<String, DoubleMatrixDataset<String, String>>(outputFileNamePrefix, dataset);
