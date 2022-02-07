@@ -176,14 +176,18 @@ CNV
 		int numtraits = 0;
 		int numsnps = 0;
 		int numpubs = 0;
+		int rowCount = 0;
 		rows:
 		while (elems != null) {
+			
+
 			if (elems.length > 11) {
 				
 				Double topSNPAssocPVal = null;
 				try {
 					topSNPAssocPVal = Double.parseDouble(elems[pvalCol]);
 				if(topSNPAssocPVal > pvaluethreshold){
+					elems = tf.readLineElemsReturnReference(TextFile.tab);
 					continue rows;
 				}
 				} catch (NumberFormatException e) {
