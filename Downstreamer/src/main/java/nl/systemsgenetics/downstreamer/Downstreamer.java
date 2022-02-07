@@ -237,6 +237,7 @@ public class Downstreamer {
 					break;
 				case SPECIAL:
 					CorrelateExpressionToPredictions.run(options);
+					break;
 				case PREPARE_GENE_PVALUES:
 					PrepareExternalGenePvalues.prepare(options);
 		
