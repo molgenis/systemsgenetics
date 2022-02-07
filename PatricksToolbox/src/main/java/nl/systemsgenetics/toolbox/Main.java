@@ -48,12 +48,12 @@ public class Main {
 		
 		System.out.println(HEADER);
 		System.out.println();
-		System.out.println("--- Version: " + VERSION + "");
+		System.out.println("    --- Version: " + VERSION + " ---");
 		System.out.println();
 
 		Date currentDataTime = new Date();
 		String startDateTime = DATE_TIME_FORMAT.format(currentDataTime);
-		System.out.println("Current date and time: " + startDateTime);
+		System.out.println("    --- Current date and time: " + startDateTime + "---");
 		System.out.println();
 
 		System.out.flush(); //flush to make sure header is before errors
@@ -114,6 +114,7 @@ public class Main {
 			switch (options.getMode()) {
 				case OVERLAP_GWAS:
 					OverlapPicEqtlWithGwas.overlap(options);
+					break;
 			}
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Problem running mode: " + options.getMode());
@@ -152,7 +153,7 @@ public class Main {
 		LOGGER.info("Analysis completed");
 
 		currentDataTime = new Date();
-		LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+		System.out.println("    --- Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime) + "---");
 	}
 
 }
