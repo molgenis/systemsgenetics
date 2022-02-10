@@ -10,6 +10,8 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,12 +25,14 @@ import java.util.zip.GZIPInputStream;
 import nl.systemsgenetics.toolbox.Options;
 import nl.systemsgenetics.toolbox.Utils;
 import org.apache.log4j.Logger;
+import org.apache.logging.log4j.util.Strings;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.util.LdCalculator;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.io.gwascatalog.GWASCatalog;
 import umcg.genetica.io.gwascatalog.GWASSNP;
 import umcg.genetica.io.gwascatalog.GWASTrait;
+import umcg.genetica.math.stats.FisherExactTest;
 
 /**
  *
@@ -51,15 +55,13 @@ public class OverlapPicEqtlWithGwas {
 		LinkedHashSet<String> interactionSnps = new LinkedHashSet<>();
 
 		LOGGER.info("Assuming last col is the FDR");
-		
+
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
-			if(Double.parseDouble(nextLine[nextLine.length - 1]) <= 0.05){
+			if (Double.parseDouble(nextLine[nextLine.length - 1]) <= 0.05) {
 				interactionSnps.add(nextLine[0]);
 			}
-			
-			
 
 		}
 
@@ -72,23 +74,55 @@ public class OverlapPicEqtlWithGwas {
 		RandomAccessGenotypeData genotypeReference = Utils.loadGenotypes(options, combinedVariants);
 
 		HashMap<String, GeneticVariant> variantMap = genotypeReference.getVariantIdMap();
+		
+		//LOGGER.debug("VariantMap contains: " + variantMap.size());
 
+		//count per trait how many variants are found in the genotype data
+		TObjectIntMap<String> traitVariantCounts = new TObjectIntHashMap<>();
+		HashMap<String, HashSet<String>> traitToVariantMapOverlappingWithPic = new HashMap<>();
+		HashMap<String, HashSet<String>> traitToPicVariantMapOverlappingWithPic = new HashMap<>();
+		for (GWASTrait trait : gwasCatalog.getTraitToObj().values()) {
+			int traitVariantCount = 0;
+			Set<GWASSNP> traitSnps = trait.getSnps();
+			for (GWASSNP traitSnp : traitSnps) {
+				
+				String traitSnpId = traitSnp.getName();
+				//LOGGER.debug(trait.getName() + " " + traitSnpId);
+				if (variantMap.containsKey(traitSnpId)) {
+					traitVariantCount++;
+				}
+			}
+			traitToVariantMapOverlappingWithPic.put(trait.getName(), new HashSet<>());
+			traitToPicVariantMapOverlappingWithPic.put(trait.getName(), new HashSet<>());
+			traitVariantCounts.put(trait.getName(), traitVariantCount);
+			
+			//LOGGER.debug("Fase1: " + trait.getName() + " " + traitVariantCounts.get(trait.getName()));
+		}
+
+		
+		
+		
 		CSVWriter writer = new CSVWriter(new FileWriter(options.getOutputBasePath() + "overlap.txt"), '\t', '\0', '\0', "\n");
 
-		String[] outputLine = new String[4	];
+		String[] outputLine = new String[2];
 		int c = 0;
 		outputLine[c++] = "interactionSNP";
-		outputLine[c++] = "LD";
-		outputLine[c++] = "gwasSNP";
+		//outputLine[c++] = "LD";
+		//outputLine[c++] = "gwasSNP";
 		outputLine[c++] = "Traits";
 		writer.writeNext(outputLine);
+
+		int interactionsSnpsInGenotypeData = 0;
 
 		for (String snp : interactionSnps) {
 
 			if (variantMap.containsKey(snp)) {
+				interactionsSnpsInGenotypeData++;
 				GeneticVariant interactionVariant = variantMap.get(snp);
 
-				Iterable<GeneticVariant> otherVariants = genotypeReference.getVariantsByRange(interactionVariant.getSequenceName(), Integer.max(0, interactionVariant.getStartPos() - 100000), interactionVariant.getStartPos() + 100000);
+				HashSet<String> combinedTraits = new HashSet<>();
+
+				Iterable<GeneticVariant> otherVariants = genotypeReference.getVariantsByRange(interactionVariant.getSequenceName(), Integer.max(0, interactionVariant.getStartPos() - 250000), interactionVariant.getStartPos() + 250000);
 				for (GeneticVariant otherVar : otherVariants) {
 					String otherVariantId = otherVar.getVariantId().getPrimairyId();
 					if (gwasVariants.contains(otherVariantId)) {
@@ -96,27 +130,79 @@ public class OverlapPicEqtlWithGwas {
 						if (ld >= 0.8) {
 
 							HashSet<GWASTrait> traits = gwasCatalogSnpMap.get(otherVariantId).getAssociatedTraits();
-							StringJoiner joiner = new StringJoiner(";");
 							for (GWASTrait trait : traits) {
-								joiner.add(trait.getName());
-							}
-							String traitsString = joiner.toString();
+								combinedTraits.add(trait.getName());
 
-							outputLine[0] = snp;
-							outputLine[1] = String.valueOf(ld);
-							outputLine[2] = otherVariantId;
-							outputLine[3] = traitsString;
-							writer.writeNext(outputLine);
+								traitToVariantMapOverlappingWithPic.get(trait.getName()).add(otherVariantId);
+								traitToPicVariantMapOverlappingWithPic.get(trait.getName()).add(snp);
+								
+								if(trait.getName().equals("Asthma")){
+									LOGGER.info(snp + "\t" + otherVariantId + "\t" + ld);
+								}
+								
+								
+							}
 
 						}
 					}
 				}
 
+				outputLine[0] = snp;
+				outputLine[1] = String.join(";", combinedTraits);
+				writer.writeNext(outputLine);
+
 			}
 
 		}
+		
+		LOGGER.info(String.join(";", traitToPicVariantMapOverlappingWithPic.get("Asthma")));
 
 		writer.close();
+
+		CSVWriter enrichmentWriter = new CSVWriter(new FileWriter(options.getOutputBasePath() + "gwasEnrichment.txt"), '\t', '\0', '\0', "\n");
+
+		outputLine = new String[7];
+		c = 0;
+		outputLine[c++] = "trait";
+		outputLine[c++] = "traitVariants";
+		outputLine[c++] = "traitVariantsOverlappingWithPic";
+		outputLine[c++] = "traitSnpsNotOverlappingWithPic";
+		outputLine[c++] = "picVariantsOverlappingWithTrait";
+		outputLine[c++] = "picVariantsNotOverlappingWithTrait";
+		outputLine[c++] = "FisherPvalue";
+		enrichmentWriter.writeNext(outputLine);
+
+		FisherExactTest ft = new FisherExactTest();
+
+		for (GWASTrait trait : gwasCatalog.getTraitToObj().values()) {
+
+			
+			
+			int traitSnpsOverlappingWithPic = traitToVariantMapOverlappingWithPic.get(trait.getName()).size();
+			int totalTraitSnps = traitVariantCounts.get(trait.getName());
+			int traitSnpsNotOverlappingWithPic = totalTraitSnps - traitSnpsOverlappingWithPic;
+
+			
+			int picSnpsOverlapping = traitToPicVariantMapOverlappingWithPic.get(trait.getName()).size();
+			int picSnpsNotOverllaping = interactionsSnpsInGenotypeData - picSnpsOverlapping;
+
+			double pvalue = ft.getFisherPValue(traitSnpsOverlappingWithPic, traitSnpsNotOverlappingWithPic, picSnpsOverlapping, picSnpsNotOverllaping);
+
+			LOGGER.debug("Fase2: " + trait.getName() + " " + totalTraitSnps);
+			
+			c = 0;
+			outputLine[c++] = trait.getName();
+			outputLine[c++] = String.valueOf(totalTraitSnps);
+			outputLine[c++] = String.valueOf(traitSnpsOverlappingWithPic);
+			outputLine[c++] = String.valueOf(traitSnpsNotOverlappingWithPic);
+			outputLine[c++] = String.valueOf(picSnpsOverlapping);
+			outputLine[c++] = String.valueOf(picSnpsNotOverllaping);
+			outputLine[c++] = String.valueOf(pvalue);
+			enrichmentWriter.writeNext(outputLine);
+
+		}
+		
+		enrichmentWriter.close();
 
 	}
 

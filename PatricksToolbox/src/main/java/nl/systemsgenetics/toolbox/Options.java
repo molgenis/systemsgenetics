@@ -222,7 +222,7 @@ public class Options {
 		LOGGER.info(" * Mode: " + mode.name());
 		LOGGER.info(" * Input path: " + inputPath);
 		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
-		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
+		LOGGER.info(" * Debug mode: " + (debugMode ? "on" : "off"));
 
 		if (mode.isNeedGenotypes()) {
 
