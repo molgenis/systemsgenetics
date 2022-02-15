@@ -53,39 +53,46 @@ public class OverlapPicEqtlWithGwas {
 		final CSVReader reader = new CSVReaderBuilder((new InputStreamReader(new GZIPInputStream(new FileInputStream(options.getInputPath()))))).withSkipLines(1).withCSVParser(parser).build();
 
 		LinkedHashSet<String> interactionSnps = new LinkedHashSet<>();
+		LinkedHashSet<String> nonInteractionSnps = new LinkedHashSet<>();
+		LinkedHashSet<String> eqtlSnps = new LinkedHashSet<>();
 
 		LOGGER.info("Assuming last col is the FDR");
 
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
+			eqtlSnps.add(nextLine[0]);
 			if (Double.parseDouble(nextLine[nextLine.length - 1]) <= 0.05) {
 				interactionSnps.add(nextLine[0]);
+			} else {
+				nonInteractionSnps.add(nextLine[0]);
 			}
 
 		}
 
 		LOGGER.info("Loaded interaction SNPs: " + interactionSnps.size());
+		LOGGER.info("Loaded non interaction SNPs: " + nonInteractionSnps.size());
 
 		HashSet<String> combinedVariants = new HashSet<>();
 		combinedVariants.addAll(gwasVariants);
-		combinedVariants.addAll(interactionSnps);
+		combinedVariants.addAll(eqtlSnps);
 
 		RandomAccessGenotypeData genotypeReference = Utils.loadGenotypes(options, combinedVariants);
 
 		HashMap<String, GeneticVariant> variantMap = genotypeReference.getVariantIdMap();
-		
-		//LOGGER.debug("VariantMap contains: " + variantMap.size());
 
+		//LOGGER.debug("VariantMap contains: " + variantMap.size());
 		//count per trait how many variants are found in the genotype data
 		TObjectIntMap<String> traitVariantCounts = new TObjectIntHashMap<>();
 		HashMap<String, HashSet<String>> traitToVariantMapOverlappingWithPic = new HashMap<>();
 		HashMap<String, HashSet<String>> traitToPicVariantMapOverlappingWithPic = new HashMap<>();
+		HashMap<String, HashSet<String>> traitToVariantMapNotOverlappingWithPic = new HashMap<>();
+		HashMap<String, HashSet<String>> traitToPicVariantMapNotOverlappingWithPic = new HashMap<>();
 		for (GWASTrait trait : gwasCatalog.getTraitToObj().values()) {
 			int traitVariantCount = 0;
 			Set<GWASSNP> traitSnps = trait.getSnps();
 			for (GWASSNP traitSnp : traitSnps) {
-				
+
 				String traitSnpId = traitSnp.getName();
 				//LOGGER.debug(trait.getName() + " " + traitSnpId);
 				if (variantMap.containsKey(traitSnpId)) {
@@ -94,14 +101,13 @@ public class OverlapPicEqtlWithGwas {
 			}
 			traitToVariantMapOverlappingWithPic.put(trait.getName(), new HashSet<>());
 			traitToPicVariantMapOverlappingWithPic.put(trait.getName(), new HashSet<>());
+			traitToVariantMapNotOverlappingWithPic.put(trait.getName(), new HashSet<>());
+			traitToPicVariantMapNotOverlappingWithPic.put(trait.getName(), new HashSet<>());
 			traitVariantCounts.put(trait.getName(), traitVariantCount);
-			
+
 			//LOGGER.debug("Fase1: " + trait.getName() + " " + traitVariantCounts.get(trait.getName()));
 		}
 
-		
-		
-		
 		CSVWriter writer = new CSVWriter(new FileWriter(options.getOutputBasePath() + "overlap.txt"), '\t', '\0', '\0', "\n");
 
 		String[] outputLine = new String[2];
@@ -113,34 +119,44 @@ public class OverlapPicEqtlWithGwas {
 		writer.writeNext(outputLine);
 
 		int interactionsSnpsInGenotypeData = 0;
+		int nonInteractionsSnpsInGenotypeData = 0;
 
-		for (String snp : interactionSnps) {
+		for (String snp : eqtlSnps) {
 
 			if (variantMap.containsKey(snp)) {
-				interactionsSnpsInGenotypeData++;
-				GeneticVariant interactionVariant = variantMap.get(snp);
+				if (interactionSnps.contains(snp)) {
+					interactionsSnpsInGenotypeData++;
+				} else {
+					nonInteractionsSnpsInGenotypeData++;
+				}
+
+				GeneticVariant eqtlVariant = variantMap.get(snp);
 
 				HashSet<String> combinedTraits = new HashSet<>();
 
-				Iterable<GeneticVariant> otherVariants = genotypeReference.getVariantsByRange(interactionVariant.getSequenceName(), Integer.max(0, interactionVariant.getStartPos() - 250000), interactionVariant.getStartPos() + 250000);
+				Iterable<GeneticVariant> otherVariants = genotypeReference.getVariantsByRange(eqtlVariant.getSequenceName(), Integer.max(0, eqtlVariant.getStartPos() - 250000), eqtlVariant.getStartPos() + 250000);
 				for (GeneticVariant otherVar : otherVariants) {
 					String otherVariantId = otherVar.getVariantId().getPrimairyId();
 					if (gwasVariants.contains(otherVariantId)) {
-						double ld = LdCalculator.calculateLd(interactionVariant, otherVar).getR2();
+						double ld = LdCalculator.calculateLd(eqtlVariant, otherVar).getR2();
 						if (ld >= 0.8) {
 
 							HashSet<GWASTrait> traits = gwasCatalogSnpMap.get(otherVariantId).getAssociatedTraits();
 							for (GWASTrait trait : traits) {
 								combinedTraits.add(trait.getName());
 
-								traitToVariantMapOverlappingWithPic.get(trait.getName()).add(otherVariantId);
-								traitToPicVariantMapOverlappingWithPic.get(trait.getName()).add(snp);
-								
-								if(trait.getName().equals("Asthma")){
-									LOGGER.info(snp + "\t" + otherVariantId + "\t" + ld);
+								if (interactionSnps.contains(snp)) {
+									traitToVariantMapOverlappingWithPic.get(trait.getName()).add(otherVariantId);
+									traitToPicVariantMapOverlappingWithPic.get(trait.getName()).add(snp);
+									if (trait.getName().equals("Asthma")) {
+										LOGGER.info(snp + "\t" + otherVariantId + "\t" + ld);
+									}
+
+								} else {
+									traitToVariantMapNotOverlappingWithPic.get(trait.getName()).add(otherVariantId);
+									traitToPicVariantMapNotOverlappingWithPic.get(trait.getName()).add(snp);
 								}
-								
-								
+
 							}
 
 						}
@@ -154,7 +170,7 @@ public class OverlapPicEqtlWithGwas {
 			}
 
 		}
-		
+
 		LOGGER.info(String.join(";", traitToPicVariantMapOverlappingWithPic.get("Asthma")));
 
 		writer.close();
@@ -165,8 +181,8 @@ public class OverlapPicEqtlWithGwas {
 		c = 0;
 		outputLine[c++] = "trait";
 		outputLine[c++] = "traitVariants";
-		outputLine[c++] = "traitVariantsOverlappingWithPic";
-		outputLine[c++] = "traitSnpsNotOverlappingWithPic";
+		outputLine[c++] = "nonPicVariantsOverlappingWithTrait";
+		outputLine[c++] = "nonPicVariantsNotOverlappingWithTrait";
 		outputLine[c++] = "picVariantsOverlappingWithTrait";
 		outputLine[c++] = "picVariantsNotOverlappingWithTrait";
 		outputLine[c++] = "FisherPvalue";
@@ -176,32 +192,33 @@ public class OverlapPicEqtlWithGwas {
 
 		for (GWASTrait trait : gwasCatalog.getTraitToObj().values()) {
 
-			
-			
-			int traitSnpsOverlappingWithPic = traitToVariantMapOverlappingWithPic.get(trait.getName()).size();
+			//int traitSnpsOverlappingWithPic = traitToVariantMapOverlappingWithPic.get(trait.getName()).size();
 			int totalTraitSnps = traitVariantCounts.get(trait.getName());
-			int traitSnpsNotOverlappingWithPic = totalTraitSnps - traitSnpsOverlappingWithPic;
+			//int traitSnpsNotOverlappingWithPic = totalTraitSnps - traitSnpsOverlappingWithPic;
+
+			int nonPicSnpsOverlapping = traitToPicVariantMapNotOverlappingWithPic.get(trait.getName()).size();
+			int nonPicSnpsNotOverllaping = nonInteractionsSnpsInGenotypeData - nonPicSnpsOverlapping;
 
 			
 			int picSnpsOverlapping = traitToPicVariantMapOverlappingWithPic.get(trait.getName()).size();
 			int picSnpsNotOverllaping = interactionsSnpsInGenotypeData - picSnpsOverlapping;
 
-			double pvalue = ft.getFisherPValue(traitSnpsOverlappingWithPic, traitSnpsNotOverlappingWithPic, picSnpsOverlapping, picSnpsNotOverllaping);
+			double pvalue = ft.getFisherPValue(nonPicSnpsOverlapping, nonPicSnpsNotOverllaping, picSnpsOverlapping, picSnpsNotOverllaping);
 
 			LOGGER.debug("Fase2: " + trait.getName() + " " + totalTraitSnps);
-			
+
 			c = 0;
 			outputLine[c++] = trait.getName();
 			outputLine[c++] = String.valueOf(totalTraitSnps);
-			outputLine[c++] = String.valueOf(traitSnpsOverlappingWithPic);
-			outputLine[c++] = String.valueOf(traitSnpsNotOverlappingWithPic);
+			outputLine[c++] = String.valueOf(nonPicSnpsOverlapping);
+			outputLine[c++] = String.valueOf(nonPicSnpsNotOverllaping);
 			outputLine[c++] = String.valueOf(picSnpsOverlapping);
 			outputLine[c++] = String.valueOf(picSnpsNotOverllaping);
 			outputLine[c++] = String.valueOf(pvalue);
 			enrichmentWriter.writeNext(outputLine);
 
 		}
-		
+
 		enrichmentWriter.close();
 
 	}
