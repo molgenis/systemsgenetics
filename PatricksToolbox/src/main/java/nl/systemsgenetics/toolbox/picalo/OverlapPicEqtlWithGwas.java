@@ -20,12 +20,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.StringJoiner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import nl.systemsgenetics.toolbox.Options;
 import nl.systemsgenetics.toolbox.Utils;
 import org.apache.log4j.Logger;
-import org.apache.logging.log4j.util.Strings;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.util.LdCalculator;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -58,14 +58,23 @@ public class OverlapPicEqtlWithGwas {
 
 		LOGGER.info("Assuming last col is the FDR");
 
+		Pattern pattern = Pattern.compile("(rs\\d+)", Pattern.CASE_INSENSITIVE);
+
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
-			eqtlSnps.add(nextLine[0]);
-			if (Double.parseDouble(nextLine[nextLine.length - 1]) <= 0.05) {
-				interactionSnps.add(nextLine[0]);
-			} else {
-				nonInteractionSnps.add(nextLine[0]);
+			String snpString = nextLine[0];
+
+			Matcher matcher = pattern.matcher(snpString);
+			boolean matchFound = matcher.find();
+			if (matchFound) {
+				String snp = matcher.group(1);
+				eqtlSnps.add(snp);
+				if (Double.parseDouble(nextLine[nextLine.length - 1]) <= 0.05) {
+					interactionSnps.add(snp);
+				} else {
+					nonInteractionSnps.add(snp);
+				}
 			}
 
 		}
@@ -199,7 +208,6 @@ public class OverlapPicEqtlWithGwas {
 			int nonPicSnpsOverlapping = traitToPicVariantMapNotOverlappingWithPic.get(trait.getName()).size();
 			int nonPicSnpsNotOverllaping = nonInteractionsSnpsInGenotypeData - nonPicSnpsOverlapping;
 
-			
 			int picSnpsOverlapping = traitToPicVariantMapOverlappingWithPic.get(trait.getName()).size();
 			int picSnpsNotOverllaping = interactionsSnpsInGenotypeData - picSnpsOverlapping;
 
