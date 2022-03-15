@@ -1,18 +1,17 @@
 package betaqtl;
 
-import org.apache.bcel.generic.LDC;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
-import java.sql.SQLOutput;
 
 public class Main {
 
+    // todo: clean up options
     public static void main(String[] args) {
 
         Options options = new Options();
         options.addOption(OptionBuilder.withLongOpt("mode")
-                .withDescription("Mode: [metaqtl|betaqtl|betaqtlsingleds|betaqtlplot|regressqtl|sortfile|determineld|concatconditional]")
+                .withDescription("Mode: [metaqtl|betaqtl|betaqtlsingleds|betaqtlplot|regressqtl|sortfile|determineld|determineldgwas|concatconditional]")
                 .isRequired()
                 .hasArg()
                 .withArgName("STRING")
@@ -146,6 +145,64 @@ public class Main {
                 .withDescription("Sort by Z-score")
                 .create());
 
+
+        options.addOption(OptionBuilder.withLongOpt("eqtlset")
+                .withDescription("[determineldgwas] - List of eQTL snps to test - txt.gz file")
+                .hasArg()
+                .withArgName("FILE")
+                .create());
+
+        options.addOption(OptionBuilder.withLongOpt("eqtlfile")
+                .withDescription("[determineldgwas] - eQTL file - txt.gz file")
+                .hasArg()
+                .withArgName("FILE")
+                .create());
+
+        options.addOption(OptionBuilder.withLongOpt("gwasset")
+                .withDescription("[determineldgwas] - List of GWAS snps to test - txt.gz file")
+                .hasArg()
+                .withArgName("FILE")
+                .create());
+
+        options.addOption(OptionBuilder.withLongOpt("gwasassocfile")
+                .withDescription("[determineldgwas] - GWAS association file - txt.gz file")
+                .hasArg()
+                .withArgName("FILE")
+                .create());
+
+        options.addOption(OptionBuilder.withLongOpt("gwaslistfile")
+                .withDescription("[determineldgwas] - GWAS study file - txt.gz file")
+                .hasArg()
+                .withArgName("FILE")
+                .create());
+
+        options.addOption(OptionBuilder.withLongOpt("prunedistance")
+                .withDescription("[determineldgwas] - Pruning distance [default: 1mb]")
+                .hasArg()
+                .withArgName("INT")
+                .create());
+
+        options.addOption(OptionBuilder.withLongOpt("prunethreshold")
+                .withDescription("[determineldgwas] - Pruning LD threshold [default: 0.2]")
+                .hasArg()
+                .withArgName("FLOAT")
+                .create());
+
+        options.addOption(OptionBuilder.withLongOpt("ldthreshold")
+                .withDescription("[determineldgwas] - LD threshold [default: 0.8]")
+                .hasArg()
+                .withArgName("FLOAT")
+                .create());
+
+        options.addOption(OptionBuilder.withLongOpt("skipchr6")
+                .withDescription("[determineldgwas] - Skip chr6 when calculating LD")
+                .create());
+
+        options.addOption(OptionBuilder.withLongOpt("matchbyrsid")
+                .withDescription("[determineldgwas] - Match by RsId in stead of full variant id")
+                .create());
+
+
         try {
             CommandLineParser parser = new BasicParser();
             CommandLine cmd = parser.parse(options, args);
@@ -234,6 +291,87 @@ public class Main {
                     } else {
                         LDCalculator calc = new LDCalculator();
                         calc.run(input, input2, vcf, linkfile, output);
+                    }
+                    break;
+                case "determineldgwas":
+                    System.out.println("Determine LD between QTL SNPs and GWAS SNPs");
+                    String eqtlset = null;
+                    String eqtlfile = null;
+                    String gwasset = null;
+                    String gwasassocfile = null;
+                    String gwaslistfile = null;
+                    int prunedistance = 1000000;
+                    double prunethreshold = 0.2;
+                    double ldthreshold = 0.8;
+                    boolean skipchr6 = false;
+                    boolean matchbyrsid = false;
+
+                    if (cmd.hasOption("eqtlset")) {
+                        eqtlset = cmd.getOptionValue("eqtlset");
+                    }
+                    if (cmd.hasOption("eqtlfile")) {
+                        eqtlfile = cmd.getOptionValue("eqtlfile");
+                    }
+                    if (cmd.hasOption("gwasset")) {
+                        gwasset = cmd.getOptionValue("gwasset");
+                    }
+                    if (cmd.hasOption("gwasassocfile")) {
+                        gwasassocfile = cmd.getOptionValue("gwasassocfile");
+                    }
+                    if (cmd.hasOption("gwaslistfile")) {
+                        gwaslistfile = cmd.getOptionValue("gwaslistfile");
+                    }
+                    if (cmd.hasOption("prunedistance")) {
+                        prunedistance = Integer.parseInt(cmd.getOptionValue("prunedistance"));
+                    }
+                    if (cmd.hasOption("prunethreshold")) {
+                        prunethreshold = Double.parseDouble(cmd.getOptionValue("prunethreshold"));
+                    }
+                    if (cmd.hasOption("ldthreshold")) {
+                        ldthreshold = Double.parseDouble("ldthreshold");
+                    }
+                    if (cmd.hasOption("skipchr6")) {
+                        skipchr6 = true;
+                    }
+                    if (cmd.hasOption("matchbyrsid")) {
+                        matchbyrsid = true;
+                    }
+
+                    if (eqtlset == null || eqtlfile == null
+                            || gwasset == null || gwasassocfile == null || gwaslistfile == null
+                            || vcf == null || gwasassocfile == null || gwasassocfile == null || gwasassocfile == null) {
+                        System.out.println("Usage: --eqtlset eqtlset.txt.gz " +
+                                "--eqtlfile eqtlfile.txt.gz " +
+                                "--gwasset gwasset.txt.gz " +
+                                "--gwasassocfile gwasassocfile.txt.gz " +
+                                "--gwaslistfile gwaslist.txt.gz " +
+                                "--vcf vcfCHR.vcf.gz" +
+                                "[--gte samplelinkfile.txt] " +
+                                "[--prunedistance 1E6] " +
+                                "[--prunethreshold 0.2] " +
+                                "[--ldthreshold 0.8] " +
+                                "--out output.txt.gz " +
+                                "[--skipchr6] " +
+                                "[--matchbyrsid]");
+                        System.out.println("eqtlset: " + eqtlset);
+                        System.out.println("eqtlfile: " + eqtlfile);
+                        System.out.println("gwasset: " + gwasset);
+                        System.out.println("gwasassocfile: " + gwasassocfile);
+                        System.out.println("gwaslistfile: " + gwaslistfile);
+                        System.out.println("vcf: " + vcf);
+                        System.out.println("gte: " + linkfile);
+                        System.out.println("prunedistance: " + prunedistance);
+                        System.out.println("prunethreshold: " + prunethreshold);
+                        System.out.println("ldthreshold: " + ldthreshold);
+                        System.out.println("out: " + output);
+                        System.out.println("skipchr6: " + skipchr6);
+                        System.out.println("matchbyrsid: " + matchbyrsid);
+
+                    } else {
+                        GWASLDCalculator calc = new GWASLDCalculator();
+
+                        calc.runPerGWAS3(eqtlset, eqtlfile, gwasset, gwasassocfile, gwaslistfile, vcf, linkfile, prunedistance, prunethreshold, ldthreshold, output, skipchr6, matchbyrsid);
+
                     }
                     break;
                 case "sortfile":
