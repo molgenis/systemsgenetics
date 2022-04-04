@@ -183,4 +183,7 @@ public class VIF {
         return tmp;
     }
 
+    public void setDebug(boolean b) {
+        this.debug = b;
+    }
 }

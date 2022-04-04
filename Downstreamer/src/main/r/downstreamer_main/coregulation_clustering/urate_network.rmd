@@ -1,0 +1,135 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("coregulation_clustering")} else {setwd("../coregulation_clustering")}
+source("../downstreamer_functions.r")
+library(apcluster)
+library(tidygraph)
+library(ggraph)
+
+nodes   <- fread("data/Urate_2021/Urate_2021_nodes.tsv", data.table = F)
+edges   <- fread("data/Urate_2021/Urate_2021_named_edges.tsv", data.table = F)
+
+results <- read.depict2("../data/pritchard_traits/pritchard_traits_2021_33587031_hg19_enrichtments_Urate.xlsx", potential_traits = c("GenePrioritization200"))$GenePrioritization200
+nodes$zscore <- results[nodes$gene_id, ]$Enrichment.Z.score
+nodes$genep  <- (1- pnorm(results[nodes$gene_id, ]$GWAS.gene.P.value))*2
+
+nodes$type   <-  results[nodes$gene_id, ]$Distance.to.lead.GWAS.variant
+nodes$type[nodes$type != "Trans (>250 kb)"] <- "Cis (<250 kb)"
+nodes$type[nodes$genep < 2.5e-6] <- "Cis (<250 kb)"
+
+nodes$type[nodes$annot == "both" | (nodes$annot == "cols" && nodes$zscore > 4.5)] <- "Both"
+
+# Urate transport
+nodes$annot <- as.character(go.bp[nodes$gene_id,])
+nodes$annot[is.na(nodes$annot)] <- "0"
+
+# Set nodes with negative coregulation z-scores to zero
+nodes$zscore[nodes$zscore < 0] <- 0
+
+# Filter edges
+edges <- edges[abs(edges$zscore) > 3,]
+
+# Remove edges between GWAS genes
+edges <- edges[edges$edge_type != "within_row",]
+
+# Match the nodes and the edges, filter nodes wihout edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$gene_id %in% nodes.with.edges,]
+
+# Order nodes on annotation
+nodes            <- nodes[order(nodes$annot, decreasing = F),]
+
+nodes.orig <- nodes
+edges.orig <- edges
+```
+
+# Read annotations
+```{r}
+# Ensembl
+ensembl.file <- "../coregulation_calculations/data/ensgR75_protein_coding.txt"
+ensembl <- read.table(ensembl.file, sep="\t", header=T, stringsAsFactors = F)
+ensembl <- unique(ensembl[,c(1, 7)])
+rownames(ensembl) <- ensembl[,1]
+
+# GO BP
+go.bp <- fread("zcat ../data/raw_pathway_databases/goa_human_2020_06_01.gaf_P_2020_06_01_matrix.txt.gz", data.table=F)
+
+rownames(go.bp) <- go.bp[,1]
+go.bp <- go.bp[-1,-1]
+
+# Urate transport
+go.bp <- go.bp[,"GO:0015747", drop=F]
+```
+
+```{r}
+nodes <- nodes.orig
+edges <- edges.orig
+
+# Simplyfiy zscore annotations
+nodes$zscore[nodes$zscore < 4.55] <- "0"
+nodes$zscore[nodes$zscore > 4.55] <- "1"
+
+# Match the order to the edges
+edges$from       <- sapply(edges$from, function(x){which(x == nodes$gene_id)})
+edges$to         <- sapply(edges$to, function(x){which(x == nodes$gene_id)})
+
+# Construct graph object
+tbl              <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+
+# Plot
+p1 <- ggraph(tbl, layout="fr") +
+  geom_edge_link(alpha=0.1) +
+  geom_node_point(aes(colour=annot, size=zscore), alpha=0.9) +
+  theme_graph(base_family = 'sans') +
+  scale_color_manual(values=c(`0`="#376B65",`1`="#F5CD55"), name="Known Urate\ntransporter") +
+#  scale_color_manual(values=c(`Cis (<250 kb)`="#376B65", `Trans (>250 kb)`="#F5CD55", `Both`="#F57264")) +
+  scale_size_manual(values=c(`0`=1.5, `1`=3), name="Signifianctly\nprioritized")
+
+```
+
+```{r}
+nodes <- nodes.orig
+edges <- edges.orig
+
+urate.transporter.cluster.genes <- c("ENSG00000164325", "ENSG00000198398", "ENSG00000169344", "ENSG00000172940", "ENSG00000197891", "ENSG00000258292", "ENSG00000131183", "ENSG00000204653", "ENSG00000241119", "ENSG00000164363", "ENSG00000116218", "ENSG00000144035", "ENSG00000172955", "ENSG00000243989", "ENSG00000113790", "ENSG00000167711")
+
+# Filter edges again
+edges <- edges[edges$to %in% urate.transporter.cluster.genes,]
+
+# Match the nodes and the edges, filter nodes wihout edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$gene_id %in% nodes.with.edges,]
+
+# Order nodes on annotation
+nodes            <- nodes[order(nodes$annot, decreasing = F),]
+
+# Match the order to the edges
+edges$from       <- sapply(edges$from, function(x){which(x == nodes$gene_id)})
+edges$to         <- sapply(edges$to, function(x){which(x == nodes$gene_id)})
+
+# Construct graph object
+tbl              <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+
+p2 <- ggraph(tbl, layout="fr") +
+  geom_edge_link(aes(width=zscore), alpha=0.1) +
+  geom_node_point(aes(colour=annot, size=zscore), alpha=0.9) +
+  theme_graph(base_family = 'sans') +
+  scale_color_manual(values=c(`0`="#376B65",`1`="#F5CD55"), name="Known Urate\ntransporter") +
+  scale_fill_manual(values=c(`0`="#376B65",`1`="#F5CD55")) + 
+  scale_edge_width(range=c(0.2, 4), name="Prioritization\nZ-score") +
+  scale_size_continuous(range=c(0.2, 4), limits=c(0,6), name="Coregulation\nZ-score") +
+  geom_node_label(aes(label=gene_name, fill=annot),
+                     colour="white",
+                     show.legend = F,
+                     label.size = 0,
+                     repel=T, segment.colour="black")
+
+pdf(width=13, height=6, useDingbats = F, file=paste0("output/plots/urate_transporer_highlights.pdf"))
+grid.arrange(grobs=list(p1,p2), ncol=2)
+dev.off()
+```
+
+# Urate AUC plot
+```{r}
+
+```
+

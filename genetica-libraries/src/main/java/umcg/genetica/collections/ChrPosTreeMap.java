@@ -2,7 +2,6 @@ package umcg.genetica.collections;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
-import edu.ufl.cise.colamd.tdouble.Colamd_Col;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;

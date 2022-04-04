@@ -1,11 +1,13 @@
 package nl.systemsgenetics.downstreamer.summarystatistic;
 
+import htsjdk.samtools.util.Interval;
+
 import java.io.Serializable;
 
 /**
  * The type Snp.
  */
-public class SNP implements Serializable, OverlappableGenomicRange {
+public class SNP extends Interval implements Serializable, OverlappableGenomicRange {
 
     /**
      * The primary variant id.
@@ -27,6 +29,14 @@ public class SNP implements Serializable, OverlappableGenomicRange {
      * The Sequence name.
      */
     protected String sequenceName;
+    /**
+     * Minor allele frequency
+     */
+    protected double maf;
+
+    public SNP(String sequence, int start, int end) {
+        super(sequence, start, end);
+    }
 
     /**
      * Gets rs id.
@@ -98,6 +108,14 @@ public class SNP implements Serializable, OverlappableGenomicRange {
      */
     public void setPosition(int position) {
         this.position = position;
+    }
+
+    public double getMaf() {
+        return maf;
+    }
+
+    public void setMaf(double maf) {
+        this.maf = maf;
     }
 
     /**

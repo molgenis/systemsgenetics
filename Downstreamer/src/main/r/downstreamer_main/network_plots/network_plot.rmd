@@ -112,7 +112,6 @@ depict.to.network.v2 <- function(cur.data, edge.threshold=2, ngwas=100, gene.nam
   # Remove gene names to make plotting easier
   #nodes[nodes$annot == "GWAS gene" & nodes$zscore < gene.name.thresh,"gene_name"] <- ""
   
-  
   # Match nodes and edges
   cur.df <- cur.df[rownames(cur.df) %in% nodes$gene_id, colnames(cur.df) %in% nodes$gene_id]
   

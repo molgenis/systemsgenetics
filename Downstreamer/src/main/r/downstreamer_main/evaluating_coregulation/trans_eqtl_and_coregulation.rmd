@@ -1,0 +1,113 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+# Cached 2021-04-16
+datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+
+trans.eqtl          <- list()
+
+for (file in list.files("../data/final_paper/trans_eqtl_zscores/")) {
+  tmp <- read.table(paste0("../data/final_paper/trans_eqtl_zscores/", file), stringsAsFactors = F)
+  rownames(tmp) <- tmp[,1]
+  name <- gsub("_squared_transeqtl_zscore_sums.tsv", "", basename(file))
+  name <- gsub("_hg19", "", name)
+  name <- gsub(".txt", "", name)
+
+  colnames(tmp) <- c("gene", "sumchisqr", "nsnp")
+  trans.eqtl[[name]] <- tmp
+  
+}
+
+```
+
+# Bar and scatterplot of trans eqtl and DS score correlation
+```{r}
+plots <- list()
+tmp.mat <- matrix(nrow=0, ncol=3)
+
+for (trait in intersect(names(datasets), names(trans.eqtl))) {
+  x <- datasets[[trait]]$GenePrioritization
+  y <- trans.eqtl[[trait]]
+  
+  ol <- intersect(rownames(x), rownames(y))
+  
+  p <- xy.plot(x[ol,]$Enrichment.Z.score,
+          log10(y[ol,]$sumchisqr),
+          ylab=paste0(meta.data[trait, "Name"], " log10(sumchisrq trans eqtl)"),
+          xlab=paste0(meta.data[trait, "Name"], " key-gene score"))
+  plots[[trait]] <- p
+  
+  
+  tmp     <- cor.test(x[ol,]$Enrichment.Z.score,log10(y[ol,]$sumchisqr), use="complete.obs")
+  
+  tmp.mat <- rbind(tmp.mat, c(trait, tmp$estimate, tmp$p.value))
+}
+
+df.plot           <- tmp.mat
+colnames(df.plot) <- c("trait", "cor", "pval")
+df.plot           <- as.data.frame(df.plot, stringsAsFactors = F)
+df.plot$cor       <- as.numeric(df.plot$cor)
+df.plot$pval      <- as.numeric(df.plot$pval)
+df.plot$name      <- meta.data[df.plot$trait, "Name"]
+df.plot$class     <- meta.data[df.plot$trait, "class"]
+df.plot           <- na.omit(df.plot)
+df.plot           <- df.plot[order(df.plot$cor),]
+df.plot$name      <- factor(df.plot$name, levels=df.plot$name)
+df.plot$bonf      <- df.plot$pval * nrow(df.plot)
+df.plot$dits      <- sapply(df.plot$bonf, convert.pvalue.to.dits, simple=T)
+
+
+p1 <- ggplot(data=df.plot, mapping=aes(x=name, y=cor, fill=class)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=class.cols) +
+  ylab("Pearson R between key-genes and trans eQTLs") +
+  xlab("") +
+  geom_text(mapping=aes(x=name, y=cor, label=dits),
+            nudge_y=ifelse(df.plot$cor > 0, 0.01, -0.02),
+            size=3)
+
+
+pdf(width=8, height=4, file="output/plots/GenePrioritization_vs_sumchisqr_of_transeqtl_barplot.pdf", paper="a4")
+theme.nature(p1) +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), legend.position = "none")
+dev.off()
+
+
+pdf(width=30, height=30, file="output/plots/GenePrioritization_vs_sumchisqr_of_transeqtl.pdf")
+grid.arrange(grobs=plots, ncol=6)
+dev.off()
+
+```
+
+
+# Scatterplots of eQTLgen comparison of trans eQTL and DS score
+```{r}
+# IBD
+cur.ds            <- read.depict2("data/eqtl_gen_many_pcs/inflammatory_bowel_disease_2017_29906448_hg19_enrichtments_5.xlsx")
+cur.ds.trans.eqtl <- trans.eqtl$inflammatory_bowel_disease_2017_29906448
+
+make.plot <- function(database) {
+  x        <- cur.ds[[database]]$Enrichment.Z.score
+  names(x) <- rownames(cur.ds[[database]])
+  y        <- log10(cur.ds.trans.eqtl[names(x),2])
+  
+  xy.plot(x,y, xlab=database, ylab=paste0("log10 (∑ trans eqtl Z-score^2)"), alpha=0.5) + ylim(c(1, 2.5))
+}
+
+p1 <-  make.plot("GenePrioritization") + xlab("Key-gene score IBD")
+p2 <-  make.plot("GenePrioritizationEqtlgen100")+ xlab("Key-gene score IBD: eQTLgen")
+
+# CeD
+cur.ds            <- read.depict2("data/eqtl_gen_many_pcs/coeliac_disease_2011_22057235_hg19_enrichtments_5.xlsx")
+cur.ds.trans.eqtl <- trans.eqtl$coeliac_disease_2011_22057235
+
+p3 <-  make.plot("GenePrioritization") + xlab("Key-gene score CeD")
+p4 <-  make.plot("GenePrioritizationEqtlgen100") + xlab("Key-gene score CeD: eQTLgen")
+
+
+pdf(width=6, height=4.5, file="output/plots/GenePrioritizationEqtlGen_vs_trans_eqtl.pdf", paper = "a4")
+grid.arrange(grobs=list(p1,p2, p3, p4), ncol=2)
+dev.off()
+```
+

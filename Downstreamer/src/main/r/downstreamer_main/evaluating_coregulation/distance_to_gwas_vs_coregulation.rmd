@@ -1,0 +1,60 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+library(UpSetR)
+
+# Cached 2021-04-16
+#datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = F)
+datasets            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = F)
+```
+
+# Violin plot
+```{r}
+df.plot <- data.frame()
+
+for (trait in names(datasets)) {
+  cur <- datasets[[trait]]$GenePrioritization
+  cur <- cur[cur$Bonferroni.significant & cur$Enrichment.Z.score >0,]
+
+  cur$Distance.to.lead.GWAS.variant[cur$Distance.to.lead.GWAS.variant == "Trans (>250 kb)"] <- "250000"
+  cur$Distance.to.lead.GWAS.variant <- as.numeric(cur$Distance.to.lead.GWAS.variant)
+
+  cur$trait <- rep(trait, nrow(cur))
+  cur$class <- rep(meta.data[trait, "class"], nrow(cur))
+
+  df.plot <- rbind(df.plot, cur)
+}
+
+
+df.plot$Distance.to.lead.GWAS.variant <-  cut(df.plot$Distance.to.lead.GWAS.variant,
+                                              breaks = c(-1, 1, 5e3, 1e4, 1e5, 2e6),
+                                              labels = c("Gene body", "5kb", "10kb", "100kb", ">250kb"))
+
+
+cur.tab <- table(df.plot$Distance.to.lead.GWAS.variant)
+
+
+#pdf(width=4, height=2.5, file="output/plots/coregulation_vs_nearest_gwas_tophit.pdf", paper="a4")
+p1 <- ggplot(data=df.plot, mapping=aes(x=Distance.to.lead.GWAS.variant,
+                                      y=Enrichment.Z.score)) +
+  geom_violin() +
+  geom_boxplot(width=0.2, outlier.colour="#376B65") +
+  geom_text(data=data.frame(y=14.5,
+                        x=names(cur.tab),
+                        label=paste0("N=", cur.tab)),
+            mapping=aes(x=x, y=y, label=label),
+            col="grey", size=3) +
+  geom_text(data=data.frame(y=13.8,
+                        x=names(cur.tab),
+                        label=paste0(round((cur.tab / sum(cur.tab)) * 100, digits=0), "%")),
+            mapping=aes(x=x, y=y, label=label),
+            col="grey", size=3) +
+  ylab("Key-gene score") +
+  xlab("Distance to independent GWAS top variant")
+  
+theme.nature(p1, base_size=8)
+#dev.off()
+```
+

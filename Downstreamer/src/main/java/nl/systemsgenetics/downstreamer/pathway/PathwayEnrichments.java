@@ -13,6 +13,7 @@ import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecompos
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleSingularValueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
 import com.opencsv.CSVWriter;
+import htsjdk.samtools.util.IntervalTreeMap;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -23,14 +24,21 @@ import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.containers.GwasLocus;
+import nl.systemsgenetics.downstreamer.containers.LeadVariant;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.gene.GenePathwayAssociationStatistic;
+import nl.systemsgenetics.downstreamer.io.IoUtils;
+import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
+import umcg.genetica.collections.ChrPosTreeMap;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
@@ -58,6 +66,19 @@ public class PathwayEnrichments {
 	private final Set<String> excludeGenes;
 	//private final List<Gene> genes;
 	private final String outputBasePath;
+
+	public PathwayEnrichments(PathwayDatabase pathwayDatabase, DoubleMatrixDataset<String, String> betas, DoubleMatrixDataset<String, String> pValues, DoubleMatrixDataset<String, String> qValues) {
+		this.pathwayDatabase = pathwayDatabase;
+		this.hlaGenesToExclude = null;
+		this.ignoreGeneCorrelations = false;
+		this.betas = betas;
+		this.pValues = pValues;
+		this.qValues = qValues;
+		this.numberOfPathways = pValues.rows();
+		this.intermediateFolder = null;
+		this.excludeGenes = null;
+		this.outputBasePath = null;
+	}
 
 	public PathwayEnrichments(final PathwayDatabase pathwayDatabase, File intermediateFolder, boolean excludeHLA) throws Exception {
 		this.pathwayDatabase = pathwayDatabase;
@@ -91,6 +112,7 @@ public class PathwayEnrichments {
 			DoubleMatrixDataset<String, String> geneMaxSnpZscore,
 			DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasCorrelation,
 			DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwasBetas,
+			DoubleMatrixDataset<String, String> covariatesToCorrect,
 			int geneCorrelationWindow,
 			int numberOfPermutationsForFDR
 	) throws Exception {
@@ -114,10 +136,19 @@ public class PathwayEnrichments {
 		sharedGenes = new LinkedHashSet<>();
 
 		for (String gene : genesWithPvalue) {
-			if (pathwayGenes.contains(gene) && !excludeGenes.contains(gene) && genes.containsKey(gene)) {
-				sharedGenes.add(gene);
+
+			if (covariatesToCorrect != null) {
+				if (pathwayGenes.contains(gene) && !excludeGenes.contains(gene) && genes.containsKey(gene) && covariatesToCorrect.containsRow(gene)) {
+					sharedGenes.add(gene);
+				}
+			} else {
+				if (pathwayGenes.contains(gene) && !excludeGenes.contains(gene) && genes.containsKey(gene)) {
+					sharedGenes.add(gene);
+				}
 			}
 		}
+
+		LOGGER.info(sharedGenes.size() + " genes overlapping and used for analysis");
 
 		if (LOGGER.isDebugEnabled()) {
 			final CSVWriter sharedGeneWriter = new CSVWriter(new FileWriter(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_sharedGenes.txt")), '\t', '\0', '\0', "\n");
@@ -164,25 +195,59 @@ public class PathwayEnrichments {
 			geneZscoresNullGwasNullBetas = geneZscoresNullGwasNullBetas.duplicate();
 		}
 
-		// Do the regression with gene lengths and z-scores y/n
-		if (regressGeneLengths) {
-			LOGGER.info("Regressing gene lengths and determining residuals");
+		// Determine (log10) gene lengths
+		final double[] geneLengths = new double[sharedGenes.size()];
+		int geneIndex = 0;
+		// Ensures the geneLength vector is in the same order as the matrices
+		for (String geneInZscoreMatrix : sharedGenes) {
+			Gene geneInfo = genes.get(geneInZscoreMatrix);
+			geneLengths[geneIndex] = Math.log(geneInfo.getLength()) / Math.log(10);
+			geneIndex++;
+		}
 
-			// Determine (log10) gene lengths
-			final double[] geneLengths = new double[sharedGenes.size()];
-			int i = 0;
-			// Ensures the geneLength vector is in the same order as the matrices
-			for (String geneInZscoreMatrix : sharedGenes) {
-				Gene geneInfo = genes.get(geneInZscoreMatrix);
-				geneLengths[i] = Math.log(geneInfo.getLength()) / Math.log(10);
-				i++;
+		// Do the regression with gene lengths and z-scores y/n
+		if (regressGeneLengths && covariatesToCorrect == null) {
+			LOGGER.info("Regressing gene lengths");
+
+			// Determine residuals
+			inplaceDetermineRegressionResiduals(geneZscores, geneLengths);
+			inplaceDetermineRegressionResiduals(geneZscoresNullGwasCorrelation, geneLengths);
+			inplaceDetermineRegressionResiduals(geneZscoresNullGwasNullBetas, geneLengths);
+
+			geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+		} else if (covariatesToCorrect != null) {
+
+			covariatesToCorrect = covariatesToCorrect.viewRowSelection(sharedGenes);
+			final DoubleMatrixDataset<String, String> finalCovariates;
+
+			if (regressGeneLengths) {
+
+				List<String> columns = covariatesToCorrect.getColObjects();
+				columns.add("geneLength");
+				finalCovariates = new DoubleMatrixDataset<>(sharedGenes, columns);
+
+				LOGGER.info("Regressing covariates & gene lengths:");
+				LOGGER.info(String.join(" ", columns));
+
+				for (int r = 0; r < sharedGenes.size(); r++) {
+					for (int c = 0; c < columns.size() - 1; c++) {
+						finalCovariates.setElementQuick(r, c, covariatesToCorrect.getElementQuick(r, c));
+					}
+					finalCovariates.setElementQuick(r, columns.size() - 1, geneLengths[r]);
+				}
+
+			} else {
+				LOGGER.info("Regressing covariates:");
+				LOGGER.info(String.join(" ", covariatesToCorrect.getColObjects()));
+				finalCovariates = covariatesToCorrect;
 			}
 
 			// Determine residuals
-			inplaceDetermineGeneLengthRegressionResiduals(geneZscores, geneLengths);
-			inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasCorrelation, geneLengths);
-			inplaceDetermineGeneLengthRegressionResiduals(geneZscoresNullGwasNullBetas, geneLengths);
+			inplaceDetermineRegressionResiduals(geneZscores, finalCovariates);
+			inplaceDetermineRegressionResiduals(geneZscoresNullGwasCorrelation, finalCovariates);
+			inplaceDetermineRegressionResiduals(geneZscoresNullGwasNullBetas, finalCovariates);
 
+			geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
 		}
 
 		// Determine which genes will be merged to metagenes based on their genetic correlation
@@ -255,6 +320,7 @@ public class PathwayEnrichments {
 
 			// Save normalized gene scores to file, to check distribution later on
 			geneZscoresPathwayMatched.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+			genePathwayZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
 
 			if (LOGGER.isDebugEnabled()) {
 				genePathwayZscores.saveBinary(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla")).getAbsolutePath());
@@ -510,6 +576,14 @@ public class PathwayEnrichments {
 			LOGGER.debug("Calculating FDR");
 			qValues = calculateQValues(pValues, pValuesNullForFDR);
 
+			// Calculate null distribution metrics
+			DoubleMatrixDataset<String, String> nullDistributionMetrics = DownstreamerUtilities.calculateDistributionMetricsPerRow(betasNullForPvalue);
+			nullDistributionMetrics.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_nullDistMetrics.txt" : "_nullDistMetricsExHla.txt"));
+
+			// Calculate emprical pvalues
+			DoubleMatrixDataset<String, String> trueEmpericalPvalues = calculateEmpericalPvaluesUsingNull(betas, betasNullForPvalue, true);
+			trueEmpericalPvalues.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_trueEmpericalPvals.txt" : "_trueEmpericalPvalsExHla.txt"));
+
 			// Write output
 			pValuesNullForFDR.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_empericalPvals" : "_empericalPvalsExHla"));
 			betas.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_betas.txt" : "_betasExHla.txt"));
@@ -527,17 +601,17 @@ public class PathwayEnrichments {
 	}
 
 	/**
-	 * Determine the residuals of the gene pvalues regessed on the genelength to
+	 * Determine the residuals of the gene pvalues regessed on the covariate to
 	 * correct for any systematic inflation. Residuals replace the original
 	 * values in the DoubleMatrixDataset geneZscores.
 	 *
 	 * @param geneZscores
-	 * @param geneLengths
+	 * @param covariate
 	 */
-	private static void inplaceDetermineGeneLengthRegressionResiduals(final DoubleMatrixDataset<String, String> geneZscores, final double[] geneLengths) {
+	private static void inplaceDetermineRegressionResiduals(final DoubleMatrixDataset<String, String> geneZscores, final double[] covariate) {
 
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("Gene length vector: " + geneLengths.length);
+			LOGGER.debug("Covariate length vector: " + covariate.length);
 			LOGGER.debug("Determining residuals for matrix of size: " + geneZscores.rows() + " x " + geneZscores.columns());
 		}
 
@@ -545,19 +619,55 @@ public class PathwayEnrichments {
 		final int genes = geneZscores.rows();
 
 		IntStream.range(0, geneZscores.columns()).parallel().forEach(c -> {
+			//for (int c=0; c < geneZscores.columns(); c++) {
+
 			// Build the regression model
 			final SimpleRegression regression = new SimpleRegression();
 			DoubleMatrix1D geneZscoresCol = geneZscoresMatrix.viewColumn(c);
 
 			for (int r = 0; r < genes; ++r) {
-				regression.addData(geneLengths[r], geneZscoresCol.getQuick(r));
+				regression.addData(covariate[r], geneZscoresCol.getQuick(r));
 			}
 
 			// Apply model and inplace convert to residuals
 			for (int r = 0; r < genes; ++r) {
-				double predictedY = regression.predict(geneLengths[r]);
+				double predictedY = regression.predict(covariate[r]);
 				geneZscoresCol.setQuick(r, (geneZscoresCol.getQuick(r) - predictedY));
 			}
+			//}
+		});
+	}
+
+	/**
+	 * Determine residuals of multiple regression and write the result inplace.
+	 * Residuals replace the original values in the DoubleMatrixDataset
+	 * geneZscores.
+	 *
+	 * @param geneZscores
+	 * @param covariates
+	 */
+	private static void inplaceDetermineRegressionResiduals(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> covariates) {
+
+		final DoubleMatrix2D geneZscoresMatrix = geneZscores.getMatrix();
+		final int genes = geneZscores.rows();
+		final double[][] covariateArray = covariates.getMatrixAs2dDoubleArray();
+
+		IntStream.range(0, geneZscores.columns()).parallel().forEach(c -> {
+
+			//for (int c=0; c < geneZscores.columns(); c++) {
+			// Build the regression model
+			final OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+			DoubleMatrix1D geneZscoresCol = geneZscoresMatrix.viewColumn(c);
+			regression.newSampleData(geneZscoresCol.toArray(), covariateArray);
+
+			// Estimate residuals
+			double[] residuals = regression.estimateResiduals();
+
+			// Apply model and inplace convert to residuals
+			for (int r = 0; r < genes; ++r) {
+				geneZscoresCol.setQuick(r, residuals[r]);
+			}
+			//}
 		});
 	}
 
@@ -888,8 +998,17 @@ public class PathwayEnrichments {
 					throw new RuntimeException();
 				}
 			}
-			DenseDoubleEigenvalueDecomposition e = new DenseDoubleEigenvalueDecomposition(x.getMatrix());
-
+			
+			DenseDoubleEigenvalueDecomposition e ;
+			try {
+				e = new DenseDoubleEigenvalueDecomposition(x.getMatrix());
+			} catch(Exception ex){
+				x.printSummary();
+				throw ex;
+			}
+				
+			
+			
 			minEigenValue = e.getRealEigenvalues().aggregate(DoubleFunctions.min, DoubleFunctions.identity);
 
 			//} while (minEigenValue <= 0.5 && (currentMaxCorrelationBetweenGenes -= 0.05) > 0.00001);
@@ -1173,7 +1292,7 @@ public class PathwayEnrichments {
 		return numberOfPathways;
 	}
 
-	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
+	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() {
 
 		DoubleMatrixDataset<String, String> zscores = pValues.duplicate();
 
@@ -1199,7 +1318,92 @@ public class PathwayEnrichments {
 	public DoubleMatrixDataset<String, String> getpValues() {
 		return pValues;
 	}
-	
+
+	public static PathwayEnrichments createPathwayEnrichmentsFromGenePvalues(DownstreamerOptions options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
+		DoubleMatrixDataset<String, String> geneQvalues;
+		DoubleMatrixDataset<String, String> geneBetas;
+
+		geneQvalues = DownstreamerUtilities.adjustPvaluesBenjaminiHochberg(genePvalues);
+		geneBetas = genePvalues.duplicate();
+
+		PathwayDatabase genePPathwayDatabase = new PathwayDatabase("GenePvalues", options.getRun1BasePath() + "_genePvalues");
+
+		return new PathwayEnrichments(genePPathwayDatabase,
+				geneBetas,
+				genePvalues,
+				geneQvalues);
+	}
+
+	public static PathwayEnrichments createPathwayEnrichmentsFromClosestGene(DownstreamerOptions options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
+
+		ArrayList<String> traits = genePvalues.getColObjects();
+
+		IntervalTreeMap<Gene> genes = IoUtils.readGenesAsIntervalTree(options.getGeneInfoFile());
+
+		// Independent variants, defined in step1 or if specified as defined by alternative file
+		Map<String, ChrPosTreeMap<LeadVariant>> independentVariantsPerTrait = IoUtils.loadLeadVariantsPerTrait(options);
+
+		final int windowExtent = options.getCisWindowExtend();
+
+		//make dummy p-value matrix with 1 for not closest gene and 0 for the cloesest gene
+		DoubleMatrixDataset<String, String> closestGeneMatrix = genePvalues.duplicate();
+		closestGeneMatrix.getMatrix().assign(0);
+
+		for (String trait : traits) {
+
+			ChrPosTreeMap<LeadVariant> independentVariants = independentVariantsPerTrait.get(trait);
+
+			if (independentVariants == null) {
+				throw new Exception("Mssing lead snps information for: " + trait);
+			}
+
+			for (LeadVariant leadVariant : independentVariants) {
+				final GwasLocus gwasLocus = new GwasLocus(leadVariant, leadVariant.getContig(), leadVariant.getPos() - windowExtent, leadVariant.getPos() + windowExtent);
+
+				Gene currentClosestGene = null;
+				int currentClosestDist = Integer.MAX_VALUE;
+
+				for (Gene overlappingGene : genes.getOverlapping(gwasLocus)) {
+
+					int dist;
+					if (overlappingGene.overlaps(gwasLocus.getLeadVariant())) {
+						dist = 0;
+					} else {
+						dist = Math.min(Math.abs(gwasLocus.getLeadVariant().getPos() - overlappingGene.getStart()), Math.abs(gwasLocus.getLeadVariant().getPos() - overlappingGene.getEnd()));
+					}
+
+					if (dist < currentClosestDist) {
+						currentClosestDist = dist;
+						currentClosestGene = overlappingGene;
+					}
+
+				}
+
+				if (currentClosestGene != null) {
+					//found a nearby gene, this shoud be the closest gene
+
+					//give this gene a dummy p-value of 0
+					if (closestGeneMatrix.containsRow(currentClosestGene.getGene())) {
+						closestGeneMatrix.setElement(currentClosestGene.getGene(), trait, 10);
+					}
+
+				}
+
+			}
+
+		}
+
+		DoubleMatrixDataset<String, String> geneQvalues = closestGeneMatrix;
+		DoubleMatrixDataset<String, String> geneBetas = closestGeneMatrix;
+
+		PathwayDatabase genePPathwayDatabase = new PathwayDatabase("closestGene", options.getRun1BasePath() + "_closestGene");
+
+		return new PathwayEnrichments(genePPathwayDatabase,
+				geneBetas,
+				genePvalues,
+				geneQvalues);
+	}
+
 	// Deprecated methods
 	/**
 	 * Determine the Pvalue, Se and Tstat for a given gls regression. Only valid

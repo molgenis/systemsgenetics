@@ -1,0 +1,80 @@
+```{r}
+setwd("cellline_prediction_model")
+source("../downstreamer_functions.r")
+
+library(caret)
+
+sample.annot   <- fread("data/sample_annotations_updated_by_patrick.csv", stringsAsFactors = F, sep="\t", header=T, data.table=F)
+rownames(sample.annot) <- sample.annot$Sample
+outcome        <- sample.annot$CellLine != ""
+names(outcome) <- sample.annot$Sample
+unknown        <- rowSums(sample.annot[,c("CellLine", "TissueType", "CellType")] == "") == 3
+outcome        <- outcome[!unknown]
+unknown        <- sample.annot[unknown, "Sample"]
+  
+pcs           <- fread("../umap/data/pc-scores1588.txt.gz", data.table=F)
+rownames(pcs) <- pcs[,1]
+pcs           <- pcs[,-1]
+pcs.100       <- pcs[,1:165]
+
+ol              <- intersect(rownames(pcs.100), names(outcome))
+pcs.100         <- pcs.100[ol,]
+outcome         <- outcome[ol]
+pcs.100$outcome <- as.factor(outcome)
+```
+
+# Fit and cross validate a logistic regression model
+```{r}
+tc <- trainControl(method="cv", number=10)
+library(doMC)
+registerDoMC(4)
+
+m <- train(outcome ~ .,
+            data=pcs.100,
+            method="glm",
+            family = "binomial",
+            trControl=tc)
+print(m)
+
+save(m, file="165_components_cellline_prediction_model")  
+```
+
+# Independent sanity check
+```{r}
+library(ROCR)
+
+cur.train <- sample(rownames(pcs.100), 20000)
+cur.out   <- rownames(pcs.100)[!rownames(pcs.100) %in% cur.train]
+
+m2        <- glm(outcome[cur.train] ~., data=pcs.100[cur.train,], family = binomial(link="logit"))
+
+y         <- predict(m$finalModel, newdata=pcs.100[cur.out,], type ="response")
+#y         <- ifelse(y > 0.5, 1, 0)
+y.orig    <- as.numeric(outcome[cur.out])
+
+
+p <- roc(y.orig, y)
+print(p)
+plot(p)
+```
+
+# Convert to new definitions
+```{r}
+load("165_components_cellline_prediction_model")  
+
+predicted.celllines    <- predict(m$finalModel, newdata = pcs[unknown, 1:165], type="response")
+predicted.celllines    <- ifelse(predicted.celllines > 0.5, T, F)
+
+# Check celline proportion in real and predicted data
+sum(predicted.celllines) / length(predicted.celllines)
+sum(outcome) / length(outcome)
+
+write.table(names(predicted.celllines[predicted.celllines]), quote=F, row.names=F, col.names=F, file="predicted_celllines_165_component_logisitic_regression.tsv")
+
+write.table(c(names(predicted.celllines[predicted.celllines]),
+              names(outcome[outcome])),
+            quote=F, row.names=F, col.names=F,
+            file="annotated_and_predicted_celllines_165_component_logisitic_regression.tsv")
+
+```
+

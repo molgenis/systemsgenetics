@@ -1,0 +1,144 @@
+```{r}
+setwd("../coregulation_calculations")
+source("../downstreamer_functions.r")
+
+
+pc10    <- read.table("data/gn_coreg_10.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc50    <- read.table("data/gn_coreg_50.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc100   <- read.table("data/gn_coreg_100.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc250   <- read.table("data/gn_coreg_250.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc500   <- read.table("data/gn_coreg_500.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc1588  <- read.table("data/gn_coreg_1588.coregulation.dist.metrics.txt", row.names = 1, header=T)
+
+pc10    <- read.table("data/gn_coreg_pearson_10.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc50    <- read.table("data/gn_coreg_pearson_50.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc100   <- read.table("data/gn_coreg_pearson_100.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc250   <- read.table("data/gn_coreg_pearson_250.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc500   <- read.table("data/gn_coreg_pearson_500.coregulation.dist.metrics.txt", row.names = 1, header=T)
+pc1588  <- read.table("data/gn_coreg_pearson_1588.coregulation.dist.metrics.txt", row.names = 1, header=T)
+
+
+ds <- read.downstreamer.batch("../data/final_paper/", potential_traits = c("GenePrioritization"))
+
+ibd.trans.eqtl <- read.table("../trans_eqtl_enrichment/data/ibd_2017_squared_transeqtl_zscore_sums.tsv",sep="\t", row.names=1)
+
+```
+
+
+```{r}
+par(mfrow=c(2,3))
+boxplot(pc10$mean, pc50$mean, pc100$mean, pc250$mean, pc500$mean, pc1588$mean,
+        names=c("10", "50", "100", "250", "500", "1588"),
+        main="mean")
+abline(a=0, b=0)
+
+boxplot(pc10$max, pc50$max, pc100$max, pc250$max, pc500$max, pc1588$max,
+        names=c("10", "50", "100", "250", "500", "1588"),
+        main="max")
+
+boxplot(pc10$min, pc50$min, pc100$min, pc250$min, pc500$min, pc1588$min,
+        names=c("10", "50", "100", "250", "500", "1588"),
+        main="min")
+
+boxplot(pc10$sd, pc50$sd, pc100$sd, pc250$sd, pc500$sd, pc1588$sd,
+        names=c("10", "50", "100", "250", "500", "1588"),
+        main="sd")
+abline(a=1, b=0)
+
+boxplot(pc10$skewness, pc50$skewness, pc100$skewness, pc250$skewness, pc500$skewness, pc1588$skewness,
+        names=c("10", "50", "100", "250", "500", "1588"),
+        main="skewness")
+
+boxplot(pc10$kurtosis, pc50$kurtosis, pc100$kurtosis, pc250$kurtosis, pc500$kurtosis, pc1588$kurtosis,
+        names=c("10", "50", "100", "250", "500", "1588"),
+        main="kurtosis")
+
+
+```
+
+```{r}
+par(mfrow=c(2,3))
+plot(pc10$mean, pc10$sd)
+
+plot(pc50$mean, pc50$sd)
+
+plot(pc100$mean, pc100$sd)
+
+plot(pc250$mean, pc250$sd)
+
+plot(pc500$mean, pc500$sd)
+
+plot(pc1588$mean, pc1588$sd)
+
+```
+
+
+```{r}
+trait <- "sd"
+gwas  <- "inflammatory_bowel_disease_2017_29906448"
+x     <- ds[[gwas]]$GenePrioritization
+ol    <- intersect(rownames(x), rownames(pc10))
+x     <- x[ol,]
+
+p1 <- xy.plot(x$Enrichment.Z.score, pc10[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Z-score pc10 ", gwas))
+
+p2 <- xy.plot(x$Enrichment.Z.score, pc50[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Z-score pc50 ", gwas))
+
+p3 <- xy.plot(x$Enrichment.Z.score, pc100[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Z-score pc100 ", gwas))
+
+p4 <- xy.plot(x$Enrichment.Z.score, pc250[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Z-score pc250 ", gwas))
+
+p5 <- xy.plot(x$Enrichment.Z.score, pc500[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Z-score pc500 ", gwas))
+
+p6 <- xy.plot(x$Enrichment.Z.score, pc1588[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Z-score pc1588 ", gwas))
+
+grid.arrange(grobs=list(p1, p2, p3, p4, p5 ,p6), ncol=3)
+```
+
+
+```{r}
+trait <- "mean"
+gwas  <- "inflammatory_bowel_disease_2017_29906448"
+x     <- ibd.trans.eqtl
+ol    <- intersect(rownames(x), rownames(pc10))
+x     <- log10(x[ol,])
+
+p1 <- xy.plot(x, pc10[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Trans-eqtl pc10 " ))
+
+p2 <- xy.plot(x, pc50[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Trans-eqtl pc50 " ))
+
+p3 <- xy.plot(x, pc100[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Trans-eqtl pc100 " ))
+
+p4 <- xy.plot(x, pc250[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Trans-eqtl pc250 " ))
+
+p5 <- xy.plot(x, pc500[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Trans-eqtl  pc500 " ))
+
+p6 <- xy.plot(x, pc1588[ol, trait], 
+              ylab=paste0(trait, " coreg"), 
+              xlab=paste0("Trans-eqtl pc1588" ))
+
+grid.arrange(grobs=list(p1, p2, p3, p4, p5 ,p6), ncol=3)
+```
+

@@ -1,0 +1,275 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+library(pROC)
+library(matrixStats)
+  
+# Cached 2021-04-16
+datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+datasets.corr       <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = F)
+
+get.key.genes <-  function(dataset, use.fdr=F) {
+  coreg <- dataset$GenePrioritization
+  coreg <- coreg[coreg$Enrichment.Z.score > 0,]
+  
+  if (!use.fdr) {
+      return(coreg$Gene.ID[coreg$Bonferroni.significant])
+  } else {
+      return(coreg$Gene.ID[coreg$FDR.5..significant])
+  }
+}
+
+# HPO genes (florannes matrix)
+hpo.matrix           <- fread(hpo.file, stringsAsFactors = F, sep="\t", data.table=F)
+rownames(hpo.matrix) <- hpo.matrix[,1]
+hpo.matrix           <- hpo.matrix[,-1]
+
+
+#hpo.annot <- read.table("../data/raw_pathway_databases/hpo_v1268_updated_floranne.colAnnotations.txt", stringsAsFactors = F, sep="\t", header=T)
+hpo.annot <- as.data.frame(read_excel("../data/final_paper/enrichments/height_2018_30124842_hg19_GenePrioritization_Enrichment.xlsx", sheet="HPO")[,1:3], stringsAsfactors=F)
+rownames(hpo.annot) <- hpo.annot[,1]
+
+rownames(ensembl) <- gsub("(.*)\\.,*", "\\1", ensembl$Gene.stable.ID.version)
+hpo.matrix <- hpo.matrix[, rownames(hpo.annot)]
+```
+
+# Transcription factor enrichment
+```{r}
+#key.genes  <- unique(unlist(lapply(datasets, get.key.genes, use.fdr=T)))
+all.genes  <- rownames(datasets[[1]]$GenePrioritization)
+human.tfs  <- read.table("../data/human_tfs_lambert_2018.txt", stringsAsFactors = F)[,1]
+
+make.contingency.table <- function(key.genes, transcription.factors, background) {
+  key.genes              <- intersect(key.genes, background) 
+  transcription.factors  <- intersect(transcription.factors, background)
+
+  # Contingency table
+  #       key-gene    non-key-gene
+  # TF       a1             a2
+  # non-TF   b1             b2
+  a1 <- sum(key.genes %in% transcription.factors)
+  a2 <- sum(transcription.factors %in% background) - a1
+  b1 <- sum(!key.genes %in% transcription.factors)
+  b2 <- length(background) - b1 - a2 - a1
+
+  m   <- matrix(c(a1, a2, b1, b2), ncol=2, byrow = T)
+  res <- fisher.test(m)
+  
+  return(res)
+}
+
+df.plot <- as.data.frame(t(sapply(datasets, function(dataset){
+  cur.key.genes <- get.key.genes(dataset, use.fdr = F)
+  res <- make.contingency.table(cur.key.genes, human.tfs, all.genes)
+  
+  return(c(res$estimate, res$conf.int, res$p.value))
+})), stringsAsFactors = F)
+
+rownames(df.plot) <- names(datasets)
+
+order <- read.table("output/GenePriortization_44_traits_wardd2_cluster_order.txt", stringsAsFactors = F)[,1]
+df.plot       <- df.plot[order,]
+
+df.plot$names <- meta.data[rownames(df.plot), "Name"]
+df.plot$class <- meta.data[rownames(df.plot), "class"]
+
+#df.plot        <- df.plot[order(df.plot$`odds ratio`, decreasing = T),]
+df.plot$names  <- factor(df.plot$names, levels=df.plot$names)
+
+df.plot$V4     <- df.plot$V4 * nrow(df.plot)
+df.plot$dits   <- sapply(df.plot$V4, convert.pvalue.to.dits, simple=T)
+
+df.plot[df.plot$`odds ratio` == 0 , ]$V2 <- 0
+df.plot[df.plot$`odds ratio` == 0 , ]$V3 <- 0
+df.plot[df.plot$V3 > 12, ]$V3            <- 12
+ 
+
+pdf(width=8, height=3.5, file="output/plots/GenePriortization_tf_enrichment.pdf", paper="a4")
+
+p1 <- ggplot(data=df.plot, mapping=aes(y=`odds ratio`, x=names, fill=class)) +
+  geom_bar(stat="identity") +
+  geom_errorbar(mapping=aes(x=names, ymin=V2, ymax=V3), width=0.5, col="grey") +
+  ylim(c(0,12)) +
+  scale_fill_manual(values=class.cols) +
+  geom_text(mapping=aes(label=dits, x=names, y=V3+0.5)) +
+  xlab("") +
+  ylab("Odds ratio of TF / key-gene")
+
+theme.nature(p1)  + theme(axis.text.x=element_text(angle=45, hjust=1), legend.position = "none")
+
+dev.off()
+```
+
+# Evaluating the mean Z-score, and adjust for it
+```{r}
+zscores <- make.zscore.matrix(datasets)
+
+mean.zscore <- rowMeans(zscores)
+var.zscore <- apply(zscores, 1, var)
+
+mean.per.class <- sapply(unique(meta.data$class), function(class) {
+  cur.gwas <- rownames(meta.data[meta.data$class == class,])
+  return(rowMeans(zscores[, cur.gwas, drop=F], na.rm=T))
+  
+})
+mean.zscore <- rowMeans(mean.per.class)
+
+
+median.per.class <- sapply(unique(meta.data$class), function(class) {
+  cur.gwas <- rownames(meta.data[meta.data$class == class,])
+  return(rowMedians(zscores[, cur.gwas, drop=F], na.rm=T))
+  
+})
+median.zscore <- rowMedians(mean.per.class)
+
+# Mean vs Median
+xy.plot(mean.zscore,
+        median.zscore,
+        xlab="Mean Z score",
+        ylab="Median Z score") + geom_abline(intercept = 0, slope=1, col="grey", lty=2)
+
+# Mean gene-pvalue 
+mean.genep <- read.table("../coregulation_calculations/output/mean_gene_pvalues_44_traits_per_class_calculated_exHLA.txt", row.names = 1, header=T)
+tmp <- mean.genep[,1]
+names(tmp) <- rownames(mean.genep)
+mean.genep <- tmp
+
+ol <- intersect(names(mean.zscore), names(mean.genep))
+
+# Mean of key-gene scores vs mean genep
+xy.plot(mean.zscore[ol],
+        mean.genep[ol], 
+        xlab="Mean Z",
+        ylab="Mean genep",
+        size=2)
+
+
+# Mean of key-gene scores vs mean genep
+xy.plot(log10(ensembl[ol,]$gene.length),
+        mean.genep[ol], 
+        xlab="log10(Gene length)",
+        ylab="Mean genep",
+        size=2)
+
+
+# Correlation of mean z-score for each trait, vs 
+mean.cors <- as.numeric(cor(mean.zscore, zscores))
+names(mean.cors) <- colnames(zscores)
+
+# Mean of key-gene scores vs variance per gene
+xy.plot(mean.zscore,
+        var.zscore, 
+        xlab="Mean Z",
+        ylab="Var Z",
+        size=2)
+
+# Plot the mean correlation of key-genes vs the numver of GWS hits
+xy.plot(mean.cors,
+        meta.data[names(mean.cors),"N_indep_gws"], 
+        col.by=meta.data[names(mean.cors),"class"],
+        xlab="Correlation with mean Z",
+        ylab="# indep gws hits",
+        size=2) + scale_color_manual(values=class.cols)
+
+# Adjust key-gene scores for the mean key-gene score
+adj.zscores <- apply(zscores, 2, function(x) {
+  return(residuals(lm(x ~ mean.zscore)))
+})
+
+
+hm(cor(adj.zscores), cellwidth = 6, cellheight = 6)
+
+# TF enrichment
+top1k.mean <- names(mean.zscore[order(mean.zscore, decreasing = T)])[1:1000]
+
+top1k.height     <- names(zscores[order(zscores[,"height_2018_30124842"], decreasing = T),"height_2018_30124842"])[1:1000]
+top1k.height.adj <- names(adj.zscores[order(adj.zscores[,"height_2018_30124842"], decreasing = T),"height_2018_30124842"])[1:1000]
+
+make.contingency.table(top1k.height, human.tfs, all.genes)
+make.contingency.table(top1k.height.adj, human.tfs, all.genes)
+make.contingency.table(top1k.mean, human.tfs, all.genes)
+
+#write.table(top1k.mean, file="~/Desktop/top1k_mean_coregulated_genes_all_traits.txt", quote=F, col.names=F, row.names=F)
+```
+
+# Scatterplots showing the change in correlation after adjustment
+```{r}
+a <- "height_2018_30124842"
+b <- "cellcounts_2020_32888494_BAS" 
+a <- "cellcounts_2020_32888494_WBC"
+b <- "inflammatory_bowel_disease_2017_29906448" 
+b <- "cellcounts_2020_32888494_RBC"
+
+p1 <- xy.plot(zscores[,a], mean.zscore, xlab=a, ylab="Mean Z", col.by = mean.zscore)
+p2 <- xy.plot(zscores[,b], mean.zscore, xlab=b, ylab="Mean Z", col.by = mean.zscore)
+p3 <- xy.plot(zscores[,a], zscores[,b], xlab=a, ylab=b, main="Regular key-gene", col.by = mean.zscore)
+p4 <- xy.plot(adj.zscores[,a], adj.zscores[,b], xlab=a, ylab=b, main="Adjusted key-gene", col.by = mean.zscore)
+
+
+grid.arrange(grobs=list(p1, p2, p3, p4), ncol=2)
+
+
+top1k.a.adj <- names(adj.zscores[order(adj.zscores[,a], decreasing = T),a])[1:20]
+top1k.b.adj <- names(adj.zscores[order(adj.zscores[,b], decreasing = T),a])[1:20]
+
+write.table(top1k.a.adj, file="~/Desktop/top1k_mean_coregulated_genes_a.txt", quote=F, col.names=F, row.names=F)
+write.table(top1k.b.adj, file="~/Desktop/top1k_mean_coregulated_genes_b.txt", quote=F, col.names=F, row.names=F)
+```
+
+# Enrichment of HPO in adjusted z-scores
+```{r}
+trait <- "height_2018_30124842"
+trait <- "inflammatory_bowel_disease_2017_29906448"
+trait <- "asthma_2020_32296059"   
+trait <- "educational_attainment_2018_30038396"
+trait <- "glomerular_filtration_rate_2019_31152163"
+
+#cur.vec    <- adj.zscores[,trait]
+cur.vec <- datasets.corr[[trait]]$GenePrioritization$Enrichment.Z.score
+names(cur.vec) <- rownames(datasets.corr[[trait]]$GenePrioritization)
+
+ol         <- intersect(rownames(hpo.matrix), names(cur.vec))
+hpo.matrix <- hpo.matrix[ol, ]
+cur.vec    <- cur.vec[ol]
+
+# Calculate the HPO AUCs
+aucs <- t(sapply(colnames(hpo.matrix), function(hpo.term){
+   cur.hpo <- hpo.matrix[, hpo.term]
+  
+   if (length(unique(cur.hpo)) > 1) {
+     roc.obj <- roc(as.factor(cur.hpo), cur.vec, quiet=T, direction=">")
+     b <- roc.obj$auc - .5
+     v <- var(roc.obj)
+     se <- sqrt(v)
+     z <- (b / se)
+     p <- 2 * pt(-abs(z), df=Inf)
+     
+     return(c(roc.obj$auc, p))
+   } else {
+     return(c(0,1))
+   }
+}))
+  
+# Put it in a nice table
+df.out     <- data.frame(hpo.annot[rownames(aucs),], auc=aucs[,1], pvals=aucs[,2])
+df.out$auc <- 1-df.out$auc
+
+write.table(df.out, file=paste0("output/mean_adjusted_aucs_hpo_", trait, ".tsv"), quote=F, sep="\t", row.names=F)
+
+
+x <- df.out
+x <- read.table("output/mean_adjusted_aucs_hpo_height_2018_30124842.tsv", sep = "\t", row.names=1, header=T)
+
+
+y <- as.data.frame(read_excel("../data/final_paper/enrichments/height_2018_30124842_hg19_GenePrioritization_Enrichment.xlsx", sheet="HPO"), stringsAsfactors=F)
+
+rownames(y) <- y[,1]
+
+y <- y[rownames(x),]
+xy.plot.pvalue.colored(x$auc, x$pvals, y$AUC, y$Utest, pval.col = "all", xlab="Adjusted gfr AUC", ylab="Regular gfr AUC")
+
+
+```
+

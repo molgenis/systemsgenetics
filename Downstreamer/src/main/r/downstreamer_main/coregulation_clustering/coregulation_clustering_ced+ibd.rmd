@@ -1,0 +1,216 @@
+```{r}
+setwd("coregulation_clustering")
+source("../downstreamer_functions.r")
+library(apcluster)
+library(tidygraph)
+library(ggraph)
+
+# Parameters
+z.threshold       <- 5
+phenotype         <- "immune_disease_bonf"
+
+# Read the coregulation data
+coreg.matrix           <- fread(paste0("data/", phenotype, "/", phenotype, "_coreg_genes.txt"), data.table = F)
+rownames(coreg.matrix) <- coreg.matrix[,1]
+ol                     <- intersect(rownames(coreg.matrix), colnames(coreg.matrix))
+coreg.matrix           <- coreg.matrix[ol, ol]
+
+
+ced <- read.depict2("../evaluating_coregulation/data/no_celline_gene_network_test_results/coeliac_disease_2011_22057235_hg19_enrichtments_1.xlsx")$GenePrioritization200
+ibd <- read.depict2("../evaluating_coregulation/data/no_celline_gene_network_test_results/inflammatory_bowel_disease_2017_29906448_hg19_enrichtments_1.xlsx")$GenePrioritization200
+
+xy.plot.pvalue.colored(ced$Enrichment.Z.score,
+                       ced$Enrichment.P.value,
+                       ibd[rownames(ced),]$Enrichment.Z.score,
+                       ibd[rownames(ced),]$Enrichment.P.value,
+                       pval.col = "all",
+                       xlab="CeD",
+                       ylab="IBD")
+
+
+ced.genes <- rownames(ced)[ced$FDR.5..significant & ced$Enrichment.Z.score > 0]
+ibd.genes <- rownames(ibd)[ibd$Bonferroni.significant & ibd$Enrichment.Z.score > 0]
+
+# Ensembl
+ensembl.file <- "../coregulation_calculations/data/ensgR75_protein_coding.txt"
+ensembl <- read.table(ensembl.file, sep="\t", header=T, stringsAsFactors = F)
+ensembl <- unique(ensembl[,c(1, 7)])
+rownames(ensembl) <- ensembl[,1]
+
+# Convert ensembl ids to entrez
+ENSEMBLToEntrez <- function(gene) {
+  gene.df <- bitr(gene, fromType = "ENSEMBL",
+                  toType = c("ENTREZID"),
+                  OrgDb = org.Hs.eg.db)
+  return(gene.df$ENTREZID)
+}
+
+annotations <- ced
+```
+
+# Graph
+```{r}
+cur.df          <- coreg.matrix
+
+# Node df
+nodes           <- data.frame(gene_id=unique(c(colnames(cur.df), rownames(cur.df))), stringsAsFactors = F)
+nodes$gene_name <- as.character(ensembl[nodes$gene_id, 2])
+nodes$zscore    <- annotations[nodes$gene_id, ]$Enrichment.Z.score
+nodes$bonf      <- annotations[nodes$gene_id, ]$Bonferroni.significant
+nodes$gene_name[!nodes$bonf] <- NA
+
+# Construct edges at zscore threshold
+tmp.edges       <- cur.df[nodes$gene_id, nodes$gene_id] > z.threshold
+edges           <- as.data.frame(matrix(nrow=1, ncol=3))
+colnames(edges) <- c("from", "to", "zscore")
+
+# Remove duplicated edges for nodes which appear in both columns and rows
+tmp.edges[upper.tri(tmp.edges)]    <- F
+
+# Filter edges that only appear once
+tmp.edges[rowSums(tmp.edges) < 2,] <- rep(F, ncol(tmp.edges))
+
+#ol    <- intersect(rownames(cur.df), colnames(cur.df))
+#tmp.edges[ol, ol][upper.tri(tmp.edges[ol, ol])] <- F
+
+for (row in 1:nrow(tmp.edges)) {
+  for(col in 1:ncol(tmp.edges)) {
+    if (tmp.edges[row, col]) {
+      rowgene <- rownames(cur.df)[row]
+      colgene <- colnames(cur.df)[col]
+      edges   <- rbind(edges, c(
+        rowgene,
+        colgene,
+        cur.df[row, col]))
+    }
+  }
+}
+
+edges            <- na.omit(edges)
+
+# Match the nodes and the edges
+nodes.with.edges <- unique(c(edges[,1], edges[,2]))
+nodes            <- nodes[nodes$gene_id %in% nodes.with.edges,]
+edges$from       <- sapply(edges$from, function(x){which(x == nodes$gene_id)})
+edges$to         <- sapply(edges$to, function(x){which(x == nodes$gene_id)})
+
+# Clustering
+cluster         <- apcluster(negDistMat(r=2), coreg.matrix[nodes.with.edges, nodes.with.edges], q=0)
+nodes$cluster   <- as.character(sapply(nodes$gene_id, function(x) {
+  cls <- cluster@clusters
+  for (i in 1:length(cls)) {
+    if(x %in% names(cls[[i]])) {
+      return(i)
+    }
+  }
+}))
+
+write.table(nodes,
+            file=paste0("output/", phenotype, "_zscore_", z.threshold, "_nodes.tsv"),
+            quote=F,
+            sep="\t",
+            row.names=F)
+
+write.table(edges,
+            file=paste0("output/", phenotype, "_zscore_", z.threshold, "_edges.tsv"),
+            quote=F,
+            sep="\t",
+            row.names=F)
+
+
+tbl     <- tbl_graph(nodes=nodes, edges=edges, directed=F)
+```
+
+# Plot
+```{r}
+#  geom_node_point(aes(colour=annot, size=zscore)) +
+pdf(width=15, height=10, file=paste0("output/plots/", phenotype, "_test_zscore_", z.threshold, ".pdf"))
+p3 <- ggraph(tbl, layout="fr") +
+  geom_edge_link(alpha=0.1) +
+  geom_node_point(aes(colour=cluster, size=zscore), alpha=0.8) +
+  theme_graph(base_family = 'sans') +
+  scale_color_brewer(palette="Spectral", name="Cluster\n(Affinity prop.)") +
+  scale_fill_brewer(palette="Spectral") +
+  scale_size_continuous(name="Prioritization\nZ-score") + 
+  guides(colour = guide_legend(override.aes = list(size=4)))
+p3
+
+p3 + geom_node_label(aes(label=gene_name, fill=cluster),
+                     colour="white",
+                     show.legend = F,
+                     label.size = 0,
+                     repel=T, segment.colour="black")
+dev.off()
+```
+
+# Enrichment
+```{r}
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(ReactomePA)
+
+protein.coding.bg <- ENSEMBLToEntrez(ensembl$Ensembl.Gene.ID)
+
+results.per.cluster <- list()
+
+for (cluster.nr in 1:length(cluster@clusters)) {
+  gene.list <- ENSEMBLToEntrez(names(cluster@clusters[[cluster.nr]]))
+
+  #resKEGG <- enrichKEGG(gene = gene.list,
+  #                 organism = 'hsa',
+   #                universe = ENSEMBLToEntrez(ensembl$Ensembl.Gene.ID),
+    #               pvalueCutoff = 1,
+     #              qvalueCutoff = 1)@result
+  
+resReac <- enrichPathway(gene = gene.list,
+                   organism = 'human',
+                   universe = protein.coding.bg,
+                   pvalueCutoff = 1,
+                   qvalueCutoff = 1)@result
+  
+    #resReac <- enrichGO(gene = gene.list,
+     #              OrgDb = org.Hs.eg.db,
+     #              ont = "BP",
+      #             universe = protein.coding.bg,
+       #            pvalueCutoff = 1,
+        #           qvalueCutoff = 1)@result
+  
+  
+  
+  results.per.cluster[[cluster.nr]] <- resReac
+}
+
+save(results.per.cluster, file=paste0("output/", phenotype, "_zscore_", z.threshold, "_cluster_enrichment.Rdata"))
+pathways    <- unique(unlist(sapply(results.per.cluster, rownames)))
+pval.matrix <- matrix(nrow=length(pathways), ncol=0)
+
+
+for (j in 1:length(results.per.cluster)) {
+  x <- results.per.cluster[[j]]
+  pvals <- c()
+  for (pw in pathways) {
+    tmp <- x[pw,]
+    pvals <- c(pvals, tmp$pvalue)
+  }
+  pval.matrix <- cbind(pval.matrix, pvals)
+}
+rownames(pval.matrix)           <- pathways
+pval.matrix[is.na(pval.matrix)] <- 1
+pval.matrix                     <- -log10(pval.matrix)
+
+determine.delta.pvalue <- function(index.col, matrix) {
+  selection <- 1:ncol(matrix)
+  selection <- selection[selection != index.col]
+  return(matrix[,index.col] - rowMeans(matrix[,selection]))
+}
+
+cl <- sapply(1:ncol(pval.matrix), determine.delta.pvalue, pval.matrix)
+
+reactome.link <- fread("data/ReactomePathways.txt", data.table=F)
+rownames(reactome.link) <- reactome.link[,1]
+cl <- data.frame(names=reactome.link[rownames(cl),2], cl)
+
+write.table(cl, file=paste0("output/", phenotype, "_zscore_", z.threshold, "_cluster.specificity.tsv"), quote=F, sep="\t")
+
+```
+

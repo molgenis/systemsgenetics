@@ -1,0 +1,80 @@
+```{r}
+setwd("evaluating_coregulation")
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+library(ggsignif)
+
+# Read reference datasets
+ensembl <- read.table(ensembl.file, sep="\t", header=T, row.names = 1, stringsAsFactors = F)
+ensembl$gene.length = ensembl$Gene.end..bp. - ensembl$Gene.start..bp.
+rownames(ensembl) <- make.names(ensembl$Gene.name, unique=T)
+
+# Gnomad Pli
+gnomad <- read.table(gnomad.file, sep="\t", header=T, stringsAsFactors = F)
+gnomad <- gnomad[!duplicated(gnomad$gene),]
+rownames(gnomad) <- make.names(gsub("\\.\\d+", "", ensembl[gnomad$gene, ]$Gene.stable.ID.version), unique=T)
+
+# Coregulation
+files    <- list.files(main.downstreamer.output.path, pattern="*\\_enrichtments\\_exHla\\.xlsx", full.names = T)
+datasets <- list()
+for (file in files) {
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\.xlsx", "", basename(file))
+  name <- gsub("\\_hg19\\_enrichtments\\_exHla\\_1\\.xlsx", "", name)
+  name <- gsub("\\_enrichtments\\_exHla\\.xlsx", "", name)
+  name <- gsub("\\_hg19\\.txt\\_exHla\\.xlsx", "", name)
+  
+  if (length(grep("v55", file)) > 0) {
+    name <- paste0(name, "_v55")
+  }
+  datasets[[name]] <- read.depict2(file)
+}
+
+# Genepvalues
+files <- list.files(main.downstreamer.output.path, pattern="*_genePvalues_.*.xlsx", full.names = T)
+genep <- read.genep.excel(files)
+genep[is.na(genep)] <- 1
+
+
+gstcells <- read.table(gstcell.de.gene.file, sep=",", stringsAsFactors = F, header=T, row.names=1)
+```
+
+
+```{r}
+cur.zscores <- datasets$coeliac_disease_2011_22057235$Coregulation
+ol <- intersect(rownames(cur.zscores), rownames(gstcells))
+
+is.de.gene <- gstcells[ol,]$padj < 0.05
+
+df.plot <- data.frame(y=cur.zscores[ol,]$Enrichment.Z.score, x=is.de.gene)
+df.plot <- na.omit(df.plot)
+
+p <- ggplot(data=df.plot, mapping=aes(y=y, x=x)) +
+  geom_hline(yintercept = 0, lty=2, col="grey") +
+  geom_violin() +
+  geom_boxplot(width=0.05, color="black") +
+  geom_signif(comparisons = list(c("TRUE", "FALSE")), tip_length = 0) + xlab("Responds to TCR stimulation") + ylab("Core gene zscore for CeD")
+
+theme.nature(p)
+
+```
+
+
+```{r}
+cur.zscores <- datasets$coeliac_disease_2011_22057235$Coregulation
+ol <- intersect(rownames(cur.zscores), rownames(gstcells))
+
+is.de.gene <- gstcells[ol,]$padj < 0.05
+
+df.plot <- data.frame(y=cur.zscores[ol,]$Enrichment.Z.score, x=is.de.gene)
+df.plot <- na.omit(df.plot)
+
+p <- ggplot(data=df.plot, mapping=aes(y=y, x=x)) +
+  geom_hline(yintercept = 0, lty=2, col="grey") +
+  geom_violin() +
+  geom_boxplot(width=0.05, color="black") +
+  geom_signif(comparisons = list(c("TRUE", "FALSE")), tip_length = 0) + xlab("Responds to TCR stimulation") + ylab("Core gene zscore for CeD")
+
+theme.nature(p)
+```
+

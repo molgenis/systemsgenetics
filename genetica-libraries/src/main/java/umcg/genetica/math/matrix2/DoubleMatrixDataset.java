@@ -334,7 +334,13 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			matrix = new DenseLargeDoubleMatrix2D(rowsToView.size(), originalColMap.size());
 		}
 
-		final File fileBinary = new File(fileName + ".dat");
+		final File fileBinary;
+		if(fileName.endsWith(".dat")){
+			fileBinary = new File(fileName);
+		} else {
+			fileBinary = new File(fileName + ".dat");
+		}
+		
 		final RandomAccessFile in = new RandomAccessFile(fileBinary, "r");
 		final int nrRows;
 		final int nrCols;
@@ -440,7 +446,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 		//First load the raw binary data:
-		File fileBinary = new File(fileName + ".dat");
+		final File fileBinary;
+		if(fileName.endsWith(".dat")){
+			fileBinary = new File(fileName);
+		} else {
+			fileBinary = new File(fileName + ".dat");
+		}
 		BufferedInputStream in;
 		int nrRows;
 		int nrCols;
@@ -706,7 +717,14 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	public static DoubleMatrixDataset<String, String> loadDoubleBinaryData(String fileName) throws FileNotFoundException, IOException {
 		//First load the raw binary data:
-		File fileBinary = new File(fileName + ".dat");
+		
+		final File fileBinary;
+		if(fileName.endsWith(".dat")){
+			fileBinary = new File(fileName);
+		} else {
+			fileBinary = new File(fileName + ".dat");
+		}
+		
 		BufferedInputStream in;
 		int nrRows;
 		int nrCols;
@@ -1780,6 +1798,32 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			System.out.println();
 		}
 
+	}
+	
+	/**
+	 * Prints number of rows and cols and top left corner of the matrix
+	 * 
+	 */
+	public void printSummary(){
+		
+		System.out.println("rows: " + rows() + " cols: " + columns());
+		System.out.println("Top left corner:");
+		
+		ArrayList<C> colNames = new ArrayList(hashRows.keySet());
+		ArrayList<R> rowNames = new ArrayList(hashRows.keySet());
+
+		for (int c = 0; c < Math.min(3, matrix.columns()); ++c) {
+			System.out.print("\t" + colNames.get(c).toString());
+		}
+		System.out.println();
+		for (int r = 0; r < Math.min(3, matrix.rows()); ++r) {
+			System.out.print(rowNames.get(r));
+			for (int c = 0; c < Math.min(3, matrix.columns()); ++c) {
+				System.out.print("\t" + matrix.getQuick(r, c));
+			}
+			System.out.println();
+		}
+		
 	}
 
 	/**

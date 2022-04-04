@@ -1,0 +1,39 @@
+```{r}
+setwd("../downstreamer_collaborations/metabrain/")
+source("../../downstreamer_main/downstreamer_functions.r")
+
+
+results <- read.downstreamer.batch("data/metabrain_downstreamer_results_with_cerebellum/", potential_traits=c("GenePrioritization_MetaBrain", "GenePrioritization_MetaBrainCor", "GenePrioritization_MetaBrainCer"), USE.CACHE = F )
+
+```
+
+
+
+```{r}
+
+make.plot <- function (trait) {
+  cur.res <- results[[trait]]
+  x <- cur.res$GenePrioritization_MetaBrain
+  #y <- cur.res$GenePrioritization_MetaBrainCer
+  y <- cur.res$GenePrioritization_MetaBrainCor
+
+  ol <- intersect(rownames(x), rownames(y))
+  x <- x[ol,]
+  y <- y[ol,]
+  p <- xy.plot.pvalue.colored(x$Enrichment.Z.score,
+                         x$Enrichment.P.value,
+                         y$Enrichment.Z.score,
+                         y$Enrichment.P.value,
+                         xlab="MetaBrain",
+                         ylab="MetaBrain Cortex",
+                         main=trait,
+                         pval.col="all")
+}
+
+plots <- lapply(names(results), make.plot)
+
+pdf(width=15, height=5, file="output/plots/metabrain_cortex_coregulation_comparision.pdf")
+grid.arrange(grobs=plots, ncol=4)
+dev.off()
+```
+

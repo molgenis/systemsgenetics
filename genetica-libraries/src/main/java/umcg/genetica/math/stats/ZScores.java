@@ -21,7 +21,7 @@ public class ZScores {
         return r;
     }
 
-    private final static NormalDistribution NORM_DIST = new NormalDistribution();
+    private final static NormalDistribution NORM_DIST = new NormalDistribution(0, 1);
 
 
     /**
@@ -69,7 +69,7 @@ public class ZScores {
         double sampleSizeSum = 0;
         int nrNans = 0;
         for (int j = 0; j < zScores.length; j++) {
-            if (!Double.isNaN(zScores[j])) {
+            if (!Double.isNaN(zScores[j]) && sampleSizes[j] >= 0) {
                 nrNans++;
                 weightedZ += Math.sqrt(sampleSizes[j]) * zScores[j];
                 sampleSizeSum += sampleSizes[j];
@@ -175,6 +175,9 @@ public class ZScores {
         }
         p *= 2.0d;
 
+        if (p < 2.0E-323D) {
+            p = 2.0E-323D;
+        }
         return p;
     }
 
