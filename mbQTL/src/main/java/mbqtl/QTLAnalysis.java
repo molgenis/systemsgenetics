@@ -226,21 +226,22 @@ public class QTLAnalysis {
             if (geneLimitSet == null) {
                 geneLimitSet = snpGeneLimitSet.keySet();
                 System.out.println("Limiting to " + geneLimitSet.size() + " genes");
-            } else {
-                HashSet<String> tmpgenelimit = new HashSet<>();
-                for (String gene : geneLimitSet) {
-                    if (snpGeneLimitSet.containsKey(gene)) {
-                        tmpgenelimit.add(gene);
-                    }
-                }
-//				for (String s : snpGeneLimitSet.keySet()) {
-//					if (!geneLimitSet.contains(s)) {
-//						System.out.println("Could not find " + s);
-//					}
-//				}
-                geneLimitSet = tmpgenelimit;
-                System.out.println("File contains " + geneLimitSet.size() + " genes after matching with " + geneLimitFile);
             }
+//            else {
+//                HashSet<String> tmpgenelimit = new HashSet<>();
+//                for (String gene : geneLimitSet) {
+//                    if (snpGeneLimitSet.containsKey(gene)) {
+//                        tmpgenelimit.add(gene);
+//                    }
+//                }
+////				for (String s : snpGeneLimitSet.keySet()) {
+////					if (!geneLimitSet.contains(s)) {
+////						System.out.println("Could not find " + s);
+////					}
+////				}
+//                geneLimitSet = tmpgenelimit;
+//                System.out.println("File contains " + geneLimitSet.size() + " genes after matching with " + geneLimitFile);
+//            }
 
         }
 
