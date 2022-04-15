@@ -17,6 +17,7 @@ import org.molgenis.genotype.bgen.BgenGenotypeWriter;
 import org.molgenis.genotype.util.Utils;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
+import org.molgenis.genotype.vcf.VcfGenotypeField.VcfGenotypeFormatSupplier;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -298,7 +299,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 
 		variantIndex = 0;
 		for (GeneticVariant variant : complexGenotypeData) {
-			complexGenotypeData.setPreferredGenotypeField("GT");
+			complexGenotypeData.setPreferredGenotypeFormat("GT");
 
 			// Check the equality of probabilities.
 			// First check if the bgenProbabilities are according to the expected stuff
@@ -309,7 +310,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 			variantIndex++;
 		}
 
-		complexGenotypeData.setPreferredGenotypeField(null);
+		complexGenotypeData.setPreferredGenotypeFormat(new VcfGenotypeFormatSupplier());
 
 		// Write and read again
 		BgenGenotypeWriter bgenGenotypeWriter = new BgenGenotypeWriter(complexGenotypeData);
