@@ -61,7 +61,7 @@ public class LDCalculator {
         System.out.println(qtlfile1 + " has " + geneSnpMap.size() + " unique genes.");
 
         TextFile out = new TextFile(output, TextFile.W);
-        out.writeln("Gene\tSNP1\tSNP2\tRsq\tDprime");
+        out.writeln("Gene\tSNP1\tSNP2\tDprime\tRSq");
         TextFile tf2 = new TextFile(qtlfile2, TextFile.R);
         header = tf2.readLineElems(TextFile.tab);
         for (int i = 0; i < header.length; i++) {
