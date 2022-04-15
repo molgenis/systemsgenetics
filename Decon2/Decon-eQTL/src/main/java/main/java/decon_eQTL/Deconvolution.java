@@ -86,9 +86,9 @@ public class Deconvolution {
 				String qtlName = gene + '_' + genotype;
 				++QTLsTotal;
 				double[] dosages = genotypeData.getGenotypes().get(genotype);
-				if (dosages == null) {
-					DeconvolutionLogger.log.info(String.format("Error: Genotype %s included in gene/snp combinations to test, but not available in the expression file!", genotype));
-					throw new RuntimeException(String.format("Error: Genotype %s included in gene/snp combinations to test, but not available in the expression file!", genotype));
+				if(dosages == null){
+					DeconvolutionLogger.log.info(String.format("Error: Genotype %s included in gene/snp combinations to test, but not available in the genotype file!",genotype));
+					throw new RuntimeException(String.format("Error: Genotype %s included in gene/snp combinations to test, but not available in the genotype file!",genotype));
 				}
 				double[] expressionLevels = geneExpressionLevels.get(gene);
 
