@@ -1,15 +1,15 @@
 package umcg.genetica.math;
 
 import Jama.EigenvalueDecomposition;
-import com.sun.j3d.utils.geometry.Primitive;
-import org.ojalgo.matrix.PrimitiveMatrix;
+
+import org.ojalgo.matrix.Primitive64Matrix;
 import org.ojalgo.matrix.decomposition.Eigenvalue;
 import org.ojalgo.matrix.store.MatrixStore;
-import org.ojalgo.matrix.store.PrimitiveDenseStore;
+import org.ojalgo.matrix.store.RawStore;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.concurrent.ConcurrentCorrelation;
 import umcg.genetica.text.Strings;
-import umcg.genetica.util.RunTimer;
 
 public class PCAojAlgo {
 
@@ -110,10 +110,10 @@ public class PCAojAlgo {
 
 	public void eigenValueDecomposition(double[][] data) {
 		System.out.println("Performing eigenvector decomposition on " + data.length + " x " + data[data.length - 1].length + " matrix ");
-		PrimitiveMatrix matrix = PrimitiveMatrix.FACTORY.rows(data);
+		RawStore matrix = RawStore.wrap(data);
 
 
-		eig = Eigenvalue.make(matrix, true);
+		eig = Eigenvalue.PRIMITIVE.make(matrix, true);
 
 		if (!eig.decompose(matrix)) {
 			throw new RuntimeException("Decomposition failed");
