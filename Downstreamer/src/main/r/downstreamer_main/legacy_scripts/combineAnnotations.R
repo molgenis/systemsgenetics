@@ -281,3 +281,71 @@ combinedMeta$Tissue[combinedMeta$Cohort == "GSA"]
 
 
 sort(table(combinedMeta$study[rownames(combinedMeta) %in% rownames(pcs)]))
+
+
+
+
+
+pcsAndMeta <- merge(pcs, combinedMeta, by = 0, all.x = T)
+
+
+sum(tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass))
+
+
+defaultCol <- adjustcolor("grey", alpha.f = 0.3)
+pcsAndMeta$col <- defaultCol
+
+tissueAndCol <- tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass)
+
+pcsAndMeta$col[tissueAndCol] <- tissueCol$col[match(tolower(pcsAndMeta[tissueAndCol,"Tissue"]), tolower(tissueCol$PlotClass))]
+
+
+tissue2AndCol <- tolower(pcsAndMeta[,"Tissue2"]) %in% tolower(tissueCol$PlotClass)
+sum(tissue2AndCol)
+pcsAndMeta$col[tissue2AndCol] <- tissueCol$col[match(tolower(pcsAndMeta[tissue2AndCol,"Tissue2"]), tolower(tissueCol$PlotClass))]
+
+
+
+sum(is.na(tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass)))
+
+#pcsAndMeta$col <- tissueCol$col[match(tolower(pcsAndMeta[,"Tissue"]), tolower(tissueCol$PlotClass), nomatch = nrow(tissueCol))]
+
+plotOrder <- order((pcsAndMeta$col != defaultCol) + 1)
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$col[plotOrder], cex = 0.4)
+dev.off()
+
+rpng(width = 800, height = 800)
+png("tissues.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5)], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
+dev.off()
+
+
+defaultCol <- adjustcolor("grey", alpha.f = 0.3)
+pcsAndMeta$col <- defaultCol
+pcsAndMeta$col[!is.na(pcsAndMeta[,"Cellline"]) & pcsAndMeta[,"Cellline"]] <- "magenta"
+plotOrder <- order((pcsAndMeta$col != defaultCol) + 1)
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$col[plotOrder], cex = 0.4)
+dev.off()
+
+png("celllines.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5)], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
+dev.off()
+
+
+
+defaultCol <- adjustcolor("grey", alpha.f = 0.3)
+pcsAndMeta$col <- defaultCol
+pcsAndMeta$col[!is.na(pcsAndMeta[,"Cancer"]) & pcsAndMeta[,"Cancer"]] <- "chartreuse1"
+plotOrder <- order((pcsAndMeta$col != defaultCol) + 1)
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$col[plotOrder], cex = 0.4)
+dev.off()
+
+png("cancers.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5)], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
+dev.off()
