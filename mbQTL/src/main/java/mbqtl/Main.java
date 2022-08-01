@@ -447,7 +447,7 @@ public class Main {
                     }
                     break;
                 case "mbqtlplot":
-                    if (vcf == null || chrom == -1 || linkfile == null || geneannotation == null || genexpression == null || output == null) {
+                    if (vcf == null || linkfile == null || geneannotation == null || genexpression == null || output == null) {
                         System.err.println("Required: --vcf tabix.vcf.gz, --chr [1-22], --gte linkfile.txt, --annotation annotation.txt.gz, --exp expfile.txt.gz and --out /outdir/ ");
                         System.err.println("Optional: --replacemissinggenotypes, --norank, --minobservations 10 --maf 0.01 --cr 0.95 --hwep 0.001 --ciswindow 1E6 --nrdatasets 2");
                         System.out.println("VCF: " + vcf);

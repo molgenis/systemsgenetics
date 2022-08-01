@@ -12,6 +12,7 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.hamcrest.CoreMatchers;
+import static org.hamcrest.MatcherAssert.assertThat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -123,7 +124,7 @@ public class DeconvolutionTest {
 			fail( "My method didn't throw when I expected it to" );
 		} catch (RuntimeException expectedException) {
 			assertEquals(expectedException.getMessage(),
-						"Error: Genotype genotype_NOT_EXISTING included in gene/snp combinations to test, but not available in the expression file!");
+						"Error: Genotype genotype_NOT_EXISTING included in gene/snp combinations to test, but not available in the genotype file!");
 		}
 	}
 
@@ -158,7 +159,7 @@ public class DeconvolutionTest {
 			fail( "My method didn't throw when I expected it to" );
 		} catch (RuntimeException expectedException) {
 			assertEquals(expectedException.getMessage(), 
-						"Error: Genotype genotype_NOT_EXISTING included in gene/snp combinations to test, but not available in the expression file!");
+						"Error: Genotype genotype_NOT_EXISTING included in gene/snp combinations to test, but not available in the genotype file!");
 		}
 	}
 		

@@ -636,7 +636,7 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 									propBetterPvals++;
 								}
 							}
-							propBetterPvals /= permutationPvals.length;
+							propBetterPvals /= permutationPvals.length;  // permutation p-value (equals 0.0 if metaP is very small(
 							try {
 								BetaDistributionMLE mle = new BetaDistributionMLE();
 								shape = mle.fit(permutationPvals);
