@@ -78,7 +78,7 @@ public class EMPValidator extends QTLAnalysis {
 				}
 
 				// get variants, 1mb up and downstream
-				int pos = geneAnnotation.getPos(geneAnnotationId);
+				int pos = geneAnnotation.getStartPos(geneAnnotationId);
 				int start = pos - 1000001;
 				if (start < 0) {
 					start = 0;

@@ -11,13 +11,11 @@ import umcg.genetica.containers.Triple;
 import umcg.genetica.enums.Chromosome;
 import umcg.genetica.features.Feature;
 import umcg.genetica.graphics.Grid;
-import umcg.genetica.graphics.panels.ScatterplotPanel;
 import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.ZScores;
 import umcg.genetica.util.Primitives;
 
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -88,7 +86,7 @@ public class MbQTLPlot extends QTLAnalysis {
                 double[] expData = expressionData.data[g];
 
                 // define CIS window
-                int pos = geneAnnotation.getPos(geneAnnotationId);
+                int pos = geneAnnotation.getStartPos(geneAnnotationId);
                 String geneSymbol = geneAnnotation.getSymbol(geneAnnotationId);
                 int start = pos - cisWindow;
                 if (start < 0) {
@@ -286,7 +284,7 @@ public class MbQTLPlot extends QTLAnalysis {
 //                                    String fileout = outputPrefix + "-" + gene + "-" + snp + ".pdf";
 //                                    System.out.println("Plotting: " + fileout);
 //                                    grid.draw(fileout);
-                                    String fileout = outputPrefix + "qtlplot-" + chr + "_" + geneAnnotation.getPos(geneAnnotationId) + "-" + gene + "-" + geneSymbol + "_" + snp + ".pdf";
+                                    String fileout = outputPrefix + "qtlplot-" + chr + "_" + geneAnnotation.getStartPos(geneAnnotationId) + "-" + gene + "-" + geneSymbol + "_" + snp + ".pdf";
                                     System.out.println("Plotting: " + fileout);
                                     qtlPlotGrid.draw(fileout);
 

@@ -74,7 +74,7 @@ public class MbQTLSingleDataset extends QTLAnalysis {
                 double[] expDataPerDatasetRanked = ranker.rank(datasetExpressionData, true);
 
                 // get variants, 1mb up and downstream
-                int pos = geneAnnotation.getPos(geneAnnotationId);
+                int pos = geneAnnotation.getStartPos(geneAnnotationId);
                 int start = pos - cisWindow;
                 if (start < 0) {
                     start = 0;
