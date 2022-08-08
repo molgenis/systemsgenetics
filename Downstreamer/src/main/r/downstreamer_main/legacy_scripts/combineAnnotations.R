@@ -2,10 +2,16 @@
 #remoter::server(verbose = T, port = 55556, password = "laberkak", sync = T)
 
 
-
 remoter::client("localhost", port = 55503, password = "laberkak")
 
+
+#save.image("tmp.RData")
+
+
+
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
+setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
+load("tmp.RData")
 
 
 library(readr)
@@ -83,6 +89,12 @@ metadata_Kn2 <- metadata_Kn[,c("Origin", "Cell_type", "Cell_type_simplified", "C
 colnames(metadata_Kn2) <- paste0("KidneyNetwork.",colnames(metadata_Kn2))
 
 
+#Mahmoud annotations
+load("Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations.rda", verbose = T)
+str(Annotations)
+rownames(Annotations) <- Annotations$SampleID
+mahmoudAnnotations <- Annotations[,-(1:2)]
+#write.table(Annotations, sep = "\t", quote = F, col.names = NA, file = "tmp.txt")
 
 allSamples <- c(rownames(metadata_gtex2), rownames(metadata_tcga2), rownames(sraMeta))
 
@@ -139,10 +151,24 @@ str(g)
 combinedMeta <- g[,-c(1:7)]
 
 
+#now fillin the gtex and gcta recount meta data. 
+
+tmp <- metadata_gtex[,colnames(metadata_gtex) %in% sraSharedCol]
+combinedMeta[rownames(tmp),colnames(tmp)] <- tmp
+
+tmp <- metadata_tcga[,colnames(metadata_tcga) %in% sraSharedCol]
+combinedMeta[rownames(tmp),colnames(tmp)] <- tmp
+
+rm(tmp)
+
+#set study make column uniform
+combinedMeta$study[combinedMeta$Cohort == "GTEx"] <- "GTEx"
+combinedMeta$study[combinedMeta$Cohort == "TCGA"] <- "TCGA"
+
+
 head(rownames(combinedMeta))
 
-combinedMeta$exclude <- FALSE
-combinedMeta$fetal <- NA
+combinedMeta$Fetal <- NA
 
 #save(combinedMeta, file = "combinedMeta.RData")
 #load(file = "combinedMeta.RData")
@@ -207,23 +233,50 @@ combinedMeta$Cellline[gadoAnnotatedCelllines] <- TRUE
 combinedMeta$CelllineName[!is.na(combinedMeta$study) & combinedMeta$study == "SRP166108"] <- "HepaRG"
 combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "SRP166108"] <- TRUE
 
-combinedMeta$exclude[!is.na(combinedMeta$study) & combinedMeta$study == "SRP025982"] <- TRUE
-
-
-#TODO SRP013565 encode data search for table
 
 #TODO ERP020977 We differentiated macrophages from induced pluripotent stem cells in 86 unrelated, healthy individuals derived by the Human Induced Pluripotent Stem Cells Initiative (HIPSCI),
 
 combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "SRP192714"] <- "Blood"
 combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP192714"] <- "Whole Blood"
+combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "SRP192714"] <- FALSE
+combinedMeta$Cancer[!is.na(combinedMeta$study) & combinedMeta$study == "SRP192714"] <- FALSE
 
 combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "SRP186687"] <- TRUE
 
 combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "SRP092402"] <- "Blood"
 combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP092402"] <- "Whole Blood"
+combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "SRP092402"] <- FALSE
+combinedMeta$Cancer[!is.na(combinedMeta$study) & combinedMeta$study == "SRP092402"] <- FALSE
 
-combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "SRP116272"] <- "Blood"
-combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP116272"] <- "Whole Blood"
+#TODO SRP116272 is wrong are cell sorted to monocytes and t-cells
+
+combinedMeta$Tissue[combinedMeta$study == "SRP116272" & grepl("source_name;;T cells", combinedMeta$sra.sample_attributes)] <- "Blood"
+combinedMeta$Tissue2[combinedMeta$study == "SRP116272" & grepl("source_name;;T cells", combinedMeta$sra.sample_attributes)] <- "T-cells"
+combinedMeta$Cellline[combinedMeta$study == "SRP116272" & grepl("source_name;;T cells", combinedMeta$sra.sample_attributes)] <- FALSE
+combinedMeta$Cancer[combinedMeta$study == "SRP116272" & grepl("source_name;;T cells", combinedMeta$sra.sample_attributes)] <- FALSE
+
+combinedMeta$Tissue[combinedMeta$study == "SRP116272" & grepl("source_name;;Monocytes", combinedMeta$sra.sample_attributes)] <- "Blood"
+combinedMeta$Tissue2[combinedMeta$study == "SRP116272" & grepl("source_name;;Monocytes", combinedMeta$sra.sample_attributes)] <- "Monocytes"
+combinedMeta$Cellline[combinedMeta$study == "SRP116272" & grepl("source_name;;Monocytes", combinedMeta$sra.sample_attributes)] <- FALSE
+combinedMeta$Cancer[combinedMeta$study == "SRP116272" & grepl("source_name;;Monocytes", combinedMeta$sra.sample_attributes)] <- FALSE
+
+combinedMeta$Tissue[combinedMeta$study == "SRP061932"] <- ""
+combinedMeta$Tissue2[combinedMeta$study == "SRP061932"] <- ""
+combinedMeta$Cellline[combinedMeta$study == "SRP061932"] <- FALSE
+combinedMeta$Cancer[combinedMeta$study == "SRP061932"] <- FALSE
+
+
+
+combinedMeta$Tissue[combinedMeta$study == "SRP047323"] <- ""
+combinedMeta$Tissue2[combinedMeta$study == "SRP047323"] <- ""
+combinedMeta$Cellline[combinedMeta$study == "SRP047323"] <- FALSE
+combinedMeta$Cancer[combinedMeta$study == "SRP047323"] <- FALSE
+
+
+
+combinedMeta$CelllineName[combinedMeta$study == "ERP001942"] <- "lcl"
+combinedMeta$Cellline[combinedMeta$study == "ERP001942"] <- TRUE
+
 
 combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "ERP007111"] <- "iPSC"
 
@@ -231,35 +284,266 @@ combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "ERP012
 combinedMeta$CelllineName[!is.na(combinedMeta$study) & combinedMeta$study == "ERP012914"] <- "HAP1"
 
 
-combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "SRP187978"] <- "Liver" 
-
-#TODO SRP074349 check for table. Combination of cancer and control of differnt tissues
-
-combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "ERP016243"] <- "Brain" 
-combinedMeta$fetal[!is.na(combinedMeta$study) & combinedMeta$study == "ERP016243"] <- TRUE 
-
-combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "ERP020478"] <- TRUE
-combinedMeta$CelllineName[!is.na(combinedMeta$study) & combinedMeta$study == "ERP020478"] <- "hela"
-
-combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP056295"] <- "AML"
-combinedMeta$Cancer[!is.na(combinedMeta$study) & combinedMeta$study == "SRP056295"] <- TRUE
-
-sum(rownames(combinedMeta)[!is.na(combinedMeta$study) & combinedMeta$study == "ERP107748"]%in% rownames(pcs))
-
-combinedMeta$Tissue1[!is.na(combinedMeta$study) & combinedMeta$study == "SRP151763"] <- "Eye"
+combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "SRP151763"] <- "Eye"
 combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP151763"] <- "Retina"
 
-
-combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "SRP102077"] <- TRUE
-combinedMeta$CelllineName[!is.na(combinedMeta$study) & combinedMeta$study == "SRP102077"] <- "H-STS"
 
 combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "SRP162411"] <- "Blood"
 combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP162411"] <- "Whole Blood"
 
 
 
+combinedMeta["SRR5341594", "sra.sample_title"] <- "Human differentiating macrophage"
+
+
+
+mahmoudAnnotations
+
+colnames(mahmoudAnnotations)[colnames(mahmoudAnnotations) == "Cell_Line"] <- "Cellline"
+colnames(mahmoudAnnotations)[colnames(mahmoudAnnotations) == "Cell_Line_Name"] <- "CelllineName"
+
+all(colnames(mahmoudAnnotations) %in% colnames(combinedMeta))
+all(rownames(mahmoudAnnotations) %in% rownames(combinedMeta))
+
+
+combinedMeta[rownames(mahmoudAnnotations),colnames(mahmoudAnnotations)] <- mahmoudAnnotations
+
+
+#All cellline to false for all tissues
+combinedMeta$Cancer[combinedMeta$Cellline] <- FALSE
+
+tmp <- !is.na(combinedMeta$Tissue) & combinedMeta$Tissue == "Cervix Uteri"
+combinedMeta$Tissue[tmp] <- "Uterus"
+combinedMeta$Tissue2[tmp] <- "Cervix"
+
+tmp <- !is.na(combinedMeta$Tissue) & combinedMeta$Tissue == "Cervix"
+combinedMeta$Tissue[tmp] <- "Uterus"
+combinedMeta$Tissue2[tmp] <- "Cervix"
+
+tmp <- !is.na(combinedMeta$Tissue) & combinedMeta$Tissue == "Lymph node"
+combinedMeta$Tissue[tmp] <- "Lymph Nodes"
+
+tmp <- !is.na(combinedMeta$Tissue) & combinedMeta$Tissue == "Bone marrow"
+combinedMeta$Tissue[tmp] <- "Bone Marrow"
+
+tmp <- !is.na(combinedMeta$Tissue) & combinedMeta$Tissue == "Colorectal"
+combinedMeta$Tissue[tmp] <- "Colon"
+
+
+tmp <- !is.na(combinedMeta$Tissue) & combinedMeta$Tissue == "Whole blood"
+combinedMeta$Tissue2[tmp] <- "Whole Blood"
+combinedMeta$Tissue[tmp] <- "Blood"
+
+
+
+#Below are tissues2 fixes by Mahmoud
+#annotations already present in Tissue are removed from Tissue2
+#duplicated are harmonized
+#set rare annotations to NA
+### All parts of the basal ganglia (including substantia nigra) were annotated as basal ganglia
+###brain fragements was set to NA
+###Sample annotated as both brain & stomach was annotated as NA
+
+#Adipose Tissue 
+# Tissue2 includes "Adipose - Subcutaneous" & "Adipose - Visceral (Omentum)"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Adipose - Subcutaneous"),2]= "Subcutaneous"
+combinedMeta[!is.na(combinedMeta$Tissue2) & combinedMeta$Tissue2== "Adipose - Visceral (Omentum)",2]= "Visceral"
+
+# Adrena Gland
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Adrenal Gland"),2]= NA
+
+#AML
+# keep as is
+
+# Arteries
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Artery - Aorta"),2]= "Aorta"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Artery - Coronary"),2]= "Coronary"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Artery - Tibial"),2]= "Tibial"
+
+#B-cells
+# keep as is
+
+#basal ganglion
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "basal ganglion"),2]= "Basal Ganglia"
+
+#Bladder
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Bladder"),2]= NA
+
+#Brain (keep as GTEX)****
+#Check for brain cortex vs cortex vs cerebral cortex
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Amygdala"),2]= "Amygdala"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Anterior cingulate cortex"),2]= "Anterior cingulate cortex"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Caudate (basal ganglia)"),2]= "Caudate (basal ganglia)"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Cerebellar Hemisphere"),2]= "Cerebellar Hemisphere"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Cerebellum"),2]= "Cerebellum"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Cortex"),2]= "Cortex"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Frontal Cortex (BA9)"),2]= "Frontal Cortex"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Hippocampus"),2]= "Hippocampus"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Hypothalamus"),2]= "Hypothalamus"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Nucleus accumbens (basal ganglia)"),2]= "Nucleus accumbens (basal ganglia)"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Brain - Putamen (basal ganglia)"),2]= "Putamen (basal ganglia)"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Spinal cord (cervical c-1)"),2]= "Spinal Cord (cervical c-1)"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Substantia nigra"),2]= "Substantia nigra"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "brain fragment"),2]= NA
+
+#Breast
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Breast - Mammary Tissue"),2]= "Mammary Tissue"
+
+#CD34+
+# Keep as is
+
+#Cultured fibroblasts
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Cells - Cultured fibroblasts"),2]= "Cultured Fibroblasts"
+
+#cerebellum
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "cerebellum"),2]= "Cerebellum"
+
+# cerebral cortex 
+#recheck****
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "cerebral cortex"),2]= "Cortex"
+
+#Cervix
+#keep as is
+
+#choroid plexus
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "choroid plexus"),2]= NA
+
+#Colon
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Colon - Sigmoid"),2]= "Sigmoid"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Colon - Transverse"),2]= "Transverse"
+
+#diencephalon & diencephalon and midbrain
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "diencephalon"),2]= "Diencephalon"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "diencephalon and midbrain"),2]= NA
+
+#DLBCL
+#keep as is 
+
+#Esophagus
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Esophagus - Gastroesophageal Junction"),2]= "Gastroesophageal Junction"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Esophagus - Mucosa"),2]= "Mucosa"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Esophagus - Muscularis"),2]= "Muscularis"
+
+#Fallopian Tube
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Fallopian Tube"),2]= NA
+
+#forebrain
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "forebrain"),2]= NA
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "forebrain and midbrain"),2]= NA
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "forebrain fragment"),2]= NA
+
+#Heart
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Heart - Atrial Appendage"),2]= "Atrial Appendage"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Heart - Left Ventricle"),2]= "Left Ventricle"
+
+#hindbrain
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "hindbrain"),2]= NA
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "hindbrain fragment"),2]= NA
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "hindbrain without cerebellum"),2]= NA
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "hippocampus"),2]= "Hippocampus"
+
+#iPCS
+#keep as is
+
+#Kidney
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Kidney - Cortex"),2]= "Cortex"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Kidney - Medulla"),2]= "Medulla"
+
+#Liver
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Liver"),2]= NA
+
+#Lung
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Lung"),2]= NA
+
+#medulla oblongata
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "medulla oblongata"),2]= "Medulla Oblongata"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "midbrain"),2]= "Midbrain"
+
+#Minor salivary gland
+#keep as is
+
+#Monocytes
+#keep as is
+
+#Muscle-skeletal
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Muscle-skeletal"),2]= "Skeletal"
+
+#Nerve
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Nerve - Tibial"),2]= "Tibial"
+
+#NK-cells
+#keep as is
+
+#Ovary
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Ovary"),2]= NA
+
+#Pancreas
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Pancreas"),2]= NA
+
+#PBMC
+#keep as is
+
+#Pituitary
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Pituitary"),2]= NA
+
+#pituitary and diencephalon & pons
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "pituitary and diencephalon"),2]= NA
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "pons"),2]= NA
+
+#prostate
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Prostate"),2]= NA
+
+#skin
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Skin - Not Sun Exposed (Suprapubic)"),2]= "Suprapubic"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Skin - Sun Exposed (Lower leg)"),2]= "Lower Leg"
+
+# Small Intesine
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Small Intestine - Terminal Ileum"),2]= "Terminal Ileum"
+
+#spinal cord
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "spinal cord"),1]= "Spinal Cord"
+
+#Spleen 
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Spleen"),2]= NA
+
+#Stomach 
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Stomach"),2]= NA
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "stomach"),2]= NA
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "stomach"),1]= NA
+
+#T-cells
+#Keep as is
+
+#telencephalon
+#too general
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "telencephalon"),2]= NA
+
+#temporal lobe
+#The temporal lobe is one of the four major lobes of the cerebral cortex
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "temporal lobe"),2]= "Cortex"
+
+#Testis
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Testis"),2]=NA
+
+#Thyroid
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Thyroid"),2]=NA
+
+#Uterus
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Uterus"),2]=NA
+
+#Vagina
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Vagina"),2]=NA
+
+
+
+x <- table(paste0(combinedMeta$Tissue, " - ", combinedMeta$Tissue2))
+write.table(x, file = "test.txt", row.names = F, quote = F, sep = "\t")
+
 table(combinedMeta$Tissue)
 table(combinedMeta$Tissue2)
+
+table(combinedMeta$Tissue, combinedMeta$Cellline)
+
 table(combinedMeta$Cancer)
 
 table(combinedMeta$Tissue, combinedMeta$Cancer)
@@ -280,30 +564,30 @@ combinedMeta$Tissue[combinedMeta$Cohort == "GSA"]
 
 
 
-sort(table(combinedMeta$study[rownames(combinedMeta) %in% rownames(pcs)]))
+
+save(combinedMeta, file = "combinedMeta_2022_08_08.RData")
 
 
-
-
-
-pcsAndMeta <- merge(pcs, combinedMeta, by = 0, all.x = T)
+pcsAndMeta <- merge(pcs[,1:100], combinedMeta, by = 0, all.x = T)
+dim(pcsAndMeta)
 
 
 sum(tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass))
 
 
-defaultCol <- adjustcolor("grey", alpha.f = 0.3)
+defaultCol <- adjustcolor("grey", alpha.f = 0.6)
 pcsAndMeta$col <- defaultCol
 
 tissueAndCol <- tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass)
 
-pcsAndMeta$col[tissueAndCol] <- tissueCol$col[match(tolower(pcsAndMeta[tissueAndCol,"Tissue"]), tolower(tissueCol$PlotClass))]
+pcsAndMeta$col[tissueAndCol] <-  adjustcolor(tissueCol$col[match(tolower(pcsAndMeta[tissueAndCol,"Tissue"]), tolower(tissueCol$PlotClass))], alpha.f = 0.6)
 
 
 tissue2AndCol <- tolower(pcsAndMeta[,"Tissue2"]) %in% tolower(tissueCol$PlotClass)
 sum(tissue2AndCol)
-pcsAndMeta$col[tissue2AndCol] <- tissueCol$col[match(tolower(pcsAndMeta[tissue2AndCol,"Tissue2"]), tolower(tissueCol$PlotClass))]
+pcsAndMeta$col[tissue2AndCol] <-  adjustcolor(tissueCol$col[match(tolower(pcsAndMeta[tissue2AndCol,"Tissue2"]), tolower(tissueCol$PlotClass))], alpha.f = 0.6)
 
+table(pcsAndMeta[pcsAndMeta[,"PC_7"] >= 50,"Tissue2"])
 
 
 sum(is.na(tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass)))
@@ -313,39 +597,255 @@ sum(is.na(tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass)))
 plotOrder <- order((pcsAndMeta$col != defaultCol) + 1)
 
 rpng(width = 800, height = 800)
-plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$col[plotOrder], cex = 0.4)
+#pdf(file = "test.pdf")
+plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$col[plotOrder], cex = 0.3, pch = 16)
 dev.off()
 
 rpng(width = 800, height = 800)
-png("tissues.png",width = 2000, height = 2000)
-pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5)], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
+#pdf(file = "test.pdf")
+plot(pcsAndMeta[plotOrder,"PC_1_c"], pcsAndMeta[plotOrder,"PC_6_c"], col = pcsAndMeta$col[plotOrder], cex = 0.3, pch = 16)
+dev.off()
+
+
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrder,"PC_6"], pcsAndMeta[plotOrder,"recount_qc.intron_sum_%"], col = pcsAndMeta$col[plotOrder], cex = 0.5, pch = 16)
+dev.off()
+
+cor.test(pcsAndMeta[plotOrder,"PC_2"], pcsAndMeta[plotOrder,"recount_qc.star.%_reads_mapped_to_multiple_loci_both"])
+
+rpng()
+plot(pcsAndMeta[plotOrderSmartseq,"PC_6"], pcsAndMeta[plotOrderSmartseq,"recount_qc.intron_sum_%"], col = pcsAndMeta$colSmartseq[plotOrderSmartseq], cex = 0.5, pch = 16)
+dev.off()
+
+rpng()
+layout(matrix(1:2, nrow = 1))
+plot(pcsAndMeta[plotOrderSmartseq,"PC_6"], pcsAndMeta[plotOrderSmartseq,"recount_qc.intron_sum_%"], col = pcsAndMeta$colSmartseq[plotOrderSmartseq], cex = 0.5, pch = 16)
+abline(h=7, col = "red", lwd =2)
+vioplot(pcsAndMeta[!is.na(pcsAndMeta[,"recount_qc.intron_sum_%"]),"recount_qc.intron_sum_%"])
+abline(h=7, col = "red", lwd =2)
+dev.off()
+
+sum(pcsAndMeta[!is.na(pcsAndMeta[,"recount_qc.intron_sum_%"]),"recount_qc.intron_sum_%"] > 7)
+
+
+
+
+layout(matrix(1:2, nrow = 1))
+plot(pcsAndMeta[plotOrderSmartseq,"PC_1"], pcsAndMeta[plotOrderSmartseq,"recount_qc.bc_auc.unique_%"], col = pcsAndMeta$colSmartseq[plotOrderSmartseq], cex = 0.5, pch = 16)
+abline(h=125, col = "red", lwd =2)
+vioplot(pcsAndMeta[!is.na(pcsAndMeta[,"recount_qc.bc_auc.unique_%"]),"recount_qc.bc_auc.unique_%"])
+abline(h=125, col = "red", lwd =2)
+
+
+sum(pcsAndMeta[!is.na(pcsAndMeta[,"recount_qc.star.%_of_reads_mapped_to_too_many_loci"]),"recount_qc.star.%_of_reads_mapped_to_too_many_loci"] > 0.5)
+dim(pcsAndMeta)
+
+
+png(width = 2500, height = 2500, file = "outliers.png")
+rpng()
+pairs(pcsAndMeta[plotOrderSmartseq,c("PC_1", "PC_2", "PC_6", "recount_qc.intron_sum_%", "recount_qc.bc_auc.all_%", "recount_qc.bc_auc.unique_%", "recount_qc.star.%_of_reads_mapped_to_too_many_loci")], col = pcsAndMeta$colSmartseq[plotOrderSmartseq], cex = 0.5, pch = 16,  upper.panel = NULL)
+dev.off()
+
+newExlude <- 
+  (!is.na(pcsAndMeta[,"recount_qc.star.%_of_reads_mapped_to_too_many_loci"]) & pcsAndMeta[,"recount_qc.star.%_of_reads_mapped_to_too_many_loci"] > 0.5) |
+  (!is.na(pcsAndMeta[,"recount_qc.intron_sum_%"]) & pcsAndMeta[,"recount_qc.intron_sum_%"] > 20) |
+  (!is.na(pcsAndMeta[,"recount_qc.bc_auc.unique_%"]) & pcsAndMeta[,"recount_qc.bc_auc.unique_%"] < 125)
+
+
+
+sum(newExlude)
+sum(is.na(newExlude))
+length(newExlude)
+
+pcsAndMeta <- pcsAndMeta[!newExlude,]
+dim(pcsAndMeta)
+
+write.table(pcsAndMeta$Row.names, file = "samplesToKeep2.txt", row.names = F, quote = F)
+
+sum(is.na(pcsAndMeta[,"recount_qc.star.number_of_reads_mapped_to_too_many_loci_both"]))
+
+plot(pcsAndMeta[,"recount_qc.star.number_of_reads_mapped_to_too_many_loci_both"], pcsAndMeta[,"recount_qc.star.%_of_reads_mapped_to_too_many_loci"])
+
+
+abline(v=40)
+dev.off()
+
+rpng(width = 800, height = 800)
+png("tissues_c.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5,"_c")], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL, pch = 16)
+dev.off()
+
+png("tissues2_c.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",6:10,"_c")], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
+dev.off()
+
+
+
+defaultCol <- adjustcolor("grey", alpha.f = 0.3)
+pcsAndMeta$colCelline <- defaultCol
+pcsAndMeta$colCelline[!is.na(pcsAndMeta[,"Cellline"]) & pcsAndMeta[,"Cellline"]] <-  adjustcolor("magenta", alpha.f = 0.3)
+pcsAndMeta$colCelline[!is.na(pcsAndMeta[,"Cellline"]) & !pcsAndMeta[,"Cellline"]] <-  adjustcolor("royalblue1", alpha.f = 0.3)
+plotOrder <- order((pcsAndMeta$colCelline != defaultCol) + 1)
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$colCelline[plotOrder], cex = 0.4, pch = 16)
+dev.off()
+
+for(i in c(1,3:100)){
+  png(paste0("cellinePlots/pc",i,".png"),width = 1000, height = 1000)
+  #rpng()
+  plot(pcsAndMeta[plotOrder,"PC_2"], pcsAndMeta[plotOrder,paste0("PC_",i)], col = pcsAndMeta$colCelline[plotOrder], cex = 1, pch = 16, xlab = "PC2", ylab = paste0("PC", i))
+  dev.off()
+}
+
+table(paste0(combinedMeta$Tissue, " - ", combinedMeta$Tissue2))
+
+png("celllines_c.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5, "_c")], col = pcsAndMeta$colCelline[plotOrder], cex = 0.4, upper.panel = NULL, pch = 16)
+dev.off()
+
+
+png("celllines2.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",6:10, "")], col = pcsAndMeta$colCelline[plotOrder], cex = 0.4, upper.panel = NULL, pch = 16)
 dev.off()
 
 
 defaultCol <- adjustcolor("grey", alpha.f = 0.3)
-pcsAndMeta$col <- defaultCol
-pcsAndMeta$col[!is.na(pcsAndMeta[,"Cellline"]) & pcsAndMeta[,"Cellline"]] <- "magenta"
-plotOrder <- order((pcsAndMeta$col != defaultCol) + 1)
+pcsAndMeta$colCancer <- defaultCol
+pcsAndMeta$colCancer[!is.na(pcsAndMeta[,"Cancer"]) & pcsAndMeta[,"Cancer"]] <- adjustcolor("chartreuse1", alpha.f = 0.6)
+plotOrder <- order((pcsAndMeta$colCancer != defaultCol) + 1)
 
 rpng(width = 800, height = 800)
-plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$col[plotOrder], cex = 0.4)
-dev.off()
-
-png("celllines.png",width = 2000, height = 2000)
-pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5)], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
-dev.off()
-
-
-
-defaultCol <- adjustcolor("grey", alpha.f = 0.3)
-pcsAndMeta$col <- defaultCol
-pcsAndMeta$col[!is.na(pcsAndMeta[,"Cancer"]) & pcsAndMeta[,"Cancer"]] <- "chartreuse1"
-plotOrder <- order((pcsAndMeta$col != defaultCol) + 1)
-
-rpng(width = 800, height = 800)
-plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$col[plotOrder], cex = 0.4)
+plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$colCancer[plotOrder], cex = 0.4)
 dev.off()
 
 png("cancers.png",width = 2000, height = 2000)
-pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5)], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5)], col = pcsAndMeta$colCancer[plotOrder], cex = 0.4, upper.panel = NULL, pch = 16)
 dev.off()
+
+library(pROC)
+cancerAuc <- apply(pcsAndMeta[,paste0("PC_",1:100)], 2, function(x){as.numeric(auc(response = pcsAndMeta$Cancer, predictor = x))})
+sort(cancerAuc)
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrder,"PC_33"], pcsAndMeta[plotOrder,"PC_9"], col = pcsAndMeta$col[plotOrder], cex = 0.4)
+dev.off()
+
+
+library(pROC)
+cancerAuc <- apply(pcsAndMeta[,paste0("PC_",1:100)], 2, function(x){as.numeric(auc(response = pcsAndMeta$Cancer, predictor = x))})
+sort(cancerAuc)
+
+celllineAuc <- apply(pcsAndMeta[,paste0("PC_",1:100)], 2, function(x){as.numeric(auc(response = pcsAndMeta$Cellline, predictor = x))})
+sort(celllineAuc)
+
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrder,"PC_33"], pcsAndMeta[plotOrder,"PC_9"], col = pcsAndMeta$colCancer[plotOrder], cex = 0.4)
+dev.off()
+
+rpng()
+pairs(pcsAndMeta[plotOrder,paste0("PC_",c(33,32,9,10,21))], col = pcsAndMeta$colCancer[plotOrder], cex = 0.4, upper.panel = NULL)
+dev.off()
+
+
+rpng()
+pairs(pcsAndMeta[plotOrder,paste0("PC_",c(3,2,27,6,20))], col = pcsAndMeta$colCelline[plotOrder], cex = 0.4, upper.panel = NULL)
+dev.off()
+
+combinedMeta$sra.sample_title <- gsub("\"", "", combinedMeta$sra.sample_title)
+
+tmp <- merge(combinedMeta,pcs[,1:100], by = 0, all.y = T)
+dim(tmp)
+write.table(tmp, file = "tmpAnnotations.txt", sep = "\t", quote = FALSE, col.names = NA)
+
+qseq <- read.delim("quantseqSamples.txt")[,1]
+str(qseq)
+
+
+defaultCol <- adjustcolor("grey", alpha.f = 0.3)
+=AndMeta$colQseq <- defaultCol
+pcsAndMeta$colQseq[pcsAndMeta$Row.names %in% qseq] <- "orangered"
+plotOrderQseq <- order((pcsAndMeta$colQseq != defaultCol) + 1)
+
+plot(pcsAndMeta[plotOrderQseq,"PC_1"], pcsAndMeta[plotOrderQseq,"PC_2"], col = pcsAndMeta$colQseq[plotOrderQseq], cex = 0.4, main = "Quantseq")
+
+plot(pcsAndMeta[plotOrderQseq,"PC_6"], pcsAndMeta[plotOrderQseq,"PC_1"], col = pcsAndMeta$colQseq[plotOrderQseq], cex = 0.4, main = "Quantseq")
+
+
+table(pcsAndMeta$sra.library_layout)
+
+
+numColumns <- unlist(lapply(combinedMeta, is.numeric))
+
+
+combinedMetaMatrix <- as.matrix(combinedMeta[,numColumns])
+
+library(pROC)
+
+qseqClass <- as.factor(rownames(combinedMeta) %in% qseq)
+table(qseqClass)
+dim(combinedMetaMatrix)
+qseqPValues <- apply(combinedMetaMatrix,2,function(x){
+  tryCatch(
+    {
+      #wilcox.test(x ~ qseqClass)$p.value
+      as.numeric(auc(response = qseqClass, predictor = x))
+    },
+    error=function(cond){return(1)}
+  )
+})
+sort(qseqPValues)
+
+
+boxplot(combinedMetaMatrix[,"recount_qc.bc_frag.kallisto_mean_length"] ~ qseqClass )
+
+
+
+
+
+
+
+
+plot(pcsAndMeta[plotOrderQseq,"recount_seq_qc.%c"], log10(pcsAndMeta[plotOrderQseq,"recount_qc.star.number_of_splices:_total"]), col = pcsAndMeta$colQseq[plotOrderQseq], cex = 0.6)
+10^5.2
+abline(h=log10(150000))
+abline(v=60)
+log10(10^5)
+
+plot(log10(pcsAndMeta[plotOrderQseq,"recount_qc.star.number_of_splices:_total"]), pcsAndMeta[plotOrderQseq,"recount_qc.bc_frag.kallisto_mean_length"], col = pcsAndMeta$colQseq[plotOrderQseq], cex = 0.4)
+
+plot(pcsAndMeta[plotOrderQseq,"PC_6"], log10(pcsAndMeta[plotOrderQseq,"recount_qc.star.number_of_splices:_total"]), col = pcsAndMeta$colQseq[plotOrderQseq], cex = 0.4)
+
+
+pc1Cor <- cor(pcsAndMeta[,"PC_1"], pcsAndMeta[,numColumns], use = "pairwise.complete.obs")
+sort(pc1Cor[1,])
+
+pc6Cor <- apply(combinedMetaMatrix[pcsAndMeta$Row.names,],2,function(x){
+  tryCatch(
+    {
+      #wilcox.test(x ~ qseqClass)$p.value
+      cor(pcsAndMeta[,"PC_6"], x, use = "pairwise.complete.obs")
+    },
+    error=function(cond){return(0)},
+    warning=function(cond){return(0)}
+  )
+})
+sort(pc6Cor^2)
+
+load("testPcPAtrickFrist100.RData", verbose = T)
+colnames(expPcs)
+str(expPcs)
+colnames(expPcs) <- paste0("PC_", 1:ncol(expPcs))
+pcsAndMeta <- merge(expPcs, combinedMeta, by = 0, all.x = T)
+dim(pcsAndMeta)
+
+
+
+load("gadoPca.RData", verbose = T)
+colnames(expGadoPcsSub)
+str(expGadoPcsSub)
+colnames(expGadoPcsSub) <- paste0("PC_", 1:ncol(expGadoPcsSub))
+pcsAndMeta <- merge(expGadoPcsSub, combinedMeta, by = 0, all.x = T)
+dim(pcsAndMeta)

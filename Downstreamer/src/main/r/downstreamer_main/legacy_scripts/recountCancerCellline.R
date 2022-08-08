@@ -1,20 +1,29 @@
-#srun --cpus-per-task=1 --mem=50gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
+#srun --cpus-per-task=1 --mem=200gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
 #remoter::server(verbose = T, port = 55556, password = "laberkak", sync = T)
 
 
 
-remoter::client("localhost", port = 55503, password = "laberkak")
+remoter::client("localhost", port = 55508, password = "laberkak")
 
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
 
-  #save.image(file='celllineCancer.RData')
+#save.image(file='celllineCancer.RData')
 load('celllineCancer.RData')
 
 library(pheatmap)
 
 library(readr)
-table_tmp <- read_delim("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA/pc-scores.txt.gzip", delim = "\t", quote = "")
+
+
+colTypes <- cols(
+  .default = col_double(),
+  `02/08/2022` = col_character()
+)
+
+
+
+table_tmp <- read_delim("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA/pc-scores.txt.gzip", delim = "\t", quote = "", col_types = colTypes)
 pcs <- as.matrix(table_tmp[,-1])
 rownames(pcs) <- table_tmp[,1][[1]]
 rm(table_tmp)
@@ -133,7 +142,7 @@ str(pcCor)
 
 rpng()
 pdf("tmp.pdf", height = 12, width =20)
-pheatmap(pcCor[,!colnames(pcCor) %in% paste0("PC_", 1:100)], scale = "none", cluster_cols= FALSE, cluster_rows = FALSE)
+pheatmap::pheatmap(pcCor[,!colnames(pcCor) %in% c("sra.spot_length", paste0("PC_", 1:1000))], scale = "none", cluster_cols= FALSE, cluster_rows = FALSE)
 dev.off()
 tail(sort(abs(pcCor[1,])), n = 10)
 

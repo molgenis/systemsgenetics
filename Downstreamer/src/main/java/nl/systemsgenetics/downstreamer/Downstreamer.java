@@ -162,9 +162,8 @@ public class Downstreamer {
 					break;
 				case STEP1:
 
-					DownstreamerStep1Results step1Res = DownstreamerMainAnalysis.step1(options);
-					DownstreamerStep2Results step2Res = null;
-					DownstreamerStep3Results step3Res = null;
+					final DownstreamerStep1Results step1Res = DownstreamerMainAnalysis.step1(options);
+					final DownstreamerStep2Results step2Res;
 
 					if (options.getPathwayDatabases().isEmpty()) {
 						LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode STEP2 and exactly the same output path and genes file to continue");
@@ -180,7 +179,7 @@ public class Downstreamer {
 							writer.saveStep2Excel(step2Res);
 						}
 						if (options.isAssignPathwayGenesToCisWindow()) {
-							step3Res = DownstreamerMainAnalysis.step3(options);
+							final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(options);
 							if (writer != null) {
 								writer.saveStep3Excel(step2Res, step3Res);
 							}
@@ -198,7 +197,7 @@ public class Downstreamer {
 						writer.saveStep2Excel(step2Res);
 					}
 					if (options.isAssignPathwayGenesToCisWindow()) {
-						step3Res = DownstreamerMainAnalysis.step3(options);
+						final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(options);
 						if (writer != null) {
 							writer.saveStep3Excel(step2Res, step3Res);
 						}
