@@ -337,17 +337,19 @@ combinedMeta$Tissue[tmp] <- "Blood"
 
 
 #Below are tissues2 fixes by Mahmoud
-#annotations already present in Tissue are removed from Tissue2
+# annotations already present in Tissue are removed from Tissue2
 #duplicated are harmonized
 #set rare annotations to NA
 ### All parts of the basal ganglia (including substantia nigra) were annotated as basal ganglia
 ###brain fragements was set to NA
+###Retina needs to have Eye as Tissue
 ###Sample annotated as both brain & stomach was annotated as NA
 
 #Adipose Tissue 
 # Tissue2 includes "Adipose - Subcutaneous" & "Adipose - Visceral (Omentum)"
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Adipose - Subcutaneous"),2]= "Subcutaneous"
 combinedMeta[!is.na(combinedMeta$Tissue2) & combinedMeta$Tissue2== "Adipose - Visceral (Omentum)",2]= "Visceral"
+combinedMeta[!is.na(combinedMeta$Tissue) & combinedMeta$Tissue== "Adipose Tissue",1]= "Adipose"
 
 # Adrena Gland
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Adrenal Gland"),2]= NA
@@ -372,7 +374,7 @@ combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Bladder"),2
 #Brain (keep as GTEX)****
 #Check for brain cortex vs cortex vs cerebral cortex
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Amygdala"),2]= "Amygdala"
-combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Anterior cingulate cortex"),2]= "Anterior cingulate cortex"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Anterior cingulate cortex (BA24)"),2]= "Anterior cingulate cortex"
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Caudate (basal ganglia)"),2]= "Caudate (basal ganglia)"
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Cerebellar Hemisphere"),2]= "Cerebellar Hemisphere"
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Cerebellum"),2]= "Cerebellum"
@@ -381,7 +383,7 @@ combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Fro
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Hippocampus"),2]= "Hippocampus"
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Hypothalamus"),2]= "Hypothalamus"
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Nucleus accumbens (basal ganglia)"),2]= "Nucleus accumbens (basal ganglia)"
-combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Brain - Putamen (basal ganglia)"),2]= "Putamen (basal ganglia)"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Putamen (basal ganglia)"),2]= "Putamen (basal ganglia)"
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Spinal cord (cervical c-1)"),2]= "Spinal Cord (cervical c-1)"
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Brain - Substantia nigra"),2]= "Substantia nigra"
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "brain fragment"),2]= NA
@@ -466,7 +468,7 @@ combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "midbrain"),
 #keep as is
 
 #Muscle-skeletal
-combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Muscle-skeletal"),2]= "Skeletal"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Muscle - Skeletal"),2]= "Skeletal"
 
 #Nerve
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Nerve - Tibial"),2]= "Tibial"
@@ -501,7 +503,7 @@ combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Skin - Sun 
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Small Intestine - Terminal Ileum"),2]= "Terminal Ileum"
 
 #spinal cord
-combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "spinal cord"),1]= "Spinal Cord"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "spinal cord"),2]= ""
 
 #Spleen 
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Spleen"),2]= NA
@@ -534,10 +536,26 @@ combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Uterus"),2]
 #Vagina
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Vagina"),2]=NA
 
+#whole blood
+#keep as is
+
+#remove iPSCs from 
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "iPSC") ,4]="iPSC"
+combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "iPSC") ,2]=""
+
+#remove NA problem
+combinedMeta$Tissue2[is.na(combinedMeta$Tissue2)]<- ""
+combinedMeta$Tissue[is.na(combinedMeta$Tissue)]<- ""
 
 
-x <- table(paste0(combinedMeta$Tissue, " - ", combinedMeta$Tissue2))
-write.table(x, file = "test.txt", row.names = F, quote = F, sep = "\t")
+
+
+x <- table(paste0(combinedMeta$Tissue, " - ", combinedMeta$Tissue2),combinedMeta$Cancer)
+str(x)
+write.table(x, file = "test.txt", row.names = T, col.names = NA, quote = F, sep = "\t")
+
+
+table(paste0(combinedMeta$Tissue, " - ", combinedMeta$Tissue2),combinedMeta$Cancer)
 
 table(combinedMeta$Tissue)
 table(combinedMeta$Tissue2)
@@ -565,32 +583,38 @@ combinedMeta$Tissue[combinedMeta$Cohort == "GSA"]
 
 
 
-save(combinedMeta, file = "combinedMeta_2022_08_08.RData")
+save(combinedMeta, file = "combinedMeta_2022_08_09.RData")
 
 
 pcsAndMeta <- merge(pcs[,1:100], combinedMeta, by = 0, all.x = T)
 dim(pcsAndMeta)
 
 
-sum(tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass))
+tissueCol <- read.delim("Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", row.names = 1)
+
+sum(unique(pcsAndMeta[,"Tissue"]) %in% tissueCol$PlotClass)
+sum(unique(pcsAndMeta[,"Tissue2"]) %in% tissueCol$PlotClass)
+
+x <- unique(pcsAndMeta[,"Tissue2"])
+x[!x %in% tissueCol$PlotClass]
 
 
 defaultCol <- adjustcolor("grey", alpha.f = 0.6)
 pcsAndMeta$col <- defaultCol
 
-tissueAndCol <- tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass)
+tissueAndCol <- pcsAndMeta[,"Tissue"] %in% tissueCol$PlotClass
 
-pcsAndMeta$col[tissueAndCol] <-  adjustcolor(tissueCol$col[match(tolower(pcsAndMeta[tissueAndCol,"Tissue"]), tolower(tissueCol$PlotClass))], alpha.f = 0.6)
+pcsAndMeta$col[tissueAndCol] <-  adjustcolor(tissueCol$col[match(pcsAndMeta[tissueAndCol,"Tissue"], tissueCol$PlotClass)], alpha.f = 0.6)
 
 
-tissue2AndCol <- tolower(pcsAndMeta[,"Tissue2"]) %in% tolower(tissueCol$PlotClass)
+tissue2AndCol <- pcsAndMeta[,"Tissue2"] %in% tissueCol$PlotClass
 sum(tissue2AndCol)
-pcsAndMeta$col[tissue2AndCol] <-  adjustcolor(tissueCol$col[match(tolower(pcsAndMeta[tissue2AndCol,"Tissue2"]), tolower(tissueCol$PlotClass))], alpha.f = 0.6)
+pcsAndMeta$col[tissue2AndCol] <-  adjustcolor(tissueCol$col[match(pcsAndMeta[tissue2AndCol,"Tissue2"], tissueCol$PlotClass)], alpha.f = 0.6)
 
-table(pcsAndMeta[pcsAndMeta[,"PC_7"] >= 50,"Tissue2"])
+table(pcsAndMeta[pcsAndMeta[,"PC_2"] >= 0,"Tissue2"])
 
 
-sum(is.na(tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tissueCol$PlotClass)))
+sum(is.na(tolower(pcsAndMeta[,"Tissue"]) %in% tolower(tisueCol$PlotClass)))
 
 #pcsAndMeta$col <- tissueCol$col[match(tolower(pcsAndMeta[,"Tissue"]), tolower(tissueCol$PlotClass), nomatch = nrow(tissueCol))]
 
@@ -601,86 +625,25 @@ rpng(width = 800, height = 800)
 plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$col[plotOrder], cex = 0.3, pch = 16)
 dev.off()
 
+
 rpng(width = 800, height = 800)
 #pdf(file = "test.pdf")
-plot(pcsAndMeta[plotOrder,"PC_1_c"], pcsAndMeta[plotOrder,"PC_6_c"], col = pcsAndMeta$col[plotOrder], cex = 0.3, pch = 16)
+plot(pcsAndMeta[plotOrder,"PC_3"], pcsAndMeta[plotOrder,"PC_7"], col = pcsAndMeta$col[plotOrder], cex = 0.3, pch = 16)
 dev.off()
 
 
-
-rpng(width = 800, height = 800)
-plot(pcsAndMeta[plotOrder,"PC_6"], pcsAndMeta[plotOrder,"recount_qc.intron_sum_%"], col = pcsAndMeta$col[plotOrder], cex = 0.5, pch = 16)
+#rpng(width = 800, height = 800)
+png("tissues.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5)], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL, pch = 16)
 dev.off()
 
-cor.test(pcsAndMeta[plotOrder,"PC_2"], pcsAndMeta[plotOrder,"recount_qc.star.%_reads_mapped_to_multiple_loci_both"])
-
-rpng()
-plot(pcsAndMeta[plotOrderSmartseq,"PC_6"], pcsAndMeta[plotOrderSmartseq,"recount_qc.intron_sum_%"], col = pcsAndMeta$colSmartseq[plotOrderSmartseq], cex = 0.5, pch = 16)
+png("tissues2.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",6:10)], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
 dev.off()
 
-rpng()
-layout(matrix(1:2, nrow = 1))
-plot(pcsAndMeta[plotOrderSmartseq,"PC_6"], pcsAndMeta[plotOrderSmartseq,"recount_qc.intron_sum_%"], col = pcsAndMeta$colSmartseq[plotOrderSmartseq], cex = 0.5, pch = 16)
-abline(h=7, col = "red", lwd =2)
-vioplot(pcsAndMeta[!is.na(pcsAndMeta[,"recount_qc.intron_sum_%"]),"recount_qc.intron_sum_%"])
-abline(h=7, col = "red", lwd =2)
+png("tissues3.png",width = 2000, height = 2000)
+pairs(pcsAndMeta[plotOrder,paste0("PC_",11:15)], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
 dev.off()
-
-sum(pcsAndMeta[!is.na(pcsAndMeta[,"recount_qc.intron_sum_%"]),"recount_qc.intron_sum_%"] > 7)
-
-
-
-
-layout(matrix(1:2, nrow = 1))
-plot(pcsAndMeta[plotOrderSmartseq,"PC_1"], pcsAndMeta[plotOrderSmartseq,"recount_qc.bc_auc.unique_%"], col = pcsAndMeta$colSmartseq[plotOrderSmartseq], cex = 0.5, pch = 16)
-abline(h=125, col = "red", lwd =2)
-vioplot(pcsAndMeta[!is.na(pcsAndMeta[,"recount_qc.bc_auc.unique_%"]),"recount_qc.bc_auc.unique_%"])
-abline(h=125, col = "red", lwd =2)
-
-
-sum(pcsAndMeta[!is.na(pcsAndMeta[,"recount_qc.star.%_of_reads_mapped_to_too_many_loci"]),"recount_qc.star.%_of_reads_mapped_to_too_many_loci"] > 0.5)
-dim(pcsAndMeta)
-
-
-png(width = 2500, height = 2500, file = "outliers.png")
-rpng()
-pairs(pcsAndMeta[plotOrderSmartseq,c("PC_1", "PC_2", "PC_6", "recount_qc.intron_sum_%", "recount_qc.bc_auc.all_%", "recount_qc.bc_auc.unique_%", "recount_qc.star.%_of_reads_mapped_to_too_many_loci")], col = pcsAndMeta$colSmartseq[plotOrderSmartseq], cex = 0.5, pch = 16,  upper.panel = NULL)
-dev.off()
-
-newExlude <- 
-  (!is.na(pcsAndMeta[,"recount_qc.star.%_of_reads_mapped_to_too_many_loci"]) & pcsAndMeta[,"recount_qc.star.%_of_reads_mapped_to_too_many_loci"] > 0.5) |
-  (!is.na(pcsAndMeta[,"recount_qc.intron_sum_%"]) & pcsAndMeta[,"recount_qc.intron_sum_%"] > 20) |
-  (!is.na(pcsAndMeta[,"recount_qc.bc_auc.unique_%"]) & pcsAndMeta[,"recount_qc.bc_auc.unique_%"] < 125)
-
-
-
-sum(newExlude)
-sum(is.na(newExlude))
-length(newExlude)
-
-pcsAndMeta <- pcsAndMeta[!newExlude,]
-dim(pcsAndMeta)
-
-write.table(pcsAndMeta$Row.names, file = "samplesToKeep2.txt", row.names = F, quote = F)
-
-sum(is.na(pcsAndMeta[,"recount_qc.star.number_of_reads_mapped_to_too_many_loci_both"]))
-
-plot(pcsAndMeta[,"recount_qc.star.number_of_reads_mapped_to_too_many_loci_both"], pcsAndMeta[,"recount_qc.star.%_of_reads_mapped_to_too_many_loci"])
-
-
-abline(v=40)
-dev.off()
-
-rpng(width = 800, height = 800)
-png("tissues_c.png",width = 2000, height = 2000)
-pairs(pcsAndMeta[plotOrder,paste0("PC_",1:5,"_c")], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL, pch = 16)
-dev.off()
-
-png("tissues2_c.png",width = 2000, height = 2000)
-pairs(pcsAndMeta[plotOrder,paste0("PC_",6:10,"_c")], col = pcsAndMeta$col[plotOrder], cex = 0.4, upper.panel = NULL)
-dev.off()
-
-
 
 defaultCol <- adjustcolor("grey", alpha.f = 0.3)
 pcsAndMeta$colCelline <- defaultCol
@@ -765,7 +728,7 @@ str(qseq)
 
 
 defaultCol <- adjustcolor("grey", alpha.f = 0.3)
-=AndMeta$colQseq <- defaultCol
+pcsAndMeta$colQseq <- defaultCol
 pcsAndMeta$colQseq[pcsAndMeta$Row.names %in% qseq] <- "orangered"
 plotOrderQseq <- order((pcsAndMeta$colQseq != defaultCol) + 1)
 
