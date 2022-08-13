@@ -234,8 +234,6 @@ combinedMeta$CelllineName[!is.na(combinedMeta$study) & combinedMeta$study == "SR
 combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "SRP166108"] <- TRUE
 
 
-#TODO ERP020977 We differentiated macrophages from induced pluripotent stem cells in 86 unrelated, healthy individuals derived by the Human Induced Pluripotent Stem Cells Initiative (HIPSCI),
-
 combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "SRP192714"] <- "Blood"
 combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP192714"] <- "Whole Blood"
 combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "SRP192714"] <- FALSE
@@ -248,7 +246,6 @@ combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP0924
 combinedMeta$Cellline[!is.na(combinedMeta$study) & combinedMeta$study == "SRP092402"] <- FALSE
 combinedMeta$Cancer[!is.na(combinedMeta$study) & combinedMeta$study == "SRP092402"] <- FALSE
 
-#TODO SRP116272 is wrong are cell sorted to monocytes and t-cells
 
 combinedMeta$Tissue[combinedMeta$study == "SRP116272" & grepl("source_name;;T cells", combinedMeta$sra.sample_attributes)] <- "Blood"
 combinedMeta$Tissue2[combinedMeta$study == "SRP116272" & grepl("source_name;;T cells", combinedMeta$sra.sample_attributes)] <- "T-cells"
@@ -550,6 +547,95 @@ combinedMeta$Tissue[is.na(combinedMeta$Tissue)]<- ""
 
 
 
+
+
+
+#Harmonizing Cell Line Names for samples in recount3
+
+# A549
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "a549"),4]= "A549"
+
+#CML
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "cml"),2]= "CML"
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "cml"),3]= FALSE
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "cml"),5]= TRUE
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "cml"),4]= ""
+#H-STS NET 
+#Keep as is
+
+#H1
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "h1"),4]= "H1"
+
+#H9
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "h9"),4]= "H9"
+
+#HAP1
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "hap1"),4]= "HAP1"
+
+#HCT116
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "hct116"),4]= "HCT116"
+
+#Hek293
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "hek293"),4]= "HEK293"
+
+#HeLa
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "hela"),4]= "HeLa"
+
+#HepaRG
+#keep as is
+
+#hepg2
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "hepg2"),4]= "HepG2"
+
+#ipsc
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "ipsc"),4]= "iPSC"
+
+#K562
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "k562"),4]= "K562"
+
+#LCLs
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "lcl"),4]= "LCL"
+
+#lcl_s4u_capturing
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "lcl_s4u_capturing"),4]= "LCL_S4U_Capturing"
+
+#MCF10A
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "mcf10a"),4]= "MCF10A"
+
+#MCF7
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "mcf7"),4]= "MCF7"
+
+#MDA231
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "mda231"),4]= "MDA231"
+
+#T47D
+combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "t47d"),4]= "T47D"
+
+
+#Fix SRP045234 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP045234"),1]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP045234"),2]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP045234"),3]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP045234"),4]= "iPSC"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP045234"),5]= FALSE
+#Fix SRP007525 Annotaions
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007525"),1]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007525"),2]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007525"),3]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007525"),4]= "OCI-LY1"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007525"),5]= FALSE
+#Fix SRP027358 & SRP032926
+combinedMeta$Fetal[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP027358")]= TRUE
+combinedMeta$Fetal[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP032926")]= TRUE
+
+
+
+
+
+
+
+
+
 x <- table(paste0(combinedMeta$Tissue, " - ", combinedMeta$Tissue2),combinedMeta$Cancer)
 str(x)
 write.table(x, file = "test.txt", row.names = T, col.names = NA, quote = F, sep = "\t")
@@ -583,12 +669,13 @@ combinedMeta$Tissue[combinedMeta$Cohort == "GSA"]
 
 
 
-save(combinedMeta, file = "combinedMeta_2022_08_09.RData")
+#save(combinedMeta, file = "combinedMeta_2022_08_12.RData")
 
+load(file = "combinedMeta_2022_08_12.RData")
 
 pcsAndMeta <- merge(pcs[,1:100], combinedMeta, by = 0, all.x = T)
 dim(pcsAndMeta)
-
+str(combinedMeta)
 
 tissueCol <- read.delim("Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", row.names = 1)
 
@@ -649,10 +736,25 @@ defaultCol <- adjustcolor("grey", alpha.f = 0.3)
 pcsAndMeta$colCelline <- defaultCol
 pcsAndMeta$colCelline[!is.na(pcsAndMeta[,"Cellline"]) & pcsAndMeta[,"Cellline"]] <-  adjustcolor("magenta", alpha.f = 0.3)
 pcsAndMeta$colCelline[!is.na(pcsAndMeta[,"Cellline"]) & !pcsAndMeta[,"Cellline"]] <-  adjustcolor("royalblue1", alpha.f = 0.3)
+pcsAndMeta$colCelline[!is.na(pcsAndMeta[,"Cancer"]) & pcsAndMeta[,"Cancer"]] <-  adjustcolor("forestgreen", alpha.f = 0.3)
 plotOrder <- order((pcsAndMeta$colCelline != defaultCol) + 1)
 
+
+pcsAndMeta$cellineTissueCancer <- "Unkown"
+pcsAndMeta$cellineTissueCancer[!is.na(pcsAndMeta[,"Cellline"]) & pcsAndMeta[,"Cellline"]] <- "Cellline"
+pcsAndMeta$cellineTissueCancer[!is.na(pcsAndMeta[,"Cellline"]) & !pcsAndMeta[,"Cellline"]] <- "Tissue"
+pcsAndMeta$cellineTissueCancer[!is.na(pcsAndMeta[,"Cancer"]) & pcsAndMeta[,"Cancer"]] <- "Cancer"
+
+pcsAndMeta$cellineTissueCancer <- factor(pcsAndMeta$cellineTissueCancer, levels = c("Tissue", "Cancer", "Cellline", "Unkown"))
+
+table(pcsAndMeta$cellineTissueCancer, useNA = "always")
+  
 rpng(width = 800, height = 800)
 plot(pcsAndMeta[plotOrder,"PC_1"], pcsAndMeta[plotOrder,"PC_2"], col = pcsAndMeta$colCelline[plotOrder], cex = 0.4, pch = 16)
+dev.off()
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrder,"PC_3"], pcsAndMeta[plotOrder,"PC_75"], col = pcsAndMeta$colCelline[plotOrder], cex = 0.4, pch = 16)
 dev.off()
 
 for(i in c(1,3:100)){
@@ -662,6 +764,13 @@ for(i in c(1,3:100)){
   dev.off()
 }
 
+library(vioplot)
+
+for(i in 1:100){
+png(paste0("cellinePlots2/pc",i,".png"),width = 500, height = 500)
+vioplot( pcsAndMeta[,paste0("PC_",i)] ~ pcsAndMeta$cellineTissueCancer, col = c(adjustcolor("royalblue1", alpha.f = 0.3), adjustcolor("forestgreen", alpha.f = 0.3), adjustcolor("magenta", alpha.f = 0.3), defaultCol))
+dev.off()
+}
 table(paste0(combinedMeta$Tissue, " - ", combinedMeta$Tissue2))
 
 png("celllines_c.png",width = 2000, height = 2000)
@@ -812,3 +921,14 @@ str(expGadoPcsSub)
 colnames(expGadoPcsSub) <- paste0("PC_", 1:ncol(expGadoPcsSub))
 pcsAndMeta <- merge(expGadoPcsSub, combinedMeta, by = 0, all.x = T)
 dim(pcsAndMeta)
+
+
+
+table(pcsAndMeta$CelllineName)
+pcsAndMeta$Cellline[grepl("s4u", pcsAndMeta$CelllineName)]
+
+
+
+
+
+
