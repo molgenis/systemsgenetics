@@ -9,7 +9,7 @@ setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
 
 #save.image(file='celllineCancer.RData')
-load('celllineCancer.RData')
+#load('celllineCancer.RData')
 
 library(pheatmap)
 
@@ -18,12 +18,12 @@ library(readr)
 
 colTypes <- cols(
   .default = col_double(),
-  `11/08/2022` = col_character()
+  `12/08/2022` = col_character()
 )
 
 
 
-table_tmp <- read_delim("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA_writeS/pc-scores.txt", delim = "\t", quote = "", col_types = colTypes)
+table_tmp <- read_delim("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA_writeS/pc-scores.txt.gzip", delim = "\t", quote = "", col_types = colTypes)
 pcs <- as.matrix(table_tmp[,-1])
 rownames(pcs) <- table_tmp[,1][[1]]
 rm(table_tmp)

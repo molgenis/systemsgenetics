@@ -2,7 +2,7 @@
 #remoter::server(verbose = T, port = 55556, password = "laberkak", sync = T)
 
 
-remoter::client("localhost", port = 55503, password = "laberkak")
+remoter::client("localhost", port = 55501, password = "laberkak")
 
 
 #save.image("tmp.RData")
@@ -283,18 +283,95 @@ combinedMeta$CelllineName[!is.na(combinedMeta$study) & combinedMeta$study == "ER
 
 combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "SRP151763"] <- "Eye"
 combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP151763"] <- "Retina"
+combinedMeta$Cellline[combinedMeta$study == "SRP151763"] <- FALSE
+combinedMeta$Cancer[combinedMeta$study == "SRP151763"] <- FALSE
+
 
 
 combinedMeta$Tissue[!is.na(combinedMeta$study) & combinedMeta$study == "SRP162411"] <- "Blood"
 combinedMeta$Tissue2[!is.na(combinedMeta$study) & combinedMeta$study == "SRP162411"] <- "Whole Blood"
 
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP102542"
+combinedMeta$Tissue[studySamples] <- "Muscle"
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- FALSE
+combinedMeta$Cancer[studySamples] <- FALSE
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP150311"
+combinedMeta$Tissue[studySamples] <- "Muscle"
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- FALSE
+combinedMeta$Cancer[studySamples] <- FALSE
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP162873"
+combinedMeta$Tissue[studySamples] <- "Muscle"
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- FALSE
+combinedMeta$Cancer[studySamples] <- FALSE
+
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP163524"
+combinedMeta$Tissue[studySamples] <- "Muscle"
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- FALSE
+combinedMeta$Cancer[studySamples] <- FALSE
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study %in% c("SRP006676", "SRP071758", "SRP081599", "SRP086078", "SRP119923")
+combinedMeta$Tissue[studySamples] <- "Airway Epithelial"
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- FALSE
+combinedMeta$Cancer[studySamples] <- FALSE
+
+
+samples <- combinedMeta$study == "SRP188219" & grepl("left atrial appendage", combinedMeta$sra.sample_attributes)
+combinedMeta$Tissue[samples] <- "Heart"
+combinedMeta$Tissue2[samples] <- "Left atrial appendage"
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- FALSE
+
+
+samples <- combinedMeta$study == "SRP188219" & grepl("right atrial appendage", combinedMeta$sra.sample_attributes)
+combinedMeta$Tissue[samples] <- "Heart"
+combinedMeta$Tissue2[samples] <- "Right atrial appendage"
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- FALSE
+
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRA755613"
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- TRUE
+combinedMeta$CelllineName[studySamples] <- "iPSC"
+combinedMeta$Cancer[studySamples] <- FALSE
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRA755626"
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- TRUE
+combinedMeta$CelllineName[studySamples] <- "iPSC"
+combinedMeta$Cancer[studySamples] <- FALSE
+
+
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP148659"
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- TRUE
+combinedMeta$CelllineName[studySamples] <- "iPSC"
+combinedMeta$Cancer[studySamples] <- FALSE
 
 
 combinedMeta["SRR5341594", "sra.sample_title"] <- "Human differentiating macrophage"
 
 
-
-mahmoudAnnotations
+#mahmoudAnnotations
 
 colnames(mahmoudAnnotations)[colnames(mahmoudAnnotations) == "Cell_Line"] <- "Cellline"
 colnames(mahmoudAnnotations)[colnames(mahmoudAnnotations) == "Cell_Line_Name"] <- "CelllineName"
@@ -440,9 +517,6 @@ combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "hindbrain")
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "hindbrain fragment"),2]= NA
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "hindbrain without cerebellum"),2]= NA
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "hippocampus"),2]= "Hippocampus"
-
-#iPCS
-#keep as is
 
 #Kidney
 combinedMeta[!is.na(combinedMeta$Tissue2) & (combinedMeta$Tissue2== "Kidney - Cortex"),2]= "Cortex"
@@ -628,6 +702,7 @@ combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007525"),5]=
 combinedMeta$Fetal[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP027358")]= TRUE
 combinedMeta$Fetal[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP032926")]= TRUE
 
+pcsAndMeta$Cellline[!is.na(pcsAndMeta$CelllineName)&pcsAndMeta$CelllineName=="iPSC"] <- TRUE
 
 
 
@@ -636,7 +711,8 @@ combinedMeta$Fetal[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP032926
 
 
 
-x <- table(paste0(combinedMeta$Tissue, " - ", combinedMeta$Tissue2),combinedMeta$Cancer)
+
+(x <- table(paste0(combinedMeta$Tissue, " - ", combinedMeta$Tissue2),combinedMeta$Cancer))
 str(x)
 write.table(x, file = "test.txt", row.names = T, col.names = NA, quote = F, sep = "\t")
 
@@ -669,11 +745,11 @@ combinedMeta$Tissue[combinedMeta$Cohort == "GSA"]
 
 
 
-#save(combinedMeta, file = "combinedMeta_2022_08_12.RData")
+#save(combinedMeta, file = "combinedMeta_2022_08_14.RData")
 
-load(file = "combinedMeta_2022_08_12.RData")
+load(file = "combinedMeta_2022_08_14.RData")
 
-pcsAndMeta <- merge(pcs[,1:100], combinedMeta, by = 0, all.x = T)
+pcsAndMeta <- merge(expPcs[,1:100], combinedMeta, by = 0, all.x = T)
 dim(pcsAndMeta)
 str(combinedMeta)
 

@@ -30,11 +30,6 @@ str(expCov)
 
 expEigen <- eigen(expCov)
 
-save(expEigen, file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA_Patrick/eigen.RData")
-
-
-str(expEigen)
-
 eigenVectors <- expEigen$vectors
 colnames(eigenVectors) <- paste0("PC_",1:ncol(eigenVectors))
 rownames(eigenVectors) <- rownames(expScale)
@@ -42,19 +37,25 @@ str(eigenVectors)
 
 eigenValues <- expEigen$values
 names(eigenValues) <- paste0("PC_",1:length(eigenValues))
+str(eigenValues)
+
+save(eigenVectors, eigenValues, expFile, file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA_Patrick/eigen.RData")
+
+
 
 expPcs <- t(expScale) %*% expEigen$vectors[,1:1000]
 
 colnames(expPcs) <- paste0("PC_",1:ncol(expPcs))
 str(expPcs)
 
-save(expPcs, file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA_Patrick/pcs.RData")
+save(expPcs, expFile, file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA_Patrick/pcs.RData")
 
 
 
 
 
 
+#Below is compare to genenetwork pipeline PCA
 
 
 colTypes <- cols(
