@@ -52,8 +52,44 @@ save(expPcs, expFile, file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount
 
 
 
+library("havok")
+
+threshold <- optimal_SVHT_coef(nrow(exp) / ncol(exp))
+
+(numberComponentsToInclude <- sum(sqrt(eigenValues) > threshold ))
+
+explainedVariance <- eigenValues * 100 / sum(eigenValues)
+
+cumsum(explainedVariance)[numberComponentsToInclude]
+
+rpng()
+plot(cumsum(explainedVariance), ylab = "Cumulative % explained variance")
+abline(v = numberComponentsToInclude, col = "red3", lwd = 3)
+dev.off()
 
 
+rpng()
+plot(cumsum(explainedVariance)[1:5000], ylab = "Cumulative % explained variance")
+abline(v = numberComponentsToInclude, col = "red3", lwd = 3)
+dev.off()
+
+rpng()
+plot(explainedVariance[1:numberComponentsToInclude], ylab = "% explained variance")
+abline(v = numberComponentsToInclude, col = "red3", lwd = 3)
+dev.off()
+
+
+
+rpng()
+plot(log(eigenValues), ylab = "Log eigenvalues")
+abline(v = numberComponentsToInclude, col = "red3", lwd = 3)
+dev.off()
+
+
+rpng()
+plot(log(eigenValues)[1:5000], ylab = "Eigenvalues")
+abline(v = numberComponentsToInclude, col = "red3", lwd = 3)
+dev.off()
 
 #Below is compare to genenetwork pipeline PCA
 
