@@ -70,23 +70,30 @@ plot(expEigen$values[1:1000], expSvd$d^2)
 
 plot(expEigen$vectors[,1]*-1, expSvd$u[,1])
 plot(expEigen$vectors[,99]*-1, expSvd$u[,99])
-plot(expEigen$vectors[,1000]*-1, expSvd$u[,1000])
+plot(expEigen$vectors[,1000], expSvd$u[,1000])
 
 expPcs <- t(expSubScale) %*% expEigen$vectors
 
-v <- expPcs %*% solve(diag(sqrt(expEigen$values)))
+
+plot(diag(a), diag(b))
+
+str(v)
+
+v <- expPcs[,1:500] %*% diag(1/sqrt(expEigen$values[1:500]))
 str(v)
 str(expSvd$v)
 
 plot(v[,1], expSvd$v[,1])
 plot(v[,100], expSvd$v[,100])
 
-test <- expEigen$vectors %*% diag(sqrt(expEigen$values)) %*% t(v)
+test <- expEigen$vectors[,1:500] %*% diag(sqrt(expEigen$values[1:500])) %*% t(v[1,1:500,drop=F])
 str(test)
 str(expSubScale)
 
 plot(test[,1], expSubScale[,1])
+cor.test(test[,1], expSubScale[,1])
 plot(test[1,], expSubScale[1,])
+cor.test(test[1,], expSubScale[1,])
 
 dim(expPcs)
 dim(expEigen$values)

@@ -629,11 +629,6 @@ combinedMeta$Tissue[is.na(combinedMeta$Tissue)]<- ""
 # A549
 combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "a549"),4]= "A549"
 
-#CML
-combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "cml"),2]= "CML"
-combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "cml"),3]= FALSE
-combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "cml"),5]= TRUE
-combinedMeta[!is.na(combinedMeta$CelllineName) & (combinedMeta$CelllineName== "cml"),4]= ""
 #H-STS NET 
 #Keep as is
 
@@ -702,9 +697,39 @@ combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007525"),5]=
 combinedMeta$Fetal[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP027358")]= TRUE
 combinedMeta$Fetal[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP032926")]= TRUE
 
-pcsAndMeta$Cellline[!is.na(pcsAndMeta$CelllineName)&pcsAndMeta$CelllineName=="iPSC"] <- TRUE
+#Fix SRP026537 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026537"),1]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026537"),2]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026537"),3]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026537"),4]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026537"),5]= FALSE
+
+#Fix SRP049063 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP049063"),1]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP049063"),2]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP049063"),3]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP049063"),4]= "HT-29"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP049063"),5]= FALSE
+#Fix SRP053034 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP053034"),1]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP053034"),2]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP053034"),3]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP053034"),4]= "RPE-1"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP053034"),5]= FALSE
+#Fix SRP056197 Annoations
+samples <- combinedMeta$study == "SRP056197" & grepl("Bone marrow", combinedMeta$sra.sample_attributes)
+combinedMeta$Tissue[samples] <- "Bone Marrow"
+combinedMeta$Tissue2[samples] <- "AML"
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- TRUE
+samples <- combinedMeta$study == "SRP056197" & grepl("Heparinised blood", combinedMeta$sra.sample_attributes)
+combinedMeta$Tissue[samples] <- "Blood"
+combinedMeta$Tissue2[samples] <- "AML"
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- TRUE
 
 
+combinedMeta$Cellline[!is.na(combinedMeta$CelllineName)&combinedMeta$CelllineName=="iPSC"] <- TRUE
 
 
 
@@ -745,9 +770,9 @@ combinedMeta$Tissue[combinedMeta$Cohort == "GSA"]
 
 
 
-#save(combinedMeta, file = "combinedMeta_2022_08_14.RData")
+#save(combinedMeta, file = "combinedMeta_2022_08_16.RData")
 
-load(file = "combinedMeta_2022_08_14.RData")
+load(file = "combinedMeta_2022_08_16.RData")
 
 pcsAndMeta <- merge(expPcs[,1:100], combinedMeta, by = 0, all.x = T)
 dim(pcsAndMeta)

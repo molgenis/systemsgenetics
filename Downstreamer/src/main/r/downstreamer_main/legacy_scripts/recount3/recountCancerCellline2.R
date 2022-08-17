@@ -2,8 +2,10 @@
 
 load(file = "combinedMeta_2022_08_14.RData", verbose = T)
 load(file = "Recount3_QC_2ndRun/PCA_Patrick/pcs.RData", verbose = T)
+load(file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA_Patrick/eigen.RData")
 
 pcsAndMeta <- merge(expPcs[,1:570], combinedMeta, by = 0, all.x = T)
+rownames(pcsAndMeta) <- pcsAndMeta$Row.names
 save(pcsAndMeta, file = "DataForLasso.RData")
 
 #write.table(merge(combinedMeta, expPcs[,1:100], by = 0, all.y = T), file = "Metadata/pcsAndAnnotations.txt", sep = "\t", quote = FALSE, col.names = NA)
@@ -98,7 +100,7 @@ table(pcsAndMeta$Cellline[!pcsAndMeta$excludeBasedOnPredictionCellline])
 
 #rpng(width = 1200, height = 400)
 
-pc<-1
+pc<-453
 for(pc in c(1,3:50)){
 
   pcName <- paste0("PC_",pc)
@@ -141,6 +143,7 @@ sum(pcsAndMeta$Cellline, na.rm = T)
 
 pcsAndMetaTissueVsCellline <- pcsAndMeta[!is.na(pcsAndMeta$Cellline) & !is.na(pcsAndMeta$Cancer),]
 
+
 table(pcsAndMetaTissueVsCellline$Cellline)
 table(pcsAndMetaTissueVsCellline$Cancer)
 
@@ -153,50 +156,51 @@ pcsAndMetaTissueVsCellline$class <- as.factor(pcsAndMetaTissueVsCellline$class)
 table(pcsAndMetaTissueVsCellline$class, useNA = "a")
 
 
-train <- sample(nrow(pcsAndMetaTissueVsCellline), size = round(nrow(pcsAndMetaTissueVsCellline) * 0.8))
+#train <- sample(nrow(pcsAndMetaTissueVsCellline), size = round(nrow(pcsAndMetaTissueVsCellline) * 0.1))
 
+length(unique(pcsAndMetaTissueVsCellline$study[pcsAndMetaTissueVsCellline$Cellline]))
+length(unique(pcsAndMetaTissueVsCellline$study[!pcsAndMetaTissueVsCellline$Cellline]))
+
+study <- unique(pcsAndMetaTissueVsCellline$study[pcsAndMetaTissueVsCellline$Cellline])[1]
+
+set.seed(42)
+selectedCellineTraining <- sapply(unique(pcsAndMetaTissueVsCellline$study[pcsAndMetaTissueVsCellline$Cellline]), function(study){
+  thisStudyCellinesSamples <- rownames(pcsAndMetaTissueVsCellline)[pcsAndMetaTissueVsCellline$Cellline & pcsAndMetaTissueVsCellline$study == study]
+  selected <- thisStudyCellinesSamples[sample(length(thisStudyCellinesSamples), min(1,length(thisStudyCellinesSamples)))]
+  return(selected)
+})
+
+selectedTissueTraining <- sapply(unique(pcsAndMetaTissueVsCellline$study[!pcsAndMetaTissueVsCellline$Cellline]), function(study){
+  thisStudyNonCellinesSamples <- rownames(pcsAndMetaTissueVsCellline)[!pcsAndMetaTissueVsCellline$Cellline & pcsAndMetaTissueVsCellline$study == study]
+  selected <- thisStudyNonCellinesSamples[sample(length(thisStudyNonCellinesSamples), min(1,length(thisStudyNonCellinesSamples)))]
+  return(selected)
+})
+
+selectedCellineTraining <- do.call("c",selectedCellineTraining)
+selectedTissueTraining <- do.call("c",selectedTissueTraining)
+
+str(selectedCellineTraining)
+str(selectedTissueTraining)
+
+train <- c(selectedCellineTraining, selectedTissueTraining)
+test <- rownames(pcsAndMetaTissueVsCellline)[!rownames(pcsAndMetaTissueVsCellline) %in% train]
 
 
 library(glmnet)
-#cvfit <- cv.glmnet(x = as.matrix(pcsAndMetaTissueVsCellline[,paste0("PC_",1:570)]), y = pcsAndMetaTissueVsCellline$class, family = "multinomial")
-summary(cvfit)
-
-rpng()
-plot(cvfit, xvar = "lambda", label = TRUE, type.coef = "coef")
-dev.off()
-
-rpng()
-plot(cvfit)
-dev.off()
-str(cvfit)
 
 
-cnf <- confusion.glmnet(cvfit,newx = as.matrix(pcsAndMetaTissueVsCellline[,paste0("PC_",1:10)]), newy = pcsAndMetaTissueVsCellline$class)
-cnf
-
-
-
-
-
-
-
-
-require(doMC)
-registerDoMC(cores = 20)
-
-cfit <- cv.glmnet(x = as.matrix(pcsAndMetaTissueVsCellline[train,paste0("PC_",1:570)]), y = pcsAndMetaTissueVsCellline$Cellline[train], family = "binomial", type.measure = "auc", keep = TRUE, nfolds = 10, parallel = F)
+cfit <- cv.glmnet(x = as.matrix(pcsAndMetaTissueVsCellline[train,paste0("PC_",1:570)]), y = pcsAndMetaTissueVsCellline[train, "Cellline"], family = "binomial", type.measure = "auc", keep = TRUE, nfolds = 10, parallel = F)
 rpng()
 plot(cfit)
 dev.off()
 
-coef(cfit, s = exp(-3))
-sum(!coef(cfit, s = exp(-3))==0)
-log(0.0005)
-rocs <- roc.glmnet(cfit$fit.preval, newy = pcsAndMetaTissueVsCellline$Cellline)
-log(0.01)
-cfit$cvm
+max(abs(coef(cfit)))
 
-best <- cvfit$index["min",]
+cfit
+
+
+rocs <- roc.glmnet(cfit$fit.preval, newy = pcsAndMetaTissueVsCellline$Cellline)
+best <- cfit$index["1se",]
 rpng()
 plot(rocs[[best]], type = "l")
 invisible(sapply(rocs, lines, col="grey"))
@@ -205,9 +209,7 @@ dev.off()
 
 str(rocs)
 
-log(0.1)
-exp(-6)
-assess.glmnet(cfit, s = exp(-3), newx = as.matrix(pcsAndMetaTissueVsCellline[-train,paste0("PC_",1:570)]),  newy = pcsAndMetaTissueVsCellline$Cellline[-train])
+assess.glmnet(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMetaTissueVsCellline[test,paste0("PC_",1:570)]),  newy = pcsAndMetaTissueVsCellline[test, "Cellline"])
   
 
 
@@ -215,3 +217,123 @@ pcsAndMeta$excludeBasedOnPredictionCellline2 <- as.logical(predict(cfit, type = 
 
 
 table(pcsAndMeta$excludeBasedOnPredictionCellline2, pcsAndMeta$Cellline, useNA = "a")
+
+table(pcsAndMeta$excludeBasedOnPredictionCellline2)
+
+
+
+
+getwd()
+geneInfo <- read.delim("genes_Ensembl94.txt.gz")
+rownames(geneInfo) <- geneInfo$Gene.stable.ID
+
+
+
+eigenVectors2 <- eigenVectors
+rownames(eigenVectors2) <- gsub("\\..+","",rownames(eigenVectors))
+
+eigenVectors3 <- merge(geneInfo, eigenVectors2, by = 0)
+dim(eigenVectors3)
+
+eigenVectors4 <- eigenVectors3[!eigenVectors3$Chromosome.scaffold.name %in% c("X", "Y", "MT"),]
+str(eigenVectors4)
+
+eigenVectors4 <- eigenVectors4[order(eigenVectors4$Chromosome.scaffold.name, eigenVectors4$Gene.start..bp),]
+str(eigenVectors4)
+
+str(eigenVectors4)
+
+
+eigenvectorAutoCor2 <- sapply(paste0("PC_",1:570), function(x){
+  y <- acf(eigenVectors4[,x],  type = "correlation", plot = F, lag.max = 1000)$acf
+  return(sum(y[-1]^2))
+})
+
+
+which.max(eigenvectorAutoCor2)
+rpng()
+plot(eigenvectorAutoCor2, xlab = "Component", ylab = "sum(r^2 of first 1000 lags of auto-correlation)")
+dev.off()
+
+rpng()
+plot(eigenVectors4[,"PC_143"], pch = 16, cex = 0.5, col=adjustcolor("grey", alpha.f = 0.5))
+dev.off()
+
+
+
+str(eigenValues)
+
+v <- expPcs[,1:570] %*% diag(1/sqrt(eigenValues[1:570]))
+str(v)
+
+
+
+#Sort gene info
+geneInfo2 <- geneInfo[order(geneInfo$Chromosome.scaffold.name, geneInfo$Gene.start..bp.),]
+#Filter gene info
+genesInOrder <- geneInfo2[geneInfo2$Gene.stable.ID %in% rownames(eigenVectors2),"Gene.stable.ID"]
+str(genesInOrder)
+
+
+
+
+sample <- "SRR094185"
+
+sampleAutoCor <- matrix(nrow = nrow(expPcs), ncol = 2, dimnames = list(rownames(expPcs), c("OriginalAutoCor", "CnvAutoCor")))
+
+
+sampleAutoCor <- sapply(rownames(expPcs), function(sample){
+  originalReconstruct <- eigenVectors2[,1:570] %*% diag(sqrt(eigenValues[1:570])) %*% t(v[sample,1:570,drop=F])
+  cnvReconstruct <- eigenVectors2[,1:570] %*% diag(eigenvectorAutoCor2) %*% t(v[sample,1:570,drop=F])
+  
+  originalAutoCor <- sum(acf(originalReconstruct[genesInOrder,1],  type = "correlation", plot = F, lag.max = 1000)$acf[-1]^2)
+  cnvAutoCor <- sum(acf(test2[genesInOrder,1],  type = "correlation", plot = F, lag.max = 1000)$acf[-1]^2)
+  
+  sampleAutoCor[sample,"OriginalAutoCor"] <- originalAutoCor
+  sampleAutoCor[sample,"CnvAutoCor"] <- cnvAutoCor
+  
+})
+
+str(sampleAutoCor)
+
+#Use eigenvector2 to have gene names without version number for later sorting
+test <- eigenVectors2[,1:570] %*% diag(sqrt(eigenValues[1:570])) %*% t(v[sample,1:570,drop=F])
+str(test)
+rpng()
+plot(expScale[,sample], test[,1])
+dev.off()
+cor.test(expScale[,sample], test[,1])
+
+
+
+test2 <- eigenVectors2[,1:570] %*% diag(eigenvectorAutoCor2) %*% t(v[sample,1:570,drop=F])
+str(test2)
+rpng()
+plot(expScale[,sample], test[,1])
+dev.off()
+cor.test(expScale[,sample], test[,1])
+
+
+
+rpng()
+x <- acf(test[genesInOrder,1],  type = "correlation", plot = T, lag.max = 1000)
+dev.off()
+sum(x$acf[-1]^2)
+
+rpng()
+y <- acf(test2[genesInOrder,1],  type = "correlation", plot = T, lag.max = 1000)
+dev.off()
+sum(y$acf[-1]^2)
+
+
+rpng()
+layout(matrix(1:2,nrow = 2))
+plot(test[genesInOrder,1], pch = 16, cex = 0.5, col=adjustcolor("grey", alpha.f = 0.5))
+plot(test2[genesInOrder,1], pch = 16, cex = 0.5, col=adjustcolor("grey", alpha.f = 0.5))
+dev.off()
+
+
+rpng()
+
+dev.off()
+  
