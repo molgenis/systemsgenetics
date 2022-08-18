@@ -219,6 +219,11 @@ assess.glmnet(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMetaTissueVsCelllin
 
 pcsAndMeta$excludeBasedOnPredictionCellline2 <- as.logical(predict(cfit, type = "class", s = "lambda.1se", newx = as.matrix(pcsAndMeta[,paste0("PC_",1:570)]),  newy = pcsAndMeta$Cellline)[,1])
 
+pcsAndMeta$excludeBasedOnPredictionCellline2Score <- predict(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMeta[,paste0("PC_",1:570)]),  newy = pcsAndMeta$Cellline)[,1]
+
+rpng()
+boxplot(pcsAndMeta$excludeBasedOnPredictionCellline2 ~ pcsAndMeta$excludeBasedOnPredictionCellline2Score)
+dev.off()
 
 table(pcsAndMeta$excludeBasedOnPredictionCellline2, pcsAndMeta$Cellline, useNA = "a")
 
@@ -329,11 +334,29 @@ table(pcsAndMeta[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != ""), "Cancer"]
 
 pcsAndMeta$class <- "Unkown"
 pcsAndMeta$class[!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline] <- "Cell line"
+pcsAndMeta$class[pcsAndMeta$CelllineName == "iPSC"] <- "iPSC"
 pcsAndMeta$class[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer] <- "Cancer"
 pcsAndMeta$class[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & !pcsAndMeta$Cancer] <- "Tissue"
 pcsAndMeta$class <- as.factor(pcsAndMeta$class)
 
 table(pcsAndMeta$class, useNA = "a")
+
+write.table(pcsAndMeta, file = "tmp.txt", sep = "\t", quote = FALSE, col.names = NA)
+
+
+pcsAndMeta$OriginalAutoCor <- NA
+pcsAndMeta$OriginalAutoCor <- sampleAutoCor[rownames(pcsAndMeta),"OriginalAutoCor"]
+
+pcsAndMeta$CnvAutoCor <- NA
+pcsAndMeta$CnvAutoCor <- sampleAutoCor[rownames(pcsAndMeta),"CnvAutoCor"]
+str(pcsAndMeta$CnvAutoCor)
+
+library(vioplot)
+pdf("autoCorrelations.pdf", width = 14)
+layout(matrix(1:2, ncol = 2))
+vioplot(log(pcsAndMeta[,"OriginalAutoCor"]) ~ pcsAndMeta$class, main = "Normal expression auto correlation")
+vioplot( log(pcsAndMeta[,"CnvAutoCor"]) ~ pcsAndMeta$class, main = "CNV components auto correlation")
+dev.off()
 
 
 

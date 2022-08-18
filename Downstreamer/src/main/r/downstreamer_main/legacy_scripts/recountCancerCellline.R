@@ -3,7 +3,7 @@
 
 
 
-remoter::client("localhost", port = 55503, password = "laberkak")
+remoter::client("localhost", port = 55501, password = "laberkak")
 
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
