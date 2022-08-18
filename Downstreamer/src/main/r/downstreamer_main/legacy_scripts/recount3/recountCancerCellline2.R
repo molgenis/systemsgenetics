@@ -1,12 +1,16 @@
+library(parallel)
 
+setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
 load(file = "combinedMeta_2022_08_14.RData", verbose = T)
 load(file = "Recount3_QC_2ndRun/PCA_Patrick/pcs.RData", verbose = T)
-load(file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA_Patrick/eigen.RData")
+load(file = "Recount3_QC_2ndRun/PCA_Patrick/eigen.RData")
+
+
 
 pcsAndMeta <- merge(expPcs[,1:570], combinedMeta, by = 0, all.x = T)
 rownames(pcsAndMeta) <- pcsAndMeta$Row.names
-save(pcsAndMeta, file = "DataForLasso.RData")
+#save(pcsAndMeta, file = "DataForLasso.RData")
 
 #write.table(merge(combinedMeta, expPcs[,1:100], by = 0, all.y = T), file = "Metadata/pcsAndAnnotations.txt", sep = "\t", quote = FALSE, col.names = NA)
 
@@ -279,22 +283,61 @@ str(genesInOrder)
 
 sample <- "SRR094185"
 
-sampleAutoCor <- matrix(nrow = nrow(expPcs), ncol = 2, dimnames = list(rownames(expPcs), c("OriginalAutoCor", "CnvAutoCor")))
+#sampleAutoCor <- matrix(nrow = nrow(expPcs), ncol = 2, dimnames = list(rownames(expPcs), c("OriginalAutoCor", "CnvAutoCor")))
+
+eigenVectorXeigenValues <- eigenVectors2[,1:570] %*% diag(sqrt(eigenValues[1:570]))
+eigenVectorXautoCor <- eigenVectors2[,1:570] %*% diag(eigenvectorAutoCor2) 
+
+#for(sample in rownames(expPcs)[1:10]){
+
+cl <- makeCluster(20)
+
+clusterExport(cl, c("eigenVectorXeigenValues", "eigenVectorXautoCor", "v", "genesInOrder"))
 
 
-sampleAutoCor <- sapply(rownames(expPcs), function(sample){
-  originalReconstruct <- eigenVectors2[,1:570] %*% diag(sqrt(eigenValues[1:570])) %*% t(v[sample,1:570,drop=F])
-  cnvReconstruct <- eigenVectors2[,1:570] %*% diag(eigenvectorAutoCor2) %*% t(v[sample,1:570,drop=F])
+sampleAutoCor <- parSapply(cl, rownames(expPcs), function(sample){
+
+  originalReconstruct <- eigenVectorXeigenValues %*% t(v[sample,1:570,drop=F])
+  cnvReconstruct <- eigenVectorXautoCor %*% t(v[sample,1:570,drop=F])
   
   originalAutoCor <- sum(acf(originalReconstruct[genesInOrder,1],  type = "correlation", plot = F, lag.max = 1000)$acf[-1]^2)
-  cnvAutoCor <- sum(acf(test2[genesInOrder,1],  type = "correlation", plot = F, lag.max = 1000)$acf[-1]^2)
-  
-  sampleAutoCor[sample,"OriginalAutoCor"] <- originalAutoCor
-  sampleAutoCor[sample,"CnvAutoCor"] <- cnvAutoCor
+  cnvAutoCor <- sum(acf(cnvReconstruct[genesInOrder,1],  type = "correlation", plot = F, lag.max = 1000)$acf[-1]^2)
+
+  return(c("OriginalAutoCor" = originalAutoCor, "CnvAutoCor" = cnvAutoCor))
   
 })
 
+
+sampleAutoCor <- t(sampleAutoCor)
 str(sampleAutoCor)
+
+
+
+
+
+#save(sampleAutoCor, file = "sampleAutoCor.RData")
+
+
+rpng()
+plot(sampleAutoCor[,"OriginalAutoCor"], sampleAutoCor[,"CnvAutoCor"])
+dev.off()
+
+table(pcsAndMeta$Tissue2, useNA = "a")
+table(pcsAndMeta$Tissue, useNA = "a")
+
+table(pcsAndMeta[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != ""), "Cancer"],useNA = "a")
+
+pcsAndMeta$class <- "Unkown"
+pcsAndMeta$class[!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline] <- "Cell line"
+pcsAndMeta$class[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer] <- "Cancer"
+pcsAndMeta$class[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & !pcsAndMeta$Cancer] <- "Tissue"
+pcsAndMeta$class <- as.factor(pcsAndMeta$class)
+
+table(pcsAndMeta$class, useNA = "a")
+
+
+
+
 
 #Use eigenvector2 to have gene names without version number for later sorting
 test <- eigenVectors2[,1:570] %*% diag(sqrt(eigenValues[1:570])) %*% t(v[sample,1:570,drop=F])
@@ -336,4 +379,4 @@ dev.off()
 rpng()
 
 dev.off()
-  
+    
