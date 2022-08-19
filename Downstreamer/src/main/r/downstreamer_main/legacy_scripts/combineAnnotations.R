@@ -5,13 +5,13 @@
 remoter::client("localhost", port = 55501, password = "laberkak")
 
 
-#save.image("tmp.RData")
+#save.image("tmp2.RData")
 
 
 
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
-load("tmp.RData")
+#load("tmp2.RData")
 
 
 library(readr)
@@ -111,6 +111,7 @@ finalAnnotations <- data.frame(
   row.names = allSamples, stringsAsFactors = F)
 finalAnnotations$Cellline = NA
 finalAnnotations$Cancer = NA
+finalAnnotations$Fetal <- NA
 
 finalAnnotations$Cohort[rownames(finalAnnotations) %in% rownames(metadata_gtex2)] <- "GTEx"
 finalAnnotations$Cohort[rownames(finalAnnotations) %in% rownames(metadata_tcga2)] <- "TCGA"
@@ -147,9 +148,8 @@ row.names(g) <- g$Row.names
 
 str(g)
 
-
 combinedMeta <- g[,-c(1:7)]
-
+str(combinedMeta)
 
 #now fillin the gtex and gcta recount meta data. 
 
@@ -166,8 +166,6 @@ combinedMeta$study[combinedMeta$Cohort == "GTEx"] <- "GTEx"
 combinedMeta$study[combinedMeta$Cohort == "TCGA"] <- "TCGA"
 
 
-
-combinedMeta$Fetal <- NA
 
 #save(combinedMeta, file = "combinedMeta.RData")
 #load(file = "combinedMeta.RData")
@@ -372,8 +370,189 @@ combinedMeta$Cellline[studySamples] <- TRUE
 combinedMeta$CelllineName[studySamples] <- "iPSC"
 combinedMeta$Cancer[studySamples] <- FALSE
 
+#Put to missing annotations unclear
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP009316"
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- NA
+combinedMeta$CelllineName[studySamples] <- ""
+combinedMeta$Cancer[studySamples] <- NA
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP021509"
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- NA
+combinedMeta$CelllineName[studySamples] <- ""
+combinedMeta$Cancer[studySamples] <- NA
+
+
+#Unsure how to classify airway smooth muscle
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP043162"
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- NA
+combinedMeta$CelllineName[studySamples] <- ""
+combinedMeta$Cancer[studySamples] <- NA
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP052896"
+combinedMeta$Cancer[studySamples] <- TRUE
+
+
+
+
+#Some organoids and cancers
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP058722"
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- NA
+combinedMeta$CelllineName[studySamples] <- ""
+combinedMeta$Cancer[studySamples] <- NA
+
+
+
+
+#DPN and Tamoxifen treatments of parathyroid adenoma cells have cancer CNV profile
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP012167"
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- NA
+combinedMeta$CelllineName[studySamples] <- ""
+combinedMeta$Cancer[studySamples] <- NA
+
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP019936"
+combinedMeta$Cancer[studySamples] <- TRUE
+
+
 
 combinedMeta["SRR5341594", "sra.sample_title"] <- "Human differentiating macrophage"
+
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "ERP011411"
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- NA
+combinedMeta$CelllineName[studySamples] <- ""
+combinedMeta$Cancer[studySamples] <- NA
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP010166"
+combinedMeta$Cancer[studySamples] <- TRUE
+
+
+
+
+studySamples <- !is.na(combinedMeta$study) & combinedMeta$study == "SRP012656"
+combinedMeta$Cancer[studySamples] <- TRUE
+
+
+samples <- combinedMeta$study == "ERP006077" & grepl("Primary Prostate Tumour", combinedMeta$sra.sample_attributes)
+combinedMeta$Tissue[samples] <- "Prostate"
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- TRUE
+
+samples <- combinedMeta$study == "ERP006077" & grepl("Matched Adjacent", combinedMeta$sra.sample_attributes)
+combinedMeta$Tissue[samples] <- "Prostate"
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- FALSE
+
+samples <- combinedMeta$study == "ERP006077"
+combinedMeta$Tissue[samples] <- "Pancreas"
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- TRUE
+
+samples <- combinedMeta$study == "SRP058587"
+combinedMeta$Tissue[samples] <- "Breast"
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- TRUE
+
+samples <- combinedMeta$study == "SRP062332"
+combinedMeta$Tissue[samples] <- ""
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- TRUE
+combinedMeta$Cancer[samples] <- NA
+
+
+
+samples <- combinedMeta$study == "SRP030401"
+combinedMeta$Tissue[samples] <- "Breast"
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- TRUE
+
+
+
+samples <- combinedMeta$study == "SRP028344"
+combinedMeta$Tissue[samples] <- ""
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- TRUE
+combinedMeta$Cancer[samples] <- NA
+
+
+
+
+samples <- combinedMeta$study == "SRP073061" & grepl("Tumor", combinedMeta$sra.experiment_title)
+combinedMeta$Tissue[samples] <- "Breast"
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- FALSE
+combinedMeta$Cancer[samples] <- TRUE
+
+
+
+
+samples <- combinedMeta$study == "SRP028346"
+combinedMeta$Tissue[samples] <- ""
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- TRUE
+combinedMeta$Cancer[samples] <- NA
+
+
+samples <- combinedMeta$study == "SRP058571"
+combinedMeta$Tissue[samples] <- ""
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- TRUE
+combinedMeta$Cancer[samples] <- NA
+
+studySamples <- combinedMeta$study %in% c("SRP014027", "SRP006575", "SRP071932", "ERP004617", "SRP034592","SRP049695")
+combinedMeta$Tissue[studySamples] <- ""
+combinedMeta$Tissue2[studySamples] <- ""
+combinedMeta$Cellline[studySamples] <- NA
+combinedMeta$CelllineName[studySamples] <- ""
+combinedMeta$Cancer[studySamples] <- NA
+
+
+
+samples <- combinedMeta$study == "SRP066596"
+combinedMeta$Tissue[samples] <- ""
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- NA
+combinedMeta$Cancer[samples] <- TRUE
+
+
+
+samples <- combinedMeta$study == "SRP049648"
+combinedMeta$Tissue[samples] <- ""
+combinedMeta$Tissue2[samples] <- ""
+combinedMeta$Cellline[samples] <- TRUE
+combinedMeta$Cancer[samples] <- NA
+
+
+
+
+studySamples <- combinedMeta$study == "SRP039694"
+combinedMeta$Cancer[studySamples] <- TRUE
+
+
+studySamples <- combinedMeta$study == "SRP066260"
+combinedMeta$Cancer[studySamples] <- TRUE
+
 
 
 #mahmoudAnnotations
@@ -842,7 +1021,7 @@ combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP149374"),"Ti
 combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP149374"),"Cellline"]= FALSE
 combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP149374"),"CelllineName"]= ""
 combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP149374") & (grepl("Healthy", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cancer"]= FALSE
-combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP149374") & (grepl("Myelodysplastic", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cancer"]= NA
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP149374") & (grepl("Myelodysplastic", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cancer"]= TRUE
 #Fix SRP019250 Annotations
 combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP019250"),"Tissue"]= ""
 combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP019250"),"Tissue2"]= ""
@@ -859,7 +1038,166 @@ combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP074349") & (
 combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP074349") & (grepl("NSCLC", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cancer"]= TRUE
 
 
+#Add fetal to ERP016243
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP016243"),"Fetal"]= FALSE
+#Fix SRP009067 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009067"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009067"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009067"),"Cellline"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009067"),"CelllineName"]= "LCL"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009067"),"Cancer"]= FALSE
+#Fix SRP007885 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007885"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007885"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007885"),"Cellline"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007885"),"CelllineName"]= "LCL"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP007885"),"Cancer"]= FALSE
+#Fix SRP018218 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP018218") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T))==F,"Tissue"]= "Pancreas"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP018218") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP018218") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T))==F,"Tissue2"]= "Stellate Cells"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP018218") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP018218") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cellline"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP018218") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T))==F,"Cellline"]= FALSE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP018218"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP018218"),"Cancer"]= TRUE
+#Fix SRP019275 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP019275"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP019275"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP019275"),"Cellline"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP019275"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP019275"),"Cancer"]= FALSE
+#Fix SRP042186 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042186"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042186"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042186"),"Cellline"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042186"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042186"),"Cancer"]= FALSE
+#Fix SRP042620 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T))==F,"Tissue"]= "Breast"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cellline"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620") & (grepl("cell line", combinedMeta$sra.sample_attributes, ignore.case=T))==F,"Cellline"]= FALSE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620") & (grepl("ER+", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cancer"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620") & (grepl("Triple Negative", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cancer"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620") & (grepl("Uninvolved", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cancer"]= FALSE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP042620") & (grepl("No Known", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cancer"]= FALSE
+
+
+#Fix ERP010142 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP010142"),"Tissue"]= "Breast"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP010142"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP010142"),"Cellline"]= FALSE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP010142"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP010142"),"Cancer"]= TRUE
+#Fix SRP026600 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026600"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026600"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026600"),"Cellline"]= NA
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026600"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP026600"),"Cancer"]= NA
+#Fix SRP028336 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("muscle", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue"]= "Muscle"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("kidney", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue"]= "Kidney"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("prefrontal cortex", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue"]= "Brain"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("cerebellar Cortex", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue"]= "Brain"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("primary visual cortex", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue"]= "Brain"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("muscle", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("kidney", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("prefrontal cortex", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue2"]= "Prefrontal Cortex"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("cerebellar Cortex", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue2"]= "Cerebellar Cortex"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336") & (grepl("primary visual cortex", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue2"]= "Primary Visual Cortex"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336"),"Cellline"]= FALSE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP028336"),"Cancer"]= FALSE
+#Fix SRP009029 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009029"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009029"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009029"),"Cellline"]= NA
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009029"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP009029"),"Cancer"]= NA
+#Fix SRP006912 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP006912"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP006912"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP006912"),"Cellline"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP006912"),"CelllineName"]= "HK-2"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP006912"),"Cancer"]= FALSE
+#Fix SRP055444 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055444"),"Tissue"]= "Blood"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055444"),"Tissue2"]= "CLL"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055444"),"Cellline"]= FALSE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055444"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055444"),"Cancer"]= TRUE
+#Fix SRP022942 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP022942"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP022942"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP022942"),"Cellline"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP022942"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP022942"),"Cancer"]= FALSE
+#Fix ERP012180 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012180"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012180"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012180"),"Cellline"]= NA
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012180"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012180"),"Cancer"]= NA
+#Fix SRP058717 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP058717"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP058717"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP058717"),"Cellline"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP058717"),"CelllineName"]= "HT-29"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP058717"),"Cancer"]= FALSE
+#Fix SRP012568 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP012568"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP012568"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP012568"),"Cellline"]= NA
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP012568"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP012568"),"Cancer"]= NA
+#Fix SRP065146 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP065146"),"Tissue"]= "Blood"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP065146"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP065146"),"Cellline"]= FALSE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP065146"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP065146"),"Cancer"]= FALSE
+#Fix ERP012188 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012188"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012188"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012188"),"Cellline"]= NA
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012188"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "ERP012188"),"Cancer"]= NA
+#Fix SRP055390 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055390"),"Tissue"]= "Blood"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055390"),"Tissue2"]= "CLL"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055390"),"Cellline"]= FALSE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055390"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055390") & (grepl("normal", combinedMeta$sra.sample_attributes, ignore.case=T))==F,"Cancer"]= TRUE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055390") & (grepl("normal", combinedMeta$sra.sample_attributes, ignore.case=T)),"Cancer"]= FALSE
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055390") & (grepl("normal", combinedMeta$sra.sample_attributes, ignore.case=T))==F,"Tissue2"]="CLL"
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP055390") & (grepl("normal", combinedMeta$sra.sample_attributes, ignore.case=T)),"Tissue2"]= "B-cells"
+
+sum(grepl("normal", combinedMeta$sra.sample_attributes, ignore.case=T)==F)
+sum( ! grepl("normal", combinedMeta$sra.sample_attributes, ignore.case=T))
+
+#Fix SRP036145 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP036145"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP036145"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP036145"),"Cellline"]= NA
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP036145"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP036145"),"Cancer"]= NA
+#Fix SRP050533 Annotations
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP050533"),"Tissue"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP050533"),"Tissue2"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP050533"),"Cellline"]= NA
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP050533"),"CelllineName"]= ""
+combinedMeta[!is.na(combinedMeta$study) & (combinedMeta$study== "SRP050533"),"Cancer"]= NA
+
+
+
 combinedMeta$Cellline[!is.na(combinedMeta$CelllineName)&combinedMeta$CelllineName=="iPSC"] <- TRUE
+combinedMeta$Cancer[!is.na(combinedMeta$Cellline) & combinedMeta$Cellline] <- NA
+
+
 
 
 
