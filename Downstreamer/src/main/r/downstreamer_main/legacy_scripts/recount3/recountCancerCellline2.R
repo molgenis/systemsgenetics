@@ -2,10 +2,11 @@ library(parallel)
 
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
-load(file = "combinedMeta_2022_08_14.RData", verbose = T)
+load(file = "combinedMeta_2022_08_19.RData", verbose = T)
 load(file = "Recount3_QC_2ndRun/PCA_Patrick/pcs.RData", verbose = T)
 load(file = "Recount3_QC_2ndRun/PCA_Patrick/eigen.RData")
 
+save.image("predictionSession.RData")
 
 
 pcsAndMeta <- merge(expPcs[,1:570], combinedMeta, by = 0, all.x = T)
@@ -15,7 +16,7 @@ rownames(pcsAndMeta) <- pcsAndMeta$Row.names
 #write.table(merge(combinedMeta, expPcs[,1:100], by = 0, all.y = T), file = "Metadata/pcsAndAnnotations.txt", sep = "\t", quote = FALSE, col.names = NA)
 
 dim(pcsAndMeta)
-str(combinedMeta)
+
 
 defaultCol <- adjustcolor("grey", alpha.f = 0.6)
 tissueCol <- read.delim("Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", row.names = 1)
@@ -60,7 +61,6 @@ plot(pcsAndMeta[plotOrderCellline,"PC_1"], pcsAndMeta[plotOrderCellline,"PC_2"],
 dev.off()
 
 
-table(pcsAndMeta$Cellline[!is.na(pcsAndMeta$CelllineName)&pcsAndMeta$CelllineName=="iPSC"], useNA = "always")
 
 
 threshold <- c("PC_1" = 0.2, "PC_2" = -0.025, "PC_24" = -0.04, "PC_27" = 0.09, "PC_32" = -0.05, "PC_62" = 0.03, "PC_56" = -0.07, "PC_63" = 0.04)
@@ -104,7 +104,7 @@ table(pcsAndMeta$Cellline[!pcsAndMeta$excludeBasedOnPredictionCellline])
 
 #rpng(width = 1200, height = 400)
 
-pc<-453
+pc<453
 for(pc in c(1,3:50)){
 
   pcName <- paste0("PC_",pc)
@@ -145,19 +145,21 @@ table(pcsAndMeta$Cancer[is.na(pcsAndMeta$Cellline)], useNA = "a")
 
 sum(pcsAndMeta$Cellline, na.rm = T)
 
-pcsAndMetaTissueVsCellline <- pcsAndMeta[!is.na(pcsAndMeta$Cellline) & !is.na(pcsAndMeta$Cancer),]
 
 
-table(pcsAndMetaTissueVsCellline$Cellline)
-table(pcsAndMetaTissueVsCellline$Cancer)
 
-pcsAndMetaTissueVsCellline$class <- NA
-pcsAndMetaTissueVsCellline$class[pcsAndMetaTissueVsCellline$Cellline] <- "Cell line"
-pcsAndMetaTissueVsCellline$class[!pcsAndMetaTissueVsCellline$Cellline & !pcsAndMetaTissueVsCellline$Cancer] <- "Cancer"
-pcsAndMetaTissueVsCellline$class[!pcsAndMetaTissueVsCellline$Cellline & pcsAndMetaTissueVsCellline$Cancer] <- "Tissue"
-pcsAndMetaTissueVsCellline$class <- as.factor(pcsAndMetaTissueVsCellline$class)
 
-table(pcsAndMetaTissueVsCellline$class, useNA = "a")
+
+
+###################### Celline predictions
+
+
+pcsAndMetaTissueVsCellline <- pcsAndMeta[(!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline) | ((pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & !pcsAndMeta$Cancer ),]
+
+
+
+table(pcsAndMetaTissueVsCellline$Cellline, pcsAndMetaTissueVsCellline$Cancer,useNA = "a")
+
 
 
 #train <- sample(nrow(pcsAndMetaTissueVsCellline), size = round(nrow(pcsAndMetaTissueVsCellline) * 0.1))
@@ -193,7 +195,7 @@ test <- rownames(pcsAndMetaTissueVsCellline)[!rownames(pcsAndMetaTissueVsCelllin
 library(glmnet)
 
 
-cfit <- cv.glmnet(x = as.matrix(pcsAndMetaTissueVsCellline[train,paste0("PC_",1:570)]), y = pcsAndMetaTissueVsCellline[train, "Cellline"], family = "binomial", type.measure = "auc", keep = TRUE, nfolds = 10, parallel = F)
+cfit <- cv.glmnet(x = as.matrix(pcsAndMetaTissueVsCellline[train,c(paste0("PC_",1:570),"CnvAutoCor")]), y = pcsAndMetaTissueVsCellline[train, "Cellline"], family = "binomial", type.measure = "auc", keep = TRUE, nfolds = 10, parallel = F)
 rpng()
 plot(cfit)
 dev.off()
@@ -213,21 +215,117 @@ dev.off()
 
 str(rocs)
 
-assess.glmnet(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMetaTissueVsCellline[test,paste0("PC_",1:570)]),  newy = pcsAndMetaTissueVsCellline[test, "Cellline"])
+assess.glmnet(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMetaTissueVsCellline[test,c(paste0("PC_",1:570),"CnvAutoCor")]),  newy = pcsAndMetaTissueVsCellline[test, "Cellline"])
   
 
 
-pcsAndMeta$excludeBasedOnPredictionCellline2 <- as.logical(predict(cfit, type = "class", s = "lambda.1se", newx = as.matrix(pcsAndMeta[,paste0("PC_",1:570)]),  newy = pcsAndMeta$Cellline)[,1])
+pcsAndMeta$excludeBasedOnPredictionCellline2 <- as.logical(predict(cfit, type = "class", s = "lambda.1se", newx = as.matrix(pcsAndMeta[,c(paste0("PC_",1:570),"CnvAutoCor")]),  newy = pcsAndMeta$Cellline)[,1])
 
-pcsAndMeta$excludeBasedOnPredictionCellline2Score <- predict(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMeta[,paste0("PC_",1:570)]),  newy = pcsAndMeta$Cellline)[,1]
+pcsAndMeta$excludeBasedOnPredictionCellline2Score <- predict(cfit, s = "lambda.1se", type = "response", newx = as.matrix(pcsAndMeta[,c(paste0("PC_",1:570),"CnvAutoCor")]),  newy = pcsAndMeta$Cellline)[,1]
+pcsAndMeta$excludeBasedOnPredictionCellline2Scoreb <- predict(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMeta[,c(paste0("PC_",1:570),"CnvAutoCor")]),  newy = pcsAndMeta$Cellline)[,1]
 
-rpng()
-boxplot(pcsAndMeta$excludeBasedOnPredictionCellline2 ~ pcsAndMeta$excludeBasedOnPredictionCellline2Score)
+
+
+
+
+
+
+
+
+############Cancer prediction
+
+
+library(pROC)
+
+
+pcsAndMetaTissueVsCancer <- pcsAndMeta[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer),]
+
+
+roc(pcsAndMetaTissueVsCancer$Cancer, pcsAndMetaTissueVsCancer$CnvAutoCor )
+table(pcsAndMetaTissueVsCancer$Cancer, useNA = "a")
+
+pcsAndMetaTissueVsCancer$Cancer2 <- as.factor(pcsAndMetaTissueVsCancer$Cancer)
+
+cancerModel <- glm(Cancer2 ~ CnvAutoCor, family=binomial(link='logit'), data = pcsAndMetaTissueVsCancer)
+
+
+
+pcsAndMeta$excludeBasedOnPredictionCancer <- predict(cancerModel, newdata = data.frame(pcsAndMeta[,"CnvAutoCor",drop=F]), type = "response") > 0.5
+pcsAndMeta$excludeBasedOnPredictionCancerScore <- predict(cancerModel, newdata = data.frame(pcsAndMeta[,"CnvAutoCor",drop=F]), type = "response")
+
+
+
+
+
+
+
+
+##############Plotting
+pcsAndMeta$colCelline <- defaultCol
+pcsAndMeta$colCelline[!is.na(pcsAndMeta[,"Cellline"]) & pcsAndMeta[,"Cellline"]] <-  adjustcolor("magenta", alpha.f = 0.6)
+pcsAndMeta$colCelline[!is.na(pcsAndMeta[,"Cellline"]) & !pcsAndMeta[,"Cellline"]] <-  adjustcolor("royalblue1", alpha.f = 0.6)
+pcsAndMeta$colCelline[!is.na(pcsAndMeta[,"Cancer"]) & pcsAndMeta[,"Cancer"]] <-  adjustcolor("forestgreen", alpha.f = 0.6)
+
+
+
+defaultCol <- adjustcolor("grey", alpha.f = 0.3)
+pcsAndMeta$classCol <- defaultCol
+pcsAndMeta$classCol[!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline] <- adjustcolor("magenta", alpha.f = 0.6)
+pcsAndMeta$classCol[pcsAndMeta$CelllineName == "iPSC"] <- adjustcolor("goldenrod1", alpha.f = 0.6)
+pcsAndMeta$classCol[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer] <- adjustcolor("forestgreen", alpha.f = 0.6)
+pcsAndMeta$classCol[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & !pcsAndMeta$Cancer] <- adjustcolor("royalblue1", alpha.f = 0.6)
+
+
+pcsAndMeta$classCex <- 0.5
+pcsAndMeta$classCex[!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline] <- 0.6
+pcsAndMeta$classCex[pcsAndMeta$CelllineName == "iPSC"] <- 0.8
+pcsAndMeta$classCex[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer] <- 0.6
+pcsAndMeta$classCex[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & !pcsAndMeta$Cancer] <- 0.6
+
+set.seed(42)
+plotOrderClass <- sample(nrow(pcsAndMeta), nrow(pcsAndMeta))
+plotOrderClass[pcsAndMeta$classCol == defaultCol] <- 1
+
+rpng(width = 800, height = 800)
+ plot(pcsAndMeta[plotOrderClass,"excludeBasedOnPredictionCellline2Score"], pcsAndMeta[plotOrderClass,"excludeBasedOnPredictionCancerScore"], col = pcsAndMeta$classCol[plotOrderClass], cex = pcsAndMeta$classCex[plotOrderClass], pch = 16, 
+     xlab = "Cell line logistic regression score using components", 
+     ylab= "Cancer logistic regression scores using auto correlation")
+abline(v = 0.5, lwd = 2, col = adjustcolor("magenta", alpha.f = 0.4))
+abline(h = 0.5, lwd = 2, col = adjustcolor("forestgreen", alpha.f = 0.4))
 dev.off()
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrderClass,"excludeBasedOnPredictionCellline2Scoreb"], log(pcsAndMeta[plotOrderClass,"CnvAutoCor"]), col = pcsAndMeta$classCol[plotOrderClass], cex = pcsAndMeta$classCex[plotOrderClass], pch = 16, 
+     xlab = "Cell line logistic regression using components", 
+     ylab= "Sample Auto correlation")
+dev.off()
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrderTissues,"excludeBasedOnPredictionCellline2Score"], pcsAndMeta[plotOrderTissues,"excludeBasedOnPredictionCancerScore"], col = pcsAndMeta$col[plotOrderTissues], cex =0.6  , pch = 16, 
+     xlab = "Cell line logistic regression score using components", 
+     ylab= "Cancer logistic regression scores using auto correlation")
+abline(v = 0.5, lwd = 2, col = adjustcolor("magenta", alpha.f = 0.4))
+abline(h = 0.5, lwd = 2, col = adjustcolor("forestgreen", alpha.f = 0.4))
+dev.off()
+
+
+
+table(pcsAndMeta$Tissue[pcsAndMeta$excludeBasedOnPredictionCellline2 & !(!is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer)])
+sort(table(pcsAndMeta$study[pcsAndMeta$excludeBasedOnPredictionCellline2 & !(!is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer)]))
+
+table(pcsAndMeta$excludeBasedOnPredictionCellline2, pcsAndMeta$excludeBasedOnPredictionCancer)
+
+
+table(pcsAndMeta[pcsAndMeta[,"excludeBasedOnPredictionCellline2Score"] > 1 & pcsAndMeta[,"study"] == "GTEx","gtex.smtsd"])
+
+
+min(pcsAndMeta[pcsAndMeta$excludeBasedOnPredictionCellline2,"excludeBasedOnPredictionCellline2Score"])
+
 
 table(pcsAndMeta$excludeBasedOnPredictionCellline2, pcsAndMeta$Cellline, useNA = "a")
 
 table(pcsAndMeta$excludeBasedOnPredictionCellline2)
+table(pcsAndMeta$excludeBasedOnPredictionCancer)
 
 
 
@@ -290,6 +388,7 @@ sample <- "SRR094185"
 
 #sampleAutoCor <- matrix(nrow = nrow(expPcs), ncol = 2, dimnames = list(rownames(expPcs), c("OriginalAutoCor", "CnvAutoCor")))
 
+#Use eigenvector2 to have gene names without version number for later sorting
 eigenVectorXeigenValues <- eigenVectors2[,1:570] %*% diag(sqrt(eigenValues[1:570]))
 eigenVectorXautoCor <- eigenVectors2[,1:570] %*% diag(eigenvectorAutoCor2) 
 
@@ -321,6 +420,7 @@ str(sampleAutoCor)
 
 
 #save(sampleAutoCor, file = "sampleAutoCor.RData")
+load(file = "sampleAutoCor.RData")
 
 
 rpng()
@@ -341,7 +441,7 @@ pcsAndMeta$class <- as.factor(pcsAndMeta$class)
 
 table(pcsAndMeta$class, useNA = "a")
 
-write.table(pcsAndMeta, file = "tmp.txt", sep = "\t", quote = FALSE, col.names = NA)
+#write.table(pcsAndMeta, file = "tmp.txt", sep = "\t", quote = FALSE, col.names = NA)
 
 
 pcsAndMeta$OriginalAutoCor <- NA
@@ -353,6 +453,7 @@ str(pcsAndMeta$CnvAutoCor)
 
 library(vioplot)
 pdf("autoCorrelations.pdf", width = 14)
+rpng()
 layout(matrix(1:2, ncol = 2))
 vioplot(log(pcsAndMeta[,"OriginalAutoCor"]) ~ pcsAndMeta$class, main = "Normal expression auto correlation")
 vioplot( log(pcsAndMeta[,"CnvAutoCor"]) ~ pcsAndMeta$class, main = "CNV components auto correlation")
@@ -360,46 +461,3 @@ dev.off()
 
 
 
-
-
-#Use eigenvector2 to have gene names without version number for later sorting
-test <- eigenVectors2[,1:570] %*% diag(sqrt(eigenValues[1:570])) %*% t(v[sample,1:570,drop=F])
-str(test)
-rpng()
-plot(expScale[,sample], test[,1])
-dev.off()
-cor.test(expScale[,sample], test[,1])
-
-
-
-test2 <- eigenVectors2[,1:570] %*% diag(eigenvectorAutoCor2) %*% t(v[sample,1:570,drop=F])
-str(test2)
-rpng()
-plot(expScale[,sample], test[,1])
-dev.off()
-cor.test(expScale[,sample], test[,1])
-
-
-
-rpng()
-x <- acf(test[genesInOrder,1],  type = "correlation", plot = T, lag.max = 1000)
-dev.off()
-sum(x$acf[-1]^2)
-
-rpng()
-y <- acf(test2[genesInOrder,1],  type = "correlation", plot = T, lag.max = 1000)
-dev.off()
-sum(y$acf[-1]^2)
-
-
-rpng()
-layout(matrix(1:2,nrow = 2))
-plot(test[genesInOrder,1], pch = 16, cex = 0.5, col=adjustcolor("grey", alpha.f = 0.5))
-plot(test2[genesInOrder,1], pch = 16, cex = 0.5, col=adjustcolor("grey", alpha.f = 0.5))
-dev.off()
-
-
-rpng()
-
-dev.off()
-    
