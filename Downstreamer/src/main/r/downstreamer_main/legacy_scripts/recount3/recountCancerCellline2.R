@@ -2,16 +2,29 @@ library(parallel)
 
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
-load(file = "combinedMeta_2022_08_19.RData", verbose = T)
+load(file = "combinedMeta_2022_09_02.RData", verbose = T)
 load(file = "Recount3_QC_2ndRun/PCA_Patrick/pcs.RData", verbose = T)
-load(file = "Recount3_QC_2ndRun/PCA_Patrick/eigen.RData")
+load(file = "Recount3_QC_2ndRun/PCA_Patrick/eigen.RData", verbose = T)
 
-save.image("predictionSession.RData")
+#save.image("predictionSession.RData")
 
-compsToUse <- which(cumsum(explainedVariance)>= 80)[1]
-pcsAndMeta <- merge(expPcs[,1:compsToUse], combinedMeta, by = 0, all.x = T)
+explainedVariance <- eigenValues * 100 / sum(eigenValues)
+(compsToUse <- which(cumsum(explainedVariance)>= 80)[1])
+
+
+sum(rownames(expPcs[,1:compsToUse]) %in% rownames(combinedMeta))
+sum(!rownames(expPcs[,1:compsToUse]) %in% rownames(combinedMeta))
+
+
+pcsAndMeta <- merge(expPcs[,1:compsToUse], combinedMeta, by = 0)
 rownames(pcsAndMeta) <- pcsAndMeta$Row.names
-#save(pcsAndMeta, compsToUse, file = "DataForLasso.RData")
+
+
+save(pcsAndMeta, compsToUse, file = "DataForPredictions.RData")
+
+dim(pcsAndMeta)
+pcsAndMeta <- pcsAndMeta[!pcsAndMeta$exclude,]
+dim(pcsAndMeta)
 
 #write.table(merge(combinedMeta, expPcs[,1:100], by = 0, all.y = T), file = "Metadata/pcsAndAnnotations.txt", sep = "\t", quote = FALSE, col.names = NA)
 
@@ -19,7 +32,7 @@ dim(pcsAndMeta)
 
 
 defaultCol <- adjustcolor("grey", alpha.f = 0.6)
-tissueCol <- read.delim("Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", row.names = 1)
+tissueCol <- read.delim("Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", row.names = 0)
 
 #write.table(tissueCol, file = "Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", quote = F, row.names = F, sep = "\t")
 
@@ -225,6 +238,7 @@ roc(pcsAndMetaTissueVsCancer$Cancer, pcsAndMetaTissueVsCancer$CnvAutoCor )
 table(pcsAndMetaTissueVsCancer$Cancer, useNA = "a")
 
 pcsAndMetaTissueVsCancer$Cancer2 <- as.factor(pcsAndMetaTissueVsCancer$Cancer)
+table(pcsAndMetaTissueVsCancer$Cancer2, useNA = "a")
 
 cancerModel <- glm(Cancer2 ~ CnvAutoCor, family=binomial(link='logit'), data = pcsAndMetaTissueVsCancer)
 
@@ -300,7 +314,7 @@ table(pcsAndMeta[pcsAndMeta[,"excludeBasedOnPredictionCellline2Score"] > 1 & pcs
 
 
 pcsAndMeta$selectedSamples <- !pcsAndMeta$excludeBasedOnPredictionCellline2 & !pcsAndMeta$excludeBasedOnPredictionCancer & !(!is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer) & !(!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline)
-
+table(pcsAndMeta$selectedSamples)
 table(pcsAndMeta$selectedSamples, useNA = "a")
 
 
@@ -405,7 +419,7 @@ str(sampleAutoCor)
 
 
 #save(sampleAutoCor, file = "sampleAutoCor.RData")
-load(file = "sampleAutoCor.RData")
+load(file = "sampleAutoCor.RData", verbose = T)
 
 
 rpng()

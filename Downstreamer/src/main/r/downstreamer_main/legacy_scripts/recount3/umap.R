@@ -14,66 +14,114 @@ setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 tissueCol <- read.delim("umap/col.txt", row.names = 1, na.strings = "")
 
 #save(pcs, combinedMeta, tissueCol, file = "umap/dataForUmap.RData")
-load(file = "DataForLasso.RData")
+load(file = "DataForPredictions.RData")
 
-load(file = "combinedMeta_2022_08_30.RData", verbose = T)
-str(combinedMeta)
-updatedAnnotations <- combinedMeta[,c("Tissue",	"Tissue2",	"Cellline",	"CelllineName",	"Cancer",	"Cohort", "Fetal")]
+#load(file = "combinedMeta_2022_08_30.RData", verbose = T)
+#str(combinedMeta)
+#updatedAnnotations <- combinedMeta[,c("Tissue",	"Tissue2",	"Cellline",	"CelllineName",	"Cancer",	"Cohort", "Fetal")]
 
-all(rownames(pcsAndMeta) %in% rownames(updatedAnnotations))
-updatedAnnotations <- updatedAnnotations[rownames(pcsAndMeta),]
-all(rownames(pcsAndMeta) == rownames(updatedAnnotations))
+#all(rownames(pcsAndMeta) %in% rownames(updatedAnnotations))
+#updatedAnnotations <- updatedAnnotations[rownames(pcsAndMeta),]
+#all(rownames(pcsAndMeta) == rownames(updatedAnnotations))
 
-pcsAndMeta[,colnames(updatedAnnotations)] <- updatedAnnotations
+#pcsAndMeta[,colnames(updatedAnnotations)] <- updatedAnnotations
 
-pcsAndMeta$selectedSamples <- !pcsAndMeta$excludeBasedOnPredictionCellline2 & !pcsAndMeta$excludeBasedOnPredictionCancer & !(!is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer) & !(!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline)
+#pcsAndMeta$selectedSamples <- !pcsAndMeta$excludeBasedOnPredictionCellline2 & !pcsAndMeta$excludeBasedOnPredictionCancer & !(!is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer) & !(!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline)
 
 table(pcsAndMeta$selectedSamples, useNA = "a")
 
 
+clusterAnnotations <- read.delim("umap/annotationsBasedOnOldUmap.txt", row.names = 1)
+pcsAndMeta <- merge(pcsAndMeta, clusterAnnotations, by = 0, all.x = T)
+table(pcsAndMeta$ClusterAnnotation)
 
-  
-  
+
+
+
+#pcsAndMeta[!is.na(pcsAndMeta$study) & (pcsAndMeta$study== "ERP104864") & (grepl("synovium", pcsAndMeta$sra.sample_attributes, ignore.case=T)),"Tissue2"]= ""
+
+
 tissueSamples <- pcsAndMeta[pcsAndMeta$selectedSamples,]
+
+
+tissueSamples$class <- tissueSamples$Tissue
+
+hasT2 <- tissueSamples$Tissue2 != ""
+tissueSamples$class[hasT2] <- paste0(tissueSamples$class[hasT2], "-", tissueSamples$Tissue2[hasT2])
+
+isFetal <- !is.na(tissueSamples$Fetal) & tissueSamples$Fetal
+tissueSamples$class[isFetal] <- paste0(tissueSamples$class[isFetal], "-Fetal")
+
+noTbutCluster <- tissueSamples$class == "" & !is.na(tissueSamples$ClusterAnnotation)
+table(noTbutCluster, useNA = "a")
+tissueSamples$class[noTbutCluster] <- tissueSamples$ClusterAnnotation[noTbutCluster]
+
+table(tissueSamples$class)
+write.table(table(tissueSamples$class, useNA = "always"), file = "umap/tissues.txt", sep = "\t", quote = F, row.names = F)
+
 str(tissueSamples)
 
-init <- as.matrix(tissueSamples[,paste0("PC_",1:2)])
+
 
 mapping <- read.delim("umap/tissuesMapping.txt")
 str(mapping)
 
-tissueSamples$TissueCombined <- paste0(tissueSamples$Tissue, "-", tissueSamples$Tissue2)
-all(tissueSamples$TissueCombined %in% mapping$Tissue)
+all(tissueSamples$class %in% mapping$Class)
 
-tissueSamples$umapFactor <- as.factor(mapping$ClassificationClass[match(tissueSamples$TissueCombined, mapping$Tissue)])
+
+tissueSamples$umapFactor <- as.factor(mapping$ClassificationClass[match(tissueSamples$class, mapping$Class)])
 
 table(tissueSamples$umapFactor, useNA = "always")
 
 
-#write.table(table(tissueSamples$umapFactor, useNA = "always"), file = "tissues.txt", sep = "\t", quote = F)
+defaultCol <- adjustcolor("grey", alpha.f = 0.6)
+tissueCol <- read.delim("umap/col.txt", row.names = 0)
+
+
+tissueSamples$col <- defaultCol
+tissueSamples$col[tissueSamples$umapFactor %in% ] <- #TODO
+
+
+plotOrderTissues <- order((tissueSamples$col != defaultCol) + 1)
 
 #, n_threads = 22
 
 compsToUseForUmap <- 100
-
+init <- as.matrix(tissueSamples[,paste0("PC_",1:2)])
 umapInput <- as.matrix(tissueSamples[,paste0("PC_",1:compsToUseForUmap)])
 
 
+sampleUmap <- umap(
+  umapInput, 
+  n_epochs = 500, 
+  init = init, 
+  n_neighbors = 500, 
+  min_dist = 2, init_sdev = 1e-4, learning_rate = 1, spread = 40 ,scale = "scale", nn_method = "fnn")
 
+rownames(sampleUmap) <- rownames(pcs)
+colnames(sampleUmap) <- c("UMAP1", "UMAP2")
+str(sampleUmap)
+umapAndMeta <- merge(sampleUmap, tissueSamples, by = 0)
+dim(umapAndMeta)
 
 
 rpng()
 
 par(mar = c(3,5,0.1,0.1), xpd = NA)
-plot(umapAndMeta[plotOrder,"UMAP1"], umapAndMeta[plotOrder,"UMAP2"], col = umapAndMeta$TissueCol[plotOrder], cex = 0.5, pch = 16)
+plot(umapAndMeta[plotOrder,"UMAP1"], umapAndMeta[plotOrder,"UMAP2"], col = umapAndMeta$TissueCol[plotOrder], cex = 0.3, pch = 16)
 
 dev.off()
 
-umapAndMeta$TissueCol[umapAndMeta$umapFactor == "Muscle"]
+
+locator(n =2, type = "l")
+
+
+
 
 write.table(umapAndMeta,file = "umaptest.txt", sep = "\t", quote = F, col.names = NA)
 
-save.image( file="umap_tmp.RData")
+#save.image( file="umap_tmp.RData")
+load("umap_tmp.RData") 
 
 rpng()
 
@@ -81,9 +129,6 @@ par(mar = c(3,5,0.1,0.1), xpd = NA)
 plot(umapAndMeta[plotOrder,"UMAP1"], umapAndMeta[plotOrder,"UMAP2"], col = umapAndMeta$TissueCol[plotOrder], cex = 0.8, pch = 16, xlim = c(-25,25), ylim = c(-25,25))
 
 dev.off()
-
-
-
 
 
 
