@@ -60,7 +60,13 @@ public class DownstreamerUtilities {
 
         if (options.getGeneInfoFile() != null) {
             final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-            final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGeneInfoFile()))).withCSVParser(parser).withSkipLines(0).build();
+
+            CSVReader reader = null;
+            if (options.getGeneInfoFile().getName().endsWith(".gz")) {
+                reader = new CSVReaderBuilder((new InputStreamReader(new GZIPInputStream(new FileInputStream(options.getGeneInfoFile()))))).withSkipLines(0).withCSVParser(parser).build();
+            } else {
+                reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGeneInfoFile()))).withCSVParser(parser).withSkipLines(0).build();
+            }
 
             final HashSet<String> genes = new HashSet<>();
             String[] nextLine;

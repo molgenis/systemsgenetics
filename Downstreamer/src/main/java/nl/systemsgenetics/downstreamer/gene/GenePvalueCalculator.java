@@ -15,12 +15,8 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,8 +28,11 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
+import java.util.zip.GZIPInputStream;
+
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
+
 import static nl.systemsgenetics.downstreamer.Downstreamer.formatMsForLog;
 
 import nl.systemsgenetics.downstreamer.Downstreamer;
@@ -52,7 +51,6 @@ import umcg.genetica.math.stats.PearsonRToZscoreBinned;
 import umcg.genetica.math.stats.ZScores;
 
 /**
- *
  * @author patri
  */
 public class GenePvalueCalculator {
@@ -113,7 +111,7 @@ public class GenePvalueCalculator {
 	private final int[] genePValueDistributionPermuations;
 	private final int[] genePValueDistributionChi2Dist;
 	private final ProgressBar pb;
-//	private final double minPvaluePermutations;
+	//	private final double minPvaluePermutations;
 //	private final double minPvaluePermutations2;
 	private final boolean correctForLambdaInflation;
 	private final double[] lambdaInflations;
@@ -124,15 +122,14 @@ public class GenePvalueCalculator {
 	private final String[] variantPerGeneOutputLine;
 
 	/**
-	 *
 	 * @param variantPhenotypeZscoreMatrixPath Binary matrix. rows: variants,
-	 * cols: phenotypes. Variants must have IDs identical to
-	 * genotypeCovarianceSource
-	 * @param referenceGenotypes Source data used to calculate correlations
-	 * between SNPs
-	 * @param genes genes for which to calculate p-values.
-	 * @param windowExtend number of bases to add left and right of gene window
-	 * @param maxR max correlation between variants to use
+	 *                                         cols: phenotypes. Variants must have IDs identical to
+	 *                                         genotypeCovarianceSource
+	 * @param referenceGenotypes               Source data used to calculate correlations
+	 *                                         between SNPs
+	 * @param genes                            genes for which to calculate p-values.
+	 * @param windowExtend                     number of bases to add left and right of gene window
+	 * @param maxR                             max correlation between variants to use
 	 * @param nrPermutations
 	 * @param outputBasePath
 	 * @param randomChi2
@@ -253,15 +250,15 @@ public class GenePvalueCalculator {
 		//Result matrix null GWAS. Rows: genes, Cols: phenotypes
 		genePvaluesNullGwas = new DoubleMatrixDataset<>(createGeneHashRows(genes), randomNormalizedPhenotypes.getHashCols());
 		geneMaxSnpZscoreNullGwas = new DoubleMatrixDataset<>(createGeneHashRows(genes), randomNormalizedPhenotypes.getHashCols());
-		
+
 		geneVariantCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"count"})));
 		geneMaxPermutationCount = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"maxPermutations"})));
 		geneRuntime = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(Arrays.asList(new String[]{"runtime"})));
 
 		geneVariantPhenotypeMatrixRowLoader = new DoubleMatrixDatasetFastSubsetLoader(variantPhenotypeZscoreMatrixPath);
 
-		genePValueDistributionPermuations = new int[21];//used to create histogram 
-		genePValueDistributionChi2Dist = new int[21];//used to create histogram 
+		genePValueDistributionPermuations = new int[21];//used to create histogram
+		genePValueDistributionChi2Dist = new int[21];//used to create histogram
 
 		pb = new ProgressBar("Gene p-value calculations", numberGenes, ProgressBarStyle.ASCII);
 
@@ -345,7 +342,6 @@ public class GenePvalueCalculator {
 	}
 
 	/**
-	 *
 	 * @return gene p-value matrix for each phenotype. rows: genes in same order
 	 * as genes list, cols: phenotypes
 	 */
@@ -606,12 +602,12 @@ public class GenePvalueCalculator {
 				timeStart = System.currentTimeMillis();
 
 				DoubleMatrix1D phenoPvalues = geneVariantPhenotypeMatrix.getCol(phenoI);
-				
+
 				final double geneChi2Sum = phenoPvalues.aggregate(DoubleFunctions.plus, DoubleFunctions.square);
 				final double geneMaxZscore = phenoPvalues.aggregate(DoubleFunctions.max, DoubleFunctions.abs);
-							
+
 				geneMaxSnpZscore.setElementQuick(geneI, phenoI, geneMaxZscore);
-				
+
 				timeStop = System.currentTimeMillis();
 				timeInCalculatingRealSumChi2 += (timeStop - timeStart);
 
@@ -690,7 +686,7 @@ public class GenePvalueCalculator {
 						//Fall back to slower purmtations that are not saved
 						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
 							double weightedChi2Perm = 0;
-							for (int g = -1; ++g < lambdasLength;) {
+							for (int g = -1; ++g < lambdasLength; ) {
 								//double randomZ = rnd.nextGaussian();
 
 								//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
@@ -778,13 +774,13 @@ public class GenePvalueCalculator {
 				timeStart = System.currentTimeMillis();
 
 				DoubleMatrix1D phenoPvalues = nullGwasZscores.getCol(nullPhenoI);
-				
+
 				final double geneChi2Sum = phenoPvalues.aggregate(DoubleFunctions.plus, DoubleFunctions.square);
 				final double geneMaxZscore = phenoPvalues.aggregate(DoubleFunctions.max, DoubleFunctions.abs);
-							
+
 				geneMaxSnpZscoreNullGwas.setElementQuick(geneI, nullPhenoI, geneMaxZscore);
-				
-			
+
+
 				timeStop = System.currentTimeMillis();
 				timeInCalculatingRealSumChi2 += (timeStop - timeStart);
 
@@ -858,7 +854,7 @@ public class GenePvalueCalculator {
 						//Fall back to slower purmtations that are not saved
 						while (countNullLargerChi2ThanReal < 5 && currentNumberPermutationsForThisPhenoGeneCombo < maxNrPermutationsRescue2) {
 							double weightedChi2Perm = 0;
-							for (int g = -1; ++g < lambdasLength;) {
+							for (int g = -1; ++g < lambdasLength; ) {
 								//double randomZ = rnd.nextGaussian();
 
 								//Hopefully more efficient nextGaussian because no need to save second value from pair as double object
@@ -981,7 +977,7 @@ public class GenePvalueCalculator {
 
 		timeStart = System.currentTimeMillis();
 
-		//Inplace normalize per variants to mean of 0 and sd of 1 too 
+		//Inplace normalize per variants to mean of 0 and sd of 1 too
 		dosageDataset.normalizeColumns();
 
 		timeStop = System.currentTimeMillis();
@@ -1041,7 +1037,7 @@ public class GenePvalueCalculator {
 
 		timeStart = System.currentTimeMillis();
 
-		//Inplace normalize per variants to mean of 0 and sd of 1 too 
+		//Inplace normalize per variants to mean of 0 and sd of 1 too
 		dosageDataset.normalizeColumns();
 
 		timeStop = System.currentTimeMillis();
@@ -1072,10 +1068,10 @@ public class GenePvalueCalculator {
 	 *
 	 * @param geneChi2SumNull vector to fill will null chi2 values
 	 * @param eigenValues
-	 * @param randomChi2 reference distribution
-	 * @param start zero based count
-	 * @param stop zero based count, so must be < nrPermutation @return @param
-	 * rnd @pa r am eigenValuesLengt h
+	 * @param randomChi2      reference distribution
+	 * @param start           zero based count
+	 * @param stop            zero based count, so must be < nrPermutation @return @param
+	 *                        rnd @pa r am eigenValuesLengt h
 	 */
 	public static void runPermutationsUsingEigenValues(final double[] geneChi2SumNull, final double[] eigenValues, double[] randomChi2, final int start, final int stop, final ThreadLocalRandom rnd, final int eigenValuesLength) {
 
@@ -1176,7 +1172,12 @@ public class GenePvalueCalculator {
 	private static HashMap<String, HashSet<String>> loadVariantGeneMapping(File variantGeneMappingFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantGeneMappingFile))).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (variantGeneMappingFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder((new InputStreamReader(new GZIPInputStream(new FileInputStream(variantGeneMappingFile))))).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantGeneMappingFile))).withCSVParser(parser).build();
+		}
 
 		HashMap<String, HashSet<String>> geneVariantMapping = new HashMap<>();
 

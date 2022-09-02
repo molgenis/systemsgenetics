@@ -474,8 +474,13 @@ public class DownstreamerConverters {
         }
 
         final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()))).withCSVParser(parser).build();
 
+        CSVReader reader = null;
+        if (options.getGwasZscoreMatrixPath().endsWith(".gz")) {
+            reader = new CSVReaderBuilder((new InputStreamReader(new GZIPInputStream(new FileInputStream(options.getGwasZscoreMatrixPath()))))).withCSVParser(parser).build();
+        } else {
+            reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGwasZscoreMatrixPath()))).withCSVParser(parser).build();
+        }
         ArrayList<GwasSummStats> gwasSummStats = new ArrayList<>();
 
         String[] nextLine = reader.readNext();
@@ -647,7 +652,7 @@ public class DownstreamerConverters {
             }
             excludedVariantWriter.close();
 
-            LOGGER.info("Encounterd " + variantsToExclude.size() + " variants with NaN values, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
+            LOGGER.info("Encountered " + variantsToExclude.size() + " variants with NaN values, these are excluded from the conversion. For a full list of excluded variants, see: " + excludedVariantsFile.getPath());
 
             HashSet<String> variantsToInclude = new HashSet<>(allVariants);
             variantsToInclude.removeAll(variantsToExclude);
