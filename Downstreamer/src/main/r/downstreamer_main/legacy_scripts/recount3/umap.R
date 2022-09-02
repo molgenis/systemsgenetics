@@ -75,14 +75,16 @@ table(tissueSamples$umapFactor, useNA = "always")
 
 
 defaultCol <- adjustcolor("grey", alpha.f = 0.6)
-tissueCol <- read.delim("umap/col.txt", row.names = 0)
+tissueCol <- read.delim("umap/col.txt", row.names = 1)
 
 
-tissueSamples$col <- defaultCol
-tissueSamples$col[tissueSamples$umapFactor %in% ] <- #TODO
+tissueSamples$TissueCol <- defaultCol
+sum(unique(tissueSamples$umapFactor) %in% rownames(tissueCol))
+tissueSamples$TissueCol[tissueSamples$umapFactor %in% rownames(tissueCol)] <- adjustcolor(tissueCol[as.character(tissueSamples$umapFactor[tissueSamples$umapFactor %in% rownames(tissueCol)]),1], alpha.f = 0.5)
+#tissueSamples$TissueCol[tissueSamples$umapFactor %in% rownames(tissueCol)] <- tissueCol[as.character(tissueSamples$umapFactor[tissueSamples$umapFactor %in% rownames(tissueCol)]),1]
+table(tissueSamples$TissueCol)
 
-
-plotOrderTissues <- order((tissueSamples$col != defaultCol) + 1)
+plotOrderTissues <- order((tissueSamples$TissueCol != defaultCol) + 1)
 
 #, n_threads = 22
 
@@ -96,11 +98,11 @@ sampleUmap <- umap(
   n_epochs = 500, 
   init = init, 
   n_neighbors = 500, 
-  min_dist = 2, init_sdev = 1e-4, learning_rate = 1, spread = 40 ,scale = "scale", nn_method = "fnn")
+  min_dist = 2, init_sdev = 1e-4, learning_rate = 1, spread = 40 ,scale = "scale", nn_method = "fnn",
+  local_connectivity = 10)
 
-rownames(sampleUmap) <- rownames(pcs)
+rownames(sampleUmap) <- rownames(tissueSamples)
 colnames(sampleUmap) <- c("UMAP1", "UMAP2")
-str(sampleUmap)
 umapAndMeta <- merge(sampleUmap, tissueSamples, by = 0)
 dim(umapAndMeta)
 
@@ -108,7 +110,7 @@ dim(umapAndMeta)
 rpng()
 
 par(mar = c(3,5,0.1,0.1), xpd = NA)
-plot(umapAndMeta[plotOrder,"UMAP1"], umapAndMeta[plotOrder,"UMAP2"], col = umapAndMeta$TissueCol[plotOrder], cex = 0.3, pch = 16)
+plot(umapAndMeta[plotOrderTissues,"UMAP1"], umapAndMeta[plotOrderTissues,"UMAP2"], col = umapAndMeta$TissueCol[plotOrderTissues], cex = 0.2, pch = 16)
 
 dev.off()
 
