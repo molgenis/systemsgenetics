@@ -54,13 +54,18 @@ save(expPcs, expFile, file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount
 
 library("havok")
 
-threshold <- optimal_SVHT_coef(nrow(exp) / ncol(exp))
+medianSingularValue <- sqrt(median(eigenValues))
+
+omega <- optimal_SVHT_coef(nrow(exp) / ncol(exp), sigma_known = F)
+threshold <- omega * medianSingularValue
 
 (numberComponentsToInclude <- sum(sqrt(eigenValues) > threshold ))
 
 explainedVariance <- eigenValues * 100 / sum(eigenValues)
 
 cumsum(explainedVariance)[numberComponentsToInclude]
+
+which(cumsum(explainedVariance)>= 80)[1]
 
 rpng()
 plot(cumsum(explainedVariance), ylab = "Cumulative % explained variance")
@@ -69,7 +74,7 @@ dev.off()
 
 
 rpng()
-plot(cumsum(explainedVariance)[1:5000], ylab = "Cumulative % explained variance")
+plot(cumsum(explainedVariance)[1:10000], ylab = "Cumulative % explained variance")
 abline(v = numberComponentsToInclude, col = "red3", lwd = 3)
 dev.off()
 
@@ -82,6 +87,13 @@ dev.off()
 
 rpng()
 plot(log(eigenValues), ylab = "Log eigenvalues")
+abline(v = numberComponentsToInclude, col = "red3", lwd = 3)
+dev.off()
+
+
+rpng()
+plot(log(sqrt(eigenValues)), ylab = "Signular values")
+abline(h = log())
 abline(v = numberComponentsToInclude, col = "red3", lwd = 3)
 dev.off()
 

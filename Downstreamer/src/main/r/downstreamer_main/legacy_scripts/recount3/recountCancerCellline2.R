@@ -8,10 +8,10 @@ load(file = "Recount3_QC_2ndRun/PCA_Patrick/eigen.RData")
 
 save.image("predictionSession.RData")
 
-
-pcsAndMeta <- merge(expPcs[,1:570], combinedMeta, by = 0, all.x = T)
+compsToUse <- which(cumsum(explainedVariance)>= 80)[1]
+pcsAndMeta <- merge(expPcs[,1:compsToUse], combinedMeta, by = 0, all.x = T)
 rownames(pcsAndMeta) <- pcsAndMeta$Row.names
-#save(pcsAndMeta, file = "DataForLasso.RData")
+#save(pcsAndMeta, compsToUse, file = "DataForLasso.RData")
 
 #write.table(merge(combinedMeta, expPcs[,1:100], by = 0, all.y = T), file = "Metadata/pcsAndAnnotations.txt", sep = "\t", quote = FALSE, col.names = NA)
 
@@ -21,7 +21,7 @@ dim(pcsAndMeta)
 defaultCol <- adjustcolor("grey", alpha.f = 0.6)
 tissueCol <- read.delim("Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", row.names = 1)
 
-
+#write.table(tissueCol, file = "Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", quote = F, row.names = F, sep = "\t")
 
 pcsAndMeta$col <- defaultCol
 tissueAndCol <- pcsAndMeta[,"Tissue"] %in% tissueCol$PlotClass
@@ -60,26 +60,6 @@ plot(pcsAndMeta[plotOrderCellline,"PC_1"], pcsAndMeta[plotOrderCellline,"PC_2"],
 #plot(pcsAndMeta[,"PC_1"], pcsAndMeta[,"PC_2"], col = pcsAndMeta$colCelline[], cex = 0.3, pch = 16)
 dev.off()
 
-
-
-
-threshold <- c("PC_1" = 0.2, "PC_2" = -0.025, "PC_24" = -0.04, "PC_27" = 0.09, "PC_32" = -0.05, "PC_62" = 0.03, "PC_56" = -0.07, "PC_63" = 0.04)
-rescueThreshold <- c("PC_10" = -0.15, "PC_18" = -0.1, "PC_20" = -0.125, "PC_21" = -0.18)
-
-pcsAndMeta$excludeBasedOnPredictionCellline <- FALSE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_2 > threshold["PC_2"]] <- TRUE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_1 > threshold["PC_1"]] <- TRUE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_24 < threshold["PC_24"]] <- TRUE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_27 > threshold["PC_27"]] <- TRUE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_32 < threshold["PC_32"]] <- TRUE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_62 > threshold["PC_62"]] <- TRUE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_56 < threshold["PC_56"]] <- TRUE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_63 > threshold["PC_63"]] <- TRUE
-
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_10 < rescueThreshold["PC_10"]] <- FALSE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_18 < rescueThreshold["PC_18"]] <- FALSE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_20 < rescueThreshold["PC_20"]] <- FALSE
-pcsAndMeta$excludeBasedOnPredictionCellline[pcsAndMeta$PC_21 < rescueThreshold["PC_21"]] <- FALSE
 
 pcsAndMeta$colExclude <- adjustcolor("goldenrod2", alpha.f = 0.3)
 pcsAndMeta$colExclude[!pcsAndMeta$excludeBasedOnPredictionCellline2] <- adjustcolor("aquamarine", alpha.f = 0.3)
@@ -195,7 +175,7 @@ test <- rownames(pcsAndMetaTissueVsCellline)[!rownames(pcsAndMetaTissueVsCelllin
 library(glmnet)
 
 
-cfit <- cv.glmnet(x = as.matrix(pcsAndMetaTissueVsCellline[train,c(paste0("PC_",1:570),"CnvAutoCor")]), y = pcsAndMetaTissueVsCellline[train, "Cellline"], family = "binomial", type.measure = "auc", keep = TRUE, nfolds = 10, parallel = F)
+cfit <- cv.glmnet(x = as.matrix(pcsAndMetaTissueVsCellline[train,c(paste0("PC_",1:compsToUse))]), y = pcsAndMetaTissueVsCellline[train, "Cellline"], family = "binomial", type.measure = "auc", keep = TRUE, nfolds = 10, parallel = F)
 rpng()
 plot(cfit)
 dev.off()
@@ -215,14 +195,14 @@ dev.off()
 
 str(rocs)
 
-assess.glmnet(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMetaTissueVsCellline[test,c(paste0("PC_",1:570),"CnvAutoCor")]),  newy = pcsAndMetaTissueVsCellline[test, "Cellline"])
+assess.glmnet(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMetaTissueVsCellline[test,c(paste0("PC_",1:compsToUse))]),  newy = pcsAndMetaTissueVsCellline[test, "Cellline"])
   
 
 
-pcsAndMeta$excludeBasedOnPredictionCellline2 <- as.logical(predict(cfit, type = "class", s = "lambda.1se", newx = as.matrix(pcsAndMeta[,c(paste0("PC_",1:570),"CnvAutoCor")]),  newy = pcsAndMeta$Cellline)[,1])
+pcsAndMeta$excludeBasedOnPredictionCellline2 <- as.logical(predict(cfit, type = "class", s = "lambda.1se", newx = as.matrix(pcsAndMeta[,c(paste0("PC_",1:compsToUse))]),  newy = pcsAndMeta$Cellline)[,1])
 
-pcsAndMeta$excludeBasedOnPredictionCellline2Score <- predict(cfit, s = "lambda.1se", type = "response", newx = as.matrix(pcsAndMeta[,c(paste0("PC_",1:570),"CnvAutoCor")]),  newy = pcsAndMeta$Cellline)[,1]
-pcsAndMeta$excludeBasedOnPredictionCellline2Scoreb <- predict(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMeta[,c(paste0("PC_",1:570),"CnvAutoCor")]),  newy = pcsAndMeta$Cellline)[,1]
+pcsAndMeta$excludeBasedOnPredictionCellline2Score <- predict(cfit, s = "lambda.1se", type = "response", newx = as.matrix(pcsAndMeta[,c(paste0("PC_",1:compsToUse))]),  newy = pcsAndMeta$Cellline)[,1]
+pcsAndMeta$excludeBasedOnPredictionCellline2Scoreb <- predict(cfit, s = "lambda.1se", newx = as.matrix(pcsAndMeta[,c(paste0("PC_",1:compsToUse))]),  newy = pcsAndMeta$Cellline)[,1]
 
 
 
@@ -319,6 +299,11 @@ table(pcsAndMeta$excludeBasedOnPredictionCellline2, pcsAndMeta$excludeBasedOnPre
 table(pcsAndMeta[pcsAndMeta[,"excludeBasedOnPredictionCellline2Score"] > 1 & pcsAndMeta[,"study"] == "GTEx","gtex.smtsd"])
 
 
+pcsAndMeta$selectedSamples <- !pcsAndMeta$excludeBasedOnPredictionCellline2 & !pcsAndMeta$excludeBasedOnPredictionCancer & !(!is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer) & !(!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline)
+
+table(pcsAndMeta$selectedSamples, useNA = "a")
+
+
 min(pcsAndMeta[pcsAndMeta$excludeBasedOnPredictionCellline2,"excludeBasedOnPredictionCellline2Score"])
 
 
@@ -351,7 +336,7 @@ str(eigenVectors4)
 str(eigenVectors4)
 
 
-eigenvectorAutoCor2 <- sapply(paste0("PC_",1:570), function(x){
+eigenvectorAutoCor2 <- sapply(paste0("PC_",1:compsToUse), function(x){
   y <- acf(eigenVectors4[,x],  type = "correlation", plot = F, lag.max = 1000)$acf
   return(sum(y[-1]^2))
 })
@@ -370,7 +355,7 @@ dev.off()
 
 str(eigenValues)
 
-v <- expPcs[,1:570] %*% diag(1/sqrt(eigenValues[1:570]))
+v <- expPcs[,1:compsToUse] %*% diag(1/sqrt(eigenValues[1:compsToUse]))
 str(v)
 
 
@@ -389,20 +374,20 @@ sample <- "SRR094185"
 #sampleAutoCor <- matrix(nrow = nrow(expPcs), ncol = 2, dimnames = list(rownames(expPcs), c("OriginalAutoCor", "CnvAutoCor")))
 
 #Use eigenvector2 to have gene names without version number for later sorting
-eigenVectorXeigenValues <- eigenVectors2[,1:570] %*% diag(sqrt(eigenValues[1:570]))
-eigenVectorXautoCor <- eigenVectors2[,1:570] %*% diag(eigenvectorAutoCor2) 
+eigenVectorXeigenValues <- eigenVectors2[,1:compsToUse] %*% diag(sqrt(eigenValues[1:compsToUse]))
+eigenVectorXautoCor <- eigenVectors2[,1:compsToUse] %*% diag(eigenvectorAutoCor2) 
 
 #for(sample in rownames(expPcs)[1:10]){
 
 cl <- makeCluster(20)
 
-clusterExport(cl, c("eigenVectorXeigenValues", "eigenVectorXautoCor", "v", "genesInOrder"))
+clusterExport(cl, c("eigenVectorXeigenValues", "eigenVectorXautoCor", "v", "genesInOrder", "compsToUse"))
 
 
 sampleAutoCor <- parSapply(cl, rownames(expPcs), function(sample){
 
-  originalReconstruct <- eigenVectorXeigenValues %*% t(v[sample,1:570,drop=F])
-  cnvReconstruct <- eigenVectorXautoCor %*% t(v[sample,1:570,drop=F])
+  originalReconstruct <- eigenVectorXeigenValues %*% t(v[sample,1:compsToUse,drop=F])
+  cnvReconstruct <- eigenVectorXautoCor %*% t(v[sample,1:compsToUse,drop=F])
   
   originalAutoCor <- sum(acf(originalReconstruct[genesInOrder,1],  type = "correlation", plot = F, lag.max = 1000)$acf[-1]^2)
   cnvAutoCor <- sum(acf(cnvReconstruct[genesInOrder,1],  type = "correlation", plot = F, lag.max = 1000)$acf[-1]^2)
