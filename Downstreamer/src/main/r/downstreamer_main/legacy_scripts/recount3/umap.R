@@ -95,11 +95,15 @@ umapInput <- as.matrix(tissueSamples[,paste0("PC_",1:compsToUseForUmap)])
 
 sampleUmap <- umap(
   umapInput, 
-  n_epochs = 500, 
+  n_epochs = 300, 
   init = init, 
   n_neighbors = 500, 
-  min_dist = 2, init_sdev = 1e-4, learning_rate = 1, spread = 40 ,scale = "scale", nn_method = "fnn",
-  local_connectivity = 10)
+  min_dist = 2, init_sdev = 1e-4, learning_rate = 1, 
+  spread = 20, 
+  bandwidth = 10,
+  scale = "scale",
+  local_connectivity = 1,
+  metric = "correlation")
 
 rownames(sampleUmap) <- rownames(tissueSamples)
 colnames(sampleUmap) <- c("UMAP1", "UMAP2")
@@ -142,12 +146,12 @@ pdf(file = "umaptest.pdf", width = 16, height = 8)
 layout(matrix(1:2,ncol = 2))
 
 par(mar = c(3,5,0.1,0.1), xpd = NA)
-plot(umapAndMeta[plotOrder,"UMAP1"], umapAndMeta[plotOrder,"UMAP2"], col = umapAndMeta$TissueCol[plotOrder], cex = 0.8, pch = 16)
+plot(umapAndMeta[plotOrderTissues,"UMAP1"], umapAndMeta[plotOrderTissues,"UMAP2"], col = umapAndMeta$TissueCol[plotOrderTissues], cex = 0.4, pch = 16)
 
 par(mar = c(0,0,0,0), xpd = NA)
 plot.new()
 plot.window(xlim = 0:1, ylim = 0:1)
-legend("center", fill = tissueCol[,1], legend = row.names(tissueCol), bty = "n", ncol = 2)
+legend("center", fill = tissueCol[,1], legend = row.names(tissueCol), bty = "n", ncol = 2,cex = 0.7)
 
 
 dev.off()
