@@ -33,6 +33,7 @@ table(pcsAndMeta$selectedSamples, useNA = "a")
 
 clusterAnnotations <- read.delim("umap/annotationsBasedOnOldUmap.txt", row.names = 1)
 pcsAndMeta <- merge(pcsAndMeta, clusterAnnotations, by = 0, all.x = T)
+rownames(pcsAndMeta) <- pcsAndMeta$Row.names
 table(pcsAndMeta$ClusterAnnotation)
 
 
@@ -42,7 +43,6 @@ table(pcsAndMeta$ClusterAnnotation)
 
 
 tissueSamples <- pcsAndMeta[pcsAndMeta$selectedSamples,]
-
 
 tissueSamples$class <- tissueSamples$Tissue
 
@@ -80,30 +80,32 @@ tissueCol <- read.delim("umap/col.txt", row.names = 1)
 
 tissueSamples$TissueCol <- defaultCol
 sum(unique(tissueSamples$umapFactor) %in% rownames(tissueCol))
+sum(tissueSamples$umapFactor %in% rownames(tissueCol))
 tissueSamples$TissueCol[tissueSamples$umapFactor %in% rownames(tissueCol)] <- adjustcolor(tissueCol[as.character(tissueSamples$umapFactor[tissueSamples$umapFactor %in% rownames(tissueCol)]),1], alpha.f = 0.5)
 #tissueSamples$TissueCol[tissueSamples$umapFactor %in% rownames(tissueCol)] <- tissueCol[as.character(tissueSamples$umapFactor[tissueSamples$umapFactor %in% rownames(tissueCol)]),1]
-table(tissueSamples$TissueCol)
+table(tissueSamples$TissueCol, useNA = "a")
 
-plotOrderTissues <- order((tissueSamples$TissueCol != defaultCol) + 1)
+tissueSamples$plotOrderTissues <- order(tissueSamples$TissueCol != defaultCol)
+
 
 #, n_threads = 22
 
-compsToUseForUmap <- 100
+compsToUseForUmap <- compsToUse
 init <- as.matrix(tissueSamples[,paste0("PC_",1:2)])
 umapInput <- as.matrix(tissueSamples[,paste0("PC_",1:compsToUseForUmap)])
 
-
 sampleUmap <- umap(
   umapInput, 
-  n_epochs = 300, 
+  n_epochs = 100, 
   init = init, 
   n_neighbors = 500, 
   min_dist = 2, init_sdev = 1e-4, learning_rate = 1, 
-  spread = 20, 
+  spread = 15, 
   bandwidth = 10,
   scale = "scale",
   local_connectivity = 1,
   metric = "correlation")
+
 
 rownames(sampleUmap) <- rownames(tissueSamples)
 colnames(sampleUmap) <- c("UMAP1", "UMAP2")
@@ -111,10 +113,13 @@ umapAndMeta <- merge(sampleUmap, tissueSamples, by = 0)
 dim(umapAndMeta)
 
 
+
+
+
 rpng()
 
 par(mar = c(3,5,0.1,0.1), xpd = NA)
-plot(umapAndMeta[plotOrderTissues,"UMAP1"], umapAndMeta[plotOrderTissues,"UMAP2"], col = umapAndMeta$TissueCol[plotOrderTissues], cex = 0.2, pch = 16)
+plot(umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP1"], umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP2"], col = umapAndMeta$TissueCol[umapAndMeta$plotOrderTissues], cex = 0.2, pch = 16)
 
 dev.off()
 
