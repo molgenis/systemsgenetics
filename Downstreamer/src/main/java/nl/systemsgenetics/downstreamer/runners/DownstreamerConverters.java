@@ -508,19 +508,14 @@ public class DownstreamerConverters {
 					File summStatFile = summStat.getSummStatsFile();
 
 
-					CSVReader reader = null;
-					if (variantGeneMappingFile.getName().endsWith(".gz")) {
-						reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(variantGeneMappingFile))))))).withCSVParser(parser).build();
+					InputStreamReader isr;
+					if (summStatFile.getName().endsWith("gz") || summStatFile.getName().endsWith("bgz")) {
+						isr = new InputStreamReader(new GZIPInputStream(new FileInputStream(summStatFile)));
 					} else {
-						reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantGeneMappingFile))).withCSVParser(parser).build();
+						isr = new InputStreamReader(new FileInputStream(summStatFile));
 					}
 
-					CSVReader summStatReader = null;
-					if (summStatFile.getName().endsWith("gz") || summStatFile.getName().endsWith("bgz")) {
-						summStatReader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(summStatFile))))))).withSkipLines(1).withCSVParser(parser).build();
-					} else {
-						summStatReader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new FileInputStream(summStatFile)))))).withSkipLines(1).withCSVParser(parser).build();
-					}
+					final CSVReader summStatReader = new CSVReaderBuilder(isr).withSkipLines(1).withCSVParser(parser).build();
 
 					HashSet<String> variantsHashSet = new HashSet<>();
 					HashSet<String> variantsWithDuplicates = new HashSet<>();
