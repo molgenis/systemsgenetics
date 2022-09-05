@@ -13,13 +13,13 @@ library(ggrepel)
 
 # Cached 2021-04-28
 #datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
-datasets            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = F)
+datasets            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = T)
 
 meta.data           <- read.table("../data/downstreamer_summary_statistics.csv", sep="\t", stringsAsFactors = F, header=T)
 rownames(meta.data) <- gsub("_hg19", "", gsub("__", "_", gsub(".xlsx|.txt", "", gsub("_enrichtments", "", meta.data$EnrichmentExcel))))
 meta.data$class[is.na(meta.data$class)] <- "NA"
 
-#gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
+gene.pvalues.unadjust <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T), trim.colnames = c("_hg19_normalizedGenePvalues.txt", "_hg19.txt"))
 gene.pvalues        <- read.genep(list.files("../data/final_paper_cov_correct/gene_pvalues/", full.names=T), trim.colnames = c("_normalizedAdjustedGenePvalues.txt", "_hg19", ".txt"))
 
 ol                  <- intersect(names(datasets), colnames(gene.pvalues))
@@ -54,7 +54,7 @@ df.plot <- data.frame(x=meta.data[ol,]$N,
 
 ct <- cor.test(df.plot$x, df.plot$y, use="complete.obs")
 
-pdf(width=3, height=3, file="output/plots/adjusted/GenePriortization_number_of_key_genes_vs_gwas_samplesize.pdf", paper="a4")
+pdf(width=3, height=3, file="output/mean_adjusted/plots/GenePriortization_number_of_key_genes_vs_gwas_samplesize.pdf", paper="a4")
 p <- ggplot(data=df.plot, mapping=aes(x=x, y=y)) + 
   geom_smooth(method="lm", col="grey", fill="lightgrey") + 
   geom_point(alpha=0.75, size=2, mapping=aes(col=class)) + 
@@ -71,7 +71,7 @@ dev.off()
 ct <- cor.test(df.plot$x2, df.plot$y, use="complete.obs")
 
 
-pdf(width=3, height=3, file="output/plots/adjusted/GenePriortization_number_of_key_genes_vs_indep_gwas_hits.pdf", paper="a4")
+pdf(width=3, height=3, file="output/mean_adjusted/plots/GenePriortization_number_of_key_genes_vs_indep_gwas_hits.pdf", paper="a4")
 p <- ggplot(data=df.plot, mapping=aes(x=x2, y=y)) + 
   geom_smooth(method="lm", col="grey", fill="lightgrey") + 
   geom_point(alpha=0.75, size=2, mapping=aes(col=class)) + 
@@ -86,6 +86,22 @@ theme.nature(p, base_size=8) + theme(legend.position = "none")
 dev.off()
 
 
+df.plot$x2 <- log10(df.plot$x2)
+df.plot$y  <- log10(df.plot$y)
+
+pdf(width=3, height=3, file="output/mean_adjusted/plots/GenePriortization_number_of_key_genes_vs_indep_gwas_hits_log10.pdf", paper="a4")
+p <- ggplot(data=df.plot, mapping=aes(x=x2, y=y)) + 
+  geom_smooth(method="lm", col="grey", fill="lightgrey") + 
+  geom_point(alpha=0.75, size=2, mapping=aes(col=class)) + 
+  xlab("Independent genome wide signficant hits") +
+  ylab("Detected of key-genes") +
+  ggtitle(paste0("Pearson R: ", format(ct$estimate, digits=2),
+                 " p-value: ", format(ct$p.value, digits=2, scientific=T))) +
+  #scale_x_continuous(breaks=c(0, 500000, 1000000), labels=c("0", "500.000", "1.000.000")) +
+  scale_color_manual(values=class.cols, na.value="#bdbdbd")
+
+theme.nature(p, base_size=8) + theme(legend.position = "none")
+dev.off()
 ```
 
 # Scatterplot: Degree vs key-gene zscore
@@ -115,7 +131,7 @@ df.plot$is.key.gene <- rownames(df.plot) %in% key.genes
 ct <- cor.test(df.plot$x, df.plot$y, use="complete.obs")
   
 # Regular scatterplot
-pdf(width=3, height=3, file="output/plots/adjusted/GenePriortization_degree_vs_max_key_gene_score.pdf", paper="a4")
+pdf(width=3, height=3, file="output/mean_adjusted/plots/GenePriortization_degree_vs_max_key_gene_score.pdf", paper="a4")
 p <- ggplot(data=df.plot, mapping=aes(x=x, y=y, col=is.key.gene)) + 
   geom_point(size=1, alpha=0.25) +
   geom_smooth(method="lm", col="grey", fill="lightgrey") + 
@@ -129,7 +145,7 @@ theme.nature(p, base_size=8) + theme(legend.position = "none")
 dev.off()
 
 # Hexbin
-pdf(width=3.8, height=3, file="output/plots/adjusted/GenePriortization_degree_vs_max_key_gene_score_hexbin.pdf", paper="a4")
+pdf(width=3.8, height=3, file="output/mean_adjusted/plots/GenePriortization_degree_vs_max_key_gene_score_hexbin.pdf", paper="a4")
 p <- ggplot(data=df.plot, mapping=aes(x=x, y=y, col=is.key.gene)) + 
   geom_hex(bins=50, col=NA) + 
   geom_smooth(method="lm", col="grey", fill="lightgrey") + 
@@ -142,7 +158,7 @@ p <- ggplot(data=df.plot, mapping=aes(x=x, y=y, col=is.key.gene)) +
 theme.nature(p, base_size=8)
 dev.off()
 
-write.table(rownames(df.plot[df.plot$y < 750,]), row.names=F, col.names=F, quote=F, file="output/adjusted/degree_st_750_genes.txt")
+write.table(rownames(df.plot[df.plot$y < 750,]), row.names=F, col.names=F, quote=F, file="output/mean_adjusted/degree_st_750_genes.txt")
 ```
 
 # Scatterplot: Degree vs gene pvalues
@@ -168,7 +184,7 @@ df.plot$is.key.gene <- rownames(df.plot) %in% key.genes
 ct <- cor.test(df.plot$x, df.plot$y, use="complete.obs")
 
 # Hexbin
-pdf(width=3.8, height=3, file="output/plots/adjusted/GenePvalues_degree_vs_max_key_gene_score_hexbin.pdf", paper="a4")
+pdf(width=3.8, height=3, file="output/mean_adjusted/plots/GenePvalues_degree_vs_max_key_gene_score_hexbin.pdf", paper="a4")
 p <- ggplot(data=df.plot, mapping=aes(x=x, y=y, col=is.key.gene)) + 
   geom_hex(bins=50, col=NA) + 
   geom_smooth(method="lm", col="grey", fill="lightgrey") + 
@@ -184,10 +200,9 @@ dev.off()
 
 # Correlation heatmap of Enrichment zscores
 ```{r}
-coreg.zscores <- make.zscore.matrix(datasets)
+coreg.zscores <- make.zscore.matrix(datasets[rownames(meta.data)])
 
 cor.m <- cor(coreg.zscores, use="pairwise.complete.obs")
-
 cor.p <- cor(gene.pvalues[rownames(coreg.zscores), colnames(coreg.zscores)], use="pairwise.complete.obs")
 
 #pdf(width=15, height=15, file="output/plots/GenePriortization_correlation_heatmap_non_metabolite_traits_wardd2.pdf")
@@ -201,7 +216,7 @@ cor.p                   <- cor.p[clust.m$order, clust.m$order]
 cor.m[lower.tri(cor.m)] <- cor.p[lower.tri(cor.p)]
 diag(cor.m) <- 0
 
-pdf(width=8, height=8, file="output/plots/adjusted/GenePriortization_correlation_heatmap_key_genes_gene_pvalues_wardd2_mean_adjusted.pdf", paper="a4")
+pdf(width=8, height=8, file="output/mean_adjusted/plots/GenePriortization_correlation_heatmap_key_genes_gene_pvalues_wardd2_mean_adjusted.pdf", paper="a4")
 
 simple.hm(cor.m,
           cellwidth=5,
@@ -217,8 +232,8 @@ simple.hm(cor.m,
 dev.off()
 
 
-pdf(width=8, height=3.5, file="output/plots/adjusted/GenePriortization_number_of_keygenes_heatmap_ordered.pdf", paper="a4")
-write.table(rownames(cor.m), file="output/adjusted/GenePriortization_44_traits_wardd2_cluster_order.txt", quote=F, row.names = F, col.names=F)
+pdf(width=8, height=3.5, file="output/mean_adjusted/plots/GenePriortization_number_of_keygenes_heatmap_ordered.pdf", paper="a4")
+write.table(rownames(cor.m), file="output/mean_adjusted/GenePriortization_44_traits_wardd2_cluster_order.txt", quote=F, row.names = F, col.names=F)
 
 #par(mar=c(10,5,3,1))
 #barplot(count.bonf.sig.genes[rownames(cor.m)],
@@ -285,7 +300,6 @@ simple.hm(ol.mat,
           labels_col=meta.data[colnames(ol.mat), "abbreviation"])
 
 
-
 cur.df <- ol.mat
 
 # Node df
@@ -295,7 +309,7 @@ nodes$name      <- meta.data[nodes$id , "Name"]
 nodes$abrv      <- meta.data[nodes$id , "abbreviation"]
 
 # Construct edges at zscore threshold
-tmp.edges       <-  ol.mat > 0.25
+tmp.edges       <-  ol.mat > 0.001
 tmp.edges[lower.tri(tmp.edges)] <- F
 edges           <- as.data.frame(matrix(nrow=1, ncol=3))
 colnames(edges) <- c("from", "to", "effect")
@@ -349,7 +363,7 @@ p2 <- p1 +
                      label.size = 0,
                      repel=F, segment.colour="black")
 
-pdf(file="output/plots/adjusted/GenePriortization_gene_sharing_25perc_edge_limit_bonfsig.pdf", width=9, height=5, paper="a4")
+pdf(file="output/mean_adjusted/plots/GenePriortization_gene_sharing_0perc_edge_limit_bonfsig.pdf", width=9, height=5, paper="a4")
 p2
 dev.off()
 ```
@@ -387,7 +401,7 @@ shared.perc     <- sapply(1:10, function(i){sum(sig.genes == i)}) / length(sig.g
 #shared.count[0] <-  length(sig.genes) - sum(shared.count)
 #shared.perc[0]  <- (length(sig.genes) - sum(shared.count)) / length(sig.genes)
 
-pdf(width=5, height=2.5, file="output/plots/adjusted/GenePriortization_percentage_of_shared_keygenes_per_class.pdf", paper="a4")
+pdf(width=5, height=2.5, file="output/mean_adjusted/plots/GenePriortization_percentage_of_shared_keygenes_per_class.pdf", paper="a4")
 p <- ggplot(data=data.frame(y=shared.perc, x=1:10, label=shared.count), mapping=aes(x=x, y=y, label=label)) +
   geom_line(col="grey") +
   geom_point(col="#376B65") +
@@ -397,8 +411,17 @@ p <- ggplot(data=data.frame(y=shared.perc, x=1:10, label=shared.count), mapping=
   geom_text(col="grey", nudge_x=0.75)
 theme.nature(p, base_size=8)
 dev.off()
+
+
+
 ```
 
+
+
+
+
+
+# DEPRECATED
 # Pathway enrichments
 ```{r}
 # Convert ensembl ids to entrez

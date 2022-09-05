@@ -189,7 +189,6 @@ public class GenePvalueCalculator {
 		}
 
 		String[] samples = referenceGenotypes.getSampleNames();
-
 		sampleHash = new LinkedHashMap<>(samples.length);
 
 		int s = 0;
@@ -198,9 +197,7 @@ public class GenePvalueCalculator {
 		}
 
 		randomNormalizedPhenotypes = generateRandomNormalizedPheno(sampleHash, numberRandomPhenotypes);
-
 		r2zScore = new PearsonRToZscoreBinned(10000000, sampleHash.size());//10000000
-
 		final List<String> phenotypes = IoUtils.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
 
 		numberRealPheno = phenotypes.size();
@@ -209,41 +206,31 @@ public class GenePvalueCalculator {
 		if (this.correctForLambdaInflation) {
 
 			this.lambdaInflations = new double[numberRealPheno];
-
 			final double y = new ChiSquaredDistribution(1).inverseCumulativeProbability(0.5);
-
 			DoubleMatrixDatasetRowIterable gwasStreamer = new DoubleMatrixDatasetRowIterable(variantPhenotypeZscoreMatrixPath);
-
 			DescriptiveStatistics[] medianCalculators = new DescriptiveStatistics[numberRealPheno];
 			for (int p = 0; p < numberRealPheno; ++p) {
 				medianCalculators[p] = new DescriptiveStatistics(gwasStreamer.getNrRows());
 			}
 
 			for (double[] variantZscores : gwasStreamer) {
-
 				for (int p = 0; p < numberRealPheno; ++p) {
 					medianCalculators[p].addValue(variantZscores[p] * variantZscores[p]);
 				}
-
 			}
 
 			IntStream.range(0, numberRealPheno).parallel().forEach(p -> {
-
 				final double medianChi2 = medianCalculators[p].getPercentile(50);
-
 				lambdaInflations[p] = medianChi2 / y;
-
 				//if(LOGGER.isDebugEnabled()){
 				LOGGER.info("Pheno_" + phenotypes.get(p) + " median chi2: " + medianChi2 + " lambda inflation: " + lambdaInflations[p]);
 				//}
-
 			});
-
 		} else {
 			this.lambdaInflations = null;
 		}
 
-		//Result matrix. Rows: genes, Cols: phenotypes
+		// Result matrix. Rows: genes, Cols: phenotypes
 		genePvalues = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(phenotypes));
 		geneMaxSnpZscore = new DoubleMatrixDataset<>(createGeneHashRows(genes), createHashColsFromList(phenotypes));
 
@@ -446,20 +433,20 @@ public class GenePvalueCalculator {
 
 			}
 
+			// Calculate the correlation matrix between variants (LD matrix sigma)
 			timeStart = System.currentTimeMillis();
 			final DoubleMatrixDataset<String, String> variantCorrelations = variantScaledDosages.calculateCorrelationMatrixOnNormalizedColumns();
 			timeStop = System.currentTimeMillis();
 			timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
+			// Save correlation matrix
 			if (LOGGER.isDebugEnabled() & variantCorrelations.rows() > 1) {
-
 				variantCorrelations.save(new File(debugFolder, gene.getGene() + "_variantCorMatrix.txt"));
-
 			}
 
+			// Write which variants are linked to which gene
 			if (variantPerGeneWriter != null) {
 				int c;
-
 				synchronized (variantPerGeneWriter) {
 					for (String variant : variantScaledDosages.getHashCols().keySet()) {
 						c = 0;
@@ -469,37 +456,38 @@ public class GenePvalueCalculator {
 					}
 					variantPerGeneWriter.flush();
 				}
-
 			}
 
+			// Prune the correlation matrix (sigma) for genes with strong correlation as described by PASCAL
 			timeStart = System.currentTimeMillis();
 			variantCorrelationsPruned = pruneCorrelationMatrix(variantCorrelations, maxR);
 			variantCorrelationsPrunedRows = variantCorrelationsPruned.rows();
 			timeStop = System.currentTimeMillis();
 			timeInPruningGenotypeCorrelationMatrix += (timeStop - timeStart);
 
+			// Final pruned correlation matrix
 			variantScaledDosagesPruned = variantScaledDosages.viewColSelection(variantCorrelationsPruned.getHashCols().keySet());
-
 		}
 
+		// Define null GWAS z-score by correlating a gausian dists (randomNormalizedPhenotypes)to the SNPs
+		// in that region (variantScaledDosagesPruned)
 		final DoubleMatrixDataset<String, String> nullGwasZscores;
 		if (variantCorrelationsPrunedRows > 0) {
-			//nullGwasZscores will first contain peason r valus but this will be converted to Z-score using a lookup table;
+			// nullGwasZscores will first contain peason r values but this will be converted to Z-score using a lookup table;
 			nullGwasZscores = DoubleMatrixDataset.correlateColumnsOf2ColumnNormalizedDatasets(randomNormalizedPhenotypes, variantScaledDosagesPruned);
 			r2zScore.inplaceRToZ(nullGwasZscores);
 		} else {
 			nullGwasZscores = EMPTY_DATASET;
 		}
 
+		// Save the pruned correlation matrix to disk
 		if (LOGGER.isDebugEnabled() & variantCorrelationsPrunedRows > 1) {
-
 			variantCorrelationsPruned.save(new File(debugFolder, gene.getGene() + "_variantCorMatrixPruned.txt"));
-
 		}
-
 		timeStop = System.currentTimeMillis();
 		timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
 
+		// Count the number of pruned variants per gene
 		geneVariantCount.setElementQuick(geneI, 0, variantCorrelationsPrunedRows);
 
 		int currentNumberPermutationsCalculated;
@@ -508,14 +496,20 @@ public class GenePvalueCalculator {
 		final int lambdasLength;
 		if (variantCorrelationsPrunedRows > 1) {
 
+			// Determine the eigen decomposition of the SNP correlation matrix
 			timeStart = System.currentTimeMillis();
-
 			final DenseDoubleEigenvalueDecomposition eig = new DenseDoubleEigenvalueDecomposition(variantCorrelationsPruned.getMatrix());
 			//final Jama.EigenvalueDecomposition eig = eigenValueDecomposition(variantCorrelationsPruned.getMatrixAs2dDoubleArray());
+
+			// Get the eigenvalues for each eigenvector
 			final DoubleMatrix1D eigenValues = eig.getRealEigenvalues().viewFlip();
 			final long eigenValuesLenght = eigenValues.size();
 
-			//Method below if from PASCAL to select relevant eigen values
+			// Method below is from PASCAL to select relevant eigen values
+			// <NOTE OBB> I didn't see anything in the paper about this, altough I kinda get why (I think)
+			// <NOTE OBB> You don't want to include zero eigenvalues here. But on the other hand, does that matter
+			// <NOTE OBB> as the eigenvalue approaches zero lambda * chi-sqr will just be zero, and add very little to
+			// <NOTE OBB> the sum.
 			double sumPosEigen = 0;
 			for (int i = 0; i < eigenValuesLenght; i++) {
 				double e = eigenValues.getQuick(i);
@@ -524,14 +518,13 @@ public class GenePvalueCalculator {
 				}
 			}
 
-			final double cutoff = sumPosEigen / 10000;//Only use components that explain significant part of variantion
+			// <NOTE OBB> why is it harcoded at 10k??
+			final double cutoff = sumPosEigen / 10000; // Only use components that explain significant part of variation
 
 			int eigenValuesToUse = 0;
-
 			for (int i = 0; i < eigenValuesLenght; i++) {
 				sumPosEigen -= eigenValues.getQuick(i);
 				eigenValuesToUse++;
-
 				if (sumPosEigen < cutoff) {
 					break;
 				}
@@ -540,22 +533,21 @@ public class GenePvalueCalculator {
 			lambdas = eigenValues.viewPart(0, eigenValuesToUse).toArray();
 			lambdasLength = eigenValuesToUse;
 
+			// Save the significant eigenvalues
 			if (LOGGER.isDebugEnabled()) {
-
 				saveEigenValues(lambdas, new File(debugFolder, gene.getGene() + "_eigenValues.txt"));
-
 			}
 
+			// Logging of running times
 			timeStop = System.currentTimeMillis();
 			timeInDoingPca += (timeStop - timeStart);
-
 			timeStart = System.currentTimeMillis();
-
 			timeStop = System.currentTimeMillis();
 			timeInPermutations += (timeStop - timeStart);
-
 			countRanPermutationsForGene++;
 
+			// Generate a distribution of gaussian chi-sqr values weighted by the eigenvalues (lambdas)
+			// Bit unclear coding, results is saved in geneChi2SumNull as this array is re-cycled.
 			runPermutationsUsingEigenValues(geneChi2SumNull, lambdas, randomChi2, 0, MIN_PERMUTATIONS, rnd, lambdasLength);
 			currentNumberPermutationsCalculated = MIN_PERMUTATIONS;
 
@@ -567,7 +559,7 @@ public class GenePvalueCalculator {
 
 		timeStart = System.currentTimeMillis();
 
-		//load current variants from variantPhenotypeMatrix
+		// Load current variants from variantPhenotypeMatrix
 		final DoubleMatrixDataset<String, String> geneVariantPhenotypeMatrix;
 		synchronized (this) {
 			geneVariantPhenotypeMatrix = geneVariantPhenotypeMatrixRowLoader.loadSubsetOfRowsBinaryDoubleData(variantCorrelationsPruned.getHashRows().keySet());
@@ -577,6 +569,7 @@ public class GenePvalueCalculator {
 			geneVariantPhenotypeMatrix.save(new File(debugFolder, gene.getGene() + "_variantPvalues.txt"));
 		}
 
+		// <NOTE OBB> Why not just correct for lambda inflation once?
 		if (correctForLambdaInflation) {
 			final DoubleMatrix2D geneVariantPhenotypeMatrixInternal = geneVariantPhenotypeMatrix.getMatrix();
 			for (int v = 0; v < geneVariantPhenotypeMatrix.rows(); ++v) {
@@ -780,7 +773,10 @@ public class GenePvalueCalculator {
 
 				geneMaxSnpZscoreNullGwas.setElementQuick(geneI, nullPhenoI, geneMaxZscore);
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> cbdc383f96ba0b847f4087fa29c1a8467de7d4a9
 				timeStop = System.currentTimeMillis();
 				timeInCalculatingRealSumChi2 += (timeStop - timeStart);
 
@@ -1064,6 +1060,9 @@ public class GenePvalueCalculator {
 	}
 
 	/**
+	 * Generate a distribution of sum chi-sqr values of nperm size, weighted by the eigenvalue lambda.
+	 * For each permutation calculate sum(lambda * chi-sqr) over all values of lambda.
+	 *
 	 * Fills a subset of the null
 	 *
 	 * @param geneChi2SumNull vector to fill will null chi2 values
@@ -1077,7 +1076,7 @@ public class GenePvalueCalculator {
 
 		final int randomChi2Size = randomChi2.length;
 
-		//LOGGER.debug("start: " + start + " stop: " + stop);
+		// LOGGER.debug("start: " + start + " stop: " + stop);
 		int i = start;
 		for (int perm = start; perm < stop; perm++) {
 			double weightedChi2Perm = 0;
@@ -1183,14 +1182,12 @@ public class GenePvalueCalculator {
 
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
-
 			HashSet<String> geneVariant = geneVariantMapping.get(nextLine[1]);
 			if (geneVariant == null) {
 				geneVariant = new HashSet<>();
 				geneVariantMapping.put(nextLine[1], geneVariant);
 			}
 			geneVariant.add(nextLine[0]);
-
 		}
 
 		return geneVariantMapping;

@@ -1,0 +1,64 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+eqtlgen.cis <- read.table("data/cisQtlEnrichment.txt")
+metabrain.cis <- read.table("data/cisQtlEnrichmentBrain.txt")
+
+```
+
+# Bar and scatterplot of trans eqtl and DS score correlation
+```{r}
+
+
+make.plot <- function(df.plot, order=NULL, ylim=c(-2.5, 2.5)) {
+  df.plot$trait     <- rownames(df.plot)
+  df.plot$name      <- meta.data[df.plot$trait, "Name"]
+  df.plot$class     <- meta.data[df.plot$trait, "class"]
+  df.plot           <- na.omit(df.plot)
+  df.plot           <- df.plot[order(df.plot$log2or),]
+  
+  if (!is.null(order)) {
+    df.plot <- df.plot[order,]
+  }
+  
+  df.plot$name      <- factor(df.plot$name, levels=df.plot$name)
+  df.plot$bonf      <- df.plot$pval * nrow(df.plot)
+  df.plot$dits      <- sapply(df.plot$bonf, convert.pvalue.to.dits, simple=T)
+  
+  
+  p1 <- ggplot(data=df.plot, mapping=aes(x=name, y=log2or, fill=class)) +
+    geom_bar(stat="identity") +
+      geom_errorbar(mapping=aes(x=name, ymin=log2or_low, ymax=log2or_high), width=0.5, col="black", alpha=0.3) +
+    scale_fill_manual(values=class.cols) +
+    ylab("Cis eQTL enrichment (log2 OR)") +
+    xlab("") +
+    geom_text(mapping=aes(x=name, y=log2or, label=dits),
+              nudge_y=ifelse(df.plot$log2or > 0, 0.01, -0.02),
+              size=3) +
+    geom_hline(yintercept=0, col="black", lwd=1)
+
+  
+
+  p1 <- theme.nature(p1) +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), legend.position = "none")
+
+  return(p1)
+  
+}
+
+pdf(width=8, height=8, file="output/mean_adjusted/plots/GenePrioritization_vs_cis_eqtl_barplot.pdf", paper="a4")
+
+order <-  rownames(eqtlgen.cis[order(eqtlgen.cis$log2or),])
+
+p1 <- make.plot(eqtlgen.cis) + theme(axis.text.x = element_blank()) + ylim(c(-4, 6)) + ggtitle("Enrichment of cis-eQTLs using eQTLgen")
+p2 <- make.plot(metabrain.cis, order=order) + ylim(c(-4, 6)) + ggtitle("Enrichment of cis-eQTLs using MetaBrain")
+
+grid.arrange(grobs=list(p1, p2), ncol=1, heights=c(1.2, 2))
+
+dev.off()
+
+
+```
+
+

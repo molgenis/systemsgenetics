@@ -361,6 +361,15 @@ public class IoUtils {
 		return referenceGenotypeData;
 	}
 
+	public static RandomAccessGenotypeData loadGenotypes(DownstreamerOptions options) throws IOException {
+		final RandomAccessGenotypeData referenceGenotypeData;
+
+		referenceGenotypeData = options.getGenotypeType().createGenotypeData(options.getGenotypeBasePath());
+
+		return referenceGenotypeData;
+
+	}
+
 	private static class LeadVariantFileNameFilter implements FilenameFilter {
 
 		public LeadVariantFileNameFilter() {

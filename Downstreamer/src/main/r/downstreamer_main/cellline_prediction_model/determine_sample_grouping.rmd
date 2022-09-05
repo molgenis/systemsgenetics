@@ -1,16 +1,36 @@
 ```{r}
-setwd("../coregulation_clustering/")
+if (basename(getwd()) == "downstreamer_main") {setwd("cellline_prediction_model")} else {setwd("../cellline_prediction_model")}
+source("../downstreamer_functions.r")
+
+
+labels <- read.table("../umap/data/lables.txt", sep="\t", header=T)
+labels <- rbind(labels, read.table("../umap/data/lablesZoom.txt", sep="\t", header=T))
 
 sample.annot   <- fread("../cellline_prediction_model/data/sample_annotations_updated_by_patrick.csv", stringsAsFactors = F, sep="\t", header=T, data.table=F)
 
+```
+
+# Old
+```{r}
 tab <- table(sample.annot$PlotClass)
 tab <- tab[tab > 100]
 
 sample.annot <- sample.annot[sample.annot$PlotClass %in% names(tab),]
 sample.annot <- sample.annot[sample.annot$PlotClass != "",]
 
-
 write.table(sample.annot[,c(6, 1)], file="output/sample_grouping_for_maker_gene_ttest.tsv", sep="\t", row.names=F, col.names = F, quote=F)
+```
 
+# Matched to umap labels
+```{r}
+tab <- table(sample.annot$PlotClass)
+#tab <- tab[tab > 100]
+tab <- tab[names(tab) %in% labels$PlotClass]
+
+
+sample.annot <- sample.annot[sample.annot$PlotClass %in% names(tab),]
+sample.annot <- sample.annot[sample.annot$PlotClass != "",]
+
+write.table(sample.annot[,c(6, 1)], file="output/sample_grouping_for_maker_gene_ttest_umap_matched.tsv", sep="\t", row.names=F, col.names = F, quote=F)
 ```
 

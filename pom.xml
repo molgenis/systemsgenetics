@@ -139,6 +139,7 @@
         <module>Decon2/Decon-eQTL</module>
         <module>FunctionEnrichmentOfTransQtls</module>
         <module>Downstreamer</module>
+        <module>PatricksToolbox</module>
         <module>MbQTL</module>
     </modules>
 </project>

@@ -1,0 +1,30 @@
+<assembly>
+	<id>dist</id>
+	<!-- Generates a zip package containing the needed files -->
+	<formats>
+		<format>zip</format>
+	</formats>
+	
+
+	<!-- Adds dependencies to zip package under lib directory -->
+	<dependencySets>
+		<dependencySet>
+			<useProjectArtifact>false</useProjectArtifact>
+			<outputDirectory>lib</outputDirectory>
+			<unpack>false</unpack>
+		</dependencySet>
+	</dependencySets>
+
+	<files>
+		<file>
+			<source>${project.build.directory}/Toolbox.jar</source>
+			<outputDirectory>/</outputDirectory>
+			<destName>Toolbox.jar</destName>
+		</file>
+
+	</files>
+
+
+
+
+</assembly>

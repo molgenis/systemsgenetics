@@ -3,27 +3,45 @@ if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")}
 source("../downstreamer_functions.r")
 source("data/source_olivier.r")
 
+library(Hmisc)
+
 #datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+datasets            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = T)
 
-marker.tstat        <- read.table("../data/gene_network_ttest_maker_genes.tstats.txt", row.names=1, header=T, sep="\t")
-marker.pval         <- read.table("../data/gene_network_ttest_maker_genes.pvalues.txt", row.names=1, header=T, sep="\t")
+meta.data           <- read.table("../data/downstreamer_summary_statistics.csv", sep="\t", stringsAsFactors = F, header=T)
+rownames(meta.data) <- gsub("_hg19", "", gsub("__", "_", gsub(".xlsx|.txt", "", gsub("_enrichtments", "", meta.data$EnrichmentExcel))))
+meta.data$class[is.na(meta.data$class)] <- "NA"
 
-marker.zscore                       <- apply(marker.pval, 2, sapply, qnorm)
+datasets <- datasets[rownames(meta.data)]
+
+marker.pval      <- read.table("../data/gene_network_marker_genes_umap_matched.mwu.pvalues.txt", row.names=1, header=T, sep="\t")
+marker.a         <- read.table("../data/gene_network_marker_genes_umap_matched.mwu.meanA.txt", row.names=1, header=T, sep="\t")
+marker.b         <- read.table("../data/gene_network_marker_genes_umap_matched.mwu.meanB.txt", row.names=1, header=T, sep="\t")
+#marker.stat      <- (read.table("../data/gene_network_marker_genes_umap_matched.mwu.ratios.txt", row.names=1, header=T, sep="\t"))
+
+bandi <- c("blood", "AML", "lcl", "cord.blood", "PBMC", "monocytes", "lcl_s4u_capturing", "T.cells", "B.cells", "CD34.")
+
+marker.a$blood.immune               <- rowMeans(marker.a[,bandi])
+marker.b$blood.immune               <- rowMeans(marker.b[,bandi])
+
+marker.stat                         <- marker.a - marker.b
+marker.zscore                       <- apply(marker.pval/2, 2, sapply, qnorm)
 marker.zscore                       <- marker.zscore*-1
 marker.zscore[marker.zscore == Inf] <- 38
-marker.zscore[marker.zscore < 4.54] <- 0
-marker.zscore                       <- sign(marker.tstat) * marker.zscore
-
+marker.zscore                       <- sign(marker.stat) * marker.zscore
 ```
 
+
+# Heatmap of expression level vs key-gene score
 ```{r}
-zscores <- make.zscore.matrix(datasets)
+zscores         <- make.zscore.matrix(datasets)
+ol              <- intersect(rownames(zscores), rownames(marker.zscore))
+cor.m           <- cor(zscores[ol,], marker.zscore[ol,], use="complete.obs")
+colnames(cor.m) <- capitalize(colnames(cor.m)) 
 
-ol      <- intersect(rownames(zscores), rownames(marker.zscore))
+#View(cbind(zscores[ol,"glomerular_filtration_rate_2019_31152163"], marker.zscore[ol,"kidney"] ))
 
-cor.m   <- cor(zscores[ol,], marker.zscore[ol,], use="complete.obs")
-
-pdf(width=9, height=9, file="output/plots/adjusted/GenePrioritization_vs_expression_level.pdf", paper="a4")
+pdf(width=9, height=9, file="output/mean_adjusted/plots/GenePrioritization_vs_expression_level_mwu.pdf", paper="a4")
 simple.hm(cor.m,
           cellwidth=5,
           cellheight=5,
@@ -35,6 +53,97 @@ simple.hm(cor.m,
           annotation_colors=list(`class`=class.cols),
           labels_row=meta.data[rownames(cor.m), "Name"])
 dev.off()
-
 ```
 
+# Scatterplots
+```{r}
+zscores       <- zscores[ol,]
+marker.zscore <- marker.zscore[ol,]
+marker.stat   <- marker.stat[ol,]
+
+#gene          <- "ENSG00000137731"
+#a             <- marker.stat[zscores[,"prostate_cancer_2018_29892016"] < 2.5,]
+#a             <- a[order(a$prostate, decreasing = T), "prostate", drop=F]
+#a[1:10,,drop=F]
+
+pairs <- data.frame(traits=c("inflammatory_bowel_disease_2017_29906448",
+                             "prostate_cancer_2018_29892016",
+                             "glomerular_filtration_rate_2019_31152163"),
+                    tissue=c("blood.immune",
+                             "prostate",
+                             "kidney"))
+
+scatter.plot <- function(trait, tissue) {
+  
+  if(is.null(trait)) {
+    return()
+  }
+  
+  key.genes <- datasets[[trait]]$GenePrioritization[ol,]$Enrichment.P.value
+  key.genes[datasets[[trait]]$GenePrioritization[ol,]$Enrichment.Z.score < 0] <- 1
+  #gene.names <- ol
+  #gene.names[!gene.names %in% c("ENSG00000137731")] <- NA
+    
+  df.plot <- data.frame(marker.stat=marker.stat[,tissue],
+                        key.gene.z=zscores[,trait],
+                        row.names=rownames(marker.stat))
+  
+  write.table(df.plot, 
+              file=paste0("output/mean_adjusted/marker_gene_vs_key_gene_", trait, "_", tissue, ".tsv"),
+              sep="\t",
+              quote=F)
+  
+  p <- xy.plot.pvalue.colored(
+    auc.1=df.plot$marker.stat,
+    auc.pval.1=rep(1, nrow(marker.zscore)),
+    auc.2=df.plot$key.gene.z,
+    auc.pval.2=key.genes,
+    xlab=paste0("Marker score: ", tissue),
+    ylab=paste0("Key-gene z-score: ", meta.data[trait, "Name"]),
+    fixed=F) +
+    theme(legend.position = "none") +
+    geom_vline(xintercept=0, lty=2, col="grey") 
+  
+  
+  pdf(width=4, height=4, file=paste0("output/mean_adjusted/plots/marker_gene_vs_key_gene_", trait, "_", tissue, ".pdf"), useDingbats = F)
+  plot(p)
+  dev.off()
+  
+  return(p)
+}
+
+plots <- apply(pairs, 1, function(x){scatter.plot(x[1], x[2])})
+
+grid.arrange(grobs=plots, ncol=3)
+```
+
+
+
+
+# LEGACY
+```{r}
+marker.stat.old    <- read.table("../data/gene_network_ttest_maker_genes.tstats.txt", row.names=1, header=T, sep="\t")
+marker.pval.old    <- read.table("../data/gene_network_ttest_maker_genes.pvalues.txt", row.names=1, header=T, sep="\t")
+
+marker.zscore.old                       <- apply(marker.pval.old/2, 2, sapply, qnorm)
+marker.zscore.old                       <- marker.zscore.old * -1
+marker.zscore.old[marker.zscore.old == Inf] <- 38
+marker.zscore.old                       <- sign(marker.stat.old) * marker.zscore.old
+
+
+
+xy.plot.pvalue.colored(marker.zscore[ol, 32],
+                       marker.pval[ol, 32],
+                       marker.zscore.old[ol, 32],
+                       marker.pval.old[ol, 32],
+                       pval.col="all",
+                       xlab="MWU marker Z-score",
+                       ylab="T-test Z-score")
+
+
+barplot(as.numeric(marker.stat["ENSG00000167332",]), names=colnames(marker.zscore), las=2, ylab="Specificity expression Z-score")
+barplot(as.numeric(marker.stat["ENSG00000117472",]), names=colnames(marker.zscore), las=2, ylab="Specificity expression Z-score")
+barplot(as.numeric(marker.stat["ENSG00000137731",]), names=colnames(marker.zscore), las=2, ylab="Specificity expression Z-score")
+
+
+```

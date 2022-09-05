@@ -1378,6 +1378,10 @@ public class DownstreamerOptions {
 			case STEP2:
 				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
 				LOGGER.info(" * Cis window extend: " + cisWindowExtend);
+				if(covariates != null){
+					LOGGER.info(" * Covariates to correct for: " + covariates.getAbsolutePath());
+				}
+				
 				logSharedRun1Run2();
 
 				break;

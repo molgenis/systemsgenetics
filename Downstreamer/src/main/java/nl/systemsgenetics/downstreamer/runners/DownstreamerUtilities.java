@@ -19,6 +19,7 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.summarystatistic.LdScore;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.moment.Skewness;
+import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
 import org.apache.commons.math3.stat.inference.TTest;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.util.Ld;
@@ -466,7 +467,7 @@ public class DownstreamerUtilities {
     }
 
     /**
-     * Input a normalized expression matrix, and perform a t-test between all the samples indicated in the grouping file and the rest.
+     * Input a normalized expression matrix, and perform a t-test / MannWhitney between all the samples indicated in the grouping file and the rest.
      * Is parallelizable.
      *
      * @param options
@@ -528,12 +529,19 @@ public class DownstreamerUtilities {
         LOGGER.info("Done Loading expression data");
 
         // Ttest object, and storage for output
-        final TTest tTest = new TTest();
+        //final TTest tTest = new TTest();
+
+        // Mann Whitney test
+        final MannWhitneyUTest mannWhitneyTest = new MannWhitneyUTest();
+
         final DoubleMatrixDataset<String, String> pvalues = new DoubleMatrixDataset<>(geneIds, sampleGroups.keySet());
-        final DoubleMatrixDataset<String, String> tstats = new DoubleMatrixDataset<>(geneIds, sampleGroups.keySet());
+        final DoubleMatrixDataset<String, String> stats = new DoubleMatrixDataset<>(geneIds, sampleGroups.keySet());
+        final DoubleMatrixDataset<String, String> deltas = new DoubleMatrixDataset<>(geneIds, sampleGroups.keySet());
+        final DoubleMatrixDataset<String, String> meansA = new DoubleMatrixDataset<>(geneIds, sampleGroups.keySet());
+        final DoubleMatrixDataset<String, String> meansB = new DoubleMatrixDataset<>(geneIds, sampleGroups.keySet());
 
-
-        LOGGER.info("Running T-tests");
+        //LOGGER.info("Running T-tests");
+        LOGGER.info("Running MannWhitney-tests");
         final ProgressBar bp = new ProgressBar("genes", geneIds.size());
         bp.step();
         // Loop over genes, to make more memory efficient, could load one gene at the time
@@ -564,13 +572,27 @@ public class DownstreamerUtilities {
                     DoubleMatrix1D groupAValues = expression.viewSelection(curGene, groupA).getRow(gene);
                     DoubleMatrix1D groupBValues = expression.viewSelection(curGene, groupB).getRow(gene);
 
+
                     // Run T-test
-                    double tstat = tTest.t(groupAValues.toArray(), groupBValues.toArray());
-                    double pval = tTest.tTest(groupAValues.toArray(), groupBValues.toArray());
+                    //double tstat = tTest.t(groupAValues.toArray(), groupBValues.toArray());
+                    //double pval = tTest.tTest(groupAValues.toArray(), groupBValues.toArray());
+
+                    // Mann Whitney U
+                    double[] groupAValueArray = groupAValues.toArray();
+                    double[] groupBValueArray = groupBValues.toArray();
+
+                    double pval = mannWhitneyTest.mannWhitneyUTest(groupAValueArray, groupBValueArray);
+                    double stat = mannWhitneyTest.mannWhitneyU(groupAValueArray, groupBValueArray);
+                    double meanA = mean(groupAValueArray);
+                    double meanB = mean(groupBValueArray);
 
                     // Save to output matrix
                     pvalues.setElement(gene, tissue, pval);
-                    tstats.setElement(gene, tissue, tstat);
+                    stats.setElement(gene, tissue, stat);
+                    meansA.setElement(gene, tissue, meanA);
+                    meansB.setElement(gene, tissue, meanB);
+                    deltas.setElement(gene, tissue, meanA - meanB);
+
                 }
 
                 bp.step();
@@ -582,15 +604,28 @@ public class DownstreamerUtilities {
             if (forkJoinPool != null) {
                 forkJoinPool.shutdown();
                 bp.close();
-                LOGGER.info("Done calculating T-tests");
+                //LOGGER.info("Done calculating T-tests");
+                LOGGER.info("Done calculating MannWhitney-tests");
             }
         }
 
         // Save output
-        pvalues.save(options.getOutputBasePath() + ".pvalues.txt");
-        tstats.save(options.getOutputBasePath() + ".tstats.txt");
+        pvalues.save(options.getOutputBasePath() + ".mwu.pvalues.txt");
+        stats.save(options.getOutputBasePath() + ".mwu.stats.txt");
+        deltas.save(options.getOutputBasePath() + ".mwu.delta.txt");
+        meansA.save(options.getOutputBasePath() + ".mwu.meanA.txt");
+        meansB.save(options.getOutputBasePath() + ".mwu.meanB.txt");
+
         LOGGER.info("Done");
 
+    }
+
+    public static double mean(double[] m) {
+        double sum = 0;
+        for (int i = 0; i < m.length; i++) {
+            sum += m[i];
+        }
+        return sum / m.length;
     }
 
     /**

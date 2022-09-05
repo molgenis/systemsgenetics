@@ -4,6 +4,7 @@
  */
 package umcg.genetica.io.gwascatalog;
 
+import java.io.File;
 import umcg.genetica.io.text.TextFile;
 
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author harmjan
@@ -31,14 +33,18 @@ public class GWASCatalog {
 	}
 	
 	public GWASCatalog(String gwasCatalogLoc) throws IOException {
-		this.read(gwasCatalogLoc);
+		this.read(gwasCatalogLoc, 1);
 	}
 	
 	public GWASCatalog(String gwasCatalogLoc, double pvaluethreshold) throws IOException {
-		this.read(gwasCatalogLoc);
+		this.read(gwasCatalogLoc, pvaluethreshold);
 	}
 	
-	public void read(String calatogloc) throws IOException {
+	public GWASCatalog(File gwasCatalogLoc, double pvaluethreshold) throws IOException {
+		this.read(gwasCatalogLoc.getAbsolutePath(), pvaluethreshold);
+	}
+	
+	public void read(String calatogloc, double pvaluethreshold) throws IOException {
 		TextFile tf = new TextFile(calatogloc, TextFile.R);
 		String[] headerelems = tf.readLineElemsReturnReference(TextFile.tab);
 		
@@ -170,8 +176,27 @@ CNV
 		int numtraits = 0;
 		int numsnps = 0;
 		int numpubs = 0;
+		int rowCount = 0;
+		rows:
 		while (elems != null) {
+			
+
 			if (elems.length > 11) {
+				
+				Double topSNPAssocPVal = null;
+				try {
+					topSNPAssocPVal = Double.parseDouble(elems[pvalCol]);
+				if(topSNPAssocPVal > pvaluethreshold){
+					elems = tf.readLineElemsReturnReference(TextFile.tab);
+					continue rows;
+				}
+				} catch (NumberFormatException e) {
+					// Sometimes the pvalue is unreported...
+					// System.out.println("P-value unparseable for trait: " + gwasTraitObj.getName() + " associated with SNP " + gwasSNPObj.getName() + ": " + elems[pvalCol]);
+				}
+				
+				
+				
 				String pubname = elems[pubMedidCol] + "; " + elems[firstAuthorCol] + "; " + elems[publishDateCol] + "; " + elems[journalCol] + "; " + elems[studyCol];
 //                String pubname = elems[pubMedidCol];
 //	    int studysize = Integer.parseInt(elems[samplesizeCol]);
@@ -268,13 +293,7 @@ CNV
 					numsnps++;
 				}
 				
-				Double topSNPAssocPVal = null;
-				try {
-					topSNPAssocPVal = Double.parseDouble(elems[pvalCol]);
-				} catch (NumberFormatException e) {
-					// Sometimes the pvalue is unreported...
-					// System.out.println("P-value unparseable for trait: " + gwasTraitObj.getName() + " associated with SNP " + gwasSNPObj.getName() + ": " + elems[pvalCol]);
-				}
+				
 				gwasTopSNPObj.getAssociatedTraits().add(gwasTraitObj);
 				gwasTraitObj.addTopSNP(gwasTopSNPObj);
 				
@@ -542,6 +561,10 @@ CNV
 		}
 		
 		return m;
+	}
+	
+	public Set<String> getAllSnpsIds(){
+		return snpToObj.keySet();
 	}
 }
 

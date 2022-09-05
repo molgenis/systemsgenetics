@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>nl.systemsgenetics</groupId>
-		<artifactId>systemsgenetics</artifactId>
-		<version>1.0.4-SNAPSHOT</version>
-	</parent>
-	<artifactId>Downstreamer</artifactId> 
-	<version>1.28-SNAPSHOT</version>
-	<packaging>jar</packaging>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>nl.systemsgenetics</groupId>
+        <artifactId>systemsgenetics</artifactId>
+        <version>1.0.4-SNAPSHOT</version>
+    </parent>
+    <artifactId>PatricksToolbox</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
+	
 	<build>
 		<resources>
 			<resource>
@@ -19,7 +20,7 @@
 				</includes>
 			</resource>
 		</resources>
-		<finalName>Downstreamer-${project.version}</finalName>
+		<finalName>PatricksToolbox-${project.version}</finalName>
 		<plugins>
 			<!-- The configuration of maven-assembly-plugin -->
 			<plugin>
@@ -50,6 +51,7 @@
 				<version>3.1.2</version>
 				<!-- The configuration of the plugin -->
 				<configuration>
+					<finalName>Toolbox</finalName>
 					<!-- Configuration of the archiver -->
 					<archive>
 						<!-- Manifest specific configuration -->
@@ -63,7 +65,7 @@
 							-->
 							<classpathPrefix>lib/</classpathPrefix>
 							<!-- Specifies the main class of the application -->
-							<mainClass>nl.systemsgenetics.downstreamer.Downstreamer</mainClass>
+							<mainClass>nl.systemsgenetics.toolbox.Main</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -79,7 +81,7 @@
 			</plugin>
 		</plugins>
 	</build>
-
+	
 	<dependencies>
 		<dependency>
 			<groupId>com.github.samtools</groupId>
@@ -119,7 +121,7 @@
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
-			<version>2.17.2</version>
+			<version>2.16.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
@@ -136,12 +138,6 @@
 					<artifactId>hive-apache</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.testng</groupId>
-			<artifactId>testng</artifactId>
-			<version>6.8.1</version>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

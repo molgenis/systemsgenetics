@@ -1,5 +1,6 @@
 package nl.systemsgenetics.downstreamer.summarystatistic;
 
+import htsjdk.samtools.util.Interval;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.summarystatistic.filters.SummaryStatisticsRecordFilter;
 
@@ -10,11 +11,7 @@ import java.util.stream.Collectors;
 /**
  * The type Region.
  */
-public class Locus implements OverlappableGenomicRange {
-
-    private int start;
-    private int end;
-    private String sequenceName;
+public class Locus extends Interval implements OverlappableGenomicRange {
 
     private Map<String, SummaryStatisticRecord> records;
     private Set<String> indepVariants;
@@ -26,6 +23,7 @@ public class Locus implements OverlappableGenomicRange {
      * Instantiates a new Region.
      */
     public Locus() {
+        super(null, 0, 0);
     }
 
     /**
@@ -35,9 +33,11 @@ public class Locus implements OverlappableGenomicRange {
      * @param window the window
      */
     public Locus(SummaryStatisticRecord record, int window) {
-        this.start = record.getPosition() - window;
-        this.end = record.getPosition() + window;
-        this.sequenceName = record.getSequenceName();
+
+        //this.start = record.getPosition() - window;
+        //this.end = record.getPosition() + window;
+        //this.sequenceName = record.getSequenceName();
+        super(record.getSequenceName(), record.getPosition() - window, record.getPosition() + window);
         this.records = new HashMap<>();
         this.records.put(record.getPrimaryVariantId(), record);
         this.indepVariants = new HashSet<>();
@@ -51,9 +51,10 @@ public class Locus implements OverlappableGenomicRange {
      * @param other the locus to clone
      */
     public Locus(Locus other) {
-        this.start = other.getStart();
-        this.end = other.getEnd();
-        this.sequenceName = other.getSequenceName();
+        //this.start = other.getStart();
+        //this.end = other.getEnd();
+        // this.sequenceName = other.getSequenceName();
+        super(other);
         this.records = new HashMap<>();
 
         for (String record : other.getRecords().keySet()) {
@@ -176,8 +177,8 @@ public class Locus implements OverlappableGenomicRange {
      */
     public boolean isInRegion(SummaryStatisticRecord record) {
 
-        if (record.getSequenceName().equals(sequenceName)) {
-            return record.getPosition() >= start && record.getPosition() <= end;
+        if (record.getSequenceName().equals(getContig())) {
+            return record.getPosition() >= getStart() && record.getPosition() <= getEnd();
         } else {
             return false;
         }
@@ -225,35 +226,6 @@ public class Locus implements OverlappableGenomicRange {
         cachedTopHit = finalRecord;
     }
 
-    /**
-     * Gets start.
-     *
-     * @return the start
-     */
-    @Override
-    public int getStart() {
-        return start;
-    }
-
-    /**
-     * Gets end.
-     *
-     * @return the end
-     */
-    @Override
-    public int getEnd() {
-        return end;
-    }
-
-    /**
-     * Gets sequence name.
-     *
-     * @return the sequence name
-     */
-    @Override
-    public String getSequenceName() {
-        return sequenceName;
-    }
 
     /**
      * Gets records.
@@ -270,11 +242,18 @@ public class Locus implements OverlappableGenomicRange {
     }
 
     @Override
+    public String getSequenceName() {
+        return getContig();
+    }
+
+    @Override
+    @Deprecated
     public boolean isOverlapping(OverlappableGenomicRange other) {
         return LocusUtils.partialGenomicRangeOverlap(this, other);
     }
 
     @Override
+    @Deprecated
     public boolean isOverlapping(OverlappableGenomicRange other, int window) {
         return LocusUtils.partialGenomicRangeOverlapWindow(this, other, window);
     }

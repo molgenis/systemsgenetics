@@ -399,7 +399,7 @@
     upper <- max(c(x, y)) + 1
     
     p <- ggplot(data.frame(x=x, y=y, col=y > thresh), mapping=aes(x=x, y=y, col=col)) +
-      geom_point() +
+      geom_point(shape=16) +
       geom_abline(slope=1, intercept=0, col="black") +
       geom_hline(yintercept=thresh, lty=2, col="grey") +
       xlab("-log10(expected p-value)") +
@@ -415,7 +415,7 @@
   }
   
   #----------------------------------------------------------------------------------------
-  xy.plot.pvalue.colored <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="X", ylab="Y", main=NULL, pval.col="either", pval.name.x="x", pval.name.y="y", ...) {
+  xy.plot.pvalue.colored <- function(auc.1, auc.pval.1, auc.2, auc.pval.2, xlab="X", ylab="Y", main=NULL, pval.col="either", pval.name.x="x", pval.name.y="y", fixed=T, alpha=0.75, ...) {
     auc.pval.1[auc.1 == 0] <- 1
     auc.pval.2[auc.2 == 0] <- 1
     
@@ -432,8 +432,9 @@
     
     if (pval.col=="either") {
       df.plot$signif.col    <- df.plot$signif.either
-      point.cols <- c(`FALSE`="#2c6c70", `TRUE`="#0ae4f2")
-    
+      #point.cols <- c(`FALSE`="#2c6c70", `TRUE`="#0ae4f2")
+      point.cols <- c(`FALSE`="#2c6c70", `TRUE`="#544cb0")
+      
     } else if (pval.col=="all") {
       df.plot$signif.col    <- rep("N.S.", nrow(df.plot))
       if (sum(df.plot$signif.1) >= 1) {
@@ -457,47 +458,72 @@
       point.cols <- c(`FALSE`="#2c6c70", `TRUE`="#0ae4f2")
     }
     
+    if (is.null(main)) {
+      main <- paste0(main,
+                     "Pearson R: ", format(cor(auc.1, auc.2, use="complete.obs"), digits=2),
+                     " p-value: ", format(cor.test(auc.1, auc.2, use="complete.obs")$p.value, digits=2, scientific=T))
+    }
+    
     lims <- c(min(c(auc.1, auc.2), na.rm=T), max(c(auc.1, auc.2), na.rm=T))  
   
     p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2)) +
-      geom_point(alpha=0.75, mapping=aes(col=df.plot$signif.col)) +
-      geom_abline(slope=1, intercept=0, col="grey", lty=2) +
-      coord_fixed() +
+      geom_point(alpha=alpha, mapping=aes(col=df.plot$signif.col), shape=16) +
       xlab(xlab) +
       ylab(ylab) +
       ggtitle(main) + 
       scale_color_manual(values=point.cols, name=paste0("Signif. ", pval.col)) +
-      geom_smooth(method="lm") +
-      xlim(lims) +
-      ylim(lims)
+      geom_smooth(method="lm", col="grey") 
+      
+      
+    if (fixed) {
+      p <- p + coord_fixed() +
+        xlim(lims) +
+        ylim(lims) +
+        geom_abline(slope=1, intercept=0, col="grey", lty=2) 
+    }
+
     
     return(theme.nature(p, ...))
   }
   
   
   #----------------------------------------------------------------------------------------
-  xy.plot <- function(auc.1, auc.2, xlab="X", ylab="Y", main=NULL, col="#376B65", col.by=NULL, size=1, alpha=0.75, ...) {
+  xy.plot <- function(auc.1, auc.2, xlab="X", ylab="Y", main=NULL, col="#376B65", col.by=NULL, shape.by=NULL, size=1, alpha=0.75, shape=16, ...) {
 
     df.plot <- data.frame(auc.1=auc.1,
                           auc.2=auc.2)
     
-    df.plot                <- na.omit(df.plot)
-
-    p <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2))
-      
-    if (is.null(col.by)) {
-      p <- p +  geom_point(alpha=alpha, size=size, col=col)
-    } else {
-      p <- p + geom_point(alpha=alpha, size=size, mapping=aes(col=col.by))    
+  #  df.plot                      <- na.omit(df.plot)
+    df.plot[abs(df.plot) == Inf] <- 0
+    p                            <- ggplot(data=df.plot, mapping=aes(x=auc.1, y=auc.2))
+    
+    if (is.null(col.by) & is.null(shape.by)) {
+      p <- p +  geom_point(alpha=alpha, size=size, col=col, shape=shape)
+    } else if (!is.null(col.by) & is.null(shape.by)){
+      df.plot$col.by <- col.by
+      p <- p +  geom_point(alpha=alpha, size=size, shape=shape, mapping=aes(col=col.by))
+    } else if (is.null(col.by) & !is.null(shape.by)){
+      df.plot$shape.by <- shape.by
+      p <- p +  geom_point(alpha=alpha, size=size, col=col, mapping=aes(shape=shape.by))
+    } else if (!is.null(col.by) & !is.null(shape.by)){
+      df.plot$col.by <- col.by
+      df.plot$shape.by <- shape.by
+      p <- p +  geom_point(alpha=alpha, size=size, mapping=aes(shape=shape.by, col=col.by))
     }
     
+    # Calculate correlation and DF for use with geom_smooth
+    df.cor  <- data.frame(a=auc.1, b=auc.2)
+    df.cor  <- df.cor[rowSums(abs(df.cor) == Inf) == 0,]
+    cor.obj <- cor.test(df.cor$a, df.cor$b, use="complete.obs")
+    
+    # Final plot parameters
     p <- p + 
     xlab(xlab) +
     ylab(ylab) +
     ggtitle(paste0(main,
-                   "Pearson R: ", format(cor(auc.1, auc.2, use="complete.obs"), digits=2),
-                   " p-value: ", format(cor.test(auc.1, auc.2, use="complete.obs")$p.value, digits=2, scientific=T))) +
-      geom_smooth(method="lm", mapping=aes(x=auc.1, y=auc.2), col="grey")
+                   "Pearson R: ", format(cor.obj$estimate, digits=2),
+                   " p-value: ", format(cor.obj$p.value, digits=2, scientific=T))) +
+      geom_smooth(method="lm", mapping=aes(x=a, y=b), col="grey", data=df.cor)
     
     return(theme.nature(p, ...))
   }
