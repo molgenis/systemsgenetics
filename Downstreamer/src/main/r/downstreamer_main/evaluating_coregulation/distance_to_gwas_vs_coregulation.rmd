@@ -7,7 +7,8 @@ library(UpSetR)
 
 # Cached 2021-04-16
 #datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = F)
-datasets            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = F)
+datasets            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = T)
+datasets            <- datasets[rownames(meta.data)]
 ```
 
 # Violin plot
@@ -36,7 +37,7 @@ df.plot$Distance.to.lead.GWAS.variant <-  cut(df.plot$Distance.to.lead.GWAS.vari
 cur.tab <- table(df.plot$Distance.to.lead.GWAS.variant)
 
 
-#pdf(width=4, height=2.5, file="output/plots/coregulation_vs_nearest_gwas_tophit.pdf", paper="a4")
+pdf(width=4, height=2.5, file="output/mean_adjusted/plots/GenePrioritization_vs_nearest_gwas_tophit.pdf", paper="a4")
 p1 <- ggplot(data=df.plot, mapping=aes(x=Distance.to.lead.GWAS.variant,
                                       y=Enrichment.Z.score)) +
   geom_violin() +
@@ -55,6 +56,6 @@ p1 <- ggplot(data=df.plot, mapping=aes(x=Distance.to.lead.GWAS.variant,
   xlab("Distance to independent GWAS top variant")
   
 theme.nature(p1, base_size=8)
-#dev.off()
+dev.off()
 ```
 

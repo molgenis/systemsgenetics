@@ -56,6 +56,7 @@ public class DownstreamerMainAnalysis {
 		List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
+		// TODO: is it correct here that getNumberOfPermutationsRescue() is used?
 		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutationsRescue(), 500);
 
 		LOGGER.info("Prepared reference null distribution with " + Downstreamer.LARGE_INT_FORMAT.format(randomChi2.length) + " values");

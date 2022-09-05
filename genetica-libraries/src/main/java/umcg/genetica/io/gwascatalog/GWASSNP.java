@@ -4,18 +4,21 @@
  */
 package umcg.genetica.io.gwascatalog;
 
+import htsjdk.samtools.util.Locatable;
 import java.util.HashMap;
 import java.util.HashSet;
 
 /**
  *
+ * Locatable is part of htsjdk allowing genomic interval and overlap operations
+ * 
  * @author harmjan
  */
-public class GWASSNP {
+public class GWASSNP implements Locatable{
 
-    private HashSet<GWASTrait> associatedTraits = new HashSet<GWASTrait>();
-    private HashSet<GWASPublication> publishedIn = new HashSet<GWASPublication>();
-    private HashMap<GWASTrait, String> riskAllele = new HashMap<GWASTrait, String>();
+    private HashSet<GWASTrait> associatedTraits = new HashSet<>();
+    private HashSet<GWASPublication> publishedIn = new HashSet<>();
+    private HashMap<GWASTrait, String> riskAllele = new HashMap<>();
     private int id;
     private String name;
     private byte chr;
@@ -154,4 +157,19 @@ public class GWASSNP {
     public String toString() {
         return name;
     }
+
+	@Override
+	public String getContig() {
+		return this.getLocus();
+	}
+
+	@Override
+	public int getStart() {
+		return this.getPosition();
+	}
+
+	@Override
+	public int getEnd() {
+		return this.getPosition();
+	}
 }

@@ -7,8 +7,9 @@ library(pROC)
 library(matrixStats)
   
 # Cached 2021-04-16
-datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
-datasets.corr       <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = F)
+#datasets            <- read.downstreamer.batch(main.downstreamer.output.path, USE.CACHE = T)
+#datasets.corr       <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = F)
+datasets            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = T)
 
 get.key.genes <-  function(dataset, use.fdr=F) {
   coreg <- dataset$GenePrioritization
@@ -69,7 +70,7 @@ df.plot <- as.data.frame(t(sapply(datasets, function(dataset){
 
 rownames(df.plot) <- names(datasets)
 
-order <- read.table("output/GenePriortization_44_traits_wardd2_cluster_order.txt", stringsAsFactors = F)[,1]
+order <- read.table("output/mean_adjusted/GenePriortization_44_traits_wardd2_cluster_order.txt", stringsAsFactors = F)[,1]
 df.plot       <- df.plot[order,]
 
 df.plot$names <- meta.data[rownames(df.plot), "Name"]
@@ -86,8 +87,7 @@ df.plot[df.plot$`odds ratio` == 0 , ]$V3 <- 0
 df.plot[df.plot$V3 > 12, ]$V3            <- 12
  
 
-pdf(width=8, height=3.5, file="output/plots/GenePriortization_tf_enrichment.pdf", paper="a4")
-
+pdf(width=8, height=3.5, file="output/mean_adjusted/plots/GenePriortization_tf_enrichment.pdf", paper="a4")
 p1 <- ggplot(data=df.plot, mapping=aes(y=`odds ratio`, x=names, fill=class)) +
   geom_bar(stat="identity") +
   geom_errorbar(mapping=aes(x=names, ymin=V2, ymax=V3), width=0.5, col="grey") +
@@ -98,10 +98,13 @@ p1 <- ggplot(data=df.plot, mapping=aes(y=`odds ratio`, x=names, fill=class)) +
   ylab("Odds ratio of TF / key-gene")
 
 theme.nature(p1)  + theme(axis.text.x=element_text(angle=45, hjust=1), legend.position = "none")
-
 dev.off()
 ```
 
+
+
+
+# DEPRECATED
 # Evaluating the mean Z-score, and adjust for it
 ```{r}
 zscores <- make.zscore.matrix(datasets)

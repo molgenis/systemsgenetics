@@ -32,7 +32,7 @@
 		</file>
 	</files>
 
-	<fileSets>
+<!--	<fileSets>
 		<fileSet>
 			<directory>src/test/resources/demoFiles/</directory>
 			<outputDirectory>demoData</outputDirectory>
@@ -41,7 +41,7 @@
 			</includes>
 			<fileMode>0755</fileMode>		
 		</fileSet>
-	</fileSets>
+	</fileSets>-->
 
 
 </assembly>

@@ -5,8 +5,10 @@
 package umcg.genetica.io.gwascatalog;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -39,6 +41,12 @@ public class GWASTrait {
         }
         return snpArray;
     }
+
+	public Set<GWASSNP> getSnps() {
+		return Collections.unmodifiableSet(snps);
+	}
+	
+	
 
     public GWASSNP[] getSNPs(double pThreshold) {
         if (snpArray == null) {

@@ -1,0 +1,550 @@
+```{r}
+if (basename(getwd()) == "downstreamer_main") {setwd("evaluating_coregulation")} else {setwd("../evaluating_coregulation")}
+source("../downstreamer_functions.r")
+source("data/source_olivier.r")
+
+
+enrichments     <- read.downstreamer.enrichments("../data/final_paper_cov_correct/enrichments/",
+                                             potential_traits = c("HPO"))
+
+enrich.key.gene <- enrichments[grep("_GenePrioritization_",names(enrichments))]
+enrich.gws.gene <- enrichments[grep("_GenePvalues_",names(enrichments))]
+
+names(enrich.key.gene) <- gsub("_GenePrioritization_Enrichment", "", names(enrich.key.gene))
+names(enrich.gws.gene) <- gsub("_GenePvalues_Enrichment", "", names(enrich.gws.gene))
+
+rm(enrichments)
+
+hpo.gwas.link           <- fread("data/HPO_GWAS_trait_pairs.tsv", data.table=F)
+rownames(hpo.gwas.link) <- hpo.gwas.link$`Machine ID`
+
+# Protein coding genes
+ensembl         <- ensembl[ensembl$Gene.type == "protein_coding", ]
+ensembl$gene.id <- gsub("(ENSG.*)\\..*", "\\1", ensembl$Gene.stable.ID.version)
+
+
+# Downstreamer data
+datasets            <- read.downstreamer.batch("../data/final_paper_cov_correct/", USE.CACHE = T)
+
+gene.pvalues        <- read.genep(list.files("../data/final_paper/gene_pvalues/", full.names=T, pattern="_genePvalues.txt"), trim.colnames = c("_genePvalues", "_hg19", ".txt"))
+gene.pvalues[is.na(gene.pvalues)] <- 1
+
+datasets      <- datasets[rownames(meta.data)]
+gene.pvalues  <- gene.pvalues[,rownames(meta.data)]
+# HPO
+hpo           <- fread("zcat ~/Documents/data/reference/HPO/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.txt.gz", data.table=F)
+rownames(hpo) <- hpo[,1]
+hpo           <- hpo[,-1]
+
+background.set <- intersect(ensembl$gene.id, rownames(hpo))
+hpo            <- hpo[background.set, hpo.gwas.link$`Related HPO ID`]
+
+# Fisher test
+make.contingency.table <- function(key.genes, transcription.factors, background) {
+  key.genes              <- intersect(key.genes, background) 
+  transcription.factors  <- intersect(transcription.factors, background)
+
+  # Contingency table
+  #       key-gene    non-key-gene
+  # TF       a1             a2
+  # non-TF   b1             b2
+  a1 <- sum(key.genes %in% transcription.factors)
+  a2 <- sum(transcription.factors %in% background) - a1
+  b1 <- sum(!key.genes %in% transcription.factors)
+  b2 <- length(background) - b1 - a2 - a1
+
+  m   <- matrix(c(a1, a2, b1, b2), ncol=2, byrow = T)
+  res <- fisher.test(m)
+  
+  return(res)
+}
+
+zscores <- make.zscore.matrix(datasets)
+
+# List of key-genes per trait
+bonf.sig.coreg.genes  <- lapply(datasets, function(dataset){
+  coreg <- dataset$GenePrioritization
+  coreg <- coreg[coreg$Enrichment.Z.score > 0,]
+  return(coreg$Gene.ID[coreg$Bonferroni.significant])
+})
+
+# Calculate p-value with auc
+# Courtesy of https://stackoverflow.com/questions/61997453/how-to-get-p-value-after-roc-analysis-with-proc-package
+calc.auc.pvalue <- function(rr) {
+  v <- var(rr)
+  b <- rr$auc - .5
+  se <- sqrt(v)
+  z <- (b / se)
+  p <- 2 * pt(-abs(z), df=Inf)
+  
+  return(p)
+}
+
+```
+
+# Scatterplots of key-genes and AUC vs GWAS genes
+```{r}
+library(scales)
+library(pROC)
+
+# Matrices to save output
+df.plot.bon <- matrix(ncol=12, nrow=0)
+df.plot.fdr <- matrix(ncol=12, nrow=0)
+df.plot.auc <- matrix(ncol=12, nrow=0)
+
+# Generate the statsitics for the HPO terms
+for (gwas in hpo.gwas.link$`Machine ID`) {
+  
+  hpo.term     <- hpo.gwas.link[gwas, 3]
+  
+  # Bonferroni significant
+  cur.key.bon  <- datasets[[gwas]]$GenePrioritization[datasets[[gwas]]$GenePrioritization$Bonferroni.significant &
+                                                      datasets[[gwas]]$GenePrioritization$Enrichment.Z.score > 0, "Gene.ID"]
+  cur.gws.bon  <- rownames(gene.pvalues)[gene.pvalues[,gwas] < 0.05/nrow(gene.pvalues)]
+  
+  # FDR significant
+  cur.key.fdr  <- datasets[[gwas]]$GenePrioritization[datasets[[gwas]]$GenePrioritization$FDR.5..significant &
+                                                      datasets[[gwas]]$GenePrioritization$Enrichment.Z.score > 0, "Gene.ID"]
+  
+  cur.gws.fdr  <- p.adjust(gene.pvalues[,gwas], method="BH")
+  cur.gws.fdr  <- rownames(gene.pvalues)[cur.gws.fdr < 0.05]
+  
+  cur.hpo.term <- rownames(hpo)[hpo[,hpo.term]==1]
+  
+  # Bonf OR
+  key.gene.bon <- make.contingency.table(cur.key.bon, cur.hpo.term, background.set)
+  gws.gene.bon <- make.contingency.table(cur.gws.bon, cur.hpo.term, background.set)
+  
+  # FDR OR
+  key.gene.fdr <- make.contingency.table(cur.key.fdr, cur.hpo.term, background.set)
+  gws.gene.fdr <- make.contingency.table(cur.gws.fdr, cur.hpo.term, background.set)
+  
+  # AUC
+  ol           <- intersect(rownames(hpo), rownames(zscores))
+  key.gene.auc <- roc(as.factor(hpo[ol, hpo.term]), zscores[ol, gwas])
+  gws.gene.auc <- roc(as.factor(hpo[ol, hpo.term]), gene.pvalues[ol, gwas])
+
+  # Bonf
+  df.plot.bon  <- rbind(df.plot.bon, c(gwas,
+                                   hpo.term,
+                                   key.gene.bon$estimate,
+                                   key.gene.bon$conf.int[1],
+                                   key.gene.bon$conf.int[2],
+                                   key.gene.bon$p.value,
+                                   length(intersect(cur.key.bon, cur.hpo.term)),
+                                   gws.gene.bon$estimate,
+                                   gws.gene.bon$conf.int[1],
+                                   gws.gene.bon$conf.int[2],
+                                   gws.gene.bon$p.value,
+                                   length(cur.gws.bon)
+                                   ))
+  # FDR
+  df.plot.fdr  <- rbind(df.plot.fdr, c(gwas,
+                                 hpo.term,
+                                 key.gene.fdr$estimate,
+                                 key.gene.fdr$conf.int[1],
+                                 key.gene.fdr$conf.int[2],
+                                 key.gene.fdr$p.value,
+                                 length(intersect(cur.key.bon, cur.hpo.term)),
+                                 gws.gene.fdr$estimate,
+                                 gws.gene.fdr$conf.int[1],
+                                 gws.gene.fdr$conf.int[2],
+                                 gws.gene.fdr$p.value,
+                                 length(cur.gws.fdr)
+                                 ))
+  # AUC
+  df.plot.auc  <- rbind(df.plot.auc, c(gwas,
+                               hpo.term,
+                               key.gene.auc$auc[1],
+                               ci.auc(key.gene.auc)[1],
+                               ci.auc(key.gene.auc)[3],
+                               calc.auc.pvalue(key.gene.auc),
+                               -9,
+                               gws.gene.auc$auc[1],
+                               ci.auc(gws.gene.auc)[1],
+                               ci.auc(gws.gene.auc)[3],
+                               calc.auc.pvalue(gws.gene.auc),
+                               -9
+                               ))
+}
+
+# Convert to DF
+df.plot.bon           <- as.data.frame(df.plot.bon, stringsAsFactors=F)
+df.plot.fdr           <- as.data.frame(df.plot.fdr, stringsAsFactors=F)
+df.plot.auc           <- as.data.frame(df.plot.auc, stringsAsFactors=F)
+
+# Convert the strings to numeric
+for(col in 3:12) {
+  df.plot.bon[,col] <- as.numeric(df.plot.bon[,col])
+  df.plot.fdr[,col] <- as.numeric(df.plot.fdr[,col])
+  df.plot.auc[,col] <- as.numeric(df.plot.auc[,col])
+}
+
+# Set colnames
+cn                    <-  c("gwas", "hpo", "k.or", "k.min", "k.max", "k.pval", "k.ol", "g.or", "g.min", "g.max", "g.pval", "g.ol")
+colnames(df.plot.bon) <- cn
+colnames(df.plot.fdr) <- cn
+colnames(df.plot.auc) <- cn
+
+# Function to generate the plot
+make.plot <- function(df.plot, xlab, ylab, isAuc=FALSE) {
+  
+  if (isAuc) {
+      xymax <- 1
+      xymin <- 0.4
+  } else {
+      # Some cleanup
+      df.plot[df.plot$k.or == 0, "k.max"] <- Inf
+      df.plot[df.plot$k.or == 0, "k.min"] <- -Inf
+      df.plot[df.plot$g.or == 0, "g.max"] <- Inf
+      df.plot[df.plot$g.or == 0, "g.min"] <- -Inf
+      
+      #is.signif <- ifelse(  (df.plot[,"k.pval"] < 0.05/nrow(df.plot)) + (df.plot[,"g.pval"] < 0.05/nrow(df.plot)) > 0, "true", "false")
+    
+      for (col in c("k.or", "k.min", "k.max", "g.or", "g.min", "g.max")) {
+        df.plot[,col] <- log2(df.plot[,col])
+        df.plot[,col][abs(df.plot[,col]) == Inf] <- NA
+      }
+    
+      # Limits 
+      xymax <- max(c(df.plot$g.or, df.plot$k.or), na.rm=T)
+      xymin <- min(c(df.plot$g.or, df.plot$k.or), na.rm=T)
+  
+      #df.plot$k.min[df.plot$k.min < xymin] <- xymin
+      #df.plot$g.min[df.plot$g.min < xymin] <- xymin
+      #df.plot$k.max[df.plot$k.max > xymax] <- xymax
+      #df.plot$g.max[df.plot$g.max > xymax] <- xymax
+  }
+
+  
+  p1 <- ggplot(data=df.plot, mapping=aes(y=k.or,
+                                           x=g.or,
+                                           ymin=k.min,
+                                           ymax=k.max,
+                                           xmin=g.min,
+                                           xmax=g.max,
+                                           col=meta.data[hpo.gwas.link$`Machine ID`, "class"]
+                                           )) +
+    geom_errorbar(col="#EDEDED") + 
+    geom_errorbarh(col="#EDEDED") +
+    geom_point(size=3, alpha=0.5, shape=16) +
+    scale_color_manual(values=class.cols) +
+    #scale_shape_manual(values=c(`true`=18, `false`=20), name="Is significant") +
+    geom_abline(slope = 1, intercept = 0, col="grey") +
+    ylab(ylab) +
+    xlab(xlab) + 
+    theme(legend.position = "none") +
+    #xlim(xymin, xymax) +
+    #ylim(xymin, xymax) +
+    coord_fixed() +
+    scale_y_continuous(limits=c(xymin, xymax), oob = rescale_none) +
+    scale_x_continuous(limits=c(xymin, xymax), oob = rescale_none)
+
+
+  p1 <- theme.nature(p1) + theme(legend.position = "none")
+  return(p1)
+}
+
+# Make the two plots
+p1 <- make.plot(df.plot.bon, "log2(OR) HPO enrichment for gwas-genes", "log2(OR) HPO enrichment for key-genes")
+p2 <- make.plot(df.plot.auc, "AUC HPO enrichment for gwas-genes", "AUC HPO enrichment for key-genes", TRUE)
+
+# Save
+pdf(width=7, height=3.5, paper="a4", useDingbats = F, file="output/mean_adjusted/plots/matched_hpo_term_enrichment.pdf")
+grid.arrange(grobs=list(p1,p2), ncol=2)
+dev.off()
+
+# Meta data table
+
+# Number of key-genes
+n.key.genes <- sapply(bonf.sig.coreg.genes, length)
+# Number of pascal genes
+n.gws.genes <- colSums(gene.pvalues < (0.05/nrow(gene.pvalues)))
+# Number of HPO memberships
+n.hpo.genes <- colSums(hpo)
+
+
+enrichment.table <- df.plot.bon[,1:2]
+enrichment.table <- cbind(enrichment.table,
+                          meta.data[enrichment.table$gwas, "class"],
+                          n.key.genes[enrichment.table$gwas],
+                          n.gws.genes[enrichment.table$gwas],
+                          n.hpo.genes[enrichment.table$hpo],
+                          meta.data[enrichment.table$gwas, "N_indep_gws"],
+                          meta.data[enrichment.table$gwas, "N"])
+enrichment.table <- cbind(enrichment.table, df.plot.bon[,3:ncol(df.plot.bon)])
+enrichment.table <- cbind(enrichment.table, df.plot.auc[,c(3:6, 8:11) ])
+
+colnames(enrichment.table) <- c("GWAS",
+                                "HPO term",
+                                "GWAS class",
+                                "Number of key-genes",
+                                "Number of gwas-genes",
+                                "Number of HPO genes",
+                                "Number of GWAS hits",
+                                "Number of GWAS samples",
+                                "Key-gene OR",
+                                "Key-gene OR min",
+                                "Key-gene OR max",
+                                "Key-gene OR pval",
+                                "Key-gene nr overlap",
+                                "GWAS-gene OR",
+                                "GWAS-gene OR min",
+                                "GWAS-gene OR max",
+                                "GWAS-gene OR pval",
+                                "GWAS-gene nr overlap",
+                                "Key-gene AUC",
+                                "Key-gene AUC min",
+                                "Key-gene AUC max",
+                                "Key-gene AUC pval",
+                                "GWAS-gene AUC",
+                                "GWAS-gene AUC min",
+                                "GWAS-gene AUC max",
+                                "GWAS-gene AUC pval")
+write.table(enrichment.table, file="output/mean_adjusted/key_gene_enrichment_with_matched_hpo_terms_with_metadata.tsv", quote=F, row.names=F, col.names=T, sep="\t")
+
+```
+
+# GWAS hits vs key-gene  OR
+```{r}
+df.plot <- df.plot.auc
+df.plot$gwas.hits <- meta.data[hpo.gwas.link$`Machine ID`, ]$N_indep_gws
+#for (col in c("k.or", "k.min", "k.max", "g.or", "g.min", "g.max")) {
+#  df.plot[,col] <- log2(df.plot[,col])
+#  df.plot[,col][abs(df.plot[,col]) == Inf] <- NA
+#}  
+
+df.cor  <- data.frame(a=df.plot$k.or, b=df.plot$gwas.hits)
+df.cor  <- df.cor[rowSums(abs(df.cor) == Inf) == 0,]
+cor.obj <- cor.test(df.cor$a, df.cor$b, use="complete.obs")
+
+p1 <- ggplot(data=df.plot, mapping=aes(y=k.or,
+                                         x=gwas.hits,
+                                         ymin=k.min,
+                                         ymax=k.max,
+                                         col=meta.data[hpo.gwas.link$`Machine ID`, "class"]
+                                         )) +
+  geom_errorbar(col="#EDEDED") + 
+  geom_point(size=3, alpha=0.5, shape=16) +
+  scale_color_manual(values=class.cols) +
+  ylab("AUC HPO enrichment for key-genes") +
+  xlab("Number of independent genome wide significant hits") + 
+  theme(legend.position = "none") +
+  scale_y_continuous(limits=c(0.4, 1), oob = rescale_none) +
+  ggtitle(paste0("",
+             "Pearson R: ", format(cor.obj$estimate, digits=2),
+             " p-value: ", format(cor.obj$p.value, digits=2, scientific=T))) +
+  geom_smooth(method="lm", col="grey")
+
+
+
+pdf(width=3.5, height=3.5, paper="a4", useDingbats = F, file="output/mean_adjusted/plots/matched_hpo_term_enrichment_vs_nr_gws_hits.pdf")
+theme.nature(p1) + theme(legend.position = "none")
+dev.off()
+```
+
+
+# Genelists for patricks venn diagram
+```{r}
+library(eulerr)
+library(RVenn)
+
+key.genes <- unique(unlist(bonf.sig.coreg.genes))
+hpo.genes <- unique(rownames(hpo)[rowSums(hpo) >= 1])
+gws.genes <- unique(rownames(gene.pvalues)[rowSums(gene.pvalues < (0.05/nrow(gene.pvalues))) >= 1])
+
+write.table(key.genes, file="output/mean_adjusted/all_key_genes.txt", quote=F, row.names=F, col.names=F)
+write.table(hpo.genes, file="output/mean_adjusted/all_hpo_genes_gwas_matched.txt", quote=F, row.names=F, col.names=F)
+write.table(gws.genes, file="output/mean_adjusted/all_gws_genes.txt", quote=F, row.names=F, col.names=F)
+
+
+df.plot <- c("A" = 0,
+             "B" = 0,
+             "C" = 0,
+             "A&B" = 0,
+             "A&C" = 0,
+             "B&C" = 0,
+             "A&B&C" = 0)
+
+prev.key.genes <- c()
+prev.hpo.genes <- c()
+prev.gws.genes <- c()
+
+for (gwas in hpo.gwas.link$`Machine ID`) {
+  
+  hpo.term     <- hpo.gwas.link[gwas, 3]
+  
+  # Bonferroni significant
+  cur.key.bon  <- datasets[[gwas]]$GenePrioritization[datasets[[gwas]]$GenePrioritization$Bonferroni.significant &
+                                                      datasets[[gwas]]$GenePrioritization$Enrichment.Z.score > 0, "Gene.ID"]
+  cur.gws.bon  <- rownames(gene.pvalues)[gene.pvalues[,gwas] < 0.05/nrow(gene.pvalues)]
+  cur.hpo.term <- rownames(hpo)[hpo[,hpo.term]==1]
+
+  #a <- setdiff(cur.key.bon, prev.key.genes)
+  #b <- setdiff(cur.hpo.term, prev.hpo.genes)
+  #c <- setdiff(cur.gws.bon, prev.gws.genes)
+
+  #prev.key.genes <- c(prev.key.genes, a)
+  #prev.hpo.genes <- c(prev.hpo.genes, b)
+  #prev.gws.genes <- c(prev.gws.genes, c)
+
+  a <- cur.key.bon
+  b <- cur.hpo.term
+  c <- cur.gws.bon
+
+  all.genes <- unique(c(a, b, c))
+
+  mat <- data.frame(a=all.genes %in% a,
+                    b=all.genes %in% b,
+                    c=all.genes %in% c)
+  
+  df.plot <- df.plot + euler(mat)$original.values
+  
+}
+
+names(df.plot) <- c("key genes",
+                         "HPO genes",
+                         "GWAS genes",
+                         "key genes&HPO genes",
+                         "key genes&GWAS genes",
+                         "HPO genes&GWAS genes",
+                         "key genes&HPO genes&GWAS genes")
+
+plot(euler(df.plot),  quantities = TRUE)
+```
+
+
+# LEGACY
+
+# Scatterplot of OR for HPO enrichments from key-genes vs gwas genes
+```{r}
+key.gene.or <- c()
+key.gene.p  <- c()
+gws.gene.or <- c()
+gws.gene.p  <- c()
+
+key.gene.table <- data.frame()
+gws.gene.table <- data.frame()
+
+for (gwas in hpo.gwas.link$`Machine ID`) {
+  cur.key.or <- enrich.key.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3], "OR.bonf"]
+  cur.gws.or <- enrich.gws.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3], "OR.bonf"]
+  cur.key.p  <- enrich.key.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3], "P.bonf"]
+  cur.gws.p  <- enrich.gws.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3], "P.bonf"]
+  
+  key.gene.table  <- rbind(key.gene.table, enrich.key.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3],])
+  gws.gene.table  <- rbind(gws.gene.table, enrich.gws.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3],])
+  
+  key.gene.or <- c(key.gene.or, cur.key.or)
+  gws.gene.or <- c(gws.gene.or, cur.gws.or)
+  key.gene.p  <- c(key.gene.p, cur.key.p)
+  gws.gene.p  <- c(gws.gene.p, cur.gws.p)
+
+}
+
+rownames(key.gene.table) <- hpo.gwas.link$`Machine ID`
+rownames(gws.gene.table) <- hpo.gwas.link$`Machine ID`
+
+write.table(key.gene.table, file="output/key_gene_enrichment_with_matched_hpo_terms.tsv", sep="\t", quote=F)
+write.table(gws.gene.table, file="output/gws_gene_enrichment_with_matched_hpo_terms.tsv", sep="\t", quote=F)
+
+key.gene.or[is.na(key.gene.or)] <- 0
+gws.gene.or[is.na(gws.gene.or)] <- 0
+
+key.gene.p <- ifelse(key.gene.p > (0.05/44), 0, 1)
+gws.gene.p <- ifelse(gws.gene.p > (0.05/44), 0, 1)
+
+key.gene.p[is.na(key.gene.p)] <- 0
+gws.gene.p[is.na(gws.gene.p)] <- 0
+
+is.signif <- ifelse((gws.gene.p + key.gene.p) > 0, "true", "false")
+
+key.gene.or <- log2(key.gene.or)
+gws.gene.or <- log2(gws.gene.or)
+
+#key.gene.or[key.gene.or == -Inf] <- 0
+#gws.gene.or[gws.gene.or == -Inf] <- 0
+
+p1 <- xy.plot(gws.gene.or,
+        key.gene.or,
+        col.by=meta.data[hpo.gwas.link$`Machine ID`, "class"],
+        shape.by=is.signif,
+        size=5) +
+  scale_color_manual(values=class.cols) +
+  scale_shape_manual(values=c(`true`=18, `false`=20), name="Is significant") +
+  geom_abline(slope = 1, intercept = 0, col="grey", type=2) +
+  xlim(c(0,6)) +
+  ylim(c(0,6)) +
+  ylab("log2(OR) HPO enrichment for key-genes") +
+  xlab("log2(OR) HPO enrichment for gwas-genes") + 
+  theme(legend.position = "none")
+
+```
+
+
+# Scatterplot of AUC for HPO enrichments from key-genes vs gwas genes
+```{r}
+key.gene.or <- c()
+key.gene.p  <- c()
+gws.gene.or <- c()
+gws.gene.p  <- c()
+
+
+for (gwas in hpo.gwas.link$`Machine ID`) {
+  cur.key.or <- enrich.key.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3], "AUC"]
+  cur.gws.or <- enrich.gws.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3], "AUC"]
+  cur.key.p  <- enrich.key.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3], "Utest"]
+  cur.gws.p  <- enrich.gws.gene[[gwas]]$HPO[hpo.gwas.link[gwas, 3], "Utest"]
+  
+  key.gene.or <- c(key.gene.or, cur.key.or)
+  gws.gene.or <- c(gws.gene.or, cur.gws.or)
+  key.gene.p  <- c(key.gene.p, cur.key.p)
+  gws.gene.p  <- c(gws.gene.p, cur.gws.p)
+
+}
+
+key.gene.p <- ifelse(key.gene.p > (0.05/44), 0, 1)
+gws.gene.p <- ifelse(gws.gene.p > (0.05/44), 0, 1)
+
+key.gene.p[is.na(key.gene.p)] <- 0
+gws.gene.p[is.na(gws.gene.p)] <- 0
+
+is.signif <- ifelse((gws.gene.p + key.gene.p) > 0, "true", "false")
+
+
+p2 <- xy.plot(gws.gene.or,
+        key.gene.or,
+        col.by=meta.data[hpo.gwas.link$`Machine ID`, "class"],
+        shape.by=is.signif,
+        size=5) +
+  scale_color_manual(values=class.cols) +
+  scale_shape_manual(values=c(`true`=18, `false`=20), name="Is significant") +
+  geom_abline(slope = 1, intercept = 0, col="grey", type=2) +
+  xlim(c(0.5, 0.9)) +
+  ylim(c(0.5, 0.9)) +
+  ylab("AUC HPO enrichment for key-genes") +
+  xlab("AUC HPO enrichment for gwas-genes") + 
+  theme(legend.position = "none")
+
+
+grid.arrange(grobs=list(p1, p2), ncol=2)
+
+
+# GWAS power vs key gene AUC
+
+is.signif <- ifelse(key.gene.p > 0, "true", "false")
+
+p3 <- xy.plot(meta.data[hpo.gwas.link$`Machine ID`, "N_indep_gws"],
+        key.gene.or,
+        col.by=meta.data[hpo.gwas.link$`Machine ID`, "class"],
+        shape.by=is.signif,
+        size=5) +
+  scale_color_manual(values=class.cols) +
+  scale_shape_manual(values=c(`true`=18, `false`=20), name="Is significant") +
+  ylab("AUC HPO enrichment for key-genes") +
+  xlab("Number of indep. GWAS hits") + 
+  theme(legend.position = "none")
+
+theme.nature(p3)
+
+```
