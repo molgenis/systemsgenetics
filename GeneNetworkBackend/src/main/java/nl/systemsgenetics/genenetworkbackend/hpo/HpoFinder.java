@@ -11,18 +11,16 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
 
@@ -141,7 +139,12 @@ public class HpoFinder {
 	public static Map<String, PredictionInfo> loadPredictionInfo(File hpoPredictionInfoFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoPredictionInfoFile))).withSkipLines(1).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (hpoPredictionInfoFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(hpoPredictionInfoFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoPredictionInfoFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
 
 		HashMap<String, PredictionInfo> predictionInfo = new HashMap<>();
 

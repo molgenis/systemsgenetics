@@ -13,13 +13,8 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -29,6 +24,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import org.biojava.nbio.ontology.Term;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -171,8 +168,12 @@ public class HpoGenePrioritisation {
 	private static HashMap<String, LinkedHashSet<String>> loadCaseHpo(File caseHpoFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(caseHpoFile))).withSkipLines(1).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (caseHpoFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(caseHpoFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(caseHpoFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
 		HashMap<String, LinkedHashSet<String>> caseHpo = new HashMap<>();
 
 		String[] nextLine;
@@ -198,8 +199,12 @@ public class HpoGenePrioritisation {
 	private static Map<String, String> loadEnsgToHgnc(File mappingFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(mappingFile))).withSkipLines(1).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (mappingFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(mappingFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(mappingFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
 		HashMap<String, String> mapping = new HashMap<>();
 
 		String[] nextLine;

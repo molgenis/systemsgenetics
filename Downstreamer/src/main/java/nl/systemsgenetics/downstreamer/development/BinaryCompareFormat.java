@@ -36,7 +36,7 @@ public class BinaryCompareFormat {
 		final CSVParser eQTLparser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		CSVReader eQTLreader = null;
 		if (eQTLfile.getName().endsWith(".gz")) {
-			eQTLreader = new CSVReaderBuilder((new InputStreamReader(new GZIPInputStream(new FileInputStream(eQTLfile))))).withSkipLines(1).withCSVParser(eQTLparser).build();
+			eQTLreader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(eQTLfile)))))).withSkipLines(1).withCSVParser(eQTLparser).build();
 		} else {
 			eQTLreader = new CSVReaderBuilder(new BufferedReader(new FileReader(eQTLfile))).withCSVParser(eQTLparser).withSkipLines(1).build();
 		}

@@ -10,11 +10,8 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,12 +22,13 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.FastMath;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
- *
  * @author patri
  */
 public class DiseaseGeneHpoData {
@@ -47,14 +45,20 @@ public class DiseaseGeneHpoData {
 		diseaseGeneToHpos = new HashMap<>();
 
 		Predicate<String> diseasePattern;
-		if(diseasePrefix != null){
+		if (diseasePrefix != null) {
 			diseasePattern = Pattern.compile("^" + diseasePrefix).asPredicate();
 		} else {
 			diseasePattern = null;
 		}
-		
+
 		final CSVParser hpoParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(diseaseGeneHpoFile))).withSkipLines(1).withCSVParser(hpoParser).build();
+
+		CSVReader hpoReader = null;
+		if (diseaseGeneHpoFile.getName().endsWith(".gz")) {
+			hpoReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(diseaseGeneHpoFile)))))).withSkipLines(1).withCSVParser(hpoParser).build();
+		} else {
+			hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(diseaseGeneHpoFile))).withSkipLines(1).withCSVParser(hpoParser).build();
+		}
 
 		String[] nextLine;
 		while ((nextLine = hpoReader.readNext()) != null) {
@@ -62,8 +66,8 @@ public class DiseaseGeneHpoData {
 			String hgcnId = nextLine[1];
 			String ncbiId = nextLine[2];
 			String hpo = nextLine[3];
-			
-			if(diseasePattern != null && !diseasePattern.test(disease)){
+
+			if (diseasePattern != null && !diseasePattern.test(disease)) {
 				continue;
 			}
 
@@ -274,8 +278,8 @@ public class DiseaseGeneHpoData {
 					noRandomFound = true;
 					break;
 				}
-				
-				if(backgroundGenes.isEmpty()){
+
+				if (backgroundGenes.isEmpty()) {
 					System.err.println("No background genes left");
 					noRandomFound = true;
 					break;

@@ -39,7 +39,7 @@ public class GenerateRandomNullData {
         final CSVParser gmtParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
         CSVReader gmtReader = null;
         if (phase3File.getName().endsWith(".gz")) {
-            gmtReader = new CSVReaderBuilder((new InputStreamReader(new GZIPInputStream(new FileInputStream(phase3File))))).withSkipLines(1).withCSVParser(gmtParser).build();
+            gmtReader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(phase3File)))))).withSkipLines(1).withCSVParser(gmtParser).build();
         } else {
             gmtReader = new CSVReaderBuilder(new BufferedReader(new FileReader(phase3File))).withSkipLines(1).withCSVParser(gmtParser).build();
         }

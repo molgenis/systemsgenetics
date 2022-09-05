@@ -4,17 +4,14 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /*
@@ -22,8 +19,8 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 /**
- *
  * @author patri
  */
 public class ConvertMyoclonusClustersToMatrix {
@@ -72,7 +69,15 @@ public class ConvertMyoclonusClustersToMatrix {
 	private static HashMap<String, HashSet<String>> readClusterFile(File hpoFile) throws Exception {
 
 		final CSVParser hpoParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(0).withCSVParser(hpoParser).build();
+		CSVReader hpoReader = null;
+		if (hpoFile.getName().endsWith(".gz")) {
+			hpoReader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(hpoFile))))
+			)).withSkipLines(0).withCSVParser(hpoParser).build();
+		} else {
+			hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(0).withCSVParser(hpoParser).build();
+		}
+
 
 		HashMap<String, HashSet<String>> hpoToGenes = new HashMap<>();
 
@@ -102,8 +107,12 @@ public class ConvertMyoclonusClustersToMatrix {
 	private static ArrayList<String> readGenes(File geneOrderFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (geneOrderFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(geneOrderFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 		String[] nextLine;
 		ArrayList<String> geneOrder = new ArrayList<>();
 
@@ -120,7 +129,14 @@ public class ConvertMyoclonusClustersToMatrix {
 	public static HashMap<String, ArrayList<String>> loadHgncToEnsgMap(File map) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (map.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(map))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
+		}
 
 		String[] nextLine = reader.readNext();
 

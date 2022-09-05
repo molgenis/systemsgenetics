@@ -109,7 +109,7 @@ public class TransEqtlEnrichment {
 		final CSVParser gwasParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 		CSVReader gwasReader = null;
 		if (gwas.getName().endsWith(".gz")) {
-			gwasReader = new CSVReaderBuilder((new InputStreamReader(new GZIPInputStream(new FileInputStream(gwas))))).withSkipLines(1).withCSVParser(gwasParser).build();
+			gwasReader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(gwas)))))).withSkipLines(1).withCSVParser(gwasParser).build();
 		} else {
 			gwasReader = new CSVReaderBuilder(new BufferedReader(new FileReader(gwas))).withSkipLines(1).withCSVParser(gwasParser).build();
 		}

@@ -64,7 +64,7 @@ public class DownstreamerUtilities {
 
             CSVReader reader = null;
             if (options.getGeneInfoFile().getName().endsWith(".gz")) {
-                reader = new CSVReaderBuilder((new InputStreamReader(new GZIPInputStream(new FileInputStream(options.getGeneInfoFile()))))).withSkipLines(0).withCSVParser(parser).build();
+                reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(options.getGeneInfoFile())))))).withSkipLines(0).withCSVParser(parser).build();
             } else {
                 reader = new CSVReaderBuilder(new BufferedReader(new FileReader(options.getGeneInfoFile()))).withCSVParser(parser).withSkipLines(0).build();
             }

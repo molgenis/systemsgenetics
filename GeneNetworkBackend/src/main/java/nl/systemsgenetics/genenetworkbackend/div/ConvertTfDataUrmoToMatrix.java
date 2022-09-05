@@ -9,17 +9,14 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import static nl.systemsgenetics.genenetworkbackend.ConvertGoToMatrix.readGenes;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -92,8 +89,12 @@ public class ConvertTfDataUrmoToMatrix {
 	private static HashMap<String, HashMap<String, HashSet<String>>> loadTfData(File tfFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(tfFile))).withSkipLines(1).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (tfFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(tfFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(tfFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
 		HashMap<String, HashMap<String, HashSet<String>>> tfdatabasesPathwayToGenes = new HashMap<>();
 
 		String[] nextLine;

@@ -4,18 +4,15 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /*
@@ -23,8 +20,8 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 /**
- *
  * @author patri
  */
 public class ConvertGmtToMatrix {
@@ -71,16 +68,16 @@ public class ConvertGmtToMatrix {
 						geneWriter.write('\n');
 					}
 
-					if(!gmtMatrix.containsCol(gmtPathway)){
+					if (!gmtMatrix.containsCol(gmtPathway)) {
 						System.out.println("missing pathway: " + gmtPathway);
 					}
-					
-					if(!gmtMatrix.containsRow(gene)){
+
+					if (!gmtMatrix.containsRow(gene)) {
 						System.out.println("Missing gene: " + gene);
 					}
-					
+
 					gmtMatrix.setElement(gene, gmtPathway, 1);
-					
+
 				}
 			}
 
@@ -96,8 +93,12 @@ public class ConvertGmtToMatrix {
 	private static HashMap<String, String> loadNcbiToEnsgMap(File ncbiToEnsgMapFile) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(ncbiToEnsgMapFile))).withSkipLines(0).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (ncbiToEnsgMapFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(ncbiToEnsgMapFile))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(ncbiToEnsgMapFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 		String[] nextLine = reader.readNext();
 
 		if (!nextLine[0].equals("Gene stable ID") || !nextLine[1].equals("NCBI gene ID")) {
@@ -117,7 +118,15 @@ public class ConvertGmtToMatrix {
 	private static HashMap<String, HashSet<String>> readGmtFile(File hpoFile, HashMap<String, String> ncbiToEnsgMap) throws Exception {
 
 		final CSVParser gmtParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader gmtReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(0).withCSVParser(gmtParser).build();
+		CSVReader gmtReader = null;
+		if (hpoFile.getName().endsWith(".gz")) {
+			gmtReader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(hpoFile))))
+			)).withSkipLines(0).withCSVParser(gmtParser).build();
+		} else {
+			gmtReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(0).withCSVParser(gmtParser).build();
+		}
+
 
 		HashMap<String, HashSet<String>> gmtPathwayToGenes = new HashMap<>();
 
@@ -156,7 +165,15 @@ public class ConvertGmtToMatrix {
 	private static ArrayList<String> readGenes(File geneOrderFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (geneOrderFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(geneOrderFile))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
+
 
 		String[] nextLine;
 		ArrayList<String> geneOrder = new ArrayList<>();
