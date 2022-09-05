@@ -128,7 +128,7 @@ public class MergeGavinPrioritization {
 		if (sampleFile.getName().endsWith(".gz")) {
 			sampleFileReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(sampleFile)))))).withSkipLines(0).withCSVParser(parser).build();
 		} else {
-			sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(v))).withSkipLines(0).withCSVParser(parser).build();
+			sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
 		}
 
 		Pattern pattern = Pattern.compile("CADD score of (.*) is");
