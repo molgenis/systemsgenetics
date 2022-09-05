@@ -233,7 +233,7 @@ library(pROC)
 
 pcsAndMetaTissueVsCancer <- pcsAndMeta[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer),]
 
-
+roc(pcsAndMetaTissueVsCancer$Cancer, pcsAndMetaTissueVsCancer$OriginalAutoCor )
 roc(pcsAndMetaTissueVsCancer$Cancer, pcsAndMetaTissueVsCancer$CnvAutoCor )
 table(pcsAndMetaTissueVsCancer$Cancer, useNA = "a")
 
@@ -246,6 +246,7 @@ cancerModel <- glm(Cancer2 ~ CnvAutoCor, family=binomial(link='logit'), data = p
 
 pcsAndMeta$excludeBasedOnPredictionCancer <- predict(cancerModel, newdata = data.frame(pcsAndMeta[,"CnvAutoCor",drop=F]), type = "response") > 0.5
 pcsAndMeta$excludeBasedOnPredictionCancerScore <- predict(cancerModel, newdata = data.frame(pcsAndMeta[,"CnvAutoCor",drop=F]), type = "response")
+
 
 
 
@@ -291,8 +292,12 @@ dev.off()
 rpng(width = 800, height = 800)
 plot(pcsAndMeta[plotOrderClass,"excludeBasedOnPredictionCellline2Scoreb"], log(pcsAndMeta[plotOrderClass,"CnvAutoCor"]), col = pcsAndMeta$classCol[plotOrderClass], cex = pcsAndMeta$classCex[plotOrderClass], pch = 16, 
      xlab = "Cell line logistic regression using components", 
-     ylab= "Sample Auto correlation")
+     ylab= "Log sample Auto correlation")
+abline(v = min(pcsAndMeta[pcsAndMeta$excludeBasedOnPredictionCellline2,"excludeBasedOnPredictionCellline2Scoreb"]), lwd = 2, col = adjustcolor("magenta", alpha.f = 0.4))
+abline(h = log(min(pcsAndMeta[pcsAndMeta$excludeBasedOnPredictionCancer,"CnvAutoCor"]))
+       , lwd = 2, col = adjustcolor("forestgreen", alpha.f = 0.4))
 dev.off()
+
 
 rpng(width = 800, height = 800)
 plot(pcsAndMeta[plotOrderTissues,"excludeBasedOnPredictionCellline2Score"], pcsAndMeta[plotOrderTissues,"excludeBasedOnPredictionCancerScore"], col = pcsAndMeta$col[plotOrderTissues], cex =0.6  , pch = 16, 
@@ -317,8 +322,6 @@ pcsAndMeta$selectedSamples <- !pcsAndMeta$excludeBasedOnPredictionCellline2 & !p
 table(pcsAndMeta$selectedSamples)
 table(pcsAndMeta$selectedSamples, useNA = "a")
 
-
-min(pcsAndMeta[pcsAndMeta$excludeBasedOnPredictionCellline2,"excludeBasedOnPredictionCellline2Score"])
 
 
 table(pcsAndMeta$excludeBasedOnPredictionCellline2, pcsAndMeta$Cellline, useNA = "a")
@@ -361,8 +364,8 @@ rpng()
 plot(eigenvectorAutoCor2, xlab = "Component", ylab = "sum(r^2 of first 1000 lags of auto-correlation)")
 dev.off()
 
-rpng()
-plot(eigenVectors4[,"PC_143"], pch = 16, cex = 0.5, col=adjustcolor("grey", alpha.f = 0.5))
+rpng(width = 800, height = 400)
+plot(eigenVectors4[,"PC_143"], pch = 16, cex = 0.5, col=adjustcolor("grey", alpha.f = 0.5), ylab = "Eigen vector score comp 143")
 dev.off()
 
 
@@ -383,7 +386,7 @@ str(genesInOrder)
 
 
 
-sample <- "SRR094185"
+sample <- "SRR5553774"
 
 #sampleAutoCor <- matrix(nrow = nrow(expPcs), ncol = 2, dimnames = list(rownames(expPcs), c("OriginalAutoCor", "CnvAutoCor")))
 
@@ -410,20 +413,27 @@ sampleAutoCor <- parSapply(cl, rownames(expPcs), function(sample){
   
 })
 
+rpng()
+par(mar=c(3,5,0.1,0.1))
+layout(matrix(1:2, nrow = 2))
+plot(originalReconstruct, pch = 16, cex = 0.2, col=adjustcolor("grey", alpha.f = 0.5))
+plot(cnvReconstruct, pch = 16, cex = 0.2, col=adjustcolor("grey", alpha.f = 0.5))
+dev.off()
+sampleAutoCor[sample,]
 
 sampleAutoCor <- t(sampleAutoCor)
 str(sampleAutoCor)
 
+tail(sort(sampleAutoCor[sampleAutoCor[,2] >10 & sampleAutoCor[,1] <2,2]))
 
-
-
+ 
 
 #save(sampleAutoCor, file = "sampleAutoCor.RData")
 load(file = "sampleAutoCor.RData", verbose = T)
 
 
 rpng()
-plot(sampleAutoCor[,"OriginalAutoCor"], sampleAutoCor[,"CnvAutoCor"])
+plot(sampleAutoCor[,"OriginalAutoCor"], sampleAutoCor[,"CnvAutoCor"], pch = 16, cex = 0.4, col=adjustcolor("grey", alpha.f = 0.5))
 dev.off()
 
 table(pcsAndMeta$Tissue2, useNA = "a")
@@ -448,7 +458,7 @@ pcsAndMeta$OriginalAutoCor <- sampleAutoCor[rownames(pcsAndMeta),"OriginalAutoCo
 
 pcsAndMeta$CnvAutoCor <- NA
 pcsAndMeta$CnvAutoCor <- sampleAutoCor[rownames(pcsAndMeta),"CnvAutoCor"]
-str(pcsAndMeta$CnvAutoCor)
+range(pcsAndMeta$CnvAutoCor)
 
 library(vioplot)
 pdf("autoCorrelations.pdf", width = 14)

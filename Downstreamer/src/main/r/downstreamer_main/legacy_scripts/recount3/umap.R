@@ -8,12 +8,11 @@ remoter::client("localhost", port = 55501, password = "laberkak")
 
 library(uwot)
 
-
+setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
 tissueCol <- read.delim("umap/col.txt", row.names = 1, na.strings = "")
 
-#save(pcs, combinedMeta, tissueCol, file = "umap/dataForUmap.RData")
 load(file = "DataForPredictions.RData")
 
 #load(file = "combinedMeta_2022_08_30.RData", verbose = T)
@@ -96,7 +95,7 @@ umapInput <- as.matrix(tissueSamples[,paste0("PC_",1:compsToUseForUmap)])
 
 sampleUmap <- umap(
   umapInput, 
-  n_epochs = 100, 
+  n_epochs = 1000, 
   init = init, 
   n_neighbors = 500, 
   min_dist = 2, init_sdev = 1e-4, learning_rate = 1, 
@@ -132,7 +131,7 @@ locator(n =2, type = "l")
 write.table(umapAndMeta,file = "umaptest.txt", sep = "\t", quote = F, col.names = NA)
 
 #save.image( file="umap_tmp.RData")
-load("umap_tmp.RData") 
+#load("umap_tmp.RData") 
 
 rpng()
 
