@@ -85,6 +85,14 @@ public class Transcript extends Feature {
 
 	}
 
+	public Integer getExonRank(Exon currExo) {
+		if (exonRanks == null) {
+			return null;
+		} else {
+			return exonRanks.get(currExo);
+		}
+	}
+
 	public Exon[] getExonsRanked() {
 		if (exonRanks == null) {
 			return null;

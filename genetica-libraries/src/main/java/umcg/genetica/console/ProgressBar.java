@@ -130,4 +130,9 @@ public class ProgressBar {
             print();
         }
     }
+
+    public synchronized void iterateSynchedPrint() {
+        iterations++;
+        print();
+    }
 }

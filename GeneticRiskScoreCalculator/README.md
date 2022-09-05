@@ -34,28 +34,28 @@ Arguments overview
 Base path refers to --input value
 
 * PED_MAP
- * Expects Plink PED file at: `${base path}.ped`
- * Expects Plink MAP file at: `${base path}.map`
- * Note: it is strongly recommend to use PLINK_BED due to the large memory usage of the current implementation. When dealing with large datasets it is recommend to first use plink to convert the data binary plink using this command `plink --file pedmapData --make-bed --out binaryData`
+  * Expects Plink PED file at: `${base path}.ped`
+  * Expects Plink MAP file at: `${base path}.map`
+  * Note: it is strongly recommend to use PLINK_BED due to the large memory usage of the current implementation. When dealing with large datasets it is recommend to first use plink to convert the data binary plink using this command `plink --file pedmapData --make-bed --out binaryData`
 * VCF
- * Expects VCF file at: `${base path}.vcf.gz`
- * Must be compressed using bgzip. (see chapter: Preparing a VCF file)
- * Expects tabix file at: `${base path}.vcf.gz.tbi` (see chapter: Preparing a VCF file)
+  * Expects VCF file at: `${base path}.vcf.gz`
+  * Must be compressed using bgzip. (see chapter: Preparing a VCF file)
+  * Expects tabix file at: `${base path}.vcf.gz.tbi` (see chapter: Preparing a VCF file)
 * PLINK_BED
- * Expects Plink BED file at: `${base path}.bed`
- * Expects Plink BIM file at: `${base path}.bim`
- * Expects Plink FAM file at: `${base path}.fam`
- * Must be in SNP major mode. This is the default of Plink 1.07.
+  * Expects Plink BED file at: `${base path}.bed`
+  * Expects Plink BIM file at: `${base path}.bim`
+  * Expects Plink FAM file at: `${base path}.fam`
+  * Must be in SNP major mode. This is the default of Plink 1.07.
 * VCFFOLDER
- * Matches all vcf.gz files in the folder specified with the bash path.
+  * Matches all vcf.gz files in the folder specified with the bash path.
 * SHAPEIT2
- * Expects haps file at: `${base path}.haps`
- * Expects sample file at: `${base path}.sample`
- * See also chapter on 'Using SHAPEIT2 Output and Oxford Gen format'
+  * Expects haps file at: `${base path}.haps`
+  * Expects sample file at: `${base path}.sample`
+  * See also chapter on 'Using SHAPEIT2 Output and Oxford Gen format'
 * GEN
- * Expects gen file at: `${base path}.gen` or without the extentions `${base path}`
- * Expects sample file at: `${base path}.sample`
- * See also chapter on 'Using SHAPEIT2 Output and Oxford Gen format'
+  * Expects gen file at: `${base path}.gen` or without the extentions `${base path}`
+  * Expects sample file at: `${base path}.sample`
+  * See also chapter on 'Using SHAPEIT2 Output and Oxford Gen format'
 * TRITYPER
   * Expects folder with TriTyper data. Can handle dosage matrix
 

@@ -30,6 +30,8 @@ import org.molgenis.genotype.variant.GenotypeRecord;
 import org.molgenis.genotype.variant.ReadOnlyGeneticVariant;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantUniqueIdProvider;
 import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
+import org.molgenis.genotype.vcf.VcfGenotypeField.VcfGenotypeFormat;
+import org.molgenis.genotype.vcf.VcfGenotypeField.VcfGenotypeFormatSupplier;
 import org.molgenis.vcf.VcfInfo;
 import org.molgenis.vcf.VcfReader;
 import org.molgenis.vcf.VcfRecord;
@@ -59,7 +61,11 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
     private static int currentlyOpenFileHandlers = 0;
     private static int closedFileHandlers = 0;
     private final double minimumPosteriorProbabilityToCall;
-    private MappedGenotypeField preferredGenotypeField;
+    private VcfGenotypeFormatSupplier genotypeFormatSupplier;
+    private final LinkedHashSet<VcfGenotypeFormat> genotypeProbabilitiesFieldPrecedence;
+    private final LinkedHashSet<VcfGenotypeFormat> genotypeCallFieldPrecedence;
+    private final LinkedHashSet<VcfGenotypeFormat> genotypeDosageFieldPrecedence;
+
 
     /**
      * VCF genotype reader
@@ -114,11 +120,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
         this.tabixIndex = new TabixIndex(tabixIndexFile, bzipVcfFile, null);
         this.minimumPosteriorProbabilityToCall = minimumPosteriorProbabilityToCall;
 
-        VcfReader vcfReader = new VcfReader(new BlockCompressedInputStream(bzipVcfFile));
-        try {
+        try (VcfReader vcfReader = new VcfReader(new BlockCompressedInputStream(bzipVcfFile))) {
             this.vcfMeta = vcfReader.getVcfMeta();
-        } finally {
-            vcfReader.close();
         }
 
         if (cacheSize <= 0) {
@@ -128,6 +131,15 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
         }
 
         sampleVariantProviderUniqueId = SampleVariantUniqueIdProvider.getNextUniqueId();
+
+        genotypeProbabilitiesFieldPrecedence =
+                new LinkedHashSet<>(Arrays.asList(VcfGenotypeFormat.GP, VcfGenotypeFormat.GT, VcfGenotypeFormat.DS));
+        genotypeCallFieldPrecedence =
+                new LinkedHashSet<>(Arrays.asList(VcfGenotypeFormat.GT, VcfGenotypeFormat.GP, VcfGenotypeFormat.DS));
+        genotypeDosageFieldPrecedence =
+                new LinkedHashSet<>(Arrays.asList(VcfGenotypeFormat.DS, VcfGenotypeFormat.GP, VcfGenotypeFormat.GT));
+
+        genotypeFormatSupplier = new VcfGenotypeFormatSupplier();
     }
 
     @Override
@@ -181,23 +193,20 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             return Collections.emptyList();
         }
 
-        boolean canReadFromRequestedVcfFormat = canReadFromRequestedVcfFormat(
-                new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.GT, MappedGenotypeField.GP, MappedGenotypeField.DS)));
+        VcfGenotypeFormat genotypeFormat = genotypeFormatSupplier.getVcfGenotypeFormat(vcfRecord,
+                genotypeCallFieldPrecedence);
 
-        int idx = vcfRecord.getFormatIndex("GT");
-        if (idx != -1 && (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+        if (VcfGenotypeFormat.GT.equals(genotypeFormat)) {
             return getCalledAlleles(variant, vcfRecord);
 
-        } else if (vcfRecord.getFormatIndex("GP") != -1 &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GP.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.GP.equals(genotypeFormat)) {
 
             return ProbabilitiesConvertor.convertProbabilitiesToAlleles(
                     getSampleProbilities(variant),
                     variant.getVariantAlleles(),
                     minimumPosteriorProbabilityToCall);
 
-        } else if (vcfRecord.getFormatIndex("DS") != -1 &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.DS.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.DS.equals(genotypeFormat)) {
 
             return CalledDosageConvertor.convertDosageToAlleles(getSampleDosage(variant), variant.getVariantAlleles());
 
@@ -309,15 +318,23 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             return false;
         }
 
-        // If the requested format is set and present for this variant base decision on this format
-        boolean canReadPhasedData = preferredGenotypeField == null &&
-                (
-                        vcfRecord.getFormatIndex(MappedGenotypeField.HP.name()) > -1
-                        || vcfRecord.getFormatIndex(MappedGenotypeField.ADS.name()) > -1
-                );
+        LinkedHashSet<VcfGenotypeFormat> haplotypeProbabilitiesFields = getVcfHaplotypeFormats(variant);
 
-        return canReadPhasedData
-                || canReadPhasedDataFromPreferredGenotypeField(variant);
+        // If the requested format is set and present for this variant base decision on this format
+        VcfGenotypeFormat genotypeFormat = genotypeFormatSupplier.getVcfGenotypeFormat(
+                vcfRecord, haplotypeProbabilitiesFields);
+
+        return (genotypeFormat != null);
+    }
+
+    private LinkedHashSet<VcfGenotypeFormat> getVcfHaplotypeFormats(GeneticVariant variant) {
+        LinkedHashSet<VcfGenotypeFormat> haplotypeProbabilitiesFields =
+                new LinkedHashSet<>(Arrays.asList(VcfGenotypeFormat.HP, VcfGenotypeFormat.ADS));
+
+        if (variant.hasPhasedGenotypes()) {
+            haplotypeProbabilitiesFields.add(VcfGenotypeFormat.GT);
+        }
+        return haplotypeProbabilitiesFields;
     }
 
     @Override
@@ -347,11 +364,12 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
         float[] dosages;
 
-        boolean canReadFromRequestedVcfFormat = canReadFromRequestedVcfFormat(
-                new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.DS, MappedGenotypeField.GP, MappedGenotypeField.GT)));
+        VcfGenotypeFormat genotypeFormat = genotypeFormatSupplier.getVcfGenotypeFormat(vcfRecord,
+                genotypeDosageFieldPrecedence);
 
-        int idx = vcfRecord.getFormatIndex("DS");
-        if (idx != -1 && (!canReadFromRequestedVcfFormat || MappedGenotypeField.DS.equals(preferredGenotypeField))) {
+        int idx = getIndexOfGenotypeFormat(vcfRecord, genotypeFormat);
+
+        if (VcfGenotypeFormat.DS.equals(genotypeFormat)) {
             // retrieve sample dosage from sample info
             dosages = new float[nrSamples];
             int i = 0;
@@ -370,12 +388,10 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                 }
 
             }
-        } else if (vcfRecord.getFormatIndex("GP") != -1 &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GP.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.GP.equals(genotypeFormat)) {
             dosages = ProbabilitiesConvertor.convertProbabilitiesToDosage(getSampleProbilities(variant), minimumPosteriorProbabilityToCall);
 
-        } else if (vcfRecord.getFormatIndex("GT") != -1 &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.GT.equals(genotypeFormat)) {
 
             // calculate sample dosage from called alleles
             dosages = CalledDosageConvertor.convertCalledAllelesToDosage(getSampleVariants(variant),
@@ -388,6 +404,15 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             }
         }
         return dosages;
+    }
+
+    private int getIndexOfGenotypeFormat(VcfRecord vcfRecord, VcfGenotypeFormat genotypeFormat) {
+        int formatIndex = -1;
+        if (genotypeFormat != null) {
+            String genotypeFormatIdentifier = genotypeFormatSupplier.getGenotypeFormatIdentifier(genotypeFormat);
+            formatIndex = vcfRecord.getFormatIndex(genotypeFormatIdentifier);
+        }
+        return formatIndex;
     }
 
     @Override
@@ -413,11 +438,13 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
         float[][] probs;
 
-        boolean canReadFromRequestedVcfFormat = canReadFromRequestedVcfFormat(
-                new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.GP, MappedGenotypeField.GT, MappedGenotypeField.DS)));
+        // Select the preferred genotype field
+        VcfGenotypeFormat genotypeFormat = genotypeFormatSupplier.getVcfGenotypeFormat(
+                vcfRecord, genotypeProbabilitiesFieldPrecedence);
 
-        int idx = vcfRecord.getFormatIndex("GP");
-        if (idx != -1 && (!canReadFromRequestedVcfFormat || MappedGenotypeField.GP.equals(preferredGenotypeField))) {
+        int idx = getIndexOfGenotypeFormat(vcfRecord, genotypeFormat);
+
+        if (VcfGenotypeFormat.GP.equals(genotypeFormat)) {
             // retrieve sample probabilities from sample info
             probs = new float[nrSamples][3];
             int i = 0;
@@ -449,14 +476,12 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                 ++i;
             }
 
-        } else if (vcfRecord.getFormatIndex("GT") != -1 &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.GT.equals(genotypeFormat)) {
 
             probs = ProbabilitiesConvertor.convertCalledAllelesToProbability(
                     getSampleVariants(variant), variant.getVariantAlleles());
 
-        } else if (vcfRecord.getFormatIndex("DS") != -1 &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.DS.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.DS.equals(genotypeFormat)) {
 
             // calculate sample probabilities from sample dosage
             probs = ProbabilitiesConvertor.convertDosageToProbabilityHeuristic(getSampleDosage(variant));
@@ -480,30 +505,24 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
         double[][] probs;
 
-        boolean hasGenotypes = vcfRecord.getFormatIndex("GT") != -1;
+        // Select the preferred genotype field
+        VcfGenotypeFormat genotypeFormat = genotypeFormatSupplier.getVcfGenotypeFormat(
+                vcfRecord, genotypeProbabilitiesFieldPrecedence);
 
-        List<Alleles> sampleVariants = null;
-        if (hasGenotypes) {
-            sampleVariants = getCalledAlleles(variant, vcfRecord);
-        }
+        int idx = getIndexOfGenotypeFormat(vcfRecord, genotypeFormat);
 
-        boolean canReadFromRequestedVcfFormat = canReadFromRequestedVcfFormat(
-                new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.GP, MappedGenotypeField.GT, MappedGenotypeField.DS)));
+        if (VcfGenotypeFormat.GP.equals(genotypeFormat)) {
 
-        int idx = vcfRecord.getFormatIndex("GP");
-        if (idx != -1 && (!canReadFromRequestedVcfFormat || MappedGenotypeField.GP.equals(preferredGenotypeField))) {
+            probs = readGenotypeProbabilitiesComplex(idx, vcfRecord, numberOfAlleles,
+                    getCalledAlleles(variant, vcfRecord));
 
-            probs = readGenotypeProbabilitiesComplex(idx, vcfRecord, numberOfAlleles, sampleVariants);
-
-        } else if (hasGenotypes &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.GT.equals(genotypeFormat)) {
 
             probs = ProbabilitiesConvertor.convertCalledAllelesToComplexProbabilities(
-                    sampleVariants,
+                    getCalledAlleles(variant, vcfRecord),
                     variant.getVariantAlleles());
 
-        } else if (vcfRecord.getFormatIndex("DS") != -1 &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.DS.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.DS.equals(genotypeFormat)) {
 
             // calculate sample probabilities from sample dosage
             probs = ProbabilitiesConvertor.convertProbabilitiesToComplexProbabilities(
@@ -515,10 +534,6 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
             probs = new double[nrSamples][3];
         }
         return probs;
-    }
-
-    private boolean canReadFromRequestedVcfFormat(Set<MappedGenotypeField> mappedGenotypeFields) {
-        return preferredGenotypeField != null && mappedGenotypeFields.contains(preferredGenotypeField);
     }
 
     private double[][] readGenotypeProbabilitiesComplex(int formatIndex, VcfRecord vcfRecord,
@@ -602,11 +617,12 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
 
         double[][][] probabilities;
 
-        boolean canReadFromRequestedVcfFormat = canReadPhasedDataFromPreferredGenotypeField(variant);
+        VcfGenotypeFormat genotypeFormat = genotypeFormatSupplier.getVcfGenotypeFormat(vcfRecord,
+                getVcfHaplotypeFormats(variant));
 
-        int idx = vcfRecord.getFormatIndex("HP");
-        if (idx != -1 &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.HP.equals(preferredGenotypeField))) {
+        int idx = getIndexOfGenotypeFormat(vcfRecord, genotypeFormat);
+
+        if (VcfGenotypeFormat.HP.equals(genotypeFormat)) {
             // retrieve sample probabilities from sample info
             probabilities = new double[nrSamples][][];
             int sampleIndex = 0;
@@ -657,8 +673,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                 }
                 ++sampleIndex;
             }
-        } else if ((idx = vcfRecord.getFormatIndex("ADS")) != -1 &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.ADS.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.ADS.equals(genotypeFormat)) {
 
             // check if the number of alleles is 2
             if (variant.getAlleleCount() != 2) {
@@ -698,6 +713,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                         String haplotypeDosageAsString = haplotypesAsStrings[haplotypeIndex];
                         if (haplotypeDosageAsString.equals(".")) {
                             haplotypeDosages[sampleIndex][haplotypeIndex] = 0;
+                        } else {
                             try {
                                 haplotypeDosages[sampleIndex][haplotypeIndex] = Double.parseDouble(haplotypeDosageAsString);
                             } catch (NumberFormatException e) {
@@ -712,31 +728,13 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                 ++sampleIndex;
             }
             probabilities = ProbabilitiesConvertor.haplotypeDosagesToHaplotypeProbabilities(haplotypeDosages);
-        } else if (vcfRecord.getFormatIndex("GT") != -1 && variant.hasPhasedGenotypes() &&
-                (!canReadFromRequestedVcfFormat || MappedGenotypeField.GT.equals(preferredGenotypeField))) {
+        } else if (VcfGenotypeFormat.GT.equals(genotypeFormat)) {
             // calculate sample probabilities from sample dosage
             probabilities = ProbabilitiesConvertor.convertCalledAllelesToPhasedProbabilities(getSampleVariants(variant), variant.getVariantAlleles());
         } else {
             throw new GenotypeDataException("Phased data not available");
         }
         return probabilities;
-    }
-
-    /**
-     * Method that returns whether or not phased data can be read using the set preferred genotype field.
-     *
-     * @param variant The variant to read phased data from.
-     * @return true if the preferred genotype field is not null, and can provide a phased data
-     */
-    private boolean canReadPhasedDataFromPreferredGenotypeField(GeneticVariant variant) {
-        boolean canReadFromPreferredGenotypeField = canReadFromRequestedVcfFormat(
-                    new LinkedHashSet<>(Arrays.asList(MappedGenotypeField.HP, MappedGenotypeField.ADS, MappedGenotypeField.GT)));
-
-        // If the preferred genotype field is GT, we need to check if phased genotypes are available
-        if (preferredGenotypeField == MappedGenotypeField.GT && !getSamplePhasing(variant).contains(false)) {
-            return false;
-        }
-        return canReadFromPreferredGenotypeField;
     }
 
     @Override
@@ -970,29 +968,31 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
      *
      * @return The preferred genotype field to read from.
      */
-    public MappedGenotypeField getPreferredGenotypeField() {
-        return preferredGenotypeField;
+    public VcfGenotypeFormat getPreferredGenotypeField() {
+        return genotypeFormatSupplier.getPreferredGenotypeFormat();
     }
 
     /**
      * Set the preferred VCF format to read from.
      * Fails if the requested vcf format has no included mapping in the this VcfGenotypeData
      *
-     * @param preferredGenotypeField the preferred VCF format to read from.
+     * @param preferredGenotypeFormat the preferred VCF format to read from.
      */
-    public void setPreferredGenotypeField(String preferredGenotypeField) {
-        this.preferredGenotypeField = preferredGenotypeField != null ?
-                MappedGenotypeField.valueOf(preferredGenotypeField) : null;
+    public void setPreferredGenotypeFormat(String preferredGenotypeFormat) {
+        this.setPreferredGenotypeFormat(
+                new VcfGenotypeFormatSupplier(preferredGenotypeFormat != null ?
+                VcfGenotypeFormat.valueOf(preferredGenotypeFormat) : null));
     }
 
-    /**
-     * Enum with genotype fields which data can be read from.
-     */
-    public enum MappedGenotypeField {
-        GT,
-        GP,
-        HP,
-        DS,
-        ADS
+    public VcfGenotypeFormatSupplier getPreferredGenotypeFormat() {
+        return genotypeFormatSupplier;
+    }
+
+    public void setPreferredGenotypeFormat(VcfGenotypeFormat preferredGenotypeField, String fieldIdentifier) {
+        this.setPreferredGenotypeFormat(new VcfGenotypeFormatSupplier(preferredGenotypeField, fieldIdentifier));
+    }
+
+    public void setPreferredGenotypeFormat(VcfGenotypeFormatSupplier genotypeFormatSupplier) {
+        this.genotypeFormatSupplier = genotypeFormatSupplier;
     }
 }

@@ -140,5 +140,6 @@
         <module>FunctionEnrichmentOfTransQtls</module>
         <module>Downstreamer</module>
         <module>PatricksToolbox</module>
+        <module>MbQTL</module>
     </modules>
 </project>

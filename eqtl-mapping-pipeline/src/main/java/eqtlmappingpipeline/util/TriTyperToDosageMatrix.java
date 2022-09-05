@@ -441,7 +441,7 @@ public class TriTyperToDosageMatrix {
                 m_gg[i].load(datasetsettings.get(i).genotypeLocation, datasetsettings.get(i).snpmapFileLocation, datasetsettings.get(i).snpFileLocation);
 
                 String gte = datasetsettings.get(i).genotypeToExpressionCoupling;
-                if (gte != null) {
+                if (gte != null && Gpio.exists(gte)) {
                     TextFile tf = null;
 
                     tf = new TextFile(gte, TextFile.R);
@@ -485,7 +485,10 @@ public class TriTyperToDosageMatrix {
                 TextFile tf = new TextFile(dataset.genotypeToExpressionCoupling, TextFile.R);
                 String[] elems = tf.readLineElems(TextFile.tab);
                 while (elems != null) {
-                    allowedSamples.add(elems[0]);
+                    String sample = elems[0];
+                    if (m_gg[d].getIndividualId(sample) != null && m_gg[d].getIndividualId(sample) > -1) {
+                        allowedSamples.add(elems[0]);
+                    }
                     elems = tf.readLineElems(TextFile.tab);
                 }
                 tf.close();
@@ -498,9 +501,28 @@ public class TriTyperToDosageMatrix {
         System.out.println("Creating sample index..");
         HashMap<String, Integer> sampleIdMap = new HashMap<String, Integer>();
         int sampleCounter = 0;
+
+        ArrayList<HashMap<String, String>> sampleIdReplacement = new ArrayList<>();
+
         for (int i = 0; i < allowedSamplesPerDs.size(); i++) {
             HashSet<String> samplesInDs = allowedSamplesPerDs.get(i);
+            HashMap<String, String> replacements = new HashMap<String, String>();
+            sampleIdReplacement.add(replacements);
+            int dupctr = 1;
             for (String s : samplesInDs) {
+                if (sampleIdMap.containsKey(s)) {
+                    String orig = s;
+                    String tmp = s;
+                    while (sampleIdMap.containsKey(tmp)) {
+                        System.err.println("Warning detected duplicate sample ID: " + s + " in dataset " + datasetsettings.get(i).name);
+                        tmp = datasetsettings.get(i).name + "_" + s + "_" + dupctr;
+                        System.err.println("Trying replacement: " + tmp);
+                        dupctr++;
+                    }
+                    replacements.put(orig, tmp);
+                    s = tmp;
+                    dupctr++;
+                }
                 sampleIdMap.put(s, sampleCounter);
                 sampleCounter++;
             }
@@ -564,7 +586,6 @@ public class TriTyperToDosageMatrix {
             }
             System.out.println(snpsToQuery.size() + " SNPs remain after filtering for SNP confinement list");
 
-
             snpsToQuery = sortSNPs(snpsToQuery, sortbyId, m_gg);
             System.out.println(snpsToQuery.size() + " SNPs to output");
 
@@ -608,7 +629,7 @@ public class TriTyperToDosageMatrix {
                 snplogheader += "\t" + datasetsettings.get(d).name + "-CR";
                 snplogheader += "\t" + datasetsettings.get(d).name + "-HWEP";
             }
-            snplog.write(snplogheader);
+            snplog.writeln(snplogheader);
 
             for (int snpctr = 0; snpctr < snpsToQuery.size(); snpctr++) {
                 String snp = snpsToQuery.get(snpctr);
@@ -702,6 +723,7 @@ public class TriTyperToDosageMatrix {
                         boolean flipalleles = flip[d];
                         String[] individuals = m_gg[d].getIndividuals();
                         HashSet<String> allowedInds = allowedSamplesPerDs.get(d);
+                        HashMap<String, String> dsSampleIdReplacement = sampleIdReplacement.get(d);
 
                         double[] dosages = null;
 
@@ -722,6 +744,9 @@ public class TriTyperToDosageMatrix {
                         for (int i = 0; i < individuals.length; i++) {
                             String ind = individuals[i];
                             if (allowedInds.contains(ind)) {
+                                if (dsSampleIdReplacement.containsKey(ind)) {
+                                    ind = dsSampleIdReplacement.get(ind);
+                                }
                                 Integer newId = sampleIdMap.get(ind);
                                 if (newId != null) {
                                     if (genotypes[i] == -1) {
