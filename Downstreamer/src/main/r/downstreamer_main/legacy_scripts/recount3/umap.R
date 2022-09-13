@@ -124,8 +124,8 @@ dev.off()
 
 
 locator(n =2, type = "l")
-
-
+cluster1 <- locator(n =2, type = "l")
+cluster2 <- locator(n =2, type = "l")
 
 
 write.table(umapAndMeta,file = "umaptest.txt", sep = "\t", quote = F, col.names = NA)
@@ -164,3 +164,184 @@ dev.off()
 
 
 
+
+
+#smartseq plots
+
+someSmartSeqStudies <- read.delim("selectionSmartseqStudies.txt", header = F)[,1]
+str(someSmartSeqStudies)
+
+someSmartSeqSamples <- read.delim("smartseqSamples.txt", header = T)[,1]
+str(someSmartSeqSamples)
+
+umapAndMeta$smartseqcol <- defaultCol
+umapAndMeta$smartseqcol[umapAndMeta$study %in% someSmartSeqStudies] <- "pink"
+umapAndMeta$smartseqcol[umapAndMeta$Row.names %in% someSmartSeqSamples] <- "pink"
+
+umapAndMeta$plotOrdersq <- order(umapAndMeta$smartseqcol != defaultCol)
+
+
+par(mar = c(3,5,0.1,0.1), xpd = NA)
+plot(umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP1"], umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP2"], col = umapAndMeta$smartseqcol[umapAndMeta$plotOrderTissues], cex = 0.2, pch = 16)
+
+
+#instestine clusters
+
+umapAndMeta$intestineCluster <- ""
+umapAndMeta$intestineCluster[umapAndMeta$UMAP1 >= cluster1$x[1] & umapAndMeta$UMAP1 <= cluster1$x[2] & umapAndMeta$UMAP2 >= cluster1$y[1] & umapAndMeta$UMAP2 <= cluster1$y[2]] <- "c1"
+umapAndMeta$intestineCluster[umapAndMeta$UMAP1 >= cluster2$x[1] & umapAndMeta$UMAP1 <= cluster2$x[2] & umapAndMeta$UMAP2 >= cluster2$y[1] & umapAndMeta$UMAP2 <= cluster2$y[2]] <- "c2"
+table(umapAndMeta$intestineCluster)
+
+table(factor(umapAndMeta$umapFactor[umapAndMeta$intestineCluster=="c1"]))
+table(factor(umapAndMeta$umapFactor[umapAndMeta$intestineCluster=="c2"]))
+
+table(factor(umapAndMeta$class[umapAndMeta$intestineCluster=="c1"]))
+table(factor(umapAndMeta$class[umapAndMeta$intestineCluster=="c2"]))
+
+a <- as.data.frame(table(paste(umapAndMeta$Cohort, umapAndMeta$class)[umapAndMeta$intestineCluster=="c1"]))
+b <- as.data.frame(table(paste(umapAndMeta$Cohort, umapAndMeta$class)[umapAndMeta$intestineCluster=="c2"]))
+
+
+table(paste(umapAndMeta$Cohort, umapAndMeta$class)[umapAndMeta$intestineCluster!=""], umapAndMeta$intestineCluster[umapAndMeta$intestineCluster!=""])
+
+str(a)
+c <- merge(a,b,by = 0, all = T)
+c
+
+load("metadata_gtex.Rda", verbose = T)
+View(metadata_gtex)
+
+
+gtexTansverse <- umapAndMeta[umapAndMeta$study == "GTEx" & umapAndMeta$Tissue2 == "Transverse" & umapAndMeta$intestineCluster != "",]
+
+rownames(gtexTansverse) <- gtexTansverse$Row.names
+
+rownames(metadata_gtex) <- metadata_gtex$external_id
+
+dim(gtexTansverse)
+gtexTansverse <- merge(gtexTansverse, metadata_gtex[,!colnames(metadata_gtex) %in% colnames(gtexTansverse)], by = 0)
+dim(gtexTansverse)
+
+table(gtexTansverse$gtex.smatsscr, gtexTansverse$intestineCluster)
+
+fisher.test(table(gtexTansverse$gtex.smatsscr, gtexTansverse$intestineCluster))
+grep("MHBCTINF", colnames(gtexTansverse), ignore.case = T)
+
+
+
+
+numCols <- colnames(gtexTansverse)[unlist(lapply(gtexTansverse, is.numeric))  ]
+
+colName <-  "sra.paired_nominal_length"
+clusterCompare <- sapply(numCols, function(colName){
+  #print(colName)
+  if(!all(is.na(gtexTansverse[,colName])) & sd(gtexTansverse[,colName], na.rm =T) > 0  ){
+    t.test(gtexTansverse[,colName] ~ gtexTansverse$intestineCluster)$p.value
+  }
+  
+})
+clusterCompare <- unlist(clusterCompare)
+clusterCompare2 <- clusterCompare[grep("PC_", names(clusterCompare), invert = T)]
+sort(clusterCompare2, decreasing = T)
+boxplot(gtexTansverse$`recount_qc.aligned_reads%.chrx` ~ gtexTansverse$intestineCluster)
+boxplot(gtexTansverse$`recount_qc.aligned_reads%.chrx` ~ paste0(gtexTansverse$intestineCluster, "_",gtexTansverse$gtex.sex))
+boxplot(gtexTansverse$`recount_qc.aligned_reads%.chrm` ~ gtexTansverse$intestineCluster)
+boxplot(gtexTansverse$`` ~ gtexTansverse$intestineCluster)
+
+boxplot(gtexTansverse$`recount_qc.star.number_of_reads_unmapped:_other_both` ~ gtexTansverse$intestineCluster)
+
+boxplot(gtexTansverse$`gtex.smtsisch` ~ gtexTansverse$intestineCluster)
+boxplot(gtexTansverse$`CnvAutoCor` ~ gtexTansverse$intestineCluster)
+
+#save(gtexTansverse, file =  "gtexTansverse.RData")
+load("gtexTansverse.RData")
+
+
+str(row.names(gtexTansverse))
+str(gtexTansverse$Row.names)
+str(exp)
+expgT <- exp[,gtexTansverse$Row.names]
+save(expgT, file = "expgT.RData")
+load( "expgT.RData")
+
+
+colnames(expgT)
+expgT <- t(expgT)
+all(rownames(expgT) == gtexTansverse$Row.names)
+
+x <- expgT[,1]
+
+diffExp <- apply(expgT, 2, function(x){
+  t.test(x ~gtexTansverse$intestineCluster)$statistic
+})
+hist(-log10(diffExp))
+names(diffExp)[order(diffExp)[1:100]]
+cat(sub("\\..+","",names(diffExp)[order(diffExp, decreasing = T)[1:200]]), sep = "\n")
+
+load("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Fibroblasts.rda", verbose = T)
+str(fibroblasts)
+
+load("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/BloodVessels.rda", verbose = T)
+
+
+
+
+minSamplesTraining <- 50
+maxFractionOfStudy <- 0.8
+
+
+umapAndMetaClassified <- umapAndMeta[!is.na(umapAndMeta$umapFactor),]
+umapAndMetaClassified$training <- FALSE
+
+tissueClass <- levels(umapAndMetaClassified$umapFactor)[2]
+study <- "GTEx"
+
+set.seed(42)
+#for each tissue slecect samples for training
+for(tissueClass in levels(umapAndMetaClassified$umapFactor)){
+  thisTissueSamples <- umapAndMetaClassified$umapFactor==tissueClass
+  studiesForThisTissue <- unique(umapAndMetaClassified$study[thisTissueSamples])
+  numberOfStudies <- length(studiesForThisTissue)
+  numberOfSamplesPerStudy <- ceiling(minSamplesTraining / numberOfStudies)
+  print(paste(tissueClass, length(studiesForThisTissue), numberOfSamplesPerStudy, sep = " - "))
+  #for each studies put samples to training or test
+  for(study in studiesForThisTissue){
+    
+    thisTissueAndStudySamples <- thisTissueSamples & umapAndMetaClassified$study == study
+    thisTissueAndStudySamplesCount <- sum(thisTissueAndStudySamples)
+    
+    #Don't select more samples from study then the study has and also no more then set fraction. Do floor to put studies with single sample to testset
+    potentialMax <- floor(thisTissueAndStudySamplesCount * maxFractionOfStudy)
+    numberTrainingSamplesThisStudy <- if(potentialMax > numberOfSamplesPerStudy) numberOfSamplesPerStudy  else potentialMax
+    if(numberTrainingSamplesThisStudy > 0){
+        #The which will get all indices for the samples of this study-tissue combination. These are then samples for the samples used for training
+        trainingSamplesThisStudy <- sample(which(thisTissueAndStudySamples), numberTrainingSamplesThisStudy)
+        #Set selected to TRUE
+        umapAndMetaClassified$training[trainingSamplesThisStudy] <- TRUE
+    }
+    
+    
+   #print(paste0(thisTissueAndStudySamplesCount, " - ", numberTrainingSamplesThisStudy))
+  }
+  
+}
+
+sum(umapAndMetaClassified$training)
+
+umapAndMetaClassifiedTraining <- umapAndMetaClassified[umapAndMetaClassified$training,]
+table(umapAndMetaClassifiedTraining$umapFactor)
+umapAndMetaClassifiedTest <- umapAndMetaClassified[!umapAndMetaClassified$training,]
+dim(umapAndMetaClassifiedTest)
+
+
+
+cfit <- cv.glmnet(x = as.matrix(umapAndMetaClassifiedTraining[,paste0("PC_",1:compsToUse)]), y = umapAndMetaClassifiedTraining$umapFactor, family = "multinomial", type.measure = "class", alpha=1, nlambda=100)
+best_lambda <- cfit$lambda.min
+cfit
+
+
+
+fibTraining <- fibroblasts$Row.names
+bvTraining <-  bloodVessels$Row.names   
+bvTraining
+unique(bvTraining)
