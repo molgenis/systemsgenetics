@@ -238,7 +238,7 @@ public class PathwayEnrichments {
 			inplaceDetermineRegressionResiduals(geneZscoresNullGwasCorrelation, geneLengths);
 			inplaceDetermineRegressionResiduals(geneZscoresNullGwasNullBetas, geneLengths);
 
-			geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+			geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz").getAbsolutePath());
 		} else if (covariatesToCorrect != null) {
 
 			covariatesToCorrect = covariatesToCorrect.viewRowSelection(sharedGenes);
@@ -271,7 +271,7 @@ public class PathwayEnrichments {
 			inplaceDetermineRegressionResiduals(geneZscoresNullGwasCorrelation, finalCovariates);
 			inplaceDetermineRegressionResiduals(geneZscoresNullGwasNullBetas, finalCovariates);
 
-			geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+			geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz").getAbsolutePath());
 		}
 
 		// Determine which genes will be merged to metagenes based on their genetic correlation
