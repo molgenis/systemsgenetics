@@ -21,6 +21,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Collection of runners that handle conversion of Depict 2 related files.
@@ -63,9 +64,9 @@ public class DownstreamerConverters {
 
 		if (variantsWithDuplicates.size() > 0) {
 
-			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsDuplicates.txt");
+			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsDuplicates.txt.gz");
 
-			final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+			final CSVWriter excludedVariantWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(excludedVariantsFile)))), '\t', '\0', '\0', "\n");
 			final String[] outputLine = new String[1];
 			outputLine[0] = "ExcludedVariants";
 			excludedVariantWriter.writeNext(outputLine);
@@ -134,7 +135,8 @@ public class DownstreamerConverters {
 
 			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsNaN.txt");
 
-			final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+			final CSVWriter excludedVariantWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(excludedVariantsFile)))), '\t', '\0', '\0', "\n");
+
 			final String[] outputLine = new String[1];
 			outputLine[0] = "ExcludedVariants";
 			excludedVariantWriter.writeNext(outputLine);
@@ -280,7 +282,7 @@ public class DownstreamerConverters {
 			matrix = matrix.viewColSelection(columnsToExtract);
 		}
 
-		matrix.save(options.getOutputBasePath() + ".txt");
+		matrix.save(options.getOutputBasePath() + ".txt.gz");
 
 	}
 
@@ -314,7 +316,7 @@ public class DownstreamerConverters {
 		LOGGER.info("Done converting matrix to zscores, writing results");
 
 		// Write output
-		matrix.save(options.getOutputBasePath() + ".txt");
+		matrix.save(options.getOutputBasePath() + ".txt.gz");
 
 		LOGGER.info("Done");
 	}
@@ -530,7 +532,7 @@ public class DownstreamerConverters {
 
 					if (variantsWithDuplicates.size() > 0) {
 						File excludedVariantsFile = new File(options.getOutputBasePath() + "_" + summStat.getTrait() + "_excludedVariantsDuplicates.txt");
-						final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+						final CSVWriter excludedVariantWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(excludedVariantsFile)))), '\t', '\0', '\0', "\n");
 						final String[] outputLine = new String[1];
 						outputLine[0] = "ExcludedVariants";
 						excludedVariantWriter.writeNext(outputLine);
@@ -642,7 +644,7 @@ public class DownstreamerConverters {
 
 			File excludedVariantsFile = new File(options.getOutputBasePath() + "_excludedVariantsNaN.txt");
 
-			final CSVWriter excludedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+			final CSVWriter excludedVariantWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(excludedVariantsFile)))), '\t', '\0', '\0', "\n");
 			final String[] outputLine = new String[1];
 			outputLine[0] = "ExcludedVariants";
 			excludedVariantWriter.writeNext(outputLine);
@@ -666,8 +668,7 @@ public class DownstreamerConverters {
 			LOGGER.info("Loading genotype information to convert position  summary statistics to variant IDs");
 
 			File excludedVariantsFile = new File(options.getOutputBasePath() + "_updatedVariantIds.txt");
-
-			final CSVWriter updatedVariantWriter = new CSVWriter(new FileWriter(excludedVariantsFile), '\t', '\0', '\0', "\n");
+			final CSVWriter updatedVariantWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(excludedVariantsFile)))), '\t', '\0', '\0', "\n");
 			final String[] outputLine = new String[2];
 			outputLine[0] = "Orginal";
 			outputLine[1] = "Updated";
@@ -794,7 +795,7 @@ public class DownstreamerConverters {
 
 		String matrixPath = options.getGwasZscoreMatrixPath();
 
-		final boolean binary = !(matrixPath.endsWith(".txt") || matrixPath.endsWith(".gz") || matrixPath.endsWith(".tsv"));
+		final boolean binary = !(matrixPath.endsWith(".txt") || matrixPath.endsWith("txt.gz") || matrixPath.endsWith(".tsv") || matrixPath.endsWith(".tsv.gz"));
 
 		DoubleMatrixDataset<String, String> matrix;
 

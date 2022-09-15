@@ -9,11 +9,10 @@ import java.io.File;
 import java.util.Objects;
 
 /**
- *
  * @author patri
  */
 public class PathwayDatabase {
-	
+
 	private final String name;
 	private final String location;
 
@@ -21,7 +20,7 @@ public class PathwayDatabase {
 		this.name = name;
 		this.location = location;
 	}
-	
+
 	public String getName() {
 		return name;
 	}
@@ -57,9 +56,15 @@ public class PathwayDatabase {
 		}
 		return true;
 	}
-	
-	public boolean exist(){
-		return new File(location + ".dat").canRead();
+
+	public boolean exist() {
+		if (location.endsWith(".dat") || location.endsWith(".dat.gz")) {
+			return new File(location).canRead();
+		}
+		if (new File(location + ".dat").canRead() || new File(location + ".dat.gz").canRead()) {
+			return true;
+		}
+		return false;
 	}
-	
+
 }

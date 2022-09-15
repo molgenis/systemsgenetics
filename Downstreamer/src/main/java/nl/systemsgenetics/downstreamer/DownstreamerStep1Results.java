@@ -6,14 +6,15 @@
 package nl.systemsgenetics.downstreamer;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
+
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
- *
  * @author patri
  */
 public class DownstreamerStep1Results {
@@ -35,8 +36,8 @@ public class DownstreamerStep1Results {
 	}
 
 	public static DownstreamerStep1Results loadFromDisk(String run1BasePath) throws IOException, Exception {
-		if (!new File(run1BasePath + "_genePvalues.dat").exists()) {
-			throw new RuntimeException("Could not find gene pvalues at: " + run1BasePath + "_genePvalues.dat");
+		if (!new File(run1BasePath + "_genePvalues.dat").exists() && !new File(run1BasePath + "_genePvalues.dat.gz").exists()) {
+			throw new RuntimeException("Could not find gene pvalues at: " + run1BasePath + "_genePvalues.dat or " + run1BasePath + "_genePvalues.dat.gz");
 		}
 		DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(run1BasePath + "_genePvalues");
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(run1BasePath + "_genePvaluesNullGwas");
@@ -45,7 +46,14 @@ public class DownstreamerStep1Results {
 		DoubleMatrixDataset<String, String> geneMaxSnpZscore = DoubleMatrixDataset.loadDoubleBinaryData(run1BasePath + "_geneMaxSnpScores");
 		DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(run1BasePath + "_geneMaxSnpZscoresNullGwas");
 
-		DoubleMatrixDataset<String, String> geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(run1BasePath + "_geneVariantCount.txt", '\t');
+		String geneVariantCountFile = run1BasePath + "_geneVariantCount.txt";
+		if (!new File(geneVariantCountFile).canRead()) {
+			geneVariantCountFile += ".gz";
+			if (!new File(geneVariantCountFile).canRead()) {
+				throw new FileNotFoundException("Cannot find file: " + run1BasePath + "_geneVariantCount.txt or " + run1BasePath + "_geneVariantCount.txt.gz");
+			}
+		}
+		DoubleMatrixDataset<String, String> geneVariantCount = DoubleMatrixDataset.loadDoubleTextData(geneVariantCountFile, '\t');
 
 		return new DownstreamerStep1Results(genePvalues, genePvaluesNullGwas, geneVariantCount, geneMaxSnpZscore, geneMaxSnpZscoreNullGwas);
 	}
@@ -70,6 +78,5 @@ public class DownstreamerStep1Results {
 		return geneMaxSnpZscoreNullGwas;
 	}
 
-	
-	
+
 }

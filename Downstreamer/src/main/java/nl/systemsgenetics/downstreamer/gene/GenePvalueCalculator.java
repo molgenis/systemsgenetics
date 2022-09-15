@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
@@ -139,7 +140,11 @@ public class GenePvalueCalculator {
 	 * @throws java.io.IOException
 	 */
 	@SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes, int windowExtend, double maxR, int nrPermutations, long nrRescuePermutation, String outputBasePath, double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas, final File debugFolder, final File variantGeneMappingFile, final File usedVariantsPerGeneFile) throws IOException, Exception {
+	public GenePvalueCalculator(String variantPhenotypeZscoreMatrixPath, RandomAccessGenotypeData referenceGenotypes, List<Gene> genes,
+								int windowExtend, double maxR, int nrPermutations, long nrRescuePermutation, String outputBasePath,
+								double[] randomChi2, boolean correctForLambdaInflation, final int nrSampleToUseForCorrelation,
+								final int nrSamplesToUseForNullBetas, final File debugFolder,
+								final File variantGeneMappingFile, final File usedVariantsPerGeneFile) throws IOException, Exception {
 
 		this.referenceGenotypes = referenceGenotypes;
 		this.genes = genes;
@@ -159,7 +164,11 @@ public class GenePvalueCalculator {
 		this.numberRandomPhenotypes = nrSampleToUseForCorrelation + nrSamplesToUseForNullBetas;
 
 		if (usedVariantsPerGeneFile != null) {
-			variantPerGeneWriter = new CSVWriter(new FileWriter(usedVariantsPerGeneFile), '\t', '\0', '\0', "\n");
+			if (usedVariantsPerGeneFile.getName().endsWith(".gz")) {
+				variantPerGeneWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(usedVariantsPerGeneFile)))), '\t', '\0', '\0', "\n");
+			} else {
+				variantPerGeneWriter = new CSVWriter(new FileWriter(usedVariantsPerGeneFile), '\t', '\0', '\0', "\n");
+			}
 			variantPerGeneOutputLine = new String[2];
 			int c = 0;
 			variantPerGeneOutputLine[c++] = "Variant";
@@ -198,7 +207,14 @@ public class GenePvalueCalculator {
 
 		randomNormalizedPhenotypes = generateRandomNormalizedPheno(sampleHash, numberRandomPhenotypes);
 		r2zScore = new PearsonRToZscoreBinned(10000000, sampleHash.size());//10000000
-		final List<String> phenotypes = IoUtils.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPath + ".cols.txt"));
+		String variantPhenotypeZscoreMatrixPathColFile = variantPhenotypeZscoreMatrixPath + ".cols.txt";
+		if (!new File(variantPhenotypeZscoreMatrixPathColFile).canRead()) {
+			variantPhenotypeZscoreMatrixPathColFile += ".gz";
+			if (!new File(variantPhenotypeZscoreMatrixPathColFile).canRead()) {
+				throw new FileNotFoundException("Could not find file: " + variantPhenotypeZscoreMatrixPath + ".cols.txt or " + variantPhenotypeZscoreMatrixPath + ".cols.txt.gz");
+			}
+		}
+		final List<String> phenotypes = IoUtils.readMatrixAnnotations(new File(variantPhenotypeZscoreMatrixPathColFile));
 
 		numberRealPheno = phenotypes.size();
 		final int numberGenes = genes.size();
@@ -441,7 +457,7 @@ public class GenePvalueCalculator {
 
 			// Save correlation matrix
 			if (LOGGER.isDebugEnabled() & variantCorrelations.rows() > 1) {
-				variantCorrelations.save(new File(debugFolder, gene.getGene() + "_variantCorMatrix.txt"));
+				variantCorrelations.save(new File(debugFolder, gene.getGene() + "_variantCorMatrix.txt.gz"));
 			}
 
 			// Write which variants are linked to which gene
@@ -482,7 +498,7 @@ public class GenePvalueCalculator {
 
 		// Save the pruned correlation matrix to disk
 		if (LOGGER.isDebugEnabled() & variantCorrelationsPrunedRows > 1) {
-			variantCorrelationsPruned.save(new File(debugFolder, gene.getGene() + "_variantCorMatrixPruned.txt"));
+			variantCorrelationsPruned.save(new File(debugFolder, gene.getGene() + "_variantCorMatrixPruned.txt.gz"));
 		}
 		timeStop = System.currentTimeMillis();
 		timeInCreatingGenotypeCorrelationMatrix += (timeStop - timeStart);
@@ -566,7 +582,7 @@ public class GenePvalueCalculator {
 		}
 
 		if (LOGGER.isDebugEnabled()) {
-			geneVariantPhenotypeMatrix.save(new File(debugFolder, gene.getGene() + "_variantPvalues.txt"));
+			geneVariantPhenotypeMatrix.save(new File(debugFolder, gene.getGene() + "_variantPvalues.txt.gz"));
 		}
 
 		// <NOTE OBB> Why not just correct for lambda inflation once?
@@ -578,7 +594,7 @@ public class GenePvalueCalculator {
 				}
 			}
 			if (LOGGER.isDebugEnabled()) {
-				geneVariantPhenotypeMatrix.save(new File(debugFolder, gene.getGene() + "_variantPvaluesLambdaCorrected.txt"));
+				geneVariantPhenotypeMatrix.save(new File(debugFolder, gene.getGene() + "_variantPvaluesLambdaCorrected.txt.gz"));
 			}
 		}
 
@@ -1091,8 +1107,13 @@ public class GenePvalueCalculator {
 	}
 
 	private static void saveEigenValues(double[] eigenValues, File file) throws IOException {
+		final CSVWriter eigenWriter;
+		if(file.getName().endsWith(".gz")){
+			eigenWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(file)))), '\t', '\0', '\0', "\n");
+		} else {
+			eigenWriter = new CSVWriter(new FileWriter(file), '\t', '\0', '\0', "\n");
+		}
 
-		final CSVWriter eigenWriter = new CSVWriter(new FileWriter(file), '\t', '\0', '\0', "\n");
 		final String[] outputLine = new String[2];
 		int c = 0;
 		outputLine[c++] = "Component";

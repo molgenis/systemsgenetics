@@ -61,7 +61,17 @@ public class DownstreamerMainAnalysis {
 
 		LOGGER.info("Prepared reference null distribution with " + Downstreamer.LARGE_INT_FORMAT.format(randomChi2.length) + " values");
 
-		File usedVariantsPerGeneFile = options.isSaveUsedVariantsPerGene() ? new File(options.getOutputBasePath() + "_usedVariantsPerGene.txt") : null;
+		File usedVariantsPerGeneFile = null;
+		if(options.isSaveUsedVariantsPerGene()){
+			String usedVariantsPerGeneFileStr = options.getOutputBasePath() + "_usedVariantsPerGene.txt";
+			if(!new File(usedVariantsPerGeneFileStr).canRead()){
+				usedVariantsPerGeneFileStr+=".gz";
+				if(!new File(usedVariantsPerGeneFileStr).canRead()){
+					throw new FileNotFoundException("File not found: "+options.getOutputBasePath() + "_usedVariantsPerGene.txt or "+options.getOutputBasePath() + "_usedVariantsPerGene.txt.gz");
+				}
+			}
+			usedVariantsPerGeneFile = new File(usedVariantsPerGeneFileStr);
+		}
 
 		GenePvalueCalculator gpc = new GenePvalueCalculator(options.getGwasZscoreMatrixPath(),
 				referenceGenotypeData,
@@ -87,13 +97,13 @@ public class DownstreamerMainAnalysis {
 
 		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
 		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
-		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt.gz");
 		geneMaxSnpZscore.saveBinary(options.getOutputBasePath() + "_geneMaxSnpScores");
 		geneMaxSnpZscoreNullGwas.saveBinary(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
 
 		if (LOGGER.isDebugEnabled()) {
-			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt");
-			gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt");
+			gpc.getGeneMaxPermutationCount().save(options.getOutputBasePath() + "_geneMaxPermutationUsed.txt.gz");
+			gpc.getGeneRuntime().save(options.getOutputBasePath() + "_geneRuntime.txt.gz");
 		}
 		LOGGER.info("Gene p-values saved. If needed the analysis can be resummed from this point using --mode STEP2 and exactly the same output path and genes file");
 

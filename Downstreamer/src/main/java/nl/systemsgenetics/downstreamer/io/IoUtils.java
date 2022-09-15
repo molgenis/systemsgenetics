@@ -55,12 +55,27 @@ public class IoUtils {
 
 		final List<String> variantsInZscoreMatrix;
 		if (variantSubset == null) {
-			variantsInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".rows.txt"));
+			String varSubSetFile = options.getGwasZscoreMatrixPath() + ".rows.txt";
+			if (!new File(varSubSetFile).canRead()) {
+				varSubSetFile += ".gz";
+				if (!new File(varSubSetFile).canRead()) {
+					throw new FileNotFoundException("Cannot find file: " + options.getGwasZscoreMatrixPath() + ".rows.txt or " + options.getGwasZscoreMatrixPath() + ".rows.txt.gz");
+				}
+			}
+			variantsInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(varSubSetFile));
 		} else {
 			variantsInZscoreMatrix = new ArrayList<>(variantSubset);
 		}
 
-		final List<String> phenotypesInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(options.getGwasZscoreMatrixPath() + ".cols.txt"));
+		String gwasColFile = options.getGwasZscoreMatrixPath() + ".cols.txt";
+		if (!new File(gwasColFile).canRead()) {
+			gwasColFile += ".gz";
+			if (!new File(gwasColFile).canRead()) {
+				throw new FileNotFoundException("Cannot find file: " + options.getGwasZscoreMatrixPath() + ".cols.txt or " + options.getGwasZscoreMatrixPath() + ".cols.txt.gz");
+			}
+		}
+
+		final List<String> phenotypesInZscoreMatrix = IoUtils.readMatrixAnnotations(new File(gwasColFile));
 
 		LOGGER.info("Number of phenotypes in GWAS matrix: " + Downstreamer.LARGE_INT_FORMAT.format(phenotypesInZscoreMatrix.size()));
 		LOGGER.info("Number of variants in GWAS matrix: " + Downstreamer.LARGE_INT_FORMAT.format(variantsInZscoreMatrix.size()));
@@ -377,7 +392,7 @@ public class IoUtils {
 
 		@Override
 		public boolean accept(File dir, String name) {
-			return name.toLowerCase().endsWith("_leads.txt");
+			return (name.toLowerCase().endsWith("_leads.txt") || name.toLowerCase().endsWith("_leads.txt.gz"));
 		}
 
 	}

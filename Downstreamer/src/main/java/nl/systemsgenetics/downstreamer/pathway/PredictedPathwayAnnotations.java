@@ -156,7 +156,7 @@ public class PredictedPathwayAnnotations {
 			}
 
 			pathwayMatrix.viewColSelection(termsIncludedInOutput).saveBinary(options.getOutputBasePath() + "_" + pd.getName());
-			geneCountMatrix.save(options.getOutputBasePath() + "_" + pd.getName() + "_counts.txt");
+			geneCountMatrix.save(options.getOutputBasePath() + "_" + pd.getName() + "_counts.txt.gz");
 
 		}
 

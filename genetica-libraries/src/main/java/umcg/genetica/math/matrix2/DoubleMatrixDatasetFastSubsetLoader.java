@@ -28,6 +28,13 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 	public DoubleMatrixDatasetFastSubsetLoader(String fileName) throws IOException {
 		this.fileName = fileName;
 
+		// strip .dat or .dat.gz from filename
+		if (fileName.endsWith(".dat")) {
+			fileName = fileName.substring(0, fileName.length() - 4);
+		} else if (fileName.endsWith(".dat.gz")) {
+			fileName = fileName.substring(0, fileName.length() - 7);
+		}
+
 		//Now load the row and column identifiers from files
 		originalRowMap = null;
 		originalColMap = null;

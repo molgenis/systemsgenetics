@@ -59,7 +59,7 @@ public class CorrelateExpressionToPredictions {
 		output.getCol(0).assign(samplePredictionZscores.getCol(0));
 		output.getCol(1).assign(correlations.getCol(0));
 		
-		output.save(options.getOutputBasePath() + options.getX() + "vsTissueEnrichment.txt");
+		output.save(options.getOutputBasePath() + options.getX() + "vsTissueEnrichment.txt.gz");
 		
 		
 	}

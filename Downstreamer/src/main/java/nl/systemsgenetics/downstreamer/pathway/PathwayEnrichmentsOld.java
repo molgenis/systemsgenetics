@@ -9,6 +9,7 @@ import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleSingularValueDecomposition;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
+
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.downstreamer.Downstreamer;
@@ -54,7 +56,6 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
 
 /**
- *
  * @author patri
  */
 @Deprecated
@@ -157,8 +158,8 @@ public class PathwayEnrichmentsOld {
 			geneZscoresNullGwasCorrelationPathwayMatched.normalizeColumns();
 			geneZscoresNullGwasNullBetasPathwayMatched.normalizeColumns();
 
-			genePathwayZscores.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
-			geneZscoresPathwayMatched.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt");
+			genePathwayZscores.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz");
+			geneZscoresPathwayMatched.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz");
 
 			LinkedHashMap<String, Integer> singleColMap = new LinkedHashMap<>(1);
 			singleColMap.put("B1", 0);
@@ -310,8 +311,8 @@ public class PathwayEnrichmentsOld {
 				}
 			}
 
-			enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_betas" : "_betasExHla") + ".txt");
-			enrichmentNull.save(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (hlaGenesToExclude == null ? "_betas" : "_betasExHla") + ".txt");
+			enrichment.save(outputBasePath + "_" + pathwayDatabase.getName() + "_Enrichment" + (hlaGenesToExclude == null ? "_betas" : "_betasExHla") + ".txt.gz");
+			enrichmentNull.save(outputBasePath + "_" + pathwayDatabase.getName() + "_EnrichmentNull" + (hlaGenesToExclude == null ? "_betas" : "_betasExHla") + ".txt.gz");
 
 //				DoubleMatrix2D enrichmentMatrix = enrichment.getMatrix();
 //				DoubleMatrix2D enrichmentNullMatrix = enrichmentNull.getMatrix();
@@ -371,7 +372,6 @@ public class PathwayEnrichmentsOld {
 	}
 
 	/**
-	 *
 	 * @param pathwayDatabases
 	 * @param outputBasePath
 	 * @param enrichments
@@ -412,7 +412,14 @@ public class PathwayEnrichmentsOld {
 
 			for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
 
-				final PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayDatabase.getLocation() + ".colAnnotations.txt"));
+				String pwAnnotationFile = pathwayDatabase.getLocation() + ".colAnnotations.txt";
+				if (!new File(pwAnnotationFile).canRead()) {
+					pwAnnotationFile += ".gz";
+					if (!new File(pwAnnotationFile).canRead()) {
+						throw new FileNotFoundException("Cannot find file: " + pathwayDatabase.getLocation() + ".colAnnotations.txt or " + pathwayDatabase.getLocation() + ".colAnnotations.txt.gz");
+					}
+				}
+				final PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pwAnnotationFile));
 				final int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 				final DoubleMatrixDataset<String, String> databaseEnrichment = enrichments.get(pathwayDatabase);
 				final ArrayList<String> geneSets = databaseEnrichment.getRowObjects();
@@ -678,8 +685,8 @@ public class PathwayEnrichmentsOld {
 
 		final SimpleRegression regression = new SimpleRegression();
 
-		for (int i = geneCount; --i >= 0;) {
-			for (int j = i + 1; --j >= 0;) {
+		for (int i = geneCount; --i >= 0; ) {
+			for (int j = i + 1; --j >= 0; ) {
 				regression.clear();
 
 				if (i == j) {

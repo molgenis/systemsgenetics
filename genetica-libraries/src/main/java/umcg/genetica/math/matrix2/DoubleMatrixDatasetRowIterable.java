@@ -29,6 +29,26 @@ public class DoubleMatrixDatasetRowIterable implements Iterable<double[]> {
 
 	public DoubleMatrixDatasetRowIterable(String fileName) throws IOException {
 
+		File fileBinary = null;
+		if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
+			fileBinary = new File(fileName);
+			if (fileName.endsWith(".dat")) {
+				fileName = fileName.substring(0, fileName.length() - 4);
+			} else if (fileName.endsWith(".dat.gz")) {
+				fileName = fileName.substring(0, fileName.length() - 7);
+			}
+		} else {
+			if (new File(fileName + ".dat").exists()) {
+				fileBinary = new File(fileName + ".dat");
+			} else if (new File(fileName + ".dat.gz").exists()) {
+				fileBinary = new File(fileName + ".dat.gz");
+			}
+		}
+
+		if (fileBinary == null || !fileBinary.exists()) {
+			throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
+		}
+
 		//Now load the row and column identifiers from files
 		if (new File(fileName + ".rows.txt").exists()) {
 			originalRowMap = loadIdentifiers(fileName + ".rows.txt");
@@ -44,21 +64,6 @@ public class DoubleMatrixDatasetRowIterable implements Iterable<double[]> {
 			originalColMap = loadIdentifiers(fileName + ".cols.txt.gz");
 		} else {
 			throw new FileNotFoundException("File not found: " + fileName + ".cols.txt or " + fileName + ".cols.txt.gz");
-		}
-
-		File fileBinary = null;
-		if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
-			fileBinary = new File(fileName);
-		} else {
-			if (new File(fileName + ".dat").exists()) {
-				fileBinary = new File(fileName + ".dat");
-			} else if (new File(fileName + ".dat.gz").exists()) {
-				fileBinary = new File(fileName + ".dat.gz");
-			}
-		}
-
-		if (fileBinary == null || !fileBinary.exists()) {
-			throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
 		}
 
 		if (fileBinary.getName().endsWith(".dat.gz")) {
