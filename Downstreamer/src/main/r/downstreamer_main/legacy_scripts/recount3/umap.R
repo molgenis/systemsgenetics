@@ -14,40 +14,33 @@ setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 tissueCol <- read.delim("umap/col.txt", row.names = 1, na.strings = "")
 
 load(file = "DataForPredictions.RData")
+rownames(pcsAndMeta) <- pcsAndMeta$Row.names
+load(file = "combinedMeta_2022_09_15.RData", verbose = T)
 
-#load(file = "combinedMeta_2022_08_30.RData", verbose = T)
-#str(combinedMeta)
-#updatedAnnotations <- combinedMeta[,c("Tissue",	"Tissue2",	"Cellline",	"CelllineName",	"Cancer",	"Cohort", "Fetal")]
 
-#all(rownames(pcsAndMeta) %in% rownames(updatedAnnotations))
-#updatedAnnotations <- updatedAnnotations[rownames(pcsAndMeta),]
-#all(rownames(pcsAndMeta) == rownames(updatedAnnotations))
+colnamesToUpdate <- colnames(pcsAndMeta)[colnames(pcsAndMeta) %in% colnames(combinedMeta)]
+all(rownames(pcsAndMeta) %in% rownames(combinedMeta))
+pcsAndMeta[,colnamesToUpdate] <- combinedMeta[rownames(pcsAndMeta),colnamesToUpdate]
 
-#pcsAndMeta[,colnames(updatedAnnotations)] <- updatedAnnotations
-
-#pcsAndMeta$selectedSamples <- !pcsAndMeta$excludeBasedOnPredictionCellline2 & !pcsAndMeta$excludeBasedOnPredictionCancer & !(!is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer) & !(!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline)
 
 table(pcsAndMeta$selectedSamples, useNA = "a")
 
 
 clusterAnnotations <- read.delim("umap/annotationsBasedOnOldUmap.txt", row.names = 1)
-pcsAndMeta <- merge(pcsAndMeta, clusterAnnotations, by = 0, all.x = T)
-rownames(pcsAndMeta) <- pcsAndMeta$Row.names
-table(pcsAndMeta$ClusterAnnotation)
+samplesWithClusterAnnotation <- rownames(pcsAndMeta)[rownames(pcsAndMeta) %in% rownames(clusterAnnotations)]
 
-
-
-
-#pcsAndMeta[!is.na(pcsAndMeta$study) & (pcsAndMeta$study== "ERP104864") & (grepl("synovium", pcsAndMeta$sra.sample_attributes, ignore.case=T)),"Tissue2"]= ""
-
+pcsAndMeta$ClusterAnnotation <- NA
+pcsAndMeta[samplesWithClusterAnnotation, "ClusterAnnotation"] <- clusterAnnotations[samplesWithClusterAnnotation,"ClusterAnnotation"]
+table(pcsAndMeta$ClusterAnnotation, useNA = "a")
 
 tissueSamples <- pcsAndMeta[pcsAndMeta$selectedSamples,]
 
 tissueSamples$class <- tissueSamples$Tissue
 
-hasT2 <- tissueSamples$Tissue2 != ""
-tissueSamples$class[hasT2] <- paste0(tissueSamples$class[hasT2], "-", tissueSamples$Tissue2[hasT2])
 
+hasT2 <- tissueSamples$Tissue2 != ""
+tissueSamples$class[hasT2] <- paste0(tissueSamples$Tissue[hasT2], "-", tissueSamples$Tissue2[hasT2])
+table(tissueSamples$class)
 isFetal <- !is.na(tissueSamples$Fetal) & tissueSamples$Fetal
 tissueSamples$class[isFetal] <- paste0(tissueSamples$class[isFetal], "-Fetal")
 
@@ -66,7 +59,7 @@ mapping <- read.delim("umap/tissuesMapping.txt")
 str(mapping)
 
 all(tissueSamples$class %in% mapping$Class)
-
+tissueSamples$class[!tissueSamples$class %in% mapping$Class]
 
 tissueSamples$umapFactor <- as.factor(mapping$ClassificationClass[match(tissueSamples$class, mapping$Class)])
 
@@ -95,11 +88,11 @@ umapInput <- as.matrix(tissueSamples[,paste0("PC_",1:compsToUseForUmap)])
 
 sampleUmap <- umap(
   umapInput, 
-  n_epochs = 1000, 
+  n_epochs = 300, 
   init = init, 
   n_neighbors = 500, 
   min_dist = 2, init_sdev = 1e-4, learning_rate = 1, 
-  spread = 15, 
+  spread = 20, 
   bandwidth = 10,
   scale = "scale",
   local_connectivity = 1,
@@ -109,10 +102,12 @@ sampleUmap <- umap(
 rownames(sampleUmap) <- rownames(tissueSamples)
 colnames(sampleUmap) <- c("UMAP1", "UMAP2")
 umapAndMeta <- merge(sampleUmap, tissueSamples, by = 0)
+rownames(umapAndMeta) <- umapAndMeta$Row.names
 dim(umapAndMeta)
 
 
-
+#save(sampleUmap, file = "umap/sampleUmap.RData")
+#load(file = "umap/sampleUmap.RData")
 
 
 rpng()
@@ -123,12 +118,16 @@ plot(umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP1"], umapAndMeta[umapAndMeta$
 dev.off()
 
 
+  
+
 locator(n =2, type = "l")
 cluster1 <- locator(n =2, type = "l")
 cluster2 <- locator(n =2, type = "l")
 
 
-write.table(umapAndMeta,file = "umaptest.txt", sep = "\t", quote = F, col.names = NA)
+write.table(umapAndMeta[,!grepl("PC_",colnames(umapAndMeta))],file = "umaptest.txt", sep = "\t", quote = F, col.names = NA)
+#save(umapAndMeta, file = "umaptest.RData")
+#load("umaptest.RData")
 
 #save.image( file="umap_tmp.RData")
 #load("umap_tmp.RData") 
@@ -150,7 +149,7 @@ pdf(file = "umaptest.pdf", width = 16, height = 8)
 layout(matrix(1:2,ncol = 2))
 
 par(mar = c(3,5,0.1,0.1), xpd = NA)
-plot(umapAndMeta[plotOrderTissues,"UMAP1"], umapAndMeta[plotOrderTissues,"UMAP2"], col = umapAndMeta$TissueCol[plotOrderTissues], cex = 0.4, pch = 16)
+plot(umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP1"], umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP2"], col = umapAndMeta$umapAndMeta$TissueCol[plotOrderTissues], cex = 0.4, pch = 16)
 
 par(mar = c(0,0,0,0), xpd = NA)
 plot.new()
@@ -289,8 +288,9 @@ load("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/SRA
 minSamplesTraining <- 50
 maxFractionOfStudy <- 0.8
 
-
+#Take only samples that have an annotation
 umapAndMetaClassified <- umapAndMeta[!is.na(umapAndMeta$umapFactor),]
+#First put all in test, algorithm will put some 
 umapAndMetaClassified$training <- FALSE
 
 tissueClass <- levels(umapAndMetaClassified$umapFactor)[2]
@@ -334,14 +334,208 @@ umapAndMetaClassifiedTest <- umapAndMetaClassified[!umapAndMetaClassified$traini
 dim(umapAndMetaClassifiedTest)
 
 
-
-cfit <- cv.glmnet(x = as.matrix(umapAndMetaClassifiedTraining[,paste0("PC_",1:compsToUse)]), y = umapAndMetaClassifiedTraining$umapFactor, family = "multinomial", type.measure = "class", alpha=1, nlambda=100)
-best_lambda <- cfit$lambda.min
+library(glmnet)
+cfit <- cv.glmnet(x = as.matrix(umapAndMetaClassifiedTraining[,paste0("PC_",1:compsToUse)]), y = umapAndMetaClassifiedTraining$umapFactor, family = "multinomial", type.measure = "class")
 cfit
 
+rpng()
+plot(cfit) 
+dev.off()
 
 
-fibTraining <- fibroblasts$Row.names
-bvTraining <-  bloodVessels$Row.names   
-bvTraining
-unique(bvTraining)
+
+assess.glmnet(cfit, newx = as.matrix(umapAndMetaClassifiedTest[,paste0("PC_",1:compsToUse)]), newy = umapAndMetaClassifiedTest$umapFactor, family = "multinomial", type.measure = "class", keep = TRUE, alpha=1, lambda = "1se")
+
+
+
+predictionsTest <- predict(cfit, s = "lambda.1se", newx = as.matrix(umapAndMetaClassifiedTest[,paste0("PC_",1:compsToUse)]), type = "class")
+
+predictionsTestScores <- predict(cfit, s = "lambda.1se", newx = as.matrix(umapAndMetaClassifiedTest[,paste0("PC_",1:compsToUse)]), type = "response")
+predictionsTestScores <- predictionsTestScores[,,1]
+umapAndMetaClassifiedTest$predictedTissueScore <- apply(predictionsTestScores, 1, max)
+
+prop = 0.5
+
+predictionsInTest <- sapply(seq(0,1,0.05), function(prop){  
+
+  umapAndMetaClassifiedTest$predictedTissue <- predictionsTest[,1]
+  
+  
+  umapAndMetaClassifiedTest$predictedTissue[umapAndMetaClassifiedTest$predictedTissueScore <= prop] <- NA
+  
+  umapAndMetaClassifiedTest$misclasified <- FALSE
+  umapAndMetaClassifiedTest$misclasified[!is.na(umapAndMetaClassifiedTest$umapFactor) & !is.na(umapAndMetaClassifiedTest$predictedTissue) &  umapAndMetaClassifiedTest$umapFactor != umapAndMetaClassifiedTest$predictedTissue] <- TRUE
+  errors <- sum(umapAndMetaClassifiedTest$misclasified )
+  
+  umapAndMetaClassifiedTest$notPredictedBack <- FALSE
+  umapAndMetaClassifiedTest$notPredictedBack[!is.na(umapAndMetaClassifiedTest$umapFactor) & is.na(umapAndMetaClassifiedTest$predictedTissue) ] <- TRUE
+  missed <- sum(umapAndMetaClassifiedTest$notPredictedBack)
+  
+  total <- nrow(umapAndMetaClassifiedTest)
+  
+  missedPercentage <- missed / total
+  errorPercentage <- errors / total
+  
+  return(c("Threshold" = prop, "MissedPerc" = missedPercentage , "ErrorPerc" = errorPercentage ))
+  
+})
+predictionsInTest
+
+tissueClass <- levels(umapAndMetaClassified$umapFactor)[1]
+
+predictionsInTestPerTissue <- lapply(levels(umapAndMetaClassified$umapFactor), function(tissueClass){
+  predictionsInTestThisTissue <- sapply(seq(0,1,0.05), function(prop){  
+    
+    umapAndMetaClassifiedTestTissue <- umapAndMetaClassifiedTest[umapAndMetaClassifiedTest$umapFactor == tissueClass,]
+    umapAndMetaClassifiedTestTissue$predictedTissue <- predictionsTest[umapAndMetaClassifiedTest$umapFactor == tissueClass,1]
+    
+    
+    umapAndMetaClassifiedTestTissue$predictedTissue[umapAndMetaClassifiedTestTissue$predictedTissueScore <= prop] <- NA
+    
+    umapAndMetaClassifiedTestTissue$misclasified <- FALSE
+    umapAndMetaClassifiedTestTissue$misclasified[!is.na(umapAndMetaClassifiedTestTissue$umapFactor) & !is.na(umapAndMetaClassifiedTestTissue$predictedTissue) &  umapAndMetaClassifiedTestTissue$umapFactor != umapAndMetaClassifiedTestTissue$predictedTissue] <- TRUE
+    errors <- sum(umapAndMetaClassifiedTestTissue$misclasified )
+    
+    umapAndMetaClassifiedTestTissue$notPredictedBack <- FALSE
+    umapAndMetaClassifiedTestTissue$notPredictedBack[!is.na(umapAndMetaClassifiedTestTissue$umapFactor) & is.na(umapAndMetaClassifiedTestTissue$predictedTissue) ] <- TRUE
+    missed <- sum(umapAndMetaClassifiedTestTissue$notPredictedBack)
+    
+    total <- nrow(umapAndMetaClassifiedTestTissue)
+    
+    missedPercentage <- missed / total
+    errorPercentage <- errors / total
+    
+    return(c("Threshold" = prop, "MissedPerc" = missedPercentage , "ErrorPerc" = errorPercentage ))
+    
+  })
+  return(predictionsInTestThisTissue)
+})
+
+str(predictionsInTestPerTissue)
+
+layout(matrix(1:2, nrow = 1))
+plot(t(predictionsInTest[1:2,]), main = "Percentage classification missed in test dataset")
+sink <- sapply(predictionsInTestPerTissue, function(predictionsInTestThisTissue){
+  points(t(predictionsInTestThisTissue[1:2,]), type = "l",  col=adjustcolor("grey", alpha.f = 0.5))
+})
+plot(t(predictionsInTest[c(1,3),]), main = "Percentage wrong classification in test dataset")
+sink <- sapply(predictionsInTestPerTissue, function(predictionsInTestThisTissue){
+  points(t(predictionsInTestThisTissue[c(1,3),]), type = "l",  col=adjustcolor("grey", alpha.f = 0.5))
+})
+
+
+
+
+confusion <- confusion.glmnet(cfit, newx = as.matrix(umapAndMetaClassifiedTest[,paste0("PC_",1:compsToUse)]), newy = umapAndMetaClassifiedTest$umapFactor, family = "multinomial", type.measure = "class", keep = TRUE, alpha=1, lambda = "1se")
+diag(confusion) <- 0
+
+library(heatmap3)
+
+rpng()
+pdf("confusion.pdf", width = 12, height = 12)
+heatmap3(confusion, Rowv = NA, Colv = NA, balanceColor =T, scale = "none")
+dev.off()
+
+
+predictions <- predict(cfit, s = "lambda.1se", newx = as.matrix(umapAndMeta[,paste0("PC_",1:compsToUse)]), type = "class")
+umapAndMeta$predictedTissue <- predictions[,1]
+
+predictionsScores <- predict(cfit, s = "lambda.1se", newx = as.matrix(umapAndMeta[,paste0("PC_",1:compsToUse)]), type = "response")
+predictionsScores <- predictionsScores[,,1]
+rownames(predictionsScores) <- umapAndMeta$Row.names
+str(predictionsScores)
+sort(predictionsScores["SRR5499181",])
+umapAndMeta$predictedTissueScore <- apply(predictionsScores, 1, max)
+
+sum(umapAndMeta$predictedTissueScore <= 0.5)
+umapAndMeta$predictedTissue[umapAndMeta$predictedTissueScore <= 0.5] <- NA
+sum(umapAndMeta$predictedTissueScore <= 0.5)
+
+rpng()
+hist(umapAndMeta$predictedTissueScore)
+dev.off()
+
+umapAndMeta$misclasified <- FALSE
+umapAndMeta$misclasified[!is.na(umapAndMeta$umapFactor) & !is.na(umapAndMeta$predictedTissue) &  umapAndMeta$umapFactor != umapAndMeta$predictedTissue] <- TRUE
+sum(umapAndMeta$misclasified )
+
+umapAndMeta$notPredictedBack <- FALSE
+umapAndMeta$notPredictedBack[!is.na(umapAndMeta$umapFactor) & is.na(umapAndMeta$predictedTissue) ] <- TRUE
+sum(umapAndMeta$notPredictedBack)
+
+sort(table(umapAndMeta[umapAndMeta$misclasified, "umapFactor"]))
+sort(table(umapAndMeta[umapAndMeta$notPredictedBack, "umapFactor"]))
+
+tissueClass <- levels(umapAndMeta$umapFactor)[1]
+
+pdf("tissuePrediction.pdf")
+for(tissueClass in levels(umapAndMeta$umapFactor)){
+  
+  umapAndMeta$ThisTissueCol <- defaultCol
+  umapAndMeta$ThisTissueCol[!is.na(umapAndMeta$umapFactor) & tissueClass == umapAndMeta$umapFactor & !umapAndMeta$misclasified] <- adjustcolor("forestgreen", alpha.f = 0.5)
+  umapAndMeta$ThisTissueCol[!is.na(umapAndMeta$umapFactor) & tissueClass == umapAndMeta$umapFactor & umapAndMeta$notPredictedBack] <- adjustcolor("hotpink", alpha.f = 0.5)
+  umapAndMeta$ThisTissueCol[!is.na(umapAndMeta$umapFactor) & tissueClass == umapAndMeta$umapFactor & umapAndMeta$misclasified] <- adjustcolor("violetred3", alpha.f = 0.5)
+  umapAndMeta$ThisTissueCol[!is.na(umapAndMeta$umapFactor) & !is.na(umapAndMeta$predictedTissue) & tissueClass != umapAndMeta$umapFactor & tissueClass == umapAndMeta$predictedTissue] <- adjustcolor("orange1", alpha.f = 0.5)
+  umapAndMeta$ThisTissueCol[is.na(umapAndMeta$umapFactor) & !is.na(umapAndMeta$predictedTissue) & tissueClass == umapAndMeta$predictedTissue] <- adjustcolor("dodgerblue1", alpha.f = 0.5)
+    
+  predictedBack <- sum(!is.na(umapAndMeta$umapFactor) & tissueClass == umapAndMeta$umapFactor & !umapAndMeta$misclasified)
+  notPredictedBack <- sum(!is.na(umapAndMeta$umapFactor) & tissueClass == umapAndMeta$umapFactor & umapAndMeta$notPredictedBack) 
+  predictedAsOther <-  sum(!is.na(umapAndMeta$umapFactor) & tissueClass == umapAndMeta$umapFactor & umapAndMeta$misclasified)
+  otherPredicted <- sum(!is.na(umapAndMeta$umapFactor) & !is.na(umapAndMeta$predictedTissue) & tissueClass != umapAndMeta$umapFactor & tissueClass == umapAndMeta$predictedTissue)
+  newPredicted <- sum(is.na(umapAndMeta$umapFactor) & !is.na(umapAndMeta$predictedTissue) & tissueClass == umapAndMeta$predictedTissue)
+  
+  table(umapAndMeta$ThisTissueCol, useNA = "a")
+  
+  umapAndMeta$plotOrderThisTissues <- order(umapAndMeta$ThisTissueCol != defaultCol)
+  
+  #rpng()
+  layout(matrix(c(1,2,3), ncol = 1, byrow = T), heights = c(0.05,0.85,0.1))
+  par(mar = c(0,0,0,0), xpd = NA)
+  plot.new()
+  plot.window(xlim = 0:1, ylim = 0:1)
+  text(0.5,0.5,tissueClass, cex = 2 , font = 2)
+  
+  par(mar = c(5,5,0,0.1), xpd = NA)
+  plot(umapAndMeta[umapAndMeta$plotOrderThisTissues,"UMAP1"], umapAndMeta[umapAndMeta$plotOrderThisTissues,"UMAP2"], col = umapAndMeta$ThisTissueCol[umapAndMeta$plotOrderThisTissues], cex = 0.2, pch = 16, bty="n", xlab = "UMAP-1", ylab = "UMAP-2")
+  
+  par(mar = c(0,0,0,0), xpd = NA)
+  plot.new()
+  plot.window(xlim = 0:1, ylim = 0:1)
+  legend("center", fill = c(
+        "forestgreen", 
+        "hotpink",
+        "violetred3",
+        "orange1",
+        "dodgerblue1"
+      ),
+    legend = c(
+        paste0(tissueClass, " correctly predicted back (", predictedBack,")"),
+        paste0(tissueClass, " not predicted back (", notPredictedBack,")"),
+        paste0(tissueClass, " predicted as other (", predictedAsOther,")"),
+        paste0("Other tissue predicted as ", tissueClass," (", otherPredicted,")"),
+        paste0("Unkown predicted as ", tissueClass, " (", newPredicted,")")
+      ), 
+    bty = "n")
+  
+  
+  
+ #dev.off()
+  
+}
+dev.off()
+
+
+unique(umapAndMeta$predictedTissue)[!unique(umapAndMeta$predictedTissue) %in% rownames(tissueCol)]
+
+umapAndMeta$TissuePredictedCol <- defaultCol
+umapAndMeta$TissuePredictedCol[umapAndMeta$predictedTissue %in% rownames(tissueCol)] <- adjustcolor(tissueCol[as.character(umapAndMeta$predictedTissue[umapAndMeta$predictedTissue %in% rownames(tissueCol)]),1], alpha.f = 0.5)
+umapAndMeta$plotOrderTissuePredicted <- order(umapAndMeta$TissuePredictedCol != defaultCol)
+
+rpng()
+
+par(mar = c(3,3,0.1,0.1), xpd = NA)
+plot(umapAndMeta[umapAndMeta$plotOrderTissuePredicted,"UMAP1"], umapAndMeta[umapAndMeta$plotOrderTissuePredicted,"UMAP2"], col = umapAndMeta$TissuePredictedCol[umapAndMeta$plotOrderTissuePredicted], cex = 0.2, pch = 16)
+
+dev.off()
+
+locator(n =2, type = "l")

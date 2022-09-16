@@ -1564,12 +1564,15 @@ combinedMeta$CelllineName[studySamples] <- ""
 combinedMeta$Cancer[studySamples] <- FALSE
 
 #SRP081020 is mis-anotated in SRA as PBMC, paper and clustering both state wholeblood
-studySamples <- combinedMeta$study %in% c("ERP114104", "SRP051848", "SRP056784", "SRP071965", "SRP077975", "SRP081020", "SRP098758", "SRP113245", "SRP126580", "SRP126582", "SRP126583", "SRP136057", "SRP144583", "SRP150872", "SRP214077")
+studySamples <- combinedMeta$study %in% c("ERP114104", "SRP051848", "SRP056784", "SRP071965", "SRP077975", "SRP081020", "SRP098758", "SRP113245", "SRP126580", "SRP126582", "SRP126583", "SRP136057", "SRP144583", "SRP150872", "SRP214077", "SRP056443")
 combinedMeta$Tissue[studySamples] <- ""
 combinedMeta$Tissue2[studySamples] <- ""
 combinedMeta$Cellline[studySamples] <- NA
 combinedMeta$CelllineName[studySamples] <- ""
 combinedMeta$Cancer[studySamples] <- NA
+
+
+
 
 
 
@@ -1613,7 +1616,7 @@ combinedMeta$Tissue[combinedMeta$Cohort == "GSA"]
 
 
 
-#save(combinedMeta, file = "combinedMeta_2022_09_02.RData")
+#save(combinedMeta, file = "combinedMeta_2022_09_15.RData")
 
 load(file = "combinedMeta_2022_08_19.RData")
 
