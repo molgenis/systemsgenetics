@@ -4,17 +4,14 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /*
@@ -22,8 +19,8 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 /**
- *
  * @author patri
  */
 public class ConvertHpoToMatrix {
@@ -36,7 +33,7 @@ public class ConvertHpoToMatrix {
 	public static void main(String[] args) throws IOException, Exception {
 
 		//final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
-		
+
 		final File ncbiToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
 		final File hgncToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
 //		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
@@ -54,7 +51,7 @@ public class ConvertHpoToMatrix {
 //		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_matrix.txt.gz");
 //		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_genesInPathways.txt");
 
-		
+
 		HashMap<String, ArrayList<String>> ncbiToEnsgMap = loadNcbiToEnsgMap(ncbiToEnsgMapFile);
 		HashMap<String, ArrayList<String>> hgncToEnsgMap = loadHgncToEnsgMap(hgncToEnsgMapFile);
 
@@ -99,7 +96,13 @@ public class ConvertHpoToMatrix {
 	public static HashMap<String, ArrayList<String>> loadNcbiToEnsgMap(File ncbiToEnsgMapFile) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(ncbiToEnsgMapFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+
+		if (ncbiToEnsgMapFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(ncbiToEnsgMapFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(ncbiToEnsgMapFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 
 		String[] nextLine = reader.readNext();
 
@@ -130,7 +133,13 @@ public class ConvertHpoToMatrix {
 	private static HashMap<String, HashSet<String>> readHpoFile(File hpoFile, HashMap<String, ArrayList<String>> ncbiToEnsgMap, HashMap<String, ArrayList<String>> hgncToEnsgMap) throws Exception {
 
 		final CSVParser hpoParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(1).withCSVParser(hpoParser).build();
+		CSVReader hpoReader = null;
+		if (hpoFile.getName().endsWith(".gz")) {
+			hpoReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(hpoFile)))))).withSkipLines(1).withCSVParser(hpoParser).build();
+		} else {
+			hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(1).withCSVParser(hpoParser).build();
+		}
+
 
 		HashMap<String, HashSet<String>> hpoToGenes = new HashMap<>();
 
@@ -168,7 +177,13 @@ public class ConvertHpoToMatrix {
 	private static ArrayList<String> readGenes(File geneOrderFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (geneOrderFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(geneOrderFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
+
 
 		String[] nextLine;
 		ArrayList<String> geneOrder = new ArrayList<>();
@@ -186,7 +201,15 @@ public class ConvertHpoToMatrix {
 	public static HashMap<String, ArrayList<String>> loadHgncToEnsgMap(File map) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (map.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(map))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
+		}
+
 
 		String[] nextLine = reader.readNext();
 

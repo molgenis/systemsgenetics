@@ -11,14 +11,13 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import gnu.trove.map.TObjectDoubleMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
 import java.text.ParseException;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.zip.GZIPInputStream;
+
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
 import org.biojava.nbio.ontology.Triple;
@@ -45,7 +44,13 @@ public class EffectOfRandom10Percent {
 	public static TObjectDoubleMap<String> readPredictedHpoTermFile(File predictedHpoTermFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(predictedHpoTermFile))).withSkipLines(1).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (predictedHpoTermFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(predictedHpoTermFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(predictedHpoTermFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
+
 
 		TObjectDoubleMap<String> hpos = new TObjectDoubleHashMap<>();
 

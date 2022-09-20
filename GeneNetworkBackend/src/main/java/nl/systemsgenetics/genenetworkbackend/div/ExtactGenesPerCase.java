@@ -10,13 +10,11 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 /**
  *
@@ -43,7 +41,12 @@ public class ExtactGenesPerCase {
 		HashMap<String, String> dnasToPsuedos = new HashMap<>();
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleMappingFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (sampleMappingFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(sampleMappingFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleMappingFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
@@ -77,7 +80,13 @@ public class ExtactGenesPerCase {
 
 			File outputFile = new File(outputFolder, pseudoId + ".txt");
 
-			final CSVReader reader2 = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
+			CSVReader reader2 = null;
+			if (sampleMappingFile.getName().endsWith(".gz")) {
+				reader2 = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(sampleFile)))))).withSkipLines(0).withCSVParser(parser).build();
+			} else {
+				reader2 = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
+			}
+
 
 			CSVWriter writer = new CSVWriter(new FileWriter(outputFile), '\t', '\0', '\0', "\n");
 

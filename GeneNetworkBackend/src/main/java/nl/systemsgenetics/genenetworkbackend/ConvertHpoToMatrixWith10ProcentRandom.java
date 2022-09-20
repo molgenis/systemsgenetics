@@ -5,18 +5,15 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /*
@@ -38,11 +35,11 @@ public class ConvertHpoToMatrixWith10ProcentRandom {
 	public static void main(String[] args) throws IOException, Exception {
 
 		//final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_ALL_FREQUENCIES_diseases_to_genes_to_phenotypes.txt");
-		
+
 		final File ncbiToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgNcbiId.txt");
 		final File hgncToEnsgMapFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgnc.txt");
 		final File geneOrderFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\genes.txt");
-		
+
 //		final File hpoFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\HPO\\135\\ALL_SOURCES_FREQUENT_FEATURES_phenotype_to_genes.txt");
 //		final File outputFile = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_matrix.txt.gz");
 //		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_genesInPathways.txt");
@@ -52,7 +49,7 @@ public class ConvertHpoToMatrixWith10ProcentRandom {
 		final File outputFile2 = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Data31995Genes05-12-2017\\PCA_01_02_2018\\PathwayMatrix\\" + hpoFile.getName() + "_random10p_genesInPathways.txt");
 
 		final Random random = new Random(1);
-		
+
 		HashMap<String, ArrayList<String>> ncbiToEnsgMap = loadNcbiToEnsgMap(ncbiToEnsgMapFile);
 		HashMap<String, ArrayList<String>> hgncToEnsgMap = loadHgncToEnsgMap(hgncToEnsgMapFile);
 
@@ -86,33 +83,33 @@ public class ConvertHpoToMatrixWith10ProcentRandom {
 			}
 
 		}
-		
+
 		DoubleMatrixDataset<String, String> hpoMatrixGenes = hpoMatrix.viewRowSelection(genesWithHpo);
-		
+
 		for(int c = 0 ; c < hpoMatrix.columns() ; ++c){
 			DoubleMatrix1D currentHpo = hpoMatrixGenes.viewCol(c);
-			
+
 			int numberOfGenes = currentHpo.cardinality();
 			if(numberOfGenes < 10){
 				continue;
 			}
-			
+
 			int numberToAdd = numberOfGenes / 10;
-			
+
 			while(numberToAdd > 0){
-				
+
 				int index = random.nextInt(genesWithHpo.size());
-				
+
 				if(currentHpo.get(index) == 0){
 					currentHpo.set(index, 1);
 					--numberToAdd;
 				}
-				
-				
+
+
 			}
-			
+
 		}
-		
+
 		geneWriter.close();
 		hpoMatrix.save(outputFile);
 
@@ -123,8 +120,13 @@ public class ConvertHpoToMatrixWith10ProcentRandom {
 	public static HashMap<String, ArrayList<String>> loadNcbiToEnsgMap(File ncbiToEnsgMapFile) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(ncbiToEnsgMapFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
 
+		if (ncbiToEnsgMapFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(ncbiToEnsgMapFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(ncbiToEnsgMapFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 		String[] nextLine = reader.readNext();
 
 		if (!nextLine[0].equals("Gene stable ID") || !nextLine[1].equals("NCBI gene ID")) {
@@ -154,7 +156,13 @@ public class ConvertHpoToMatrixWith10ProcentRandom {
 	private static HashMap<String, HashSet<String>> readHpoFile(File hpoFile, HashMap<String, ArrayList<String>> ncbiToEnsgMap, HashMap<String, ArrayList<String>> hgncToEnsgMap) throws Exception {
 
 		final CSVParser hpoParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(1).withCSVParser(hpoParser).build();
+
+		CSVReader hpoReader = null;
+		if (hpoFile.getName().endsWith(".gz")) {
+			hpoReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(hpoFile)))))).withSkipLines(1).withCSVParser(hpoParser).build();
+		} else {
+			hpoReader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoFile))).withSkipLines(1).withCSVParser(hpoParser).build();
+		}
 
 		HashMap<String, HashSet<String>> hpoToGenes = new HashMap<>();
 
@@ -192,7 +200,13 @@ public class ConvertHpoToMatrixWith10ProcentRandom {
 	private static ArrayList<String> readGenes(File geneOrderFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+
+		CSVReader reader = null;
+		if (geneOrderFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(geneOrderFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 
 		String[] nextLine;
 		ArrayList<String> geneOrder = new ArrayList<>();
@@ -210,8 +224,14 @@ public class ConvertHpoToMatrixWith10ProcentRandom {
 	public static HashMap<String, ArrayList<String>> loadHgncToEnsgMap(File map) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (map.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(map))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
+		}
 		String[] nextLine = reader.readNext();
 
 //		if (!nextLine[0].equals("Gene stable ID") || !nextLine[1].equals("Transcript stable ID") || !nextLine[2].equals("UniProtKB Gene Name ID") || !nextLine[3].equals("UniProtKB/Swiss-Prot ID") || !nextLine[4].equals("UniProtKB/TrEMBL ID")) {

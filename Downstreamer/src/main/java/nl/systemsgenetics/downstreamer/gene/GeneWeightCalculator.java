@@ -61,7 +61,7 @@ public class GeneWeightCalculator {
 
 				if (LOGGER.isDebugEnabled()) {
 					try {
-						genePvaluesNullGwasGeneArmCorrelation.save(new File(options.getOutputBasePath() + "_" + chrArm + "_GeneCorMatrix.txt"));
+						genePvaluesNullGwasGeneArmCorrelation.save(new File(options.getOutputBasePath() + "_" + chrArm + "_GeneCorMatrix.txt.gz"));
 					} catch (IOException ex) {
 						throw new RuntimeException(ex);
 					}

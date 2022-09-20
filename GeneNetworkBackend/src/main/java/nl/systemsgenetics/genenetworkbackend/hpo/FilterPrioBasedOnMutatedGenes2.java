@@ -10,16 +10,12 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.HashSet;
+import java.util.zip.GZIPInputStream;
 
 /**
- *
  * @author patri
  */
 public class FilterPrioBasedOnMutatedGenes2 {
@@ -46,8 +42,12 @@ public class FilterPrioBasedOnMutatedGenes2 {
 		final File resultFolder = new File("C:\\UMCG\\Genetica\\Projects\\GeneNetwork\\BenchmarkSamples\\New5gpm\\RankingCandidateGenes\\");
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
-
+		CSVReader sampleFileReader = null;
+		if (sampleFile.getName().endsWith(".gz")) {
+			sampleFileReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(sampleFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 		String[] nextLine;
 		while ((nextLine = sampleFileReader.readNext()) != null) {
 
@@ -67,7 +67,13 @@ public class FilterPrioBasedOnMutatedGenes2 {
 
 			HashSet<String> genesWithMutation = getMutatedGenes(genoFile, 0, 0);
 
-			final CSVReader prioFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(prioFile))).withSkipLines(0).withCSVParser(parser).build();
+			CSVReader prioFileReader = null;
+			if (prioFile.getName().endsWith(".gz")) {
+				prioFileReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(prioFile)))))).withSkipLines(0).withCSVParser(parser).build();
+			} else {
+				prioFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(prioFile))).withSkipLines(0).withCSVParser(parser).build();
+			}
+
 
 			CSVWriter writer = new CSVWriter(new FileWriter(rankingFile), '\t', '\0', '\0', "\n");
 
@@ -92,8 +98,12 @@ public class FilterPrioBasedOnMutatedGenes2 {
 	private static HashSet<String> getMutatedGenes(File genoFile, int colWithGene, int skipHeaderLines) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(genoFile))).withSkipLines(skipHeaderLines).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (genoFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(genoFile)))))).withSkipLines(skipHeaderLines).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(genoFile))).withSkipLines(skipHeaderLines).withCSVParser(parser).build();
+		}
 		HashSet<String> genes = new HashSet<>();
 
 		String[] nextLine;

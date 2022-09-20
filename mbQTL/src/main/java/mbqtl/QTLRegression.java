@@ -108,7 +108,7 @@ public class QTLRegression extends QTLAnalysis {
             String gene = expressionData.genes[g];
             Integer geneAnnotationId = geneAnnotation.getGeneId(gene);
             if (geneAnnotationId != null) {
-                int pos = geneAnnotation.getPos(geneAnnotationId);
+                int pos = geneAnnotation.getStartPos(geneAnnotationId);
                 int chr = geneAnnotation.getChr(geneAnnotationId);
                 GeneObj obj = new GeneObj();
                 obj.chr = chr;
@@ -136,7 +136,7 @@ public class QTLRegression extends QTLAnalysis {
                 double[] expData = expressionData.data[geneID];
 
                 // define CIS window
-                int pos = geneAnnotation.getPos(geneAnnotationId);
+                int pos = geneAnnotation.getStartPos(geneAnnotationId);
                 String geneSymbol = geneAnnotation.getSymbol(geneAnnotationId);
                 int start = pos - cisWindow;
                 if (start < 0) {

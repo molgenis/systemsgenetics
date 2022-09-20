@@ -81,24 +81,8 @@ public class EQTLPlotter {
      * uses data contained within GeneticalGenomicsDataset. If you want to plot
      * a particular SNP-Probe eQTL, first load the actual SNP, using
      * GeneticalGenomicsDataset.loadSNP, then invoke this method
-     *
-     * @param file                                       Output file (depending on 'outputPlotsFileType' this should
-     *                                                   be a PNG or PDF file)
-     * @param snpInformation                             SNP information (SNPName (chr. SNPChr, SNPChrPos))
-     * @param probeInformation                           Probe information (ProbeName (chr. ProbeChr,
-     *                                                   ProbeChrStartPos-ProbeChrEndPos), GeneName)
-     * @param pValueOverall                              Overall P-Value
-     * @param pValueOverallAbsolute                      Overall P-Value when using absolute Z-Scores
-     *                                                   in the meta-analysis
-     * @param gg                                         Genetical Genomics Datasets
-     * @param datasetIncluded                            Which Genetical Genomics Datasets should we
-     *                                                   include
-     * @param takeNegativeCorrelationAsAllelesAreFlipped For which Genetical
-     *                                                   Genomics Datasets should we take negative correlations, as the actual
-     *                                                   alleles have been flipped
-     * @param probeName                                  Unique probe identifier, used to get the expression data
-     *                                                   for this eQTL
      */
+
     //public void drawPlot(File file, String snpInformation, String probeInformation, double pValueOverall, double pValueOverallAbsolute, GGDataset[] gg, SNP[] loadedSNP, boolean[] datasetIncluded, boolean[] takeNegativeCorrelationAsAllelesAreFlipped, String probeName, boolean performParametricAnalysis, boolean onlyPerformCiseQTLAnalysis) {
     public void draw(WorkPackage wp, int pid) {
         System.setProperty("java.awt.headless", "true");
@@ -106,7 +90,7 @@ public class EQTLPlotter {
 
         boolean jitter = true;
         //Init image:
-        int width = 40 + m_gg.length * 200;
+        int width = 40 + (m_gg.length + 1) * 200;
         if (width < 440) {
             width = 440;
         }
@@ -219,92 +203,98 @@ public class EQTLPlotter {
         Boolean[] flipalleles = wp.getFlipSNPAlleles();
         Result results = wp.results;
         //Draw individual plots:
-        for (int d = 0; d < numDatasets; d++) {
-            //Draw dataset:
-            g2d.setColor(black);
-            g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1.0f));
-            g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 10));
-            g2d.drawString(m_gg[d].getSettings().name, margin + d * 200, 53);
+        for (int d = -1; d < numDatasets; d++) {
+            if (d == -1) {
+                g2d.setColor(black);
+                g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1.0f));
+                g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 10));
+                g2d.drawString("Meta-analysis", margin + (0) * 200, 53);
 
-            TriTyperGeneticalGenomicsDataset currentDataset = m_gg[d];
-            SNP currentSNP = snps[d];
-            Integer probe = currentDataset.getExpressionData().getProbeToId().get(probeName);
-            if (currentSNP != null && probe != -9) {
-
-                //Define x-axis data:
-
-                int itr = 0;
+                // collect data
                 int[] nrSamplesPerX = new int[3];
-                int nrSamplesWithData = results.numSamples[d];
-                double[] x = new double[nrSamplesWithData];
-                int[] xBinary = new int[nrSamplesWithData];
-                Boolean[] indIsFemale = new Boolean[x.length];
-                Boolean[] isFemale = currentDataset.getGenotypeData().getIsFemale();
-                int numSamples = currentDataset.getTotalGGSamples();
-                int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
-                byte[] genotypes = currentSNP.getGenotypes();
-                double[] rawData = currentDataset.getExpressionData().getMatrix()[probe];
-                double[] y = new double[nrSamplesWithData];
+                byte[] loadedSNPAlleles = null;
 
+                ArrayList<Double> tmpX = new ArrayList<>();
+                ArrayList<Double> tmpY = new ArrayList<>();
+                ArrayList<Integer> tmpXbinary = new ArrayList<>();
 
-                ArrayList<Double> valsAA = new ArrayList<Double>();
-                ArrayList<Double> valsAB = new ArrayList<Double>();
-                ArrayList<Double> valsBB = new ArrayList<Double>();
+                boolean hasDosageInformation = false;
+                for (int ds = 0; ds < numDatasets; ds++) {
+                    TriTyperGeneticalGenomicsDataset currentDataset = m_gg[ds];
+                    SNP currentSNP = snps[ds];
+                    Integer probe = currentDataset.getExpressionData().getProbeToId().get(probeName);
+                    if (currentSNP != null && probe != -9) {
+                        int itr = 0;
+                        int nrSamplesWithData = results.numSamples[ds];
+                        double[] x = new double[nrSamplesWithData];
+                        int[] xBinary = new int[nrSamplesWithData];
+                        Boolean[] indIsFemale = new Boolean[x.length];
+                        Boolean[] isFemale = currentDataset.getGenotypeData().getIsFemale();
+                        int numSamples = currentDataset.getTotalGGSamples();
+                        int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
+                        byte[] genotypes = currentSNP.getGenotypes();
+                        double[] rawData = currentDataset.getExpressionData().getMatrix()[probe];
+                        double[] y = new double[nrSamplesWithData];
 
-                int minYAA = Integer.MAX_VALUE;
-                int maxYAA = -Integer.MAX_VALUE;
-                int minYAB = Integer.MAX_VALUE;
-                int maxYAB = -Integer.MAX_VALUE;
-                int minYBB = Integer.MAX_VALUE;
-                int maxYBB = -Integer.MAX_VALUE;
-
-
-                for (int s = 0; s < numSamples; s++) {
-                    int ind = indWGA[s];
-                    if (ind != -1) {
-                        double valX = genotypes[ind];
-                        if (valX != -1) {
-                            if (flipalleles[d]) {
-                                nrSamplesPerX[(int) (2 - valX)]++;
-                            } else {
-                                nrSamplesPerX[(int) valX]++;
-                            }
-                            xBinary[itr] = (int) valX;
-                            if (wp.getFlipSNPAlleles()[d]) {
-                                xBinary[itr] = 2 - (int) valX;
-                            }
-
+                        if (!hasDosageInformation) {
                             if (currentSNP.hasDosageInformation()) {
-                                valX = currentSNP.getDosageValues()[ind];
+                                hasDosageInformation = true;
                             }
-                            if (flipalleles[d]) {
-                                valX = 2 - valX;
-                            }
-                            x[itr] = valX;
-                            indIsFemale[itr] = isFemale[ind];
-                            itr++;
                         }
-                    }
-                }
+                        if (loadedSNPAlleles == null) {
+                            loadedSNPAlleles = currentSNP.getAlleles();
+                        }
 
-                //Define y-axis data:
-                if (nrSamplesWithData == numSamples) {
-                    //All genotypes have been succesfully called, use quick approach:
-                    y = rawData;
-                } else {
-                    //Not all genotypes have been succesfully called, use slow approach:
-                    itr = 0;
-                    for (int s = 0; s < numSamples; s++) {
-                        int ind = indWGA[s];
-                        if (ind != -1) {
-                            int valX = currentSNP.getGenotypes()[ind];
-                            if (valX != -1) {
-                                y[itr] = rawData[s];
-                                itr++;
+
+                        for (int s = 0; s < numSamples; s++) {
+                            int ind = indWGA[s];
+                            if (ind != -1) {
+                                double valX = genotypes[ind];
+                                if (valX != -1) {
+                                    if (flipalleles[ds]) {
+                                        nrSamplesPerX[(int) (2 - valX)]++;
+                                    } else {
+                                        nrSamplesPerX[(int) valX]++;
+                                    }
+                                    xBinary[itr] = (int) valX;
+                                    if (wp.getFlipSNPAlleles()[ds]) {
+                                        xBinary[itr] = 2 - (int) valX;
+                                    }
+                                    tmpXbinary.add(xBinary[itr]);
+
+                                    if (currentSNP.hasDosageInformation()) {
+                                        valX = currentSNP.getDosageValues()[ind];
+                                    }
+                                    if (flipalleles[ds]) {
+                                        valX = 2 - valX;
+                                    }
+                                    x[itr] = valX;
+                                    tmpX.add(valX);
+                                    indIsFemale[itr] = isFemale[ind];
+                                    itr++;
+                                }
                             }
                         }
+
+                        //Define y-axis data:
+
+                        //Not all genotypes have been succesfully called, use slow approach:
+                        itr = 0;
+                        for (int s = 0; s < numSamples; s++) {
+                            int ind = indWGA[s];
+                            if (ind != -1) {
+                                int valX = currentSNP.getGenotypes()[ind];
+                                if (valX != -1) {
+                                    y[itr] = rawData[s];
+                                    tmpY.add(y[itr]);
+                                    itr++;
+                                }
+                            }
+                        }
+
                     }
                 }
+                //Define x-axis data:
 
 
                 //Draw graph:
@@ -313,6 +303,7 @@ public class EQTLPlotter {
                 //Get minimal and maximal expression for this probe:
                 double minExpression = Double.MAX_VALUE;
                 double maxExpression = Double.MIN_VALUE;
+                double[] y = Primitives.toPrimitiveArr(tmpY);
                 for (int i = 0; i < y.length; i++) {
                     if (y[i] < minExpression) {
                         minExpression = y[i];
@@ -323,25 +314,36 @@ public class EQTLPlotter {
                 }
 
                 //Draw regression line:
+                double[] x = Primitives.toPrimitiveArr(tmpX);
+                int[] xBinary = Primitives.toPrimitiveArr(tmpXbinary);
+
                 double[] correlationValues = Regression.getLinearRegressionCoefficients(x, y);
                 g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.25f));
                 g2d.setStroke(new java.awt.BasicStroke(2));
                 int pixelY1 = y1 - (int) ((correlationValues[1] - minExpression) / (maxExpression - minExpression) * (double) innerHeight);
                 int pixelY2 = y1 - (int) (((2 * correlationValues[0] + correlationValues[1]) - minExpression) / (maxExpression - minExpression) * (double) innerHeight);
-                int pixelXGroup0 = x0 + d * 200 + (int) (0 * 50.0d);
-                int pixelXGroup2 = x0 + d * 200 + (int) (2 * 50.0d);
+                int pixelXGroup0 = x0 + (d + 1) * 200 + (int) (0 * 50.0d);
+                int pixelXGroup2 = x0 + (d + 1) * 200 + (int) (2 * 50.0d);
                 g2d.drawLine(pixelXGroup0 + 6, pixelY1, pixelXGroup2 + 6, pixelY2);
                 g2d.setStroke(new java.awt.BasicStroke(1));
 
-                //Draw individual measurements:
+                //Draw individual measurements
                 g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.50f));
                 boolean[][][] positionToPlot = new boolean[3][41][innerHeight + 5];
                 g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 6));
+                ArrayList<Double> valsAA = new ArrayList<Double>();
+                ArrayList<Double> valsAB = new ArrayList<Double>();
+                ArrayList<Double> valsBB = new ArrayList<Double>();
+                int minYAA = Integer.MAX_VALUE;
+                int maxYAA = -Integer.MAX_VALUE;
+                int minYAB = Integer.MAX_VALUE;
+                int maxYAB = -Integer.MAX_VALUE;
+                int minYBB = Integer.MAX_VALUE;
+                int maxYBB = -Integer.MAX_VALUE;
                 for (int i = 0; i < x.length; i++) {
-
-                    int pixelX = x0 + d * 200 + (int) (x[i] * 50.0d);
+                    int pixelX = x0 + (d + 1) * 200 + (int) (x[i] * 50.0d);
                     if (jitter) {
-                        pixelX = x0 + d * 200 + (int) (xBinary[i] * 50.0d);
+                        pixelX = x0 + (d + 1) * 200 + (int) (xBinary[i] * 50.0d);
                     }
                     int posY = (int) ((y[i] - minExpression) / (maxExpression - minExpression) * (double) innerHeight);
                     int pixelY = y1 - posY;
@@ -376,8 +378,7 @@ public class EQTLPlotter {
                             break;
                     }
 
-
-                    if (!currentSNP.hasDosageInformation() || jitter) {
+                    if (!hasDosageInformation || jitter) {
                         //Draw expression dots in non-overlapping manner:
                         int offsetToPlot = 40;
                         for (int offset = 0; offset < 41; offset++) {
@@ -406,37 +407,16 @@ public class EQTLPlotter {
                         }
                         pixelX += diffOffset;
                     }
-
-                    if (indIsFemale[i] == null) {
-                        g2d.setColor(grey);
-                    } else if (indIsFemale[i]) {
-                        g2d.setColor(red);
-                    } else {
-                        g2d.setColor(blue);
-                    }
-
+                    g2d.setColor(grey);
                     g2d.fillOval(pixelX + 6, pixelY, 2, 2);
                 }
 
                 // draw Spearman's rank correlation coefficient:
-                double correlation = results.correlations[d][pid];
-                g2d.setColor(black);
-                g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 10));
-                g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1.0f));
-                String correlationString = df6.format(correlation);
-                String r2String = df6.format(correlation * correlation);
                 String allele0 = "";
                 String allele1 = "";
 
-                byte[] loadedSNPAlleles = currentSNP.getAlleles();
                 allele0 = BaseAnnot.toString(loadedSNPAlleles[0]);
                 allele1 = BaseAnnot.toString(loadedSNPAlleles[1]);
-
-                if (wp.getFlipSNPAlleles()[d]) {
-                    String alleleTemp = allele0;
-                    allele0 = allele1;
-                    allele1 = alleleTemp;
-                }
 
                 // overlay the boxplots
                 ViolinBoxPlot boxplotter = new ViolinBoxPlot();
@@ -445,59 +425,48 @@ public class EQTLPlotter {
                 g2d.setColor(new Color(0, 0, 0));
 
                 // g2d, int x, int y, int width, int height, double[] vals, double minValue, double maxValue, boolean drawOutliers
-
                 double[] aaArr = toArray(valsAA);
                 if (aaArr.length > 0) {
-                    boxplotter.drawBoxPlot(g2d, margin + d * 200 + 0 - 5, minYAA, 25, (maxYAA - minYAA), aaArr, Primitives.min(aaArr), Primitives.max(aaArr), false);
+                    boxplotter.drawBoxPlot(g2d, margin + (d + 1) * 200 + 0 - 5, minYAA, 25, (maxYAA - minYAA), aaArr, Primitives.min(aaArr), Primitives.max(aaArr), false);
                 }
 
                 double[] abArr = toArray(valsAB);
-
                 if (abArr.length > 0) {
-                    boxplotter.drawBoxPlot(g2d, margin + d * 200 + 50 - 5, minYAB, 25, (maxYAB - minYAB), abArr, Primitives.min(abArr), Primitives.max(abArr), false);
+                    boxplotter.drawBoxPlot(g2d, margin + (d + 1) * 200 + 50 - 5, minYAB, 25, (maxYAB - minYAB), abArr, Primitives.min(abArr), Primitives.max(abArr), false);
                 }
 
                 double[] bbArr = toArray(valsBB);
-
                 if (bbArr.length > 0) {
-
-                    boxplotter.drawBoxPlot(g2d, margin + d * 200 + 100 - 5, minYBB, 25, (maxYBB - minYBB), bbArr, Primitives.min(bbArr), Primitives.max(bbArr), false);
+                    boxplotter.drawBoxPlot(g2d, margin + (d + 1) * 200 + 100 - 5, minYBB, 25, (maxYBB - minYBB), bbArr, Primitives.min(bbArr), Primitives.max(bbArr), false);
                 }
 
                 //Draw alleles:
                 g2d.setColor(black);
-                g2d.drawString(allele0 + allele0, margin + d * 200 + 0, height - 15 - 10);
-                g2d.drawString(allele0 + allele1, margin + d * 200 + 50, height - 15 - 10);
-                g2d.drawString(allele1 + allele1, margin + d * 200 + 100, height - 15 - 10);
+                g2d.drawString(allele0 + allele0, margin + (d + 1) * 200 + 0, height - 15 - 10);
+                g2d.drawString(allele0 + allele1, margin + (d + 1) * 200 + 50, height - 15 - 10);
+                g2d.drawString(allele1 + allele1, margin + (d + 1) * 200 + 100, height - 15 - 10);
 
                 //Draw nr samples per genotype group:
                 g2d.setColor(black);
-                g2d.drawString("(" + nrSamplesPerX[0] + ")", margin + d * 200 + 0 + 17, height - 15 - 10);
-                g2d.drawString("(" + nrSamplesPerX[1] + ")", margin + d * 200 + 50 + 17, height - 15 - 10);
-                g2d.drawString("(" + nrSamplesPerX[2] + ")", margin + d * 200 + 100 + 17, height - 15 - 10);
+                g2d.drawString("(" + nrSamplesPerX[0] + ")", margin + (d + 1) * 200 + 0 + 17, height - 15 - 10);
+                g2d.drawString("(" + nrSamplesPerX[1] + ")", margin + (d + 1) * 200 + 50 + 17, height - 15 - 10);
+                g2d.drawString("(" + nrSamplesPerX[2] + ")", margin + (d + 1) * 200 + 100 + 17, height - 15 - 10);
 
                 //Draw correlation:
                 g2d.setColor(black);
                 g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 9));
-                g2d.drawString("Corr:", margin + d * 200, height - 2 - 10);
-                g2d.drawString("R2:", margin + d * 200 + 75, height - 2 - 10);
+                g2d.drawString("Corr:", margin + (d + 1) * 200, height - 2 - 10);
+                g2d.drawString("R2:", margin + (d + 1) * 200 + 75, height - 2 - 10);
                 g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 9));
-                g2d.drawString(correlationString, margin + d * 200 + 37, height - 2 - 10);
-                g2d.drawString(r2String, margin + d * 200 + 75 + 37, height - 2 - 10);
 
                 //Draw Z-Score and P-Value:
-                double zScore = results.zscores[d][pid];
-                if (wp.getFlipSNPAlleles()[d]) {
-                    zScore *= -1;
-                }
-
+                double zScore = results.finalZScore[pid];
                 String zScoreString = df5.format(zScore);
                 if (zScore < 100) {
                     zScoreString = df6.format(zScore);
                 }
 
                 double pValue = Descriptives.convertZscoreToPvalue(zScore);
-
                 String pValueString = df5.format(pValue);
                 if (pValue > 0.001) {
                     pValueString = df6.format(pValue);
@@ -505,94 +474,428 @@ public class EQTLPlotter {
 
                 g2d.setColor(black);
                 g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 9));
-                g2d.drawString("Z-Score:", margin + d * 200, height - 2);
-                g2d.drawString("P-Value:", margin + d * 200 + 75, height - 2);
+                g2d.drawString("Z-Score:", margin + (d + 1) * 200, height - 2);
+                g2d.drawString("P-Value:", margin + (d + 1) * 200 + 75, height - 2);
                 g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 9));
-                g2d.drawString(zScoreString, margin + d * 200 + 37, height - 2);
-                g2d.drawString(pValueString, margin + d * 200 + 75 + 37, height - 2);
+                g2d.drawString(zScoreString, margin + (d + 1) * 200 + 37, height - 2);
+                g2d.drawString(pValueString, margin + (d + 1) * 200 + 75 + 37, height - 2);
 
                 // System.out.println(currentDataset.getName() + "\t" + snpInformation + "\t" + zScore + "\t" + pValue + "\t" + correlation + "\t" + nrSamplesWithData);
 
                 //Draw average expression rank for this probe, to permit comparison with other datasets, where eQTL effect is different:
-                int probeCount = currentDataset.getExpressionData().getProbes().length;
-                double[] means = new double[probeCount];
-                for (int p = 0; p < probeCount; p++) {
-                    means[p] = currentDataset.getExpressionData().getOriginalProbeMean()[probe];
-                }
+                ArrayList<Double> probeMeanRanks = new ArrayList<>();
+                ArrayList<Double> probeOriginalMeanRanks = new ArrayList<>();
+                double avgProbeCount = 0;
+                for (int ds = 0; ds < numDatasets; ds++) {
+                    TriTyperGeneticalGenomicsDataset currentDataset = m_gg[ds];
+                    int probeCount = currentDataset.getExpressionData().getProbes().length;
+                    avgProbeCount += probeCount;
+                    double[] means = new double[probeCount];
+                    Integer probe = currentDataset.getExpressionData().getProbeToId().get(probeName);
+                    SNP currentSNP = snps[ds];
+                    if (currentSNP != null && probe != -9) {
+                        for (int p = 0; p < probeCount; p++) {
+                            means[p] = currentDataset.getExpressionData().getOriginalProbeMean()[probe];
+                        }
 
-                double probeOriginalMeanRank = m_rda.rank(means, m_giveTiesSameRank)[probe];
-                for (int p = 0; p < probeCount; p++) {
-                    means[p] = currentDataset.getExpressionData().getProbeMean()[probe];
+                        double probeOriginalMeanRank = m_rda.rank(means, m_giveTiesSameRank)[probe];
+                        probeOriginalMeanRanks.add(probeOriginalMeanRank);
+                        for (int p = 0; p < probeCount; p++) {
+                            means[p] = currentDataset.getExpressionData().getProbeMean()[probe];
+                        }
+                        double probeMeanRank = m_rda.rank(means, m_giveTiesSameRank)[probe];
+                        probeMeanRanks.add(probeMeanRank);
+                    }
                 }
-                double probeMeanRank = m_rda.rank(means, m_giveTiesSameRank)[probe];
-                g2d.setColor(lightgray); // 
-                g2d.drawLine(margin + d * 200 + 140, y0, margin + d * 200 + 140, y1);
-                g2d.drawLine(margin + d * 200 + 138, y0, margin + d * 200 + 142, y0);
-                g2d.drawLine(margin + d * 200 + 138, y1, margin + d * 200 + 142, y1);
+                double probeMeanRank = Descriptives.mean(Primitives.toPrimitiveArr(probeMeanRanks));
+                double probeOriginalMeanRank = Descriptives.mean(Primitives.toPrimitiveArr(probeOriginalMeanRanks));
+                double probeCount = avgProbeCount / probeMeanRanks.size();
+                g2d.setColor(lightgray); //
+                g2d.drawLine(margin + (d + 1) * 200 + 140, y0, margin + (d + 1) * 200 + 140, y1);
+                g2d.drawLine(margin + (d + 1) * 200 + 138, y0, margin + (d + 1) * 200 + 142, y0);
+                g2d.drawLine(margin + (d + 1) * 200 + 138, y1, margin + (d + 1) * 200 + 142, y1);
                 g2d.setColor(medgray);
                 int pixelYOriginal = y1 - (int) (probeOriginalMeanRank / (double) (probeCount) * (double) innerHeight);
-                g2d.drawLine(margin + d * 200 + 135, pixelYOriginal, margin + d * 200 + 145, pixelYOriginal);
+                g2d.drawLine(margin + (d + 1) * 200 + 135, pixelYOriginal, margin + (d + 1) * 200 + 145, pixelYOriginal);
                 g2d.setColor(darkgray);
                 int pixelY = y1 - (int) (probeMeanRank / (double) (probeCount) * (double) innerHeight);
-                g2d.drawLine(margin + d * 200 + 135, pixelY, margin + d * 200 + 145, pixelY);
+                g2d.drawLine(margin + (d + 1) * 200 + 135, pixelY, margin + (d + 1) * 200 + 145, pixelY);
                 //System.out.println(d + "\t" + pixelYOriginal + "\t" + pixelY + "\t" + probeOriginalMeanRank + "\t" + probeMeanRank + "\t" + gg[d].probeOriginalMean[probe] + "\t" + gg[d].probeMean[probe] + "\t" + gg[d].probeOriginalVariance[probe] + "\t" + gg[d].probeVariance[probe]);
 
-
-            } else { // if !datasetincluded[d]
-
-                //eQTL data is not available for this datasets, provide information why not:
+            } else {
+                //Draw dataset:
                 g2d.setColor(black);
                 g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1.0f));
+                g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 10));
+                g2d.drawString(m_gg[d].getSettings().name, margin + (d + 1) * 200, 53);
 
-                g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 9));
-                g2d.drawString("eQTL not available", margin + d * 200, 70);
+                TriTyperGeneticalGenomicsDataset currentDataset = m_gg[d];
+                SNP currentSNP = snps[d];
+                Integer probe = currentDataset.getExpressionData().getProbeToId().get(probeName);
+                if (currentSNP != null && probe != -9) {
 
-                g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 9));
-                currentSNP = snps[d];
-                if (currentSNP == null) {
-                    //SNP has not been genotyped
-                    g2d.drawString("SNP has not been genotyped.", margin + d * 200, 90);
-                } else {
-                    //SNP does not pass QC:
-                    if (!currentSNP.passesQC()) {
-                        g2d.drawString("SNP does not pass QC:", margin + d * 200, 90);
-                        String callRateString = df1.format(currentSNP.getCR() * 100);
-                        g2d.drawString("- Call rate: " + callRateString + "%", margin + d * 200, 100);
-                        String mafString = df1.format(currentSNP.getMAF() * 100);
-                        g2d.drawString("- MAF: " + mafString + "%", margin + d * 200, 110);
-                        String hweString = df2.format(currentSNP.getHWEP());
-                        g2d.drawString("- HWE P-Value: " + hweString, margin + d * 200, 120);
+                    //Define x-axis data:
+
+                    int itr = 0;
+                    int[] nrSamplesPerX = new int[3];
+                    int nrSamplesWithData = results.numSamples[d];
+                    double[] x = new double[nrSamplesWithData];
+                    int[] xBinary = new int[nrSamplesWithData];
+                    Boolean[] indIsFemale = new Boolean[x.length];
+                    Boolean[] isFemale = currentDataset.getGenotypeData().getIsFemale();
+                    int numSamples = currentDataset.getTotalGGSamples();
+                    int[] indWGA = currentDataset.getExpressionToGenotypeIdArray();
+                    byte[] genotypes = currentSNP.getGenotypes();
+                    double[] rawData = currentDataset.getExpressionData().getMatrix()[probe];
+                    double[] y = new double[nrSamplesWithData];
+
+                    ArrayList<Double> valsAA = new ArrayList<Double>();
+                    ArrayList<Double> valsAB = new ArrayList<Double>();
+                    ArrayList<Double> valsBB = new ArrayList<Double>();
+
+                    int minYAA = Integer.MAX_VALUE;
+                    int maxYAA = -Integer.MAX_VALUE;
+                    int minYAB = Integer.MAX_VALUE;
+                    int maxYAB = -Integer.MAX_VALUE;
+                    int minYBB = Integer.MAX_VALUE;
+                    int maxYBB = -Integer.MAX_VALUE;
+
+
+                    for (int s = 0; s < numSamples; s++) {
+                        int ind = indWGA[s];
+                        if (ind != -1) {
+                            double valX = genotypes[ind];
+                            if (valX != -1) {
+                                if (flipalleles[d]) {
+                                    nrSamplesPerX[(int) (2 - valX)]++;
+                                } else {
+                                    nrSamplesPerX[(int) valX]++;
+                                }
+                                xBinary[itr] = (int) valX;
+                                if (wp.getFlipSNPAlleles()[d]) {
+                                    xBinary[itr] = 2 - (int) valX;
+                                }
+
+                                if (currentSNP.hasDosageInformation()) {
+                                    valX = currentSNP.getDosageValues()[ind];
+                                }
+                                if (flipalleles[d]) {
+                                    valX = 2 - valX;
+                                }
+                                x[itr] = valX;
+                                indIsFemale[itr] = isFemale[ind];
+                                itr++;
+                            }
+                        }
+                    }
+
+                    //Define y-axis data:
+                    if (nrSamplesWithData == numSamples) {
+                        //All genotypes have been succesfully called, use quick approach:
+                        y = rawData;
                     } else {
-                        if (currentDataset.getExpressionData().getProbeToId().get(probeName) != -9) {
-                            if (m_cisOnly) {
-                                g2d.setColor(red);
-                                g2d.drawString("Cis-probe maps too far away.", margin + d * 200, 90);
-                                g2d.drawString("You probably have different probe", margin + d * 200, 100);
-                                g2d.drawString("mappings in the various datasets!", margin + d * 200, 110);
-                                g2d.setColor(red);
-                            } else {
-                                if (currentDataset.getExpressionData().getProbeToId().get(probeName) != -9) {
-                                    g2d.setColor(red);
-                                    g2d.drawString("Unknown why not included!", margin + d * 200, 90);
-                                    g2d.drawString("This suggests a bug.", margin + d * 200, 100);
-                                    g2d.setColor(black);
+                        //Not all genotypes have been succesfully called, use slow approach:
+                        itr = 0;
+                        for (int s = 0; s < numSamples; s++) {
+                            int ind = indWGA[s];
+                            if (ind != -1) {
+                                int valX = currentSNP.getGenotypes()[ind];
+                                if (valX != -1) {
+                                    y[itr] = rawData[s];
+                                    itr++;
                                 }
                             }
                         }
                     }
-                    //Expression probe is not present in this dataset:
-                    if (currentDataset.getExpressionData().getProbeToId().get(probeName) == -9) {
-                        if (currentSNP.passesQC()) {
-                            g2d.drawString("Probe not present.", margin + d * 200, 90);
-                        } else {
-                            g2d.drawString("Probe not present.", margin + d * 200, 140);
+
+
+                    //Draw graph:
+                    g2d.setColor(black);
+
+                    //Get minimal and maximal expression for this probe:
+                    double minExpression = Double.MAX_VALUE;
+                    double maxExpression = Double.MIN_VALUE;
+                    for (int i = 0; i < y.length; i++) {
+                        if (y[i] < minExpression) {
+                            minExpression = y[i];
+                        }
+                        if (y[i] > maxExpression) {
+                            maxExpression = y[i];
                         }
                     }
 
+                    //Draw regression line:
+                    double[] correlationValues = Regression.getLinearRegressionCoefficients(x, y);
+                    g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.25f));
+                    g2d.setStroke(new java.awt.BasicStroke(2));
+                    int pixelY1 = y1 - (int) ((correlationValues[1] - minExpression) / (maxExpression - minExpression) * (double) innerHeight);
+                    int pixelY2 = y1 - (int) (((2 * correlationValues[0] + correlationValues[1]) - minExpression) / (maxExpression - minExpression) * (double) innerHeight);
+                    int pixelXGroup0 = x0 + (d + 1) * 200 + (int) (0 * 50.0d);
+                    int pixelXGroup2 = x0 + (d + 1) * 200 + (int) (2 * 50.0d);
+                    g2d.drawLine(pixelXGroup0 + 6, pixelY1, pixelXGroup2 + 6, pixelY2);
+                    g2d.setStroke(new java.awt.BasicStroke(1));
+
+                    //Draw individual measurements:
+                    g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.50f));
+                    boolean[][][] positionToPlot = new boolean[3][41][innerHeight + 5];
+                    g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 6));
+                    for (int i = 0; i < x.length; i++) {
+
+                        int pixelX = x0 + (d + 1) * 200 + (int) (x[i] * 50.0d);
+                        if (jitter) {
+                            pixelX = x0 + (d + 1) * 200 + (int) (xBinary[i] * 50.0d);
+                        }
+                        int posY = (int) ((y[i] - minExpression) / (maxExpression - minExpression) * (double) innerHeight);
+                        int pixelY = y1 - posY;
+
+                        switch (xBinary[i]) {
+                            case 0:
+                                valsAA.add(y[i]);
+                                if (pixelY > maxYAA) {
+                                    maxYAA = pixelY;
+                                }
+                                if (pixelY < minYAA) {
+                                    minYAA = pixelY;
+                                }
+                                break;
+                            case 1:
+                                valsAB.add(y[i]);
+                                if (pixelY > maxYAB) {
+                                    maxYAB = pixelY;
+                                }
+                                if (pixelY < minYAB) {
+                                    minYAB = pixelY;
+                                }
+                                break;
+                            case 2:
+                                valsBB.add(y[i]);
+                                if (pixelY > maxYBB) {
+                                    maxYBB = pixelY;
+                                }
+                                if (pixelY < minYBB) {
+                                    minYBB = pixelY;
+                                }
+                                break;
+                        }
+
+
+                        if (!currentSNP.hasDosageInformation() || jitter) {
+                            //Draw expression dots in non-overlapping manner:
+                            int offsetToPlot = 40;
+                            for (int offset = 0; offset < 41; offset++) {
+                                boolean allClear = true;
+                                for (int q = 0; q < 4; q++) {
+                                    if (positionToPlot[xBinary[i]][offset][posY + q]) {
+                                        allClear = false;
+                                        break;
+                                    }
+                                }
+                                if (allClear) {
+                                    for (int q = 0; q < 4; q++) {
+                                        positionToPlot[xBinary[i]][offset][posY + q] = true;
+                                    }
+                                    offsetToPlot = offset;
+                                    break;
+                                }
+                            }
+                            double diffOffset = 0;
+                            if (offsetToPlot > 0) {
+                                double sign = offsetToPlot % 2;
+                                if (sign == 0) {
+                                    sign = -1;
+                                }
+                                diffOffset = 1 * sign * (offsetToPlot - (offsetToPlot + 1) % 2 + 1);
+                            }
+                            pixelX += diffOffset;
+                        }
+
+                        if (indIsFemale[i] == null) {
+                            g2d.setColor(grey);
+                        } else if (indIsFemale[i]) {
+                            g2d.setColor(red);
+                        } else {
+                            g2d.setColor(blue);
+                        }
+
+                        g2d.fillOval(pixelX + 6, pixelY, 2, 2);
+                    }
+
+                    // draw Spearman's rank correlation coefficient:
+                    double correlation = results.correlations[d][pid];
+                    g2d.setColor(black);
+                    g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 10));
+                    g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1.0f));
+                    String correlationString = df6.format(correlation);
+                    String r2String = df6.format(correlation * correlation);
+                    String allele0 = "";
+                    String allele1 = "";
+
+                    byte[] loadedSNPAlleles = currentSNP.getAlleles();
+                    allele0 = BaseAnnot.toString(loadedSNPAlleles[0]);
+                    allele1 = BaseAnnot.toString(loadedSNPAlleles[1]);
+
+                    if (wp.getFlipSNPAlleles()[d]) {
+                        String alleleTemp = allele0;
+                        allele0 = allele1;
+                        allele1 = alleleTemp;
+                    }
+
+                    // overlay the boxplots
+                    ViolinBoxPlot boxplotter = new ViolinBoxPlot();
+                    java.awt.AlphaComposite alphaComposite100 = java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC, 1.00f);
+                    g2d.setComposite(alphaComposite100);
+                    g2d.setColor(new Color(0, 0, 0));
+
+                    // g2d, int x, int y, int width, int height, double[] vals, double minValue, double maxValue, boolean drawOutliers
+
+                    double[] aaArr = toArray(valsAA);
+                    if (aaArr.length > 0) {
+                        boxplotter.drawBoxPlot(g2d, margin + (d + 1) * 200 + 0 - 5, minYAA, 25, (maxYAA - minYAA), aaArr, Primitives.min(aaArr), Primitives.max(aaArr), false);
+                    }
+
+                    double[] abArr = toArray(valsAB);
+
+                    if (abArr.length > 0) {
+                        boxplotter.drawBoxPlot(g2d, margin + (d + 1) * 200 + 50 - 5, minYAB, 25, (maxYAB - minYAB), abArr, Primitives.min(abArr), Primitives.max(abArr), false);
+                    }
+
+                    double[] bbArr = toArray(valsBB);
+
+                    if (bbArr.length > 0) {
+
+                        boxplotter.drawBoxPlot(g2d, margin + (d + 1) * 200 + 100 - 5, minYBB, 25, (maxYBB - minYBB), bbArr, Primitives.min(bbArr), Primitives.max(bbArr), false);
+                    }
+
+                    //Draw alleles:
+                    g2d.setColor(black);
+                    g2d.drawString(allele0 + allele0, margin + (d + 1) * 200 + 0, height - 15 - 10);
+                    g2d.drawString(allele0 + allele1, margin + (d + 1) * 200 + 50, height - 15 - 10);
+                    g2d.drawString(allele1 + allele1, margin + (d + 1) * 200 + 100, height - 15 - 10);
+
+                    //Draw nr samples per genotype group:
+                    g2d.setColor(black);
+                    g2d.drawString("(" + nrSamplesPerX[0] + ")", margin + (d + 1) * 200 + 0 + 17, height - 15 - 10);
+                    g2d.drawString("(" + nrSamplesPerX[1] + ")", margin + (d + 1) * 200 + 50 + 17, height - 15 - 10);
+                    g2d.drawString("(" + nrSamplesPerX[2] + ")", margin + (d + 1) * 200 + 100 + 17, height - 15 - 10);
+
+                    //Draw correlation:
+                    g2d.setColor(black);
+                    g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 9));
+                    g2d.drawString("Corr:", margin + (d + 1) * 200, height - 2 - 10);
+                    g2d.drawString("R2:", margin + (d + 1) * 200 + 75, height - 2 - 10);
+                    g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 9));
+                    g2d.drawString(correlationString, margin + (d + 1) * 200 + 37, height - 2 - 10);
+                    g2d.drawString(r2String, margin + (d + 1) * 200 + 75 + 37, height - 2 - 10);
+
+                    //Draw Z-Score and P-Value:
+                    double zScore = results.zscores[d][pid];
+                    if (wp.getFlipSNPAlleles()[d]) {
+                        zScore *= -1;
+                    }
+
+                    String zScoreString = df5.format(zScore);
+                    if (zScore < 100) {
+                        zScoreString = df6.format(zScore);
+                    }
+
+                    double pValue = Descriptives.convertZscoreToPvalue(zScore);
+
+                    String pValueString = df5.format(pValue);
+                    if (pValue > 0.001) {
+                        pValueString = df6.format(pValue);
+                    }
+
+                    g2d.setColor(black);
+                    g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 9));
+                    g2d.drawString("Z-Score:", margin + (d + 1) * 200, height - 2);
+                    g2d.drawString("P-Value:", margin + (d + 1) * 200 + 75, height - 2);
+                    g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 9));
+                    g2d.drawString(zScoreString, margin + (d + 1) * 200 + 37, height - 2);
+                    g2d.drawString(pValueString, margin + (d + 1) * 200 + 75 + 37, height - 2);
+
+                    // System.out.println(currentDataset.getName() + "\t" + snpInformation + "\t" + zScore + "\t" + pValue + "\t" + correlation + "\t" + nrSamplesWithData);
+
+                    //Draw average expression rank for this probe, to permit comparison with other datasets, where eQTL effect is different:
+                    int probeCount = currentDataset.getExpressionData().getProbes().length;
+                    double[] means = new double[probeCount];
+                    for (int p = 0; p < probeCount; p++) {
+                        means[p] = currentDataset.getExpressionData().getOriginalProbeMean()[probe];
+                    }
+
+                    double probeOriginalMeanRank = m_rda.rank(means, m_giveTiesSameRank)[probe];
+                    for (int p = 0; p < probeCount; p++) {
+                        means[p] = currentDataset.getExpressionData().getProbeMean()[probe];
+                    }
+                    double probeMeanRank = m_rda.rank(means, m_giveTiesSameRank)[probe];
+                    g2d.setColor(lightgray); //
+                    g2d.drawLine(margin + (d + 1) * 200 + 140, y0, margin + (d + 1) * 200 + 140, y1);
+                    g2d.drawLine(margin + (d + 1) * 200 + 138, y0, margin + (d + 1) * 200 + 142, y0);
+                    g2d.drawLine(margin + (d + 1) * 200 + 138, y1, margin + (d + 1) * 200 + 142, y1);
+                    g2d.setColor(medgray);
+                    int pixelYOriginal = y1 - (int) (probeOriginalMeanRank / (double) (probeCount) * (double) innerHeight);
+                    g2d.drawLine(margin + (d + 1) * 200 + 135, pixelYOriginal, margin + (d + 1) * 200 + 145, pixelYOriginal);
+                    g2d.setColor(darkgray);
+                    int pixelY = y1 - (int) (probeMeanRank / (double) (probeCount) * (double) innerHeight);
+                    g2d.drawLine(margin + (d + 1) * 200 + 135, pixelY, margin + (d + 1) * 200 + 145, pixelY);
+                    //System.out.println(d + "\t" + pixelYOriginal + "\t" + pixelY + "\t" + probeOriginalMeanRank + "\t" + probeMeanRank + "\t" + gg[d].probeOriginalMean[probe] + "\t" + gg[d].probeMean[probe] + "\t" + gg[d].probeOriginalVariance[probe] + "\t" + gg[d].probeVariance[probe]);
+
+
+                } else { // if !datasetincluded[d]
+
+                    //eQTL data is not available for this datasets, provide information why not:
+                    g2d.setColor(black);
+                    g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1.0f));
+
+                    g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 9));
+                    g2d.drawString("eQTL not available", margin + (d + 1) * 200, 70);
+
+                    g2d.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 9));
+                    currentSNP = snps[d];
+                    if (currentSNP == null) {
+                        //SNP has not been genotyped
+                        g2d.drawString("SNP has not been genotyped.", margin + (d + 1) * 200, 90);
+                    } else {
+                        //SNP does not pass QC:
+                        if (!currentSNP.passesQC()) {
+                            g2d.drawString("SNP does not pass QC:", margin + (d + 1) * 200, 90);
+                            String callRateString = df1.format(currentSNP.getCR() * 100);
+                            g2d.drawString("- Call rate: " + callRateString + "%", margin + (d + 1) * 200, 100);
+                            String mafString = df1.format(currentSNP.getMAF() * 100);
+                            g2d.drawString("- MAF: " + mafString + "%", margin + (d + 1) * 200, 110);
+                            String hweString = df2.format(currentSNP.getHWEP());
+                            g2d.drawString("- HWE P-Value: " + hweString, margin + (d + 1) * 200, 120);
+                        } else {
+                            if (currentDataset.getExpressionData().getProbeToId().get(probeName) != -9) {
+                                if (m_cisOnly) {
+                                    g2d.setColor(red);
+                                    g2d.drawString("Cis-probe maps too far away.", margin + (d + 1) * 200, 90);
+                                    g2d.drawString("You probably have different probe", margin + (d + 1) * 200, 100);
+                                    g2d.drawString("mappings in the various datasets!", margin + (d + 1) * 200, 110);
+                                    g2d.setColor(red);
+                                } else {
+                                    if (currentDataset.getExpressionData().getProbeToId().get(probeName) != -9) {
+                                        g2d.setColor(red);
+                                        g2d.drawString("Unknown why not included!", margin + (d + 1) * 200, 90);
+                                        g2d.drawString("This suggests a bug.", margin + (d + 1) * 200, 100);
+                                        g2d.setColor(black);
+                                    }
+                                }
+                            }
+                        }
+                        //Expression probe is not present in this dataset:
+                        if (currentDataset.getExpressionData().getProbeToId().get(probeName) == -9) {
+                            if (currentSNP.passesQC()) {
+                                g2d.drawString("Probe not present.", margin + (d + 1) * 200, 90);
+                            } else {
+                                g2d.drawString("Probe not present.", margin + (d + 1) * 200, 140);
+                            }
+                        }
+
+                    }
                 }
-
-
             }
+
+
         } // end for each dataset
 
         //Save image:

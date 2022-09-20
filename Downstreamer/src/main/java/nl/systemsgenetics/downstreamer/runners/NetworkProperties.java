@@ -86,7 +86,7 @@ public class NetworkProperties {
 			
 		}
 		
-		connectivity.save(options.getOutputBasePath() + ".txt");
+		connectivity.save(options.getOutputBasePath() + ".txt.gz");
 		
 	}
 

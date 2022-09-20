@@ -11,13 +11,13 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -53,7 +53,12 @@ public class InvestigateBav {
 				continue;
 			}
 
-			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(1).withCSVParser(parser).build();
+			CSVReader reader = null;
+			if (sampleFile.getName().endsWith(".gz")) {
+				reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(sampleFile)))))).withSkipLines(1).withCSVParser(parser).build();
+			} else {
+				reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(1).withCSVParser(parser).build();
+			}
 			String[] line;
 			while ((line = reader.readNext()) != null) {
 
@@ -103,7 +108,12 @@ public class InvestigateBav {
 				continue;
 			}
 
-			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(1).withCSVParser(parser).build();
+			CSVReader reader = null;
+			if (sampleFile.getName().endsWith(".gz")) {
+				reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(sampleFile)))))).withSkipLines(1).withCSVParser(parser).build();
+			} else {
+				reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(1).withCSVParser(parser).build();
+			}
 
 			String[] nextLine;
 			while ((nextLine = reader.readNext()) != null) {

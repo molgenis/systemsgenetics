@@ -172,7 +172,6 @@ public class ViolinBoxPlot {
                     }
                 }
             }
-
         }
 
         ArrayList<Pair<Double, Integer>> sortedPValuesPerDataset = new ArrayList<Pair<Double, Integer>>();

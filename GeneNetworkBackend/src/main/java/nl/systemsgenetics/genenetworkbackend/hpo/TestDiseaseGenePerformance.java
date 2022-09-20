@@ -13,11 +13,8 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +24,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
+
 import static nl.systemsgenetics.genenetworkbackend.ConvertHpoToMatrix.loadHgncToEnsgMap;
 import static nl.systemsgenetics.genenetworkbackend.ConvertHpoToMatrix.loadNcbiToEnsgMap;
 import static nl.systemsgenetics.genenetworkbackend.div.CalculateGenePredictability.loadSignificantTerms;
@@ -404,7 +403,12 @@ public class TestDiseaseGenePerformance {
 	private static Map<String, String> loadEnsgToHgnc(File mappingFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(mappingFile))).withSkipLines(1).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (mappingFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(mappingFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(mappingFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
 
 		HashMap<String, String> mapping = new HashMap<>();
 

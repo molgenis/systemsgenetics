@@ -9,23 +9,19 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
- *
  * @author patri
  */
 public class ConvertMgiToMatrix {
@@ -66,11 +62,11 @@ public class ConvertMgiToMatrix {
 		HashMap<String, HashSet<String>> mgiPathwayToGenes = readMgiPhenoFile(mgiPhenoFile, mgiToEnsgMap);
 
 		DoubleMatrixDataset<String, String> gmiMatrix = new DoubleMatrixDataset(geneOrder2, mgiPathwayToGenes.keySet());
-		
+
 		HashSet<String> genesWithPathway = new HashSet<>(10000);
 		BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));
 
-		
+
 		for (Map.Entry<String, HashSet<String>> mgiPathwayToGenesEntry : mgiPathwayToGenes.entrySet()) {
 			String gmtPathway = mgiPathwayToGenesEntry.getKey();
 
@@ -84,16 +80,16 @@ public class ConvertMgiToMatrix {
 						geneWriter.write('\n');
 					}
 
-					if(!gmiMatrix.containsCol(gmtPathway)){
+					if (!gmiMatrix.containsCol(gmtPathway)) {
 						System.out.println("missing pathway: " + gmtPathway);
 					}
-					
-					if(!gmiMatrix.containsRow(gene)){
+
+					if (!gmiMatrix.containsRow(gene)) {
 						System.out.println("Missing gene: " + gene);
 					}
-					
+
 					gmiMatrix.setElement(gene, gmtPathway, 1);
-					
+
 				}
 			}
 
@@ -110,13 +106,19 @@ public class ConvertMgiToMatrix {
 	private static HashMap<String, String> mgiHgncReader(File hgncMapFile, int hgncCol) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(hgncMapFile))).withSkipLines(0).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (hgncMapFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(hgncMapFile))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(hgncMapFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 		String[] nextLine = reader.readNext();
 
 		if (!nextLine[0].equals("MGI Accession ID") || !nextLine[hgncCol].equals("HGNC ID")) {
 			throw new Exception("Did not find expect columns");
-			
+
 		}
 
 		HashMap<String, String> hgncIdToEnsgMap = new HashMap<>(70000);
@@ -132,7 +134,15 @@ public class ConvertMgiToMatrix {
 	private static HashMap<String, HashSet<String>> readMgiPhenoFile(File mgiPhenoFile, HashMap<String, String> mgiToEnsgMap) throws Exception {
 
 		final CSVParser mgiParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader mgiReader = new CSVReaderBuilder(new BufferedReader(new FileReader(mgiPhenoFile))).withSkipLines(1).withCSVParser(mgiParser).build();
+		CSVReader mgiReader = null;
+		if (mgiPhenoFile.getName().endsWith(".gz")) {
+			mgiReader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(mgiPhenoFile))))
+			)).withSkipLines(1).withCSVParser(mgiParser).build();
+		} else {
+			mgiReader = new CSVReaderBuilder(new BufferedReader(new FileReader(mgiPhenoFile))).withSkipLines(1).withCSVParser(mgiParser).build();
+		}
+
 
 		HashMap<String, HashSet<String>> mgiPathwayToGenes = new HashMap<>();
 
@@ -162,7 +172,15 @@ public class ConvertMgiToMatrix {
 	private static HashMap<String, String> hgncMapReader(File hgncMapFile) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(hgncMapFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (hgncMapFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(hgncMapFile))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(hgncMapFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
+
 
 		String[] nextLine = reader.readNext();
 
@@ -183,7 +201,15 @@ public class ConvertMgiToMatrix {
 	private static ArrayList<String> readGenes(File geneOrderFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (geneOrderFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(geneOrderFile))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
+
 
 		String[] nextLine;
 		ArrayList<String> geneOrder = new ArrayList<>();

@@ -10,11 +10,8 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,16 +19,18 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.GZIPInputStream;
+
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
+
 import static umcg.genetica.math.matrix2.DoubleMatrixDataset.loadDoubleBinaryData;
 
 /**
- *
  * @author patri
  */
 public class TransEqtlEnrichment {
@@ -61,14 +60,14 @@ public class TransEqtlEnrichment {
 		DoubleMatrixDataset<String, String> transEqtlDataset = loadDoubleBinaryData(transEqtlMatrixPath);
 		System.out.println("trans matrix " + transEqtlDataset.rows() + " x " + transEqtlDataset.columns());
 
-		for(int r = 0 ; r < transEqtlDataset.rows() ; ++r){
-			for(int c = 0 ; c < transEqtlDataset.columns(); ++c){
-				if(Double.isNaN(transEqtlDataset.getElementQuick(r, c))){
+		for (int r = 0; r < transEqtlDataset.rows(); ++r) {
+			for (int c = 0; c < transEqtlDataset.columns(); ++c) {
+				if (Double.isNaN(transEqtlDataset.getElementQuick(r, c))) {
 					transEqtlDataset.setElementQuick(r, c, 0);
 				}
 			}
-		}	
-		
+		}
+
 		HashMap<String, HashSet<String>> gwasVariants = readGwasFile(gwasFile);
 
 		HashSet<String> allGwasVariants = new HashSet<>();
@@ -85,9 +84,9 @@ public class TransEqtlEnrichment {
 		DoubleMatrixDataset<String, String> sumChi2Dataset = new DoubleMatrixDataset<String, String>(transEqtlDataset.getHashCols().keySet(), gwasVariants.keySet());
 
 		for (String trait : gwasVariants.keySet()) {
-			
+
 			System.out.println(trait);
-			
+
 			HashSet<String> variants = gwasVariants.get(trait);
 
 			variants.retainAll(transEqtlDataset.getRowObjects());
@@ -108,7 +107,13 @@ public class TransEqtlEnrichment {
 	private static HashMap<String, HashSet<String>> readGwasFile(File gwas) throws FileNotFoundException, IOException {
 
 		final CSVParser gwasParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader gwasReader = new CSVReaderBuilder(new BufferedReader(new FileReader(gwas))).withSkipLines(1).withCSVParser(gwasParser).build();
+		CSVReader gwasReader = null;
+		if (gwas.getName().endsWith(".gz")) {
+			gwasReader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(gwas)))))).withSkipLines(1).withCSVParser(gwasParser).build();
+		} else {
+			gwasReader = new CSVReaderBuilder(new BufferedReader(new FileReader(gwas))).withSkipLines(1).withCSVParser(gwasParser).build();
+		}
+
 
 		HashMap<String, HashSet<String>> gwasVariants = new HashMap<>();
 

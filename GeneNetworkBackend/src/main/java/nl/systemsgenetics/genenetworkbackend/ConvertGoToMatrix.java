@@ -4,19 +4,16 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /*
@@ -24,15 +21,17 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 /**
- *
  * @author patri
  */
 public class ConvertGoToMatrix {
 
 	private static enum GoType {
 		F, P, C
-	};
+	}
+
+	;
 
 	/**
 	 * @param args the command line arguments
@@ -53,7 +52,7 @@ public class ConvertGoToMatrix {
 		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = readPathwayFile(pathwayFile, uniProtToEnsgMap, hgncToEnsgMap);
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
-		
+
 		LinkedHashSet<String> geneOrder2 = new LinkedHashSet<>(geneOrder);
 
 		System.out.println("Genes in order file: " + geneOrder2.size());
@@ -105,10 +104,16 @@ public class ConvertGoToMatrix {
 	private static EnumMap<GoType, HashMap<String, HashSet<String>>> readPathwayFile(File pathwayFile, HashMap<String, ArrayList<String>> uniProtToEnsgMap, HashMap<String, ArrayList<String>> hgncToEnsgMap) throws Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(pathwayFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (pathwayFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(pathwayFile))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(pathwayFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 
-		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = new EnumMap<>(GoType.class
-		);
+		EnumMap<GoType, HashMap<String, HashSet<String>>> goTypePathwayToGenes = new EnumMap<>(GoType.class);
 
 		for (GoType goType : GoType.values()) {
 			goTypePathwayToGenes.put(goType, new HashMap<>());
@@ -130,10 +135,10 @@ public class ConvertGoToMatrix {
 
 				ArrayList<String> ensgIds = uniProtToEnsgMap.get(uniProtId);
 
-				if(ensgIds == null){
+				if (ensgIds == null) {
 					ensgIds = hgncToEnsgMap.get(hgcnId);
 				}
-				
+
 				if (ensgIds == null) {
 					System.err.println("Missing mapping for gene: " + uniProtId + " " + nextLine[2]);
 				} else {
@@ -163,7 +168,16 @@ public class ConvertGoToMatrix {
 	public static ArrayList<String> readGenes(File geneOrderFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+
+		if (geneOrderFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(geneOrderFile))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 
 		String[] nextLine;
 		ArrayList<String> geneOrder = new ArrayList<>();
@@ -181,8 +195,14 @@ public class ConvertGoToMatrix {
 	private static HashMap<String, ArrayList<String>> loadUniProtToEnsgMap(File map) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (map.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(map))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
+		}
 		String[] nextLine = reader.readNext();
 
 //		if (!nextLine[0].equals("Gene stable ID") || !nextLine[1].equals("Transcript stable ID") || !nextLine[2].equals("UniProtKB Gene Name ID") || !nextLine[3].equals("UniProtKB/Swiss-Prot ID") || !nextLine[4].equals("UniProtKB/TrEMBL ID")) {
@@ -211,11 +231,18 @@ public class ConvertGoToMatrix {
 		return uniProtToEnsgMap;
 
 	}
-	
+
 	private static HashMap<String, ArrayList<String>> loadHgncToEnsgMap(File map) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (map.getName().endsWith("gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(map)))))).withSkipLines(0).withCSVParser(parser).build();
+
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(map))).withSkipLines(0).withCSVParser(parser).build();
+		}
+
 
 		String[] nextLine = reader.readNext();
 

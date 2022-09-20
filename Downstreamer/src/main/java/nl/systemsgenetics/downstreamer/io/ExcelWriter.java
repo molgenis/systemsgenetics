@@ -12,6 +12,7 @@ import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
@@ -210,7 +211,14 @@ public class ExcelWriter {
 				PathwayDatabase curDb = enrichment.getPathwayDatabase();
 
 				// Intersect all available genes for that pathway
-				List<String> availGenes = DoubleMatrixDataset.readDoubleTextDataRowNames(curDb.getLocation() + ".rows.txt", '\t');
+				String curDbRowFile = curDb.getLocation() + ".rows.txt";
+				if(!new File(curDbRowFile).canRead()){
+					curDbRowFile+=".gz";
+					if(!new File(curDbRowFile).canRead()){
+						throw new FileNotFoundException("Cannot find file: "+curDb.getLocation() + ".rows.txt or "+curDb.getLocation() + ".rows.txt.gz");
+					}
+				}
+				List<String> availGenes = DoubleMatrixDataset.readDoubleTextDataRowNames(curDbRowFile, '\t');
 				significantGenes.retainAll(availGenes);
 
 				// Make the subset
@@ -512,7 +520,14 @@ public class ExcelWriter {
 
 		PathwayDatabase pathwayDatabase = pathwayEnrichment.getPathwayDatabase();
 
-		PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayDatabase.getLocation() + ".colAnnotations.txt"));
+		String pathwayAnnotationFile = pathwayDatabase.getLocation() + ".colAnnotations.txt";
+		if(!new File(pathwayAnnotationFile).canRead()){
+			pathwayAnnotationFile+=".gz";
+			if(!new File(pathwayAnnotationFile).canRead()){
+				LOGGER.debug("Cannot find file: "+pathwayDatabase.getLocation() + ".colAnnotations.txt or "+pathwayDatabase.getLocation() + ".colAnnotations.txt.gz");
+			}
+		}
+		PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayAnnotationFile));
 		int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 
 		DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();

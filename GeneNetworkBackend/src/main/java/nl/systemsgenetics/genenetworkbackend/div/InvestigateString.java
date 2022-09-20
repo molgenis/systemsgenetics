@@ -11,14 +11,12 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.zip.GZIPInputStream;
 
 /**
  *
@@ -38,7 +36,14 @@ public class InvestigateString {
 		HashMap<String, String> enspToEnsgMap = loadEnspToEnsgMap(ensgEnspFile);
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator(' ').withIgnoreQuotations(true).build();
-		final CSVReader sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(stringFile))).withSkipLines(1).withCSVParser(parser).build();
+
+		CSVReader sampleFileReader = null;
+		if (stringFile.getName().endsWith(".gz")) {
+			sampleFileReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(stringFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(stringFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
+
 
 		HashSet<GenePair> observedGenePairs = new HashSet<>();
 		TObjectIntMap<String> geneCombinedConfidentCount = new TObjectIntHashMap<>();
@@ -94,8 +99,12 @@ public class InvestigateString {
 	private static HashMap<String, String> loadEnspToEnsgMap(File mapFile) throws FileNotFoundException, IOException, Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(mapFile))).withSkipLines(0).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (mapFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(mapFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(mapFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 		String[] nextLine = reader.readNext();
 
 		if (!nextLine[0].equals("Ensembl Gene ID") || !nextLine[1].equals("Ensembl Protein ID")) {

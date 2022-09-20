@@ -62,7 +62,7 @@ public class CalculateGeneInvCorMatrix {
 
 				if (LOGGER.isDebugEnabled()) {
 					try {
-						genePvaluesNullGwasGeneArmCorrelation.save(new File(options.getOutputBasePath() + "_" + chrArm + "_GeneCorMatrix.txt"));
+						genePvaluesNullGwasGeneArmCorrelation.save(new File(options.getOutputBasePath() + "_" + chrArm + "_GeneCorMatrix.txt.gz"));
 					} catch (IOException ex) {
 						throw new RuntimeException(ex);
 					}
@@ -101,7 +101,7 @@ public class CalculateGeneInvCorMatrix {
 					LOGGER.fatal("Matrix info: " + genePvaluesNullGwasGeneArmCorrelationPruned.getMatrix().toStringShort());
 
 //					try {
-//						genePvaluesNullGwasGeneArmCorrelationPruned.save(options.getOutputBasePath() + "singularMatrix.txt");
+//						genePvaluesNullGwasGeneArmCorrelationPruned.save(options.getOutputBasePath() + "singularMatrix.txt.gz");
 //					} catch (IOException ex1) {
 //						throw ex;
 //					}
@@ -110,7 +110,7 @@ public class CalculateGeneInvCorMatrix {
 				final DoubleMatrixDataset<String, String> genePvaluesNullGwasGeneArmCorrelationInverse = new DoubleMatrixDataset(genePvaluesNullGwasGeneArmCorrelationInverseMatrix, genePvaluesNullGwasGeneArmCorrelationPruned.getHashRows(), genePvaluesNullGwasGeneArmCorrelationPruned.getHashCols());
 
 				try {
-					genePvaluesNullGwasGeneArmCorrelationInverse.save(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt");
+					genePvaluesNullGwasGeneArmCorrelationInverse.save(options.getOutputBasePath() + "_geneInvCor_" + chrArm + ".txt.gz");
 				} catch (IOException ex) {
 					throw new RuntimeException(ex);
 				}
