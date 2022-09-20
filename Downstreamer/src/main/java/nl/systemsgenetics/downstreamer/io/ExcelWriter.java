@@ -524,7 +524,7 @@ public class ExcelWriter {
 		if(!new File(pathwayAnnotationFile).canRead()){
 			pathwayAnnotationFile+=".gz";
 			if(!new File(pathwayAnnotationFile).canRead()){
-				throw new FileNotFoundException("Cannot find file: "+pathwayDatabase.getLocation() + ".colAnnotations.txt or "+pathwayDatabase.getLocation() + ".colAnnotations.txt.gz");
+				LOGGER.debug("Cannot find file: "+pathwayDatabase.getLocation() + ".colAnnotations.txt or "+pathwayDatabase.getLocation() + ".colAnnotations.txt.gz");
 			}
 		}
 		PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayAnnotationFile));

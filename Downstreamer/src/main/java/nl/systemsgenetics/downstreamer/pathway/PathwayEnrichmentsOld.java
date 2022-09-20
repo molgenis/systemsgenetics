@@ -416,9 +416,10 @@ public class PathwayEnrichmentsOld {
 				if (!new File(pwAnnotationFile).canRead()) {
 					pwAnnotationFile += ".gz";
 					if (!new File(pwAnnotationFile).canRead()) {
-						throw new FileNotFoundException("Cannot find file: " + pathwayDatabase.getLocation() + ".colAnnotations.txt or " + pathwayDatabase.getLocation() + ".colAnnotations.txt.gz");
+						LOGGER.debug("Cannot find file: " + pathwayDatabase.getLocation() + ".colAnnotations.txt or " + pathwayDatabase.getLocation() + ".colAnnotations.txt.gz");
 					}
 				}
+
 				final PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pwAnnotationFile));
 				final int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 				final DoubleMatrixDataset<String, String> databaseEnrichment = enrichments.get(pathwayDatabase);

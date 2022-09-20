@@ -59,8 +59,17 @@ public class PathwayDatabaseEnrichmentExcelWriter {
                 // Sort the records on the bonferoni fisher exact pvalue
                 curRecords.sort(Comparator.comparing(PathwayDatabaseEnrichmentRecord::getBonfPvalue));
 
-                // Read the (optional) annotations
-                PathwayAnnotations geneAssociationsAnnotations = new PathwayAnnotations(new File(geneAssociations.getLocation() + ".colAnnotations.txt"));
+//                // Read the (optional) annotations
+                String geneAssociationAnnotationFile = geneAssociations.getLocation() + ".colAnnotations.txt";
+                if(!new File(geneAssociationAnnotationFile).canRead()){
+                    geneAssociationAnnotationFile+=".gz";
+                    if(!new File(geneAssociationAnnotationFile).canRead()){
+                        LOGGER.debug("Cannot find file: "+geneAssociations.getLocation() + ".colAnnotations.txt or "+geneAssociations.getLocation() + ".colAnnotations.txt.gz");
+                    }
+                }
+
+                PathwayAnnotations geneAssociationsAnnotations = new PathwayAnnotations(new File(geneAssociationAnnotationFile));
+
                 int maxAnnotations = geneAssociationsAnnotations.getMaxNumberOfAnnotations();
 
                 // Initialize the sheet
