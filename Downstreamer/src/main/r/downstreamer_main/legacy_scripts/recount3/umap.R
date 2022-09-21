@@ -88,11 +88,11 @@ umapInput <- as.matrix(tissueSamples[,paste0("PC_",1:compsToUseForUmap)])
 
 sampleUmap <- umap(
   umapInput, 
-  n_epochs = 300, 
+  n_epochs = 1000, 
   init = init, 
   n_neighbors = 500, 
   min_dist = 2, init_sdev = 1e-4, learning_rate = 1, 
-  spread = 20, 
+  spread = 15, 
   bandwidth = 10,
   scale = "scale",
   local_connectivity = 1,
@@ -101,13 +101,18 @@ sampleUmap <- umap(
 
 rownames(sampleUmap) <- rownames(tissueSamples)
 colnames(sampleUmap) <- c("UMAP1", "UMAP2")
+save(sampleUmap, file = "umap/sampleUmap2.RData")
+
+#load(file = "umap/sampleUmap.RData")
+
+
+
+
 umapAndMeta <- merge(sampleUmap, tissueSamples, by = 0)
 rownames(umapAndMeta) <- umapAndMeta$Row.names
 dim(umapAndMeta)
 
 
-#save(sampleUmap, file = "umap/sampleUmap.RData")
-#load(file = "umap/sampleUmap.RData")
 
 
 rpng()
@@ -410,14 +415,24 @@ predictionsInTestPerTissue <- lapply(levels(umapAndMetaClassified$umapFactor), f
   })
   return(predictionsInTestThisTissue)
 })
-
+names(predictionsInTestPerTissue) <- levels(umapAndMetaClassified$umapFactor)
 str(predictionsInTestPerTissue)
+
+x <- sapply(predictionsInTestPerTissue, function(predictionsInTestThisTissue){
+  return(predictionsInTestThisTissue[3,11])
+})
+sort(x)
+
+predictionsInTest[2,15]
+
+predictionsInTestPerTissue[["Whole Blood Fetal"]]
 
 layout(matrix(1:2, nrow = 1))
 plot(t(predictionsInTest[1:2,]), main = "Percentage classification missed in test dataset")
-sink <- sapply(predictionsInTestPerTissue, function(predictionsInTestThisTissue){
+for(tissueClass in levels(umapAndMetaClassified$umapFactor)){
+  predictionsInTestThisTissue <- predictionsInTestPerTissue[[tissueClass]]
   points(t(predictionsInTestThisTissue[1:2,]), type = "l",  col=adjustcolor("grey", alpha.f = 0.5))
-})
+}
 plot(t(predictionsInTest[c(1,3),]), main = "Percentage wrong classification in test dataset")
 sink <- sapply(predictionsInTestPerTissue, function(predictionsInTestThisTissue){
   points(t(predictionsInTestThisTissue[c(1,3),]), type = "l",  col=adjustcolor("grey", alpha.f = 0.5))
@@ -443,13 +458,11 @@ umapAndMeta$predictedTissue <- predictions[,1]
 predictionsScores <- predict(cfit, s = "lambda.1se", newx = as.matrix(umapAndMeta[,paste0("PC_",1:compsToUse)]), type = "response")
 predictionsScores <- predictionsScores[,,1]
 rownames(predictionsScores) <- umapAndMeta$Row.names
-str(predictionsScores)
-sort(predictionsScores["SRR5499181",])
 umapAndMeta$predictedTissueScore <- apply(predictionsScores, 1, max)
 
 sum(umapAndMeta$predictedTissueScore <= 0.5)
 umapAndMeta$predictedTissue[umapAndMeta$predictedTissueScore <= 0.5] <- NA
-sum(umapAndMeta$predictedTissueScore <= 0.5)
+
 
 rpng()
 hist(umapAndMeta$predictedTissueScore)
@@ -462,6 +475,14 @@ sum(umapAndMeta$misclasified )
 umapAndMeta$notPredictedBack <- FALSE
 umapAndMeta$notPredictedBack[!is.na(umapAndMeta$umapFactor) & is.na(umapAndMeta$predictedTissue) ] <- TRUE
 sum(umapAndMeta$notPredictedBack)
+
+sum(!is.na(umapAndMeta$predictedTissue))
+
+length(unique((umapAndMeta$predictedTissue)))
+
+sum(table((umapAndMeta$predictedTissue)) >= 1000)
+hist(table((umapAndMeta$predictedTissue)), breaks =25)
+barplot(table((umapAndMeta$predictedTissue)))
 
 sort(table(umapAndMeta[umapAndMeta$misclasified, "umapFactor"]))
 sort(table(umapAndMeta[umapAndMeta$notPredictedBack, "umapFactor"]))
@@ -524,18 +545,53 @@ for(tissueClass in levels(umapAndMeta$umapFactor)){
 }
 dev.off()
 
+save(umapAndMeta, file = "tissuePredictions_16_09_22.RData")
 
 unique(umapAndMeta$predictedTissue)[!unique(umapAndMeta$predictedTissue) %in% rownames(tissueCol)]
 
-umapAndMeta$TissuePredictedCol <- defaultCol
-umapAndMeta$TissuePredictedCol[umapAndMeta$predictedTissue %in% rownames(tissueCol)] <- adjustcolor(tissueCol[as.character(umapAndMeta$predictedTissue[umapAndMeta$predictedTissue %in% rownames(tissueCol)]),1], alpha.f = 0.5)
-umapAndMeta$plotOrderTissuePredicted <- order(umapAndMeta$TissuePredictedCol != defaultCol)
+table(umapAndMeta$predictedTissue)
+
+clusterToExclude <- c("U2-OS", "Leukemia_blood-cell-line", "HAP1", "LNCaP")
+
+umapAndMetaSelected <- umapAndMeta[!is.na(umapAndMeta$predictedTissue) & !umapAndMeta$predictedTissue %in% clusterToExclude, ]
+
+umapAndMetaSelected$TissuePredictedCol <- defaultCol
+umapAndMetaSelected$TissuePredictedCol[umapAndMetaSelected$predictedTissue %in% rownames(tissueCol)] <- adjustcolor(tissueCol[as.character(umapAndMetaSelected$predictedTissue[umapAndMetaSelected$predictedTissue %in% rownames(tissueCol)]),1], alpha.f = 0.5)
+umapAndMetaSelected$plotOrderTissuePredicted <- order(umapAndMetaSelected$TissuePredictedCol != defaultCol)
 
 rpng()
 
 par(mar = c(3,3,0.1,0.1), xpd = NA)
-plot(umapAndMeta[umapAndMeta$plotOrderTissuePredicted,"UMAP1"], umapAndMeta[umapAndMeta$plotOrderTissuePredicted,"UMAP2"], col = umapAndMeta$TissuePredictedCol[umapAndMeta$plotOrderTissuePredicted], cex = 0.2, pch = 16)
+plot(umapAndMetaSelected[umapAndMetaSelected$plotOrderTissuePredicted,"UMAP1"], umapAndMetaSelected[umapAndMetaSelected$plotOrderTissuePredicted,"UMAP2"], col = umapAndMetaSelected$TissuePredictedCol[umapAndMetaSelected$plotOrderTissuePredicted], cex = 0.2, pch = 16)
 
 dev.off()
 
 locator(n =2, type = "l")
+
+
+pdf(file = "umapPredicted.pdf", width = 16, height = 8)
+#rpng()
+
+layout(matrix(1:2,ncol = 2))
+
+par(mar = c(5,5,0.1,0.1), xpd = NA)
+plot(umapAndMetaSelected[umapAndMetaSelected$plotOrderTissuePredicted,"UMAP1"], umapAndMetaSelected[umapAndMetaSelected$plotOrderTissuePredicted,"UMAP2"], col = umapAndMetaSelected$TissuePredictedCol[umapAndMetaSelected$plotOrderTissuePredicted], cex = 0.4, pch = 16, bty = "n", xlab = "UMAP-1", ylab = "UMAP-2")
+
+par(mar = c(0,0,0,0), xpd = NA)
+plot.new()
+plot.window(xlim = 0:1, ylim = 0:1)
+legend("center", fill = tissueCol[rownames(tissueCol) %in% umapAndMetaSelected$predictedTissue,1], legend = row.names(tissueCol)[rownames(tissueCol) %in% umapAndMetaSelected$predictedTissue], bty = "n", ncol = 2,cex = 0.7)
+
+
+dev.off()
+
+
+
+
+countTable <- table(umapAndMetaSelected$predictedTissue)
+sum(countTable)
+pdf("baplotTissues.pdf", width = 12, height = 10)
+par(mar = c(20,5,2,0.1), xpd = NA)
+b <- barplot(countTable, las =2, col = tissueCol[names(countTable),])
+text(b, countTable + 250, countTable, font=1, srt = 90)
+dev.off()
