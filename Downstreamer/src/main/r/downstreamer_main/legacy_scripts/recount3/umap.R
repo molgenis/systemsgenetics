@@ -91,19 +91,20 @@ sampleUmap <- umap(
   n_epochs = 1000, 
   init = init, 
   n_neighbors = 500, 
-  min_dist = 2, init_sdev = 1e-4, learning_rate = 1, 
-  spread = 15, 
-  bandwidth = 10,
+  min_dist = 1, init_sdev = 1e-4, learning_rate = 2, 
+  spread = 20, 
+  bandwidth = 5,
   scale = "scale",
-  local_connectivity = 1,
+  local_connectivity = 10,
+  repulsion_strength = 0.5,
   metric = "correlation")
 
 
 rownames(sampleUmap) <- rownames(tissueSamples)
 colnames(sampleUmap) <- c("UMAP1", "UMAP2")
-save(sampleUmap, file = "umap/sampleUmap2.RData")
+save(sampleUmap, file = "umap/sampleUmap6.RData")
 
-#load(file = "umap/sampleUmap.RData")
+#load(file = "umap/sampleUmap3.RData")
 
 
 
@@ -122,6 +123,7 @@ plot(umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP1"], umapAndMeta[umapAndMeta$
 
 dev.off()
 
+plot(umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP1"], umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP2"], col = umapAndMeta$TissueCol[umapAndMeta$plotOrderTissues], cex = 0.2, pch = 16, xlim = c(-100,100), ylim = c(-100,100))
 
   
 
@@ -154,7 +156,7 @@ pdf(file = "umaptest.pdf", width = 16, height = 8)
 layout(matrix(1:2,ncol = 2))
 
 par(mar = c(3,5,0.1,0.1), xpd = NA)
-plot(umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP1"], umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP2"], col = umapAndMeta$umapAndMeta$TissueCol[plotOrderTissues], cex = 0.4, pch = 16)
+plot(umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP1"], umapAndMeta[umapAndMeta$plotOrderTissues,"UMAP2"], col = umapAndMeta$TissueCol[umapAndMeta$plotOrderTissues], cex = 0.2, pch = 16)
 
 par(mar = c(0,0,0,0), xpd = NA)
 plot.new()
@@ -549,22 +551,46 @@ save(umapAndMeta, file = "tissuePredictions_16_09_22.RData")
 
 unique(umapAndMeta$predictedTissue)[!unique(umapAndMeta$predictedTissue) %in% rownames(tissueCol)]
 
-table(umapAndMeta$predictedTissue)
+
 
 clusterToExclude <- c("U2-OS", "Leukemia_blood-cell-line", "HAP1", "LNCaP")
 
-umapAndMetaSelected <- umapAndMeta[!is.na(umapAndMeta$predictedTissue) & !umapAndMeta$predictedTissue %in% clusterToExclude, ]
 
-umapAndMetaSelected$TissuePredictedCol <- defaultCol
-umapAndMetaSelected$TissuePredictedCol[umapAndMetaSelected$predictedTissue %in% rownames(tissueCol)] <- adjustcolor(tissueCol[as.character(umapAndMetaSelected$predictedTissue[umapAndMetaSelected$predictedTissue %in% rownames(tissueCol)]),1], alpha.f = 0.5)
-umapAndMetaSelected$plotOrderTissuePredicted <- order(umapAndMetaSelected$TissuePredictedCol != defaultCol)
 
-rpng()
+
+samplesWithPrediction <- umapAndMeta[!is.na(umapAndMeta$predictedTissue) & !umapAndMeta$predictedTissue %in% clusterToExclude, c(
+  "predictedTissue",
+  "predictedTissueScore",
+  "umapFactor",
+  "misclasified"
+)]
+colnames(samplesWithPrediction)[3] <- "annotatedTissue"
+str(samplesWithPrediction)
+save(samplesWithPrediction, file = "samplesWithPrediction_16_09_22.RData")
+
+
+load(file = "umap/sampleUmap6.RData", verbose = T)
+
+
+umapAndPredictions <- merge(samplesWithPrediction, sampleUmap, by = 0 )
+rownames(umapAndPredictions) <- umapAndPredictions$Row.names
+
+
+umapAndPredictions$TissuePredictedCol <- defaultCol
+umapAndPredictions$TissuePredictedCol[umapAndPredictions$predictedTissue %in% rownames(tissueCol)] <- adjustcolor(tissueCol[as.character(umapAndPredictions$predictedTissue[umapAndPredictions$predictedTissue %in% rownames(tissueCol)]),1], alpha.f = 0.5)
+umapAndPredictions$plotOrderTissuePredicted <- order(umapAndPredictions$TissuePredictedCol != defaultCol)
+
+#rpng()
 
 par(mar = c(3,3,0.1,0.1), xpd = NA)
-plot(umapAndMetaSelected[umapAndMetaSelected$plotOrderTissuePredicted,"UMAP1"], umapAndMetaSelected[umapAndMetaSelected$plotOrderTissuePredicted,"UMAP2"], col = umapAndMetaSelected$TissuePredictedCol[umapAndMetaSelected$plotOrderTissuePredicted], cex = 0.2, pch = 16)
+plot(umapAndPredictions[umapAndPredictions$plotOrderTissuePredicted,"UMAP1"], umapAndPredictions[umapAndPredictions$plotOrderTissuePredicted,"UMAP2"], col = umapAndPredictions$TissuePredictedCol[umapAndPredictions$plotOrderTissuePredicted], cex = 0.2, pch = 16)
 
-dev.off()
+plot(umapAndPredictions[umapAndPredictions$plotOrderTissuePredicted,"UMAP1"], umapAndPredictions[umapAndPredictions$plotOrderTissuePredicted,"UMAP2"], col = umapAndPredictions$TissuePredictedCol[umapAndPredictions$plotOrderTissuePredicted], cex = 0.2, pch = 16, xlim = c(-100,70), ylim = c(-50,50))
+
+
+
+
+#dev.off()
 
 locator(n =2, type = "l")
 
@@ -575,12 +601,12 @@ pdf(file = "umapPredicted.pdf", width = 16, height = 8)
 layout(matrix(1:2,ncol = 2))
 
 par(mar = c(5,5,0.1,0.1), xpd = NA)
-plot(umapAndMetaSelected[umapAndMetaSelected$plotOrderTissuePredicted,"UMAP1"], umapAndMetaSelected[umapAndMetaSelected$plotOrderTissuePredicted,"UMAP2"], col = umapAndMetaSelected$TissuePredictedCol[umapAndMetaSelected$plotOrderTissuePredicted], cex = 0.4, pch = 16, bty = "n", xlab = "UMAP-1", ylab = "UMAP-2")
+plot(umapAndPredictions[umapAndPredictions$plotOrderTissuePredicted,"UMAP1"], umapAndPredictions[umapAndPredictions$plotOrderTissuePredicted,"UMAP2"], col = umapAndPredictions$TissuePredictedCol[umapAndPredictions$plotOrderTissuePredicted], cex = 0.2, pch = 16, bty = "n", xlab = "UMAP-1", ylab = "UMAP-2")
 
 par(mar = c(0,0,0,0), xpd = NA)
 plot.new()
 plot.window(xlim = 0:1, ylim = 0:1)
-legend("center", fill = tissueCol[rownames(tissueCol) %in% umapAndMetaSelected$predictedTissue,1], legend = row.names(tissueCol)[rownames(tissueCol) %in% umapAndMetaSelected$predictedTissue], bty = "n", ncol = 2,cex = 0.7)
+legend("center", fill = tissueCol[rownames(tissueCol) %in% umapAndPredictions$predictedTissue,1], legend = row.names(tissueCol)[rownames(tissueCol) %in% umapAndPredictions$predictedTissue], bty = "n", ncol = 2,cex = 0.7)
 
 
 dev.off()
@@ -588,7 +614,7 @@ dev.off()
 
 
 
-countTable <- table(umapAndMetaSelected$predictedTissue)
+countTable <- table(umapAndPredictions$predictedTissue)
 sum(countTable)
 pdf("baplotTissues.pdf", width = 12, height = 10)
 par(mar = c(20,5,2,0.1), xpd = NA)
