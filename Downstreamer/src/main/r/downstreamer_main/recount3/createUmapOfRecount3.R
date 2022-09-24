@@ -547,7 +547,8 @@ for(tissueClass in levels(umapAndMeta$umapFactor)){
 }
 dev.off()
 
-save(umapAndMeta, file = "tissuePredictions_16_09_22.RData")
+#save(umapAndMeta, file = "tissuePredictions/tissuePredictions_16_09_22.RData")
+load("tissuePredictions/tissuePredictions_16_09_22.RData")
 
 unique(umapAndMeta$predictedTissue)[!unique(umapAndMeta$predictedTissue) %in% rownames(tissueCol)]
 
@@ -566,8 +567,11 @@ samplesWithPrediction <- umapAndMeta[!is.na(umapAndMeta$predictedTissue) & !umap
 )]
 colnames(samplesWithPrediction)[3] <- "annotatedTissue"
 str(samplesWithPrediction)
-save(samplesWithPrediction, file = "samplesWithPrediction_16_09_22.RData")
+#save(samplesWithPrediction, file = "tissuePredictions/samplesWithPrediction_16_09_22.RData")
 
+load("tissuePredictions/samplesWithPrediction_16_09_22.RData")
+str(samplesWithPrediction)
+table(samplesWithPrediction$predictedTissue)
 
 load(file = "umap/sampleUmap6.RData", verbose = T)
 
