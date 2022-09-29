@@ -11,11 +11,11 @@ library(uwot)
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
-tissueCol <- read.delim("umap/col.txt", row.names = 1, na.strings = "")
 
 load(file = "DataForPredictions.RData")
 rownames(pcsAndMeta) <- pcsAndMeta$Row.names
-load(file = "combinedMeta_2022_09_15.RData", verbose = T)
+load(file = "tissuePredictions/samplesWithPrediction_16_09_22.RData", verbose = T)
+tissueCol <- read.delim("umap/col.txt", row.names = 1, na.strings = "")
 
 
 colnamesToUpdate <- colnames(pcsAndMeta)[colnames(pcsAndMeta) %in% colnames(combinedMeta)]
@@ -93,7 +93,7 @@ sampleUmap <- umap(
   n_neighbors = 500, 
   min_dist = 1, init_sdev = 1e-4, learning_rate = 2, 
   spread = 20, 
-  bandwidth = 5,
+  bandwidth = 10,
   scale = "scale",
   local_connectivity = 10,
   repulsion_strength = 0.5,
@@ -548,7 +548,7 @@ for(tissueClass in levels(umapAndMeta$umapFactor)){
 dev.off()
 
 #save(umapAndMeta, file = "tissuePredictions/tissuePredictions_16_09_22.RData")
-load("tissuePredictions/tissuePredictions_16_09_22.RData")
+load("tissuePredictions/tissuePredictions_16_09_22.RData", verbose = T)
 
 unique(umapAndMeta$predictedTissue)[!unique(umapAndMeta$predictedTissue) %in% rownames(tissueCol)]
 

@@ -19,14 +19,14 @@ str(exp)
 
 #save(exp, file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/Filtered_Matrices/TPM_log2_QNorm_QCed_CovCorrected_AllCovariates.RData")
 
+#exp contains expression rows genes cols samples
 
+#First center and scale each row
 #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
 expScale = exp - rowMeans(exp);
 # Standardize each variable
 expScale = expScale / sqrt(rowSums(expScale^2));   
-expCov = tcrossprod(expScale);#equevelent to correlation due to center scale
-range(expCov)
-str(expCov)
+expCov = tcrossprod(expScale);#equivalent to correlation due to center scale
 
 expEigen <- eigen(expCov)
 
@@ -41,8 +41,7 @@ str(eigenValues)
 
 save(eigenVectors, eigenValues, expFile, file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/PCA_Patrick/eigen.RData")
 
-
-
+#Here calculate sample principle components. Number needed is arbritary (no more than eigen vectors)
 expPcs <- t(expScale) %*% expEigen$vectors[,1:1000]
 
 colnames(expPcs) <- paste0("PC_",1:ncol(expPcs))
