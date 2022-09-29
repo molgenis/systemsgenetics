@@ -45,16 +45,6 @@ perChunkExp <- sapply(allFiles, function(file){
 
 str(sreObject)
 
-hist(log2(sreObject@assays@data@listData$raw_counts[,1]))
-dev.off()
-
-hist(studyExp[,1])
-dev.off()
-
-sum(!perChunkExp[[1]]==0)
-hist(perChunkExp[[1]][,1])
-dev.off()
-
 selectedSamplesExp <- do.call(cbind, perChunkExp)
 str(selectedSamplesExp)
 all(selectedSamples %in% colnames(selectedSamplesExp ))

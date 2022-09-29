@@ -563,12 +563,15 @@ samplesWithPrediction <- umapAndMeta[!is.na(umapAndMeta$predictedTissue) & !umap
   "predictedTissue",
   "predictedTissueScore",
   "umapFactor",
-  "misclasified"
+  "misclasified",
+  "study",
+  "sra.library_layout"
 )]
 colnames(samplesWithPrediction)[3] <- "annotatedTissue"
 str(samplesWithPrediction)
 #save(samplesWithPrediction, file = "tissuePredictions/samplesWithPrediction_16_09_22.RData")
 
+write.table(samplesWithPrediction, file = "samplesWithPrediction.txt")
 load("tissuePredictions/samplesWithPrediction_16_09_22.RData")
 str(samplesWithPrediction)
 table(samplesWithPrediction$predictedTissue)
