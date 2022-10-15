@@ -101,7 +101,12 @@ mclapply(tissueClasses,  mc.cores = 10, function(tissue, exp){
   
 }, exp = exp)
 
-tissue = "Kidney"
+tissue = "Whole Blood"
+tissue = "Brain-Nucleus accumbens (basal ganglia)"
+
+ERP009290
+ERP009290
+samplesWithPrediction[samplesWithPrediction$study=="ERP009290",]
 
 sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
   
@@ -112,19 +117,99 @@ sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
   tissueSamplesInfo <- samplesWithPrediction[rownames(expPcs),]
   studies <- length(unique(tissueSamplesInfo$study))
   
+  #are in the same order
+  write.table(cbind(tissueSamplesInfo, expPcs), col.names = T, row.names = F, sep = "\t", quote = F, file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),".txt"))
+  
+  shortTissue <- ifelse(nchar(tissue) > 20, paste0(substr(tissue,0,17),"..."), tissue)
+  
   breakPoints <- seq(0.5,1,by = 0.05)
   breakCols <- (adjustcolor(viridis(length(breakPoints), option = "inferno"), alpha.f = 0.5))
   
   expPcsMeans <- apply(expPcs, 2, mean)
   expPcsSds <- apply(expPcs, 2, sd)
-  threshold <- expPcsMeans + 3 * expPcsSds
+  
+  #Larger threshold is needed for wholeblood
+  sdThreshold <- ifelse(tissue == "Whole Blood", 4,3)
+  
+  threshold <- expPcsMeans + sdThreshold * expPcsSds
   
   outlierPerComp <- sapply(1:10, function(i){
    
     abs(expPcs[,i]) > threshold[i]
   })
-  outlier <- apply(outlierPerComp, 1, any)
-  sum(outlier)
+  tissueSamplesInfo$outlier <- apply(outlierPerComp, 1, any)
+  sum(tissueSamplesInfo$outlier)
+  
+  ### Do some manual corrections
+  if(tissue == "Airway basal cells"){
+    tissueSamplesInfo$outlier[expPcs[,1] < 2] <- TRUE #Checked annotation, these are wrongly predicted
+  }
+  tissueSamplesInfo$outlier[tissueSamplesInfo$study == "ERP009290"] <- TRUE #Mixed tissue samples
+      
+  if(tissue == "Brain-Hindbrain-Fetal"){
+    tissueSamplesInfo$outlier[expPcs[,1] < -10] <- TRUE #Checked annotation, these are wrongly predicted
+    tissueSamplesInfo$outlier[expPcs[,3] > 3] <- TRUE #Checked annotation, these are wrongly predicted
+  }
+  if(tissue == "Brain-Nucleus accumbens (basal ganglia)"){
+    tissueSamplesInfo$outlier[expPcs[,1] < -5] <- TRUE #Checked annotation, these are wrongly predicted
+    tissueSamplesInfo$outlier[expPcs[,3] < -10] <- TRUE #Checked annotation, these are wrongly predicted
+  }
+  if(tissue == "Kidney"){
+    tissueSamplesInfo$outlier[expPcs[,3] < -6] <- TRUE #Checked annotation, these are wrongly predicted
+  }
+  if(tissue == "Macrophages-iPSC"){
+    tissueSamplesInfo$outlier[tissueSamplesInfo$study == "ERP020977"] <- FALSE #not real outlier, strange distribution due to stimulations.
+  }
+  if(tissue == "Monocytes"){
+    tissueSamplesInfo$outlier[expPcs[,2] > 3] <- TRUE #Checked annotation, these are wrongly predicted
+  }
+  if(tissue == "Nasal Lavage"){
+    tissueSamplesInfo$outlier[expPcs[,1] < -5] <- TRUE #Checked annotation, these are wrongly predicted
+  }
+  if(tissue == "Vagina"){
+    tissueSamplesInfo$outlier[expPcs[,1] > 10] <- TRUE #Checked annotation, these are wrongly predicted
+    tissueSamplesInfo$outlier[expPcs[,2] < -8] <- TRUE #Checked annotation, these are wrongly predicted
+  }
+  
+  
+  
+  ###########################
+  rpng(width = 1000, height = 1000)
+  palette(adjustcolor(c("grey", "firebrick3"), alpha.f = 0.5))
+  layout(matrix(c(1,1,1,1,1,2:11),ncol = 5, byrow = T), heights = c(0.1,1,1))
+  par(mar = c(0,0,0,0), xpd = NA, cex = 1.2)
+  plot.new()
+  plot.window(xlim = 0:1, ylim = 0:1)
+  text(0.5,0.5, paste0(tissue, " (", nrow(tissueSamplesInfo) ,")"), cex = 2, font = 2)
+  
+  par(mar = c(4,4,3,0.5), xpd = NA)
+  
+  for(i in 2:10){
+    plot(expPcs[,1],expPcs[,i], col = tissueSamplesInfo$outlier + 1, pch = 16, cex = 1, main = paste0("Comp ", i), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = paste0("Comp ", i," (", round(explainedVariance[i],2) ,"%)"), bty = "n")
+    abline(v=c(-threshold[1],threshold[1]), lwd = 2, col = "firebrick3", xpd = FALSE)
+    abline(h=c(-threshold[i],threshold[i]), lwd = 2, col = "firebrick3", xpd = FALSE)
+  }
+  
+  par(mar = c(0,2,3,1), xpd = NA)
+  plot.new()
+  plot.window(xlim = 0:1, ylim = 0:1)
+  legend("top",title="Outliers",legend=c("Included", "Excluded"), col = c("grey", "firebrick3") , pch = 16, bty = "n")
+  
+  
+  
+  dev.off()
+  
+  
+  
+  
+  
+  
+  
+  
+  ###################################3
+  colnames(expPcs) <- paste0("Comp ",1:10, " (", round(explainedVariance[1:10],2) ,"%)")
+  write.table(cbind(tissueSamplesInfo, expPcs), col.names = NA, row.names = T, sep = "\t", quote = F, file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),".txt"))
+  
   
   png(file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),"1.png"), width = 1200, height = 900)
   #rpng()
@@ -145,7 +230,7 @@ sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
   annotated <- factor(rep("Unkown", nrow(tissueSamplesInfo)), levels = c("Unkown", "Other", "Current"))
   annotated[!is.na(tissueSamplesInfo$annotatedTissue) & tissueSamplesInfo$annotatedTissue != tissue] <- "Other"
   annotated[!is.na(tissueSamplesInfo$annotatedTissue) & tissueSamplesInfo$annotatedTissue == tissue] <- "Current"
-  plot(expPcs[,1],expPcs[,2], col = annotated, pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 1, main = paste0("Annotated as " , tissue), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = paste0("Comp 2 (", round(explainedVariance[2],2) ,"%)"), bty = "n")
+  plot(expPcs[,1],expPcs[,2], col = annotated, pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 1, main = paste0("Annotated as " , shortTissue), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = paste0("Comp 2 (", round(explainedVariance[2],2) ,"%)"), bty = "n")
   
   
   palette(adjustcolor(c("dodgerblue1", "maroon2"), alpha.f = 0.5))
@@ -162,14 +247,14 @@ sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
   par(mar = c(0,2,3,1), xpd = NA)
   plot.new()
   plot.window(xlim = 0:1, ylim = 0:1)
-  legend("topleft",title="Annotation",legend=c("Unkown", "Other", tissue), col = c("lemonchiffon3", "darkorange1", "springgreen2") , pch = 16, bty = "n")
+  legend("topleft",title="Annotation",legend=c("Unkown", "Other", shortTissue), col = c("lemonchiffon3", "darkorange1", "springgreen2") , pch = 16, bty = "n")
   legend("top",title="Layout",legend=c("Single", "Paired"), col = c("maroon2", "dodgerblue1") , pch = 16, bty = "n")
   legend("topright",title="Probability",legend=seq(0.5,1,by = 0.05),col = breakCols,pch=16, bty = "n")
   
   
   dev.off()
   
-  colnames(expPcs) <- paste0("Comp ",1:10, " (", round(explainedVariance[1:10],2) ,"%)")
+  
   
   #png(file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),"2.png"), width = 2000, height = 2000)
   #pairs(expPcs[,1:10], col = breakCols[as.numeric(cut(tissueSamplesInfo$predictedTissueScore, breaks = breakPoints ))], cex = 2, upper.panel = NULL, pch = 16)
@@ -183,27 +268,13 @@ sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
   
   #png(file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),"3.png"), width = 2000, height = 2000)
   #palette(adjustcolor(c("grey", "firebrick3"), alpha.f = 0.5))
-  #pairs(expPcs[,1:10], col = outlier + 1, pch = 16, cex = 2, upper.panel = NULL)
+  #pairs(expPcs[,1:10], col = tissueSamplesInfo$outlier + 1, pch = 16, cex = 2, upper.panel = NULL)
   #dev.off()
   
   png(file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),"4.png"), width = 1500, height = 700)
-  #rpng()
-  palette(adjustcolor(c("grey", "firebrick3"), alpha.f = 0.5))
-  layout(matrix(c(1,1,1,1,1,2:11),ncol = 5, byrow = T), heights = c(0.1,1,1))
-  par(mar = c(0,0,0,0), xpd = NA, cex = 1.2)
-  plot.new()
-  plot.window(xlim = 0:1, ylim = 0:1)
-  text(0.5,0.5, paste0(tissue, " (", nrow(tissueSamplesInfo) ,")"), cex = 2, font = 2)
   
-  par(mar = c(4,4,3,0.5), xpd = NA)
+  ##########################################
   
-  for(i in 2:10){
-    plot(expPcs[,1],expPcs[,i], col = outlier + 1, pch = 16, cex = 1, main = paste0("Comp ", i), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = paste0("Comp ", i," (", round(explainedVariance[i],2) ,"%)"), bty = "n")
-    abline(v=c(-threshold[1],threshold[1]), lwd = 2, col = "firebrick3", xpd = FALSE)
-    abline(h=c(-threshold[i],threshold[i]), lwd = 2, col = "firebrick3", xpd = FALSE)
-  }
-  
-  dev.off()
   
   
   png(file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),"5.png"), width = 1500, height = 700)
@@ -222,6 +293,12 @@ sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
     abline(h=c(-threshold[i],threshold[i]), lwd = 2, col = "firebrick3", xpd = FALSE)
   }
   
+  par(mar = c(0,2,3,1), xpd = NA)
+  plot.new()
+  plot.window(xlim = 0:1, ylim = 0:1)
+  legend("top",title="Probability",legend=seq(0.5,1,by = 0.05),col = breakCols,pch=16, bty = "n")
+  
+  
   dev.off()
   
   
@@ -231,30 +308,6 @@ sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
 }, samplesWithPrediction = samplesWithPrediction)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-save(perTissueExp, perTissuePca, file = "perTissueNormalization/tmpTestSession.RData")
-#load(file = "perTissueNormalization/tmpTestRlog.RData")
-
-save(expPcs, samplesWithPrediction, file = "perTissueNormalization/tmpTest2.RData")
-load("perTissueNormalization/tmpTest2.RData")
 
 
 
