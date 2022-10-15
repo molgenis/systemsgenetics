@@ -17,11 +17,7 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
-import org.molgenis.genotype.GenotypeDataException;
-import org.molgenis.genotype.GenotypeWriter;
-import org.molgenis.genotype.GenotypedDataWriterFormats;
-import org.molgenis.genotype.RandomAccessGenotypeData;
-import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
+import org.molgenis.genotype.*;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
@@ -249,6 +245,17 @@ class GenotypeHarmonizer {
 			}
 		}
 
+		if (parameters.getVcfGenotypeFormatSupplier() != null && (
+				parameters.getInputType() != RandomAccessGenotypeDataReaderFormats.VCF &&
+				parameters.getInputType() != RandomAccessGenotypeDataReaderFormats.VCF_FOLDER)) {
+			String errorMessage = String.format(
+					"GenotypeField can only be set for the VCF input type, not for '%s'",
+					parameters.getInputType().getName());
+			LOGGER.fatal(errorMessage);
+			System.err.println(errorMessage);
+			System.exit(1);
+		}
+
 		SampleIdIncludeFilter sampleFilter = null;
 
 		if (parameters.getSampleFilterListFile() != null) {
@@ -275,7 +282,7 @@ class GenotypeHarmonizer {
 		final RandomAccessGenotypeData inputData;
 
 		try {
-			inputData = parameters.getInputType().createFilteredGenotypeData(parameters.getInputBasePaths(), genotypeDataCache, varFilter, sampleFilter, parameters.getForceSeqName(), parameters.getMinimumPosteriorProbability());
+			inputData = parameters.getInputType().createFilteredGenotypeData(parameters.getInputBasePaths(), genotypeDataCache, varFilter, sampleFilter, parameters.getForceSeqName(), parameters.getVcfGenotypeFormatSupplier(), parameters.getMinimumPosteriorProbability());
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
 					+ "Please see README on how to create a tabix file");

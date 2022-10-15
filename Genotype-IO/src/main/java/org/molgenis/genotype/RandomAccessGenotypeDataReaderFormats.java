@@ -13,6 +13,7 @@ import org.molgenis.genotype.trityper.TriTyperGenotypeData;
 import org.molgenis.genotype.variantFilter.VariantFilter;
 import org.molgenis.genotype.variantFilter.VariantFilterableGenotypeDataDecorator;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
+import org.molgenis.genotype.vcf.VcfGenotypeField.VcfGenotypeFormatSupplier;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -135,12 +136,12 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize, String forcedSequence) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
-		return createGenotypeData(new String[]{path}, cacheSize, forcedSequence, 0.34f);
+		return createGenotypeData(new String[]{path}, cacheSize, forcedSequence, null,0.34f);
 	}
 
 	public RandomAccessGenotypeData createGenotypeData(String path, int cacheSize, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
-		return createGenotypeData(new String[]{path}, cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
+		return createGenotypeData(new String[]{path}, cacheSize, forcedSequence, null, minimumPosteriorProbabilityToCall);
 	}
 
 	public RandomAccessGenotypeData createGenotypeData(String[] paths) throws IOException,
@@ -155,11 +156,14 @@ public enum RandomAccessGenotypeDataReaderFormats {
 
 	public RandomAccessGenotypeData createGenotypeData(String[] paths, int cacheSize, String forcedSequence) throws IOException,
 			IncompatibleMultiPartGenotypeDataException {
-		return createGenotypeData(paths, cacheSize, forcedSequence, 0.34f);
+		return createGenotypeData(paths, cacheSize, forcedSequence, null, 0.34f);
 	}
 
-	public RandomAccessGenotypeData createGenotypeData(String[] paths, int cacheSize, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException,
-			IncompatibleMultiPartGenotypeDataException {
+	public RandomAccessGenotypeData createGenotypeData(
+			String[] paths, int cacheSize, String forcedSequence,
+			VcfGenotypeFormatSupplier vcfGenotypeFormatSupplier,
+			double minimumPosteriorProbabilityToCall) throws
+			IOException, IncompatibleMultiPartGenotypeDataException {
 
 		if (paths == null || paths.length == 0) {
 			throw new GenotypeDataException("Error no paths specified");
@@ -181,12 +185,16 @@ public enum RandomAccessGenotypeDataReaderFormats {
 				} else {
 					vcfFile = new File(paths[0] + ".vcf.gz");
 				}
-				return new VcfGenotypeData(vcfFile, cacheSize, minimumPosteriorProbabilityToCall);
+				VcfGenotypeData vcfGenotypeData = new VcfGenotypeData(vcfFile, cacheSize, minimumPosteriorProbabilityToCall);
+				if (vcfGenotypeFormatSupplier != null) {
+					vcfGenotypeData.setPreferredGenotypeFormat(vcfGenotypeFormatSupplier);
+				}
+				return vcfGenotypeData;
 			case VCF_FOLDER:
 				if (forcedSequence != null) {
 					throw new GenotypeDataException("Cannot force sequence for " + this.getName());
 				}
-				return MultiPartGenotypeData.createFromVcfFolder(new File(paths[0]), cacheSize, minimumPosteriorProbabilityToCall);
+				return MultiPartGenotypeData.createFromVcfFolder(new File(paths[0]), cacheSize, vcfGenotypeFormatSupplier, minimumPosteriorProbabilityToCall);
 			case SHAPEIT2:
 				return new HapsGenotypeData(new File(paths[0] + ".haps"), new File(
 						paths[0] + ".sample"), cacheSize, forcedSequence);
@@ -310,8 +318,12 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	 */
 	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter) throws IOException {
 
-		return createFilteredGenotypeData(path, cacheSize, variantFilter, sampleFilter, null, 0.34f);
+		return createFilteredGenotypeData(path, cacheSize, variantFilter, sampleFilter,null, null, 0.34f);
 
+	}
+	public RandomAccessGenotypeData createFilteredGenotypeData(
+			String[] paths, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException {
+		return createFilteredGenotypeData(paths, cacheSize, variantFilter, sampleFilter, null, null, minimumPosteriorProbabilityToCall);
 	}
 
 	/**
@@ -321,18 +333,21 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	 * @param cacheSize
 	 * @param variantFilter
 	 * @param sampleFilter
-	 * @param forcedSequence null if not used
+	 * @param forcedSequence                    null if not used
+	 * @param vcfGenotypeFormatSupplier
 	 * @param minimumPosteriorProbabilityToCall
 	 * @return
 	 * @throws IOException
 	 */
-	public RandomAccessGenotypeData createFilteredGenotypeData(String paths[], int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException {
+	public RandomAccessGenotypeData createFilteredGenotypeData(
+			String[] paths, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, String forcedSequence,
+			VcfGenotypeFormatSupplier vcfGenotypeFormatSupplier, double minimumPosteriorProbabilityToCall) throws IOException {
 
 		switch (this) {
 			case TRITYPER:
 				return new TriTyperGenotypeData(new File(paths[0]), cacheSize, variantFilter, sampleFilter);
 			default:
-				RandomAccessGenotypeData genotypeData = createGenotypeData(paths, cacheSize, forcedSequence, minimumPosteriorProbabilityToCall);
+				RandomAccessGenotypeData genotypeData = createGenotypeData(paths, cacheSize, forcedSequence, vcfGenotypeFormatSupplier, minimumPosteriorProbabilityToCall);
 				if (sampleFilter != null) {
 					genotypeData = new SampleFilterableGenotypeDataDecorator(genotypeData, sampleFilter);
 				}
@@ -356,9 +371,9 @@ public enum RandomAccessGenotypeDataReaderFormats {
 	 * @return
 	 * @throws IOException
 	 */
-	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, String forcedSequence, double minimumPosteriorProbabilityToCall) throws IOException {
+	public RandomAccessGenotypeData createFilteredGenotypeData(String path, int cacheSize, VariantFilter variantFilter, SampleFilter sampleFilter, String forcedSequence, VcfGenotypeFormatSupplier vcfGenotypeFormatSupplier, double minimumPosteriorProbabilityToCall) throws IOException {
 
-		return createFilteredGenotypeData(new String[]{path}, cacheSize, variantFilter, sampleFilter, forcedSequence, minimumPosteriorProbabilityToCall);
+		return createFilteredGenotypeData(new String[]{path}, cacheSize, variantFilter, sampleFilter, forcedSequence, vcfGenotypeFormatSupplier, minimumPosteriorProbabilityToCall);
 
 	}
 
