@@ -1,5 +1,7 @@
 package org.molgenis.genotype.vcf.VcfGenotypeField;
 
+import org.apache.commons.lang3.StringUtils;
+import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.vcf.VcfRecord;
 
 import java.util.Arrays;
@@ -13,19 +15,29 @@ import java.util.List;
 public class VcfGenotypeFormatSupplier {
     private VcfGenotypeFormat preferredGenotypeFormat;
     private String preferredGenotypeFormatIdentifier;
+    private boolean raiseExceptionIfUnavailable;
 
     public VcfGenotypeFormatSupplier(VcfGenotypeFormat preferredGenotypeFormat) {
-        this(preferredGenotypeFormat, preferredGenotypeFormat.toString());
+        this(preferredGenotypeFormat, preferredGenotypeFormat.toString(), false);
     }
 
     public VcfGenotypeFormatSupplier(VcfGenotypeFormat preferredGenotypeFormat, String formatIdentifier) {
+        this(preferredGenotypeFormat, formatIdentifier, false);
+    }
+
+    public VcfGenotypeFormatSupplier(VcfGenotypeFormat preferredGenotypeFormat, boolean raiseExceptionIfUnavailable) {
+        this(preferredGenotypeFormat, preferredGenotypeFormat.toString(), false);
+    }
+
+    public VcfGenotypeFormatSupplier(VcfGenotypeFormat preferredGenotypeFormat, String formatIdentifier, boolean raiseExceptionIfUnavailable) {
 
         this.preferredGenotypeFormat = preferredGenotypeFormat;
         this.preferredGenotypeFormatIdentifier = formatIdentifier;
+        this.raiseExceptionIfUnavailable = raiseExceptionIfUnavailable;
     }
 
     public VcfGenotypeFormatSupplier() {
-        this(null, null);
+        this(null, null, false);
     }
 
     /**
@@ -47,6 +59,16 @@ public class VcfGenotypeFormatSupplier {
                 && genotypeDosageFieldPrecedence.contains(preferredGenotypeFormat)
                 && formatIdentifiers.contains(this.getGenotypeFormatIdentifier(preferredGenotypeFormat))) {
             return preferredGenotypeFormat;
+        }
+
+        if (this.raiseExceptionIfUnavailable) {
+            throw new GenotypeDataException(String.format(
+                    "Preferred genotype format field (%s) is unavailable for vcf record: %n%s (%s:%s). " +
+                            "Available format fields: %s",
+                    preferredGenotypeFormatIdentifier,
+                    String.join(", ", vcfRecord.getIdentifiers()),
+                    vcfRecord.getChromosome(), vcfRecord.getPosition(),
+                    String.join(", ", vcfRecord.getFormat())));
         }
 
         for (VcfGenotypeFormat genotypeFormat: genotypeDosageFieldPrecedence) {

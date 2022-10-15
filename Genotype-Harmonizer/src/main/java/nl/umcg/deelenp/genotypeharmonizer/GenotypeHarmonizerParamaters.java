@@ -13,10 +13,13 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.GenotypedDataWriterFormats;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
+import org.molgenis.genotype.vcf.VcfGenotypeField.VcfGenotypeFormat;
+import org.molgenis.genotype.vcf.VcfGenotypeField.VcfGenotypeFormatSupplier;
 
 /**
  *
@@ -42,6 +45,7 @@ public class GenotypeHarmonizerParamaters {
     private final double maxMafForMafAlignment;
     private final double minimumPosteriorProbability;
     private final Integer bitRepresentation;
+    private final VcfGenotypeFormatSupplier vcfGenotypeFormatSupplier;
     private final String forceSeqName;
     private final boolean ldCheck;
     private final boolean keep;
@@ -225,6 +229,22 @@ public class GenotypeHarmonizerParamaters {
                 .create("bts");
         OPTIONS.addOption(option);
 
+        option = OptionBuilder.withArgName("string")
+                .hasArgs()
+                .withDescription(
+                        "Preferred VCF genotype format field to read. " +
+                                "A maximum of three arguments are used. " +
+                                "The first argument should always be one of the supported genotype fields " +
+                                "(GT, GP, HP, DS or ADS). " +
+                                "If the preferred genotype field defined within the input VCF is not within this list, " +
+                                "but is synonymous to one of them, the optional second argument should " +
+                                "match the genotype field defined in the VCF. " +
+                                "The third variable can be used to suppress an exception whenever a the requested genotype field is unavailable (for a given variant): 'suppress\' " +
+                                "Option only valid in combination with --inputType VCF")
+                .withLongOpt("genotypeField")
+                .create("gf");
+        OPTIONS.addOption(option);
+
         option = OptionBuilder.withArgName("double")
                 .hasArg()
                 .withDescription("If there are not enough variants in LD and the minor allele frequency (MAF) of a variant <= the specified value in both study as in reference then the minor allele can be used as a backup for alignment. Defaults to " + DEFAULT_MAX_MAF_FOR_MAF_ALIGNMENT)
@@ -298,6 +318,7 @@ public class GenotypeHarmonizerParamaters {
     }
 
     public GenotypeHarmonizerParamaters(String... args) throws ParseException {
+        VcfGenotypeFormatSupplier vcfGenotypeFormatSupplier1;
 
         CommandLineParser parser = new PosixParser();
         final CommandLine commandLine = parser.parse(OPTIONS, args, false);
@@ -412,6 +433,31 @@ public class GenotypeHarmonizerParamaters {
                     + "\" is not in range 1 to 32 inclusive.");
         }
 
+        VcfGenotypeFormatSupplier nonFinalVcfGenotypeFormatSupplier = null;
+        if (commandLine.hasOption("gf")) {
+            String[] genotypeFormatArguments = commandLine.getOptionValues("gf");
+            if (!EnumUtils.isValidEnum(VcfGenotypeFormat.class, genotypeFormatArguments[0])) {
+                throw new ParseException("Error parsing --genotypeField \"" + commandLine.getOptionValue("gf")
+                        + "\" is not a supported genotype field.");
+            }
+
+            boolean raiseExceptionIfUnavailable = true;
+            if (genotypeFormatArguments.length > 2) {
+                if (genotypeFormatArguments[2].equals("suppress")) {
+                    System.out.println("WARNING: requested to supress exceptions if preferred genotype format is unavailable. For those variants the default will be chosen.");
+                    LOGGER.warn("WARNING: requested to supress exceptions if preferred genotype format is unavailable. For those variants the default will be chosen.");
+                    raiseExceptionIfUnavailable = false;
+                }
+            }
+
+            nonFinalVcfGenotypeFormatSupplier = new VcfGenotypeFormatSupplier(
+                    VcfGenotypeFormat.valueOf(genotypeFormatArguments[0]),
+                    genotypeFormatArguments.length > 1 ?
+                            genotypeFormatArguments[1] : genotypeFormatArguments[0],
+                    raiseExceptionIfUnavailable);
+        }
+
+        vcfGenotypeFormatSupplier = nonFinalVcfGenotypeFormatSupplier;
         forceSeqName = commandLine.hasOption('f') ? commandLine.getOptionValue('f') : null;
         ldCheck = commandLine.hasOption('c');
         keep = commandLine.hasOption('k');
@@ -681,6 +727,10 @@ public class GenotypeHarmonizerParamaters {
 
     public Integer getBitRepresentation() {
         return bitRepresentation;
+    }
+
+    public VcfGenotypeFormatSupplier getVcfGenotypeFormatSupplier() {
+        return vcfGenotypeFormatSupplier;
     }
     //ToDo add Bgen file type for ref / in  / out
 	

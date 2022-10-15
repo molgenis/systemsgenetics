@@ -27,6 +27,7 @@ import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 import org.molgenis.genotype.util.GenotypeCountCalculator;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantFilterSeqPos;
+import org.molgenis.genotype.vcf.VcfGenotypeField.VcfGenotypeFormatSupplier;
 
 /**
  *
@@ -225,7 +226,8 @@ public class GenotypeInfo {
 			final RandomAccessGenotypeData inputData;
 
 			try {
-				inputData = inputType.createFilteredGenotypeData(inputBasePaths, 0, varFilter, sampleFilter, forceSeqName, minimumPosteriorProbability);
+				final VcfGenotypeFormatSupplier vcfGenotypeFormatSupplier = null;
+				inputData = inputType.createFilteredGenotypeData(inputBasePaths, 0, varFilter, sampleFilter, forceSeqName, vcfGenotypeFormatSupplier, minimumPosteriorProbability);
 			} catch (TabixFileNotFoundException e) {
 				LOGGER.fatal("Tabix file not found for input data at: " + e.getPath() + "\n"
 						+ "Please see README on how to create a tabix file");

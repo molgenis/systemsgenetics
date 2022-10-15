@@ -984,15 +984,31 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                 VcfGenotypeFormat.valueOf(preferredGenotypeFormat) : null));
     }
 
+    public void setPreferredGenotypeFormat(String preferredGenotypeFormat, boolean raiseExceptionIfUnavailable) {
+        this.setPreferredGenotypeFormat(
+                new VcfGenotypeFormatSupplier(preferredGenotypeFormat != null ?
+                        VcfGenotypeFormat.valueOf(preferredGenotypeFormat) : null, raiseExceptionIfUnavailable));
+    }
+
     public VcfGenotypeFormatSupplier getPreferredGenotypeFormat() {
         return genotypeFormatSupplier;
     }
 
-    public void setPreferredGenotypeFormat(VcfGenotypeFormat preferredGenotypeField, String fieldIdentifier) {
-        this.setPreferredGenotypeFormat(new VcfGenotypeFormatSupplier(preferredGenotypeField, fieldIdentifier));
+    public void setPreferredGenotypeFormat(
+            VcfGenotypeFormat preferredGenotypeField, String fieldIdentifier, boolean raiseExceptionIfUnavailable) {
+        this.setPreferredGenotypeFormat(new VcfGenotypeFormatSupplier(
+                preferredGenotypeField, fieldIdentifier,
+                raiseExceptionIfUnavailable));
+    }
+
+    public void setPreferredGenotypeFormat(
+            VcfGenotypeFormat preferredGenotypeField, String fieldIdentifier) {
+        this.setPreferredGenotypeFormat(new VcfGenotypeFormatSupplier(
+                preferredGenotypeField, fieldIdentifier));
     }
 
     public void setPreferredGenotypeFormat(VcfGenotypeFormatSupplier genotypeFormatSupplier) {
         this.genotypeFormatSupplier = genotypeFormatSupplier;
     }
+
 }
