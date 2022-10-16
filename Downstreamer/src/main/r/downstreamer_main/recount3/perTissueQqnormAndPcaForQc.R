@@ -29,6 +29,7 @@ table(samplesWithPrediction$predictedTissue)
 sort(table(samplesWithPrediction$predictedTissue))
 tissueClasses <- unique(samplesWithPrediction$predictedTissue)
 
+#not used currently, we now use the expression data used for the primary QC and sample predictions.
 mclapply(tissueClasses,  mc.cores = 10, function(tissue){
   
   tissueSamples <- rownames(samplesWithPrediction)[samplesWithPrediction$predictedTissue == tissue]
@@ -108,7 +109,7 @@ ERP009290
 ERP009290
 samplesWithPrediction[samplesWithPrediction$study=="ERP009290",]
 
-sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
+nonOutlierSampleList <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
   
   load(file = paste0("perTissueNormalization/perTissueQqPca/",make.names(tissue),".RData"))
 
@@ -172,41 +173,7 @@ sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
   }
   
   
-  
-  ###########################
-  rpng(width = 1000, height = 1000)
-  palette(adjustcolor(c("grey", "firebrick3"), alpha.f = 0.5))
-  layout(matrix(c(1,1,1,1,1,2:11),ncol = 5, byrow = T), heights = c(0.1,1,1))
-  par(mar = c(0,0,0,0), xpd = NA, cex = 1.2)
-  plot.new()
-  plot.window(xlim = 0:1, ylim = 0:1)
-  text(0.5,0.5, paste0(tissue, " (", nrow(tissueSamplesInfo) ,")"), cex = 2, font = 2)
-  
-  par(mar = c(4,4,3,0.5), xpd = NA)
-  
-  for(i in 2:10){
-    plot(expPcs[,1],expPcs[,i], col = tissueSamplesInfo$outlier + 1, pch = 16, cex = 1, main = paste0("Comp ", i), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = paste0("Comp ", i," (", round(explainedVariance[i],2) ,"%)"), bty = "n")
-    abline(v=c(-threshold[1],threshold[1]), lwd = 2, col = "firebrick3", xpd = FALSE)
-    abline(h=c(-threshold[i],threshold[i]), lwd = 2, col = "firebrick3", xpd = FALSE)
-  }
-  
-  par(mar = c(0,2,3,1), xpd = NA)
-  plot.new()
-  plot.window(xlim = 0:1, ylim = 0:1)
-  legend("top",title="Outliers",legend=c("Included", "Excluded"), col = c("grey", "firebrick3") , pch = 16, bty = "n")
-  
-  
-  
-  dev.off()
-  
-  
-  
-  
-  
-  
-  
-  
-  ###################################3
+
   colnames(expPcs) <- paste0("Comp ",1:10, " (", round(explainedVariance[1:10],2) ,"%)")
   write.table(cbind(tissueSamplesInfo, expPcs), col.names = NA, row.names = T, sep = "\t", quote = F, file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),".txt"))
   
@@ -272,10 +239,31 @@ sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
   #dev.off()
   
   png(file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),"4.png"), width = 1500, height = 700)
+  #rpng(width = 1000, height = 1000)
+  palette(adjustcolor(c("grey", "firebrick3"), alpha.f = 0.5))
+  layout(matrix(c(1,1,1,1,1,2:11),ncol = 5, byrow = T), heights = c(0.1,1,1))
+  par(mar = c(0,0,0,0), xpd = NA, cex = 1.2)
+  plot.new()
+  plot.window(xlim = 0:1, ylim = 0:1)
+  text(0.5,0.5, paste0(tissue, " (", nrow(tissueSamplesInfo) ,")"), cex = 2, font = 2)
   
-  ##########################################
+  par(mar = c(4,4,3,0.5), xpd = NA)
+  
+  for(i in 2:10){
+    plot(expPcs[,1],expPcs[,i], col = tissueSamplesInfo$outlier + 1, pch = 16, cex = 1, main = paste0("Comp ", i), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = paste0("Comp ", i," (", round(explainedVariance[i],2) ,"%)"), bty = "n")
+    abline(v=c(-threshold[1],threshold[1]), lwd = 2, col = "firebrick3", xpd = FALSE)
+    abline(h=c(-threshold[i],threshold[i]), lwd = 2, col = "firebrick3", xpd = FALSE)
+  }
+  
+  par(mar = c(0,2,3,1), xpd = NA)
+  plot.new()
+  plot.window(xlim = 0:1, ylim = 0:1)
+  legend("top",title="Outliers",legend=c("Included", "Excluded"), col = c("grey", "firebrick3") , pch = 16, bty = "n")
   
   
+  
+  dev.off()
+
   
   png(file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),"5.png"), width = 1500, height = 700)
   #rpng()
@@ -303,13 +291,13 @@ sink <- lapply(tissueClasses, function(tissue, samplesWithPrediction){
   
   
   
-  return(NULL)
+  return(tissueSamplesInfo[!tissueSamplesInfo$outlier,1:(ncol(tissueSamplesInfo)-1)])
   
 }, samplesWithPrediction = samplesWithPrediction)
 
 
 
-
+str(nonOutlierSampleList)
 
 tissueSamplesInfo <- samplesWithPrediction[rownames(expPcs),]
 str(tissueSamplesInfo)
