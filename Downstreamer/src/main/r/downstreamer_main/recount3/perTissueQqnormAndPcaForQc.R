@@ -102,7 +102,7 @@ mclapply(tissueClasses,  mc.cores = 10, function(tissue, exp){
   
 }, exp = exp)
 
-tissue = "Whole Blood"
+tissue = "Kidney"
 tissue = "Brain-Nucleus accumbens (basal ganglia)"
 
 ERP009290
@@ -179,7 +179,7 @@ nonOutlierSampleList <- lapply(tissueClasses, function(tissue, samplesWithPredic
   
   
   png(file = paste0("perTissueNormalization/qcPlots/",make.names(tissue),"1.png"), width = 1200, height = 900)
-  #rpng()
+  #rpng(width = 1000, height = 1000)
   layout(matrix(c(1,1,1,1,2,3,4,8,5,6,7,8),ncol = 4, byrow = T), heights = c(0.1,1,1), widths = c(1,1,1,0.1))
   par(mar = c(0,0,0,0), xpd = NA, cex = 1.2)
   plot.new()
@@ -295,38 +295,134 @@ nonOutlierSampleList <- lapply(tissueClasses, function(tissue, samplesWithPredic
   
 }, samplesWithPrediction = samplesWithPrediction)
 
-
-
-str(nonOutlierSampleList)
-
-tissueSamplesInfo <- samplesWithPrediction[rownames(expPcs),]
-str(tissueSamplesInfo)
-
-#Put TCGA and GTEx to paired end
-
-studies <- length(unique(tissueSamplesInfo$study))
+samplesWithPredictionNoOutliers <- do.call(rbind, nonOutlierSampleList)
+save(samplesWithPredictionNoOutliers, file = "tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
 
 
 
-palette(adjustcolor(viridis(studies, option = "H"), alpha.f = 0.5))
 
-pchMap <- rep(c(15,16,17), length.out = studies)
+sink <- lapply(tissueClasses, function(tissue, exp){
+  
+  #load(file = paste0("perTissueNormalization/perTissueQq/",make.names(tissue),".RData"))
+  
+  tissueSamples <- rownames(samplesWithPredictionNoOutliers)[samplesWithPredictionNoOutliers$predictedTissue == tissue]
+  tissueExp <- exp[,tissueSamples]
+  
+  
+  #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
+  expScale = tissueExp - rowMeans(tissueExp);
+  # Standardize each variable
+  expScale = expScale / sqrt(rowSums(expScale^2));   
+  #expCov = tcrossprod(expScale);#equevelent to correlation due to center scale
+  #expEigen <- eigen(expCov)
+  #eigenVectors <- expEigen$vectors
+  #colnames(eigenVectors) <- paste0("PC_",1:ncol(eigenVectors))
+  #rownames(eigenVectors) <- rownames(expScale)
+  
+  #eigenValues <- expEigen$values
+  #names(eigenValues) <- paste0("PC_",1:length(eigenValues))
+  
+  #Here calculate sample principle components. Number needed is arbritary (no more than eigen vectors)
+  #expPcs <- t(expScale) %*% expEigen$vectors[,1:10]
+  #colnames(expPcs) <- paste0("PC_",1:ncol(expPcs))
+  
+  expSvd <- svd(expScale, nu = 50, nv = 50)
+  
+  
+  
+  
+  eigenValues <- expSvd$d^2
+  eigenVectors <- expSvd$u
+  colnames(eigenVectors) <- paste0("PC_",1:ncol(eigenVectors))
+  rownames(eigenVectors) <- rownames(expScale)
+  
+  expPcs <- expSvd$v[,1:50] %*% diag(expSvd$d[1:50])
+  colnames(expPcs) <- paste0("PC_",1:ncol(expPcs))
+  rownames(expPcs) <- colnames(expScale)
+  
+  
+  explainedVariance <- eigenValues * 100 / nrow(expScale)
+  
+  
+  pcaRes <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)
+      
+      save(pcaRes, file = paste0("perTissueNormalization/perTissueQqPcaNoOutliers/",make.names(tissue),".RData"))
+  
+  return(expPcs)
+  
+}, exp = exp)
 
-rpng(width = 1000, height = 1000)
-plot(expPcs[,1],expPcs[,2], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 1)
-pairs(expPcs[,1:5], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 1, upper.panel = NULL)
+
+
+pcsPerTissue <- lapply(tissueClasses, function(tissue){
+  load(file = paste0("perTissueNormalization/perTissueQqPcaNoOutliers/",make.names(tissue),".RData"))
+  eigenvectors <- pcaRes$eigenVectors
+  colnames(eigenvectors) <- paste0(tissue,"_",colnames(eigenvectors))
+  return(eigenvectors)
+})
+str(pcsPerTissue)
+pcsPerTissue2 <- do.call(cbind, pcsPerTissue)
+
+str(pcsPerTissue2)
+
+rownames(pcsPerTissue2) <- (gsub("\\..+", "", rownames(pcsPerTissue2)))
+write.table(pcsPerTissue2, file = "perTissueNormalization/perTissueQqPcaNoOutliers/combinedComponents.txt", sep = "\t", quote = FALSE, col.names = NA)
+
+pcsPerTissue2t <- t(pcsPerTissue2)
+pcsPerTissue2Scale = pcsPerTissue2t - rowMeans(pcsPerTissue2t)
+# Standardize each variable
+pcsPerTissue2Scale = pcsPerTissue2Scale / sqrt(rowSums(pcsPerTissue2Scale^2))
+
+pcCorMatrix <- pcsPerTissue2Scale %*% t(pcsPerTissue2Scale)
+
+range(diag(pcCorMatrix))
+range(pcCorMatrix)
+range(lower.tri(pcCorMatrix))
+
+sum(pcCorMatrix[lower.tri(pcCorMatrix)] >= 0.5)
+
+identicalPerPc <- apply(pcCorMatrix, 2, function(x){sum(x>=0.3)})
+tail(sort(identicalPerPc))
+
+hist(pcCorMatrix[,"Brain-Cortex_PC_3"])
 dev.off()
-View(tissueSamplesInfo)
+
+pcCorMatrix[,"Brain-Cerebellum_PC_2"][pcCorMatrix[,"Brain-Cerebellum_PC_2"] > 0.3]
 
 
-plot(expPcs[,1],expPcs[,4], col = breakCols[as.numeric(cut(tissueSamplesInfo$predictedTissueScore, breaks = breakPoints ))], pch = 16, cex = 1)
+compEigen <- eigen(pcCorMatrix)
+str(compEigen)
+sum(compEigen$values)
 
-legend("topleft",title="PredictionScore",legend=seq(0.5,1,by = 0.05),col = breakCols,pch=16)
-
-pairs(expPcs[,1:10], col = breakCols[as.numeric(cut(tissueSamplesInfo$predictedTissueScore, breaks = breakPoints ))], cex = 1, upper.panel = NULL, pch = 16)
+sum(as.numeric(compEigen$values) >= 1)
 
 
+rpng()
+plot(cumsum(as.numeric(compEigen$values) * 100 / sum(as.numeric(compEigen$values))))
+dev.off()
 
-sum(expPcs[,2]>10)
-x <- cbind(expPcs, tissueSamplesInfo)
-View(x)
+rpng()
+plot(as.numeric(compEigen$values))
+dev.off()
+
+head(as.numeric(compEigen$values))
+
+sum(eigenValues >= 1)
+
+compSvd <- svd(t(pcsPerTissue2Scale))
+str(compSvd)
+
+head(compSvd$d^2)
+
+eigenValues <- compSvd$d^2
+
+rpng()
+plot(cumsum(eigenValues * 100 / sum(eigenValues)))
+dev.off()
+
+
+rpng()
+plot(eigenValues)
+dev.off()
+
+
