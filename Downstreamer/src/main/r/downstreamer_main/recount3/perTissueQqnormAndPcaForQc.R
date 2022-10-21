@@ -1,10 +1,10 @@
-#srun --cpus-per-task=20 --mem=200gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
+#srun --cpus-per-task=20 --mem=100gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
 #remoter::server(verbose = T, port = 55556, sync = T)
 
 
 
 
-remoter::client("localhost", port = 55505)
+remoter::client("localhost", port = 55506)
 
 library(DESeq2)
 library(parallel)
@@ -296,9 +296,11 @@ nonOutlierSampleList <- lapply(tissueClasses, function(tissue, samplesWithPredic
 }, samplesWithPrediction = samplesWithPrediction)
 
 samplesWithPredictionNoOutliers <- do.call(rbind, nonOutlierSampleList)
-save(samplesWithPredictionNoOutliers, file = "tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
+#save(samplesWithPredictionNoOutliers, file = "tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
 
+load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
 
+tissue = "fibroblasts_cell-lines_smooth-muscle-cell_mesenchymal-stem-cells"
 
 
 sink <- lapply(tissueClasses, function(tissue, exp){
@@ -308,6 +310,20 @@ sink <- lapply(tissueClasses, function(tissue, exp){
   tissueSamples <- rownames(samplesWithPredictionNoOutliers)[samplesWithPredictionNoOutliers$predictedTissue == tissue]
   tissueExp <- exp[,tissueSamples]
   
+  write.table(tissueExp, file = "fibro.txt", sep = "\t", quote = F, col.names = NA)
+  
+  save(tissueExp, file = paste0("perTissueNormalization/globalQqnorm/",make.names(tissue),".RData")) 
+  
+}, exp = exp)
+
+sink <- lapply(tissueClasses, function(tissue){
+  
+  #load(file = paste0("perTissueNormalization/perTissueQq/",make.names(tissue),".RData"))
+  
+  #tissueSamples <- rownames(samplesWithPredictionNoOutliers)[samplesWithPredictionNoOutliers$predictedTissue == tissue]
+  #tissueExp <- exp[,tissueSamples]
+  
+  load(file = paste0("perTissueNormalization/globalQqnorm/",make.names(tissue),".RData")) 
   
   #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
   expScale = tissueExp - rowMeans(tissueExp);
@@ -346,21 +362,24 @@ sink <- lapply(tissueClasses, function(tissue, exp){
   
   pcaRes <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)
       
-      save(pcaRes, file = paste0("perTissueNormalization/perTissueQqPcaNoOutliers/",make.names(tissue),".RData"))
+  save(pcaRes, file = paste0("perTissueNormalization/perTissueQqPcaNoOutliers/",make.names(tissue),".RData"))
   
   return(expPcs)
   
-}, exp = exp)
+})
 
-
+write.table(pcaRes$eigenVectors, file = "fibroEigenVectors.txt", sep = "\t", quote = F, col.names = NA)
+write.table(pcaRes$eigenValues, file = "fibroEigenValues.txt", sep = "\t", quote = F, col.names = NA)
+write.table(pcaRes$expPcs, file = "fibroPcs.txt", sep = "\t", quote = F, col.names = NA)
 
 pcsPerTissue <- lapply(tissueClasses, function(tissue){
   load(file = paste0("perTissueNormalization/perTissueQqPcaNoOutliers/",make.names(tissue),".RData"))
   eigenvectors <- pcaRes$eigenVectors
   colnames(eigenvectors) <- paste0(tissue,"_",colnames(eigenvectors))
+  
   return(eigenvectors)
 })
-str(pcsPerTissue)
+#str(pcsPerTissue)
 pcsPerTissue2 <- do.call(cbind, pcsPerTissue)
 
 str(pcsPerTissue2)
@@ -375,27 +394,32 @@ pcsPerTissue2Scale = pcsPerTissue2Scale / sqrt(rowSums(pcsPerTissue2Scale^2))
 
 pcCorMatrix <- pcsPerTissue2Scale %*% t(pcsPerTissue2Scale)
 
-range(diag(pcCorMatrix))
 range(pcCorMatrix)
-range(lower.tri(pcCorMatrix))
+range(diag(pcCorMatrix))
 
-sum(pcCorMatrix[lower.tri(pcCorMatrix)] >= 0.5)
+sum(pcCorMatrix[lower.tri(pcCorMatrix)] >= 0.8)
 
-identicalPerPc <- apply(pcCorMatrix, 2, function(x){sum(x>=0.3)})
+identicalPerPc <- apply(pcCorMatrix, 2, function(x){sum(x>=0.7)})
 tail(sort(identicalPerPc))
 
 hist(pcCorMatrix[,"Brain-Cortex_PC_3"])
 dev.off()
 
-pcCorMatrix[,"Brain-Cerebellum_PC_2"][pcCorMatrix[,"Brain-Cerebellum_PC_2"] > 0.3]
+pcCorMatrix[,"Whole Blood Fetal_PC_1"][pcCorMatrix[,"Whole Blood Fetal_PC_1"] >= 0.7]
 
 
 compEigen <- eigen(pcCorMatrix)
 str(compEigen)
 sum(compEigen$values)
 
-sum(as.numeric(compEigen$values) >= 1)
+(numberOfCompsEigenvalue1 <- sum(as.numeric(compEigen$values) >= 1))
 
+str(compEigen)
+pcsOfComps <- t(pcsPerTissue2t) %*% compEigen$vectors[,1:numberOfCompsEigenvalue1]
+colnames(pcsOfComps) <- paste0("PC_",1:ncol(pcsOfComps))
+rownames(pcsOfComps) <- (gsub("\\..+", "", rownames(pcsOfComps)))
+write.table(pcsOfComps, col.names = NA, sep = "\t", quote = F, file = gzfile("perTissueNormalization/perTissueQqPcaNoOutliers/pcaCombinedComponents.txt.gz"))
+str(pcsOfComps)
 
 rpng()
 plot(cumsum(as.numeric(compEigen$values) * 100 / sum(as.numeric(compEigen$values))))
@@ -405,6 +429,21 @@ rpng()
 plot(as.numeric(compEigen$values))
 dev.off()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 head(as.numeric(compEigen$values))
 
 sum(eigenValues >= 1)
@@ -412,6 +451,42 @@ sum(eigenValues >= 1)
 compSvd <- svd(t(pcsPerTissue2Scale))
 str(compSvd)
 
+(numberOfCompsEigenvalue1 <- sum(compSvd$d^2>=1))
+
+setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
+
+load("problem.RData")
+
+
+combinedCompsPcs <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1:numberOfCompsEigenvalue1])
+combinedCompsPcs2 <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1:numberOfCompsEigenvalue1])
+combinedCompsPcs3 <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1:numberOfCompsEigenvalue1])
+combinedCompsPcs4 <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1:numberOfCompsEigenvalue1])
+combinedCompsPcs5 <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1:numberOfCompsEigenvalue1])
+
+cor.test(combinedCompsPcs[,1], combinedCompsPcs2[,1])
+cor.test(combinedCompsPcs[,1], combinedCompsPcs3[,1])
+cor.test(combinedCompsPcs[,1], combinedCompsPcs4[,1])  
+cor.test(combinedCompsPcs[,1], combinedCompsPcs5[,1])  
+
+range(abs(combinedCompsPcs[,1]) - abs(combinedCompsPcs2[,1]))
+
+plot(combinedCompsPcs[,1], combinedCompsPcs2[,1])
+plot(combinedCompsPcs[,1], combinedCompsPcs3[,1])
+plot(combinedCompsPcs[,1], combinedCompsPcs4[,1])
+plot(combinedCompsPcs[,1], combinedCompsPcs5[,1])
+dev.off()
+
+save(compSvd, numberOfCompsEigenvalue1, file = "problem.RData")
+
+str(combinedCompsPcs)
+range(combinedCompsPcs)
+
+plot(as.numeric(teest[,1]),combinedCompsPcs[,1])
+dev.off()
+
+  
+head(compSvd$d^2)
 head(compSvd$d^2)
 
 eigenValues <- compSvd$d^2
@@ -421,8 +496,9 @@ plot(cumsum(eigenValues * 100 / sum(eigenValues)))
 dev.off()
 
 
+
+
 rpng()
 plot(eigenValues)
 dev.off()
-
 
