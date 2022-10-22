@@ -48,7 +48,7 @@ mclapply(tissueClasses,  mc.cores = 10, function(tissue){
   
 })
 
-load(file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/Filtered_Matrices/TPM_log2_QNorm_QCed_CovCorrected_AllCovariates.RData")
+load(file = "/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Recount3_QC_2ndRun/Filtered_Matrices/TPM_log2_QNorm_QCed_CovCorrected_AllCovariates.RData", verbose = T)
 
   
 mclapply(tissueClasses,  mc.cores = 10, function(tissue, exp){
@@ -301,7 +301,7 @@ samplesWithPredictionNoOutliers <- do.call(rbind, nonOutlierSampleList)
 load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
 
 tissue = "fibroblasts_cell-lines_smooth-muscle-cell_mesenchymal-stem-cells"
-
+tissue = "HUVEC"
 
 sink <- lapply(tissueClasses, function(tissue, exp){
   
@@ -310,11 +310,24 @@ sink <- lapply(tissueClasses, function(tissue, exp){
   tissueSamples <- rownames(samplesWithPredictionNoOutliers)[samplesWithPredictionNoOutliers$predictedTissue == tissue]
   tissueExp <- exp[,tissueSamples]
   
-  write.table(tissueExp, file = "fibro.txt", sep = "\t", quote = F, col.names = NA)
-  
   save(tissueExp, file = paste0("perTissueNormalization/globalQqnorm/",make.names(tissue),".RData")) 
   
 }, exp = exp)
+
+#Create co-expression matrices
+sink <- lapply(tissueClasses, function(tissue){
+  
+  load(file = paste0("perTissueNormalization/globalQqnorm/",make.names(tissue),".RData"), verbose = T) 
+  
+  #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
+  expScale = tissueExp - rowMeans(tissueExp);
+  # Standardize each variable
+  expScale = expScale / sqrt(rowSums(expScale^2));   
+  expCov = tcrossprod(expScale);#equevelent to correlation due to center scale
+  
+  write.table(expCov, file = paste0("perTissueNormalization/qqCoExp/",make.names(tissue),".txt"), sep = "\t", quote = F, col.names = NA)
+  
+})
 
 sink <- lapply(tissueClasses, function(tissue){
   
@@ -323,7 +336,10 @@ sink <- lapply(tissueClasses, function(tissue){
   #tissueSamples <- rownames(samplesWithPredictionNoOutliers)[samplesWithPredictionNoOutliers$predictedTissue == tissue]
   #tissueExp <- exp[,tissueSamples]
   
-  load(file = paste0("perTissueNormalization/globalQqnorm/",make.names(tissue),".RData")) 
+  load(file = paste0("perTissueNormalization/globalQqnorm/",make.names(tissue),".RData"), verbose = T) 
+  
+  write.table(tissueExp, file = gzfile("huvec.txt.gz"), sep = "\t", quote = F, col.names = NA)
+  
   
   #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
   expScale = tissueExp - rowMeans(tissueExp);
@@ -368,9 +384,9 @@ sink <- lapply(tissueClasses, function(tissue){
   
 })
 
-write.table(pcaRes$eigenVectors, file = "fibroEigenVectors.txt", sep = "\t", quote = F, col.names = NA)
-write.table(pcaRes$eigenValues, file = "fibroEigenValues.txt", sep = "\t", quote = F, col.names = NA)
-write.table(pcaRes$expPcs, file = "fibroPcs.txt", sep = "\t", quote = F, col.names = NA)
+write.table(pcaRes$eigenVectors, file = "huvecEigenVectors.txt", sep = "\t", quote = F, col.names = NA)
+write.table(pcaRes$eigenValues, file = "huvecEigenValues.txt", sep = "\t", quote = F, col.names = NA)
+write.table(pcaRes$expPcs, file = "huvecPcs.txt", sep = "\t", quote = F, col.names = NA)
 
 pcsPerTissue <- lapply(tissueClasses, function(tissue){
   load(file = paste0("perTissueNormalization/perTissueQqPcaNoOutliers/",make.names(tissue),".RData"))
