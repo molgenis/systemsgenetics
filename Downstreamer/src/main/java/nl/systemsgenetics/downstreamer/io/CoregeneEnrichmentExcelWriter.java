@@ -100,7 +100,14 @@ public class CoregeneEnrichmentExcelWriter {
 
 				int[] order = DoubleMatrix1dOrder.sortIndex(bonfFisherP);
 
-				PathwayAnnotations geneAssociationsAnnotations = new PathwayAnnotations(new File(geneAssociations.getLocation() + ".colAnnotations.txt"));
+				String pathwayAnnotationFile = geneAssociations.getLocation() + ".colAnnotations.txt";
+				if(!new File(pathwayAnnotationFile).canRead()){
+					pathwayAnnotationFile+=".gz";
+					if(!new File(pathwayAnnotationFile).canRead()){
+						throw new FileNotFoundException("Cannot find file: "+geneAssociations.getLocation() + ".colAnnotations.txt or "+geneAssociations.getLocation() + ".colAnnotations.txt.gz");
+					}
+				}
+				PathwayAnnotations geneAssociationsAnnotations = new PathwayAnnotations(new File(pathwayAnnotationFile));
 				int maxAnnotations = geneAssociationsAnnotations.getMaxNumberOfAnnotations();
 
 				XSSFSheet sh = (XSSFSheet) wb.createSheet(WorkbookUtil.createSafeSheetName(geneAssociations.getName()));

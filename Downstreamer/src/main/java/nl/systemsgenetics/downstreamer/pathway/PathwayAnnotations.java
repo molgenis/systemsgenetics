@@ -9,19 +9,17 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.zip.GZIPInputStream;
 
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import org.apache.log4j.Logger;
+import umcg.genetica.io.text.TextFile;
 
 /**
- *
  * @author patri
  */
 public class PathwayAnnotations {
@@ -38,7 +36,15 @@ public class PathwayAnnotations {
 
 			annotations = new HashMap<>();
 			final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-			final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(annotationFile))).withCSVParser(parser).withSkipLines(0).build();
+			CSVReader reader = null;
+			if (annotationFile.getName().endsWith(".gz")) {
+				GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(annotationFile));
+				BufferedReader br = new BufferedReader(new InputStreamReader(gzipInputStream, "US-ASCII"));
+				reader = new CSVReaderBuilder(br).withCSVParser(parser).withSkipLines(0).build();
+			} else {
+				reader = new CSVReaderBuilder(new BufferedReader(new FileReader(annotationFile))).withCSVParser(parser).withSkipLines(0).build();
+			}
+
 
 			String[] nextLine = reader.readNext();
 			if (nextLine == null) {
@@ -46,11 +52,11 @@ public class PathwayAnnotations {
 			}
 
 			annotationHeaders = new ArrayList<>(nextLine.length - 1);
-			setName=nextLine[0];
+			setName = nextLine[0];
 			for (int i = 1; i < nextLine.length; ++i) {
 				annotationHeaders.add(nextLine[i]);
 			}
-			
+
 			final int numberOfAnnotations = annotationHeaders.size();
 
 			while ((nextLine = reader.readNext()) != null) {

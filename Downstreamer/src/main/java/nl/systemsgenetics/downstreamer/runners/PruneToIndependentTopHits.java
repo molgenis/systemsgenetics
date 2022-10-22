@@ -6,11 +6,12 @@
 package nl.systemsgenetics.downstreamer.runners;
 
 import com.opencsv.CSVWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.*;
 import java.util.stream.IntStream;
+import java.util.zip.GZIPOutputStream;
+
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.summarystatistic.Locus;
@@ -119,7 +120,7 @@ public class PruneToIndependentTopHits {
 		// Loop over phenotypes
 		for (int p = 0; p < numberPheno; ++p) {
 
-			CSVWriter writer = new CSVWriter(new FileWriter(new File(options.getLeadSnpsFolder(), phenotypeNames.get(p) + "_leads.txt")), '\t', '\0', '\0', "\n");
+			CSVWriter writer = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(new File(options.getLeadSnpsFolder(),phenotypeNames.get(p) + "_leads.txt.gz"))))), '\t', '\0', '\0', "\n");
 
 			// Clump
 			List<Locus> curLoci = LocusUtils.selectIndepTopHits(args, referenceGenotypeData, significantVariantsPerTrait.get(p));
@@ -268,7 +269,7 @@ public class PruneToIndependentTopHits {
 
 		for (int p = 0; p < numberPheno; ++p) {
 
-			CSVWriter writer = new CSVWriter(new FileWriter(new File(options.getLeadSnpsFolder(), phenotypeNames.get(p) + "_leads.txt")), '\t', '\0', '\0', "\n");
+			CSVWriter writer = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(new File(options.getLeadSnpsFolder(), phenotypeNames.get(p) + "_leads.txt.gz"))))), '\t', '\0', '\0', "\n");
 
 			final ArrayList<VariantZscore> topVariants = topVariantsPerTrait.get(p);
 

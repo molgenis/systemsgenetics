@@ -10,21 +10,18 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.Arrays;
+import java.util.zip.GZIPInputStream;
 
 /**
- *
  * @author patri
  */
 public class SkewnessInfo {
 
 	private final static String[] EXPECTED_HEADER = {"gene", "maxSkewnessExHpo", "meanSkewnessExHpo", "hpoSkewness"};
-	
+
 	private final TObjectDoubleHashMap<String> hpoSkewnessMap = new TObjectDoubleHashMap<>();
 	private final TObjectDoubleHashMap<String> maxSkewnessExHpoMap = new TObjectDoubleHashMap<>();
 	private final TObjectDoubleHashMap<String> meanSkewnessExHpoMap = new TObjectDoubleHashMap<>();
@@ -32,28 +29,32 @@ public class SkewnessInfo {
 	public SkewnessInfo(File skewnessFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(skewnessFile))).withSkipLines(0).withCSVParser(parser).build();
-
-		String[] nextLine = reader.readNext();
-		
-		//check header
-		if(!Arrays.equals(nextLine, EXPECTED_HEADER)){
-			throw new RuntimeException("skewness header different than expected, is: " + String.join("\t", nextLine)); 
+		CSVReader reader = null;
+		if (skewnessFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(skewnessFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(skewnessFile))).withSkipLines(0).withCSVParser(parser).build();
 		}
-		
-		
+		String[] nextLine = reader.readNext();
+
+		//check header
+		if (!Arrays.equals(nextLine, EXPECTED_HEADER)) {
+			throw new RuntimeException("skewness header different than expected, is: " + String.join("\t", nextLine));
+		}
+
+
 		while ((nextLine = reader.readNext()) != null) {
 			String gene = nextLine[0];
-			
+
 			hpoSkewnessMap.put(gene, Double.valueOf(nextLine[1]));
 			maxSkewnessExHpoMap.put(gene, Double.valueOf(nextLine[2]));
 			meanSkewnessExHpoMap.put(gene, Double.valueOf(nextLine[3]));
-			
+
 		}
-		
+
 		reader.close();
 
-		
+
 	}
 
 	public double getHpoSkewness(String gene) {

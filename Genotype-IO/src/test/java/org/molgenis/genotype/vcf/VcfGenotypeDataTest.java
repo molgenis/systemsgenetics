@@ -26,16 +26,14 @@ import com.google.common.collect.Lists;
 
 import static org.testng.Assert.*;
 
-public class VcfGenotypeDataTest extends ResourceTest
-{
+public class VcfGenotypeDataTest extends ResourceTest {
 	private VcfGenotypeData genotypeData;
 	private VcfGenotypeData complexGenotypeData;
 	private File folder;
 	private File complexVcfFile;
 
 	@BeforeClass
-	public void beforeClass() throws IOException, URISyntaxException
-	{
+	public void beforeClass() throws IOException, URISyntaxException {
 		genotypeData = new VcfGenotypeData(getTestVcfGz(), getTestVcfGzTbi(), 0.8);
 		complexVcfFile = getTestResourceFile("/bgenExamples/complex.vcf.gz");
 		File complexVcfIndexFile = getTestResourceFile("/bgenExamples/complex.vcf.gz.tbi");
@@ -55,15 +53,26 @@ public class VcfGenotypeDataTest extends ResourceTest
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			System.out.println("Removing tmp dir and files");
+			try {
+				genotypeData.close();
+				complexGenotypeData.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 			File[] files = folder.listFiles();
 			if (files != null) {
 				for (File file : files) {
 					System.out.println(" - Deleting: " + file.getAbsolutePath());
-					assert file.delete();
+					if (!file.renameTo(file)) {
+						System.err.println(" - FILE IS LOCKED!: " + file.getAbsolutePath());
+					}
+					if (file.exists() && !file.isDirectory()) {
+						file.delete();
+					}
 				}
 			}
 			System.out.println(" - Deleting: " + folder.getAbsolutePath());
-			assert folder.delete();
+			folder.delete();
 		}));
 
 		assert folder.mkdir();
@@ -72,8 +81,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 	}
 
 	@Test
-	public void getSeqNames()
-	{
+	public void getSeqNames() {
 		List<String> seqNames = genotypeData.getSeqNames();
 		assertNotNull(seqNames);
 		assertEquals(seqNames.size(), 3);
@@ -83,8 +91,7 @@ public class VcfGenotypeDataTest extends ResourceTest
 	}
 
 	@Test
-	public void getVariantAnnotationsMap()
-	{
+	public void getVariantAnnotationsMap() {
 		Map<String, Annotation> annotations = genotypeData.getVariantAnnotationsMap();
 		assertNotNull(annotations);
 		assertEquals(annotations.size(), 21);
@@ -96,16 +103,14 @@ public class VcfGenotypeDataTest extends ResourceTest
 	}
 
 	@Test
-	public void testGetSequences()
-	{
+	public void testGetSequences() {
 		List<Sequence> sequences = genotypeData.getSequences();
 		assertNotNull(sequences);
 		assertEquals(sequences.size(), 3);
 	}
 
 	@Test
-	public void testGetSequenceByName() throws IOException
-	{
+	public void testGetSequenceByName() throws IOException {
 		Sequence sequence = genotypeData.getSequenceByName("2");
 		assertNotNull(sequence);
 		assertEquals(sequence.getName(), "2");
@@ -138,14 +143,12 @@ public class VcfGenotypeDataTest extends ResourceTest
 	}
 
 	@Test
-	public void testGetSequenceByNameNotExisting()
-	{
+	public void testGetSequenceByNameNotExisting() {
 		assertNull(genotypeData.getSequenceByName("Bogus"));
 	}
 
 	@Test
-	public void testGetVariant()
-	{
+	public void testGetVariant() {
 		List<GeneticVariant> variants = Lists.newArrayList(genotypeData.getVariantsByPos("1", 565286));
 		assertNotNull(variants);
 		assertEquals(variants.size(), 1);
@@ -156,23 +159,20 @@ public class VcfGenotypeDataTest extends ResourceTest
 	}
 
 	@Test
-	public void testgetSequenceGeneticVariants() throws IOException
-	{
+	public void testgetSequenceGeneticVariants() throws IOException {
 		List<GeneticVariant> variants = Utils.iteratorToList(genotypeData.getSequenceGeneticVariants("1").iterator());
 		assertEquals(variants.size(), 6);
 	}
 
 	@Test
-	public void testSnpVariants()
-	{
+	public void testSnpVariants() {
 		GeneticVariant snpGeneticVariant = genotypeData.getSnpVariantByPos("1", 3172273);
 		assertNotNull(snpGeneticVariant);
 		assertEquals(snpGeneticVariant.isSnp(), true);
 	}
 
 	@Test
-	public void testGeneticVariantAnnotations()
-	{
+	public void testGeneticVariantAnnotations() {
 		// NS=1;DP=4;AF=1.000;ANNOT=INT;GI=PRDM16;TI=NM_022114.3;PI=NP_071397.3
 		List<GeneticVariant> variants = Lists.newArrayList(genotypeData.getVariantsByPos("1", 3171929));
 		assertNotNull(variants);
@@ -201,15 +201,14 @@ public class VcfGenotypeDataTest extends ResourceTest
 		List<String> strings = (List<String>) annotationValue;
 		assertEquals(strings.size(), 1);
 		assertEquals(strings.get(0), "INT");
-		
+
 		assertEquals(variant.getAnnotationValues().get("VCF_Filter"), "flt");
 		assertNull(variant.getAnnotationValues().get("VCF_Qual"));
 
 	}
 
 	@Test
-	public void testStopPos() throws IOException, URISyntaxException
-	{
+	public void testStopPos() throws IOException, URISyntaxException {
 		List<GeneticVariant> variants = Lists.newArrayList(genotypeData.getVariantsByPos("1", 565286));
 		assertNotNull(variants);
 		assertEquals(variants.size(), 1);
@@ -220,29 +219,28 @@ public class VcfGenotypeDataTest extends ResourceTest
 	}
 
 	@Test
-	public void testGetSamplePhasing()
-	{
+	public void testGetSamplePhasing() {
 		GeneticVariant variant = genotypeData.getVariantsByPos("1", 565286).iterator().next();
 		assertEquals(genotypeData.getSamplePhasing(variant), Arrays.asList(false));
 	}
-	
+
 	@Test
-	public void getVariantIdMap(){
+	public void getVariantIdMap() {
 		HashMap<String, GeneticVariant> variantMap = genotypeData.getVariantIdMap();
-		
+
 		assertEquals(variantMap.size(), 7);
-		
+
 		assertTrue(variantMap.containsKey("rs35434908"));
-		
+
 		assertEquals(variantMap.get("rs35434908").getVariantAlleles().get(1), Allele.create("GTTTCA"));
-		
+
 		variantMap = genotypeData.getVariantIdMap(new VariantIdIncludeFilter("rs35434908", "rs1578391"));
 
 		assertEquals(variantMap.size(), 2);
-		
+
 		assertTrue(variantMap.containsKey("rs35434908"));
 		assertTrue(variantMap.containsKey("rs1578391"));
-		
+
 	}
 
 
@@ -326,6 +324,9 @@ public class VcfGenotypeDataTest extends ResourceTest
 				expectedVariantIds, expectedVariantPositions,
 				alleles, expectedComplexProbabilities,
 				expectedProbabilities, expectedPhasedProbabilities, bgenGenotypeData);
+		bgenGenotypeData.close();
+
+
 	}
 
 	private void testComplexGenotypeDataCorrespondence(String[] expectedSampleNames, List<String> expectedVariantIds,

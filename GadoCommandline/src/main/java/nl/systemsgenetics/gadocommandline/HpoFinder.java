@@ -10,6 +10,7 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,12 +25,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
 import org.biojava.nbio.ontology.io.OboParser;
 
 /**
- *
  * @author patri
  */
 public class HpoFinder {
@@ -43,7 +45,13 @@ public class HpoFinder {
 
 	public static Ontology loadHpoOntology(final File hpoOboFile) throws FileNotFoundException, IOException, ParseException {
 		OboParser parser = new OboParser();
-		BufferedReader oboFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(hpoOboFile)));
+		BufferedReader oboFileReader = null;
+		if (hpoOboFile.getName().endsWith(".gz")) {
+			oboFileReader = new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(hpoOboFile)))));
+		} else {
+			oboFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(hpoOboFile)));
+		}
+
 		Ontology hpoOntology = parser.parseOBO(oboFileReader, "HPO", "HPO");
 		return hpoOntology;
 	}
@@ -62,7 +70,13 @@ public class HpoFinder {
 	public static Map<String, PredictionInfo> loadPredictionInfo(File hpoPredictionInfoFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoPredictionInfoFile))).withSkipLines(1).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (hpoPredictionInfoFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(hpoPredictionInfoFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(hpoPredictionInfoFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
+
 
 		HashMap<String, PredictionInfo> predictionInfo = new HashMap<>();
 
@@ -114,16 +128,16 @@ public class HpoFinder {
 		return result;
 
 	}
-	
-	public List<String> getTermsToNames(List<Term> terms){
+
+	public List<String> getTermsToNames(List<Term> terms) {
 		ArrayList<String> termNames = new ArrayList<>();
-		
+
 		terms.forEach((term) -> {
 			termNames.add(term.getName());
 		});
-		
+
 		return termNames;
-		
+
 	}
 
 }

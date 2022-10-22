@@ -11,21 +11,18 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.MannWhitneyUTest2;
 
 /**
- *
  * @author patri
  */
 public class RecalculateAuc {
@@ -78,7 +75,7 @@ public class RecalculateAuc {
 		outputLine[c++] = "Origanl_AUC";
 		outputLine[c++] = "ProteinCoding_AUC";
 		writer.writeNext(outputLine);
-		
+
 		for (String term : predictionMatrixPredicted.getColObjects()) {
 
 			DoubleMatrix1D hpoAnnotations = annotationMatrixPredicted.getCol(term);
@@ -140,7 +137,13 @@ public class RecalculateAuc {
 	private static Map<String, String> loadEnsgToBiotype(File ensgFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(ensgFile))).withSkipLines(1).withCSVParser(parser).build();
+
+		CSVReader reader = null;
+		if (ensgFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(ensgFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(ensgFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
 
 		HashMap<String, String> mapping = new HashMap<>();
 
@@ -158,17 +161,23 @@ public class RecalculateAuc {
 	private static LinkedHashSet<String> readPredictedHpoTermFileBonCutoff(File predictedHpoTermFile, double cutoff) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(predictedHpoTermFile))).withSkipLines(1).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (predictedHpoTermFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(predictedHpoTermFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(predictedHpoTermFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
+
 
 		LinkedHashSet<String> hpos = new LinkedHashSet<>();
 
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
-			if(Double.parseDouble(nextLine[4]) <= cutoff){
+			if (Double.parseDouble(nextLine[4]) <= cutoff) {
 				hpos.add(nextLine[0]);
 			}
-			
+
 		}
 
 		reader.close();

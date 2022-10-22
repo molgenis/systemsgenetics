@@ -6,25 +6,21 @@
 package nl.systemsgenetics.downstreamer.development.sophie;
 
 /**
- *
  * @author Sophie Mulc
- *
  */
+
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.zip.GZIPInputStream;
 
 @Deprecated
 public class GenerateRandomNullData {
@@ -41,18 +37,22 @@ public class GenerateRandomNullData {
 
         //FileReader(String phase3_corrected)
         final CSVParser gmtParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader gmtReader = new CSVReaderBuilder(new BufferedReader(new FileReader(phase3File))).withSkipLines(1).withCSVParser(gmtParser).build();
+        CSVReader gmtReader = null;
+        if (phase3File.getName().endsWith(".gz")) {
+            gmtReader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(phase3File)))))).withSkipLines(1).withCSVParser(gmtParser).build();
+        } else {
+            gmtReader = new CSVReaderBuilder(new BufferedReader(new FileReader(phase3File))).withSkipLines(1).withCSVParser(gmtParser).build();
+        }
 
         CSVWriter writer = new CSVWriter(new FileWriter(phase3RandomFile), '\t', '\0', '\0', "\n");
 
-     
-        
+
         String[] outputLine = new String[1002];
         int c = 0;
         outputLine[c++] = "#FID";
         outputLine[c++] = "#IID";
         for (int i = 2; i < 1002; ++i) {
-        outputLine[c++] = "RA" + i;
+            outputLine[c++] = "RA" + i;
         }
         writer.writeNext(outputLine);
 
@@ -70,25 +70,25 @@ public class GenerateRandomNullData {
         System.out.println(iids);
 
         System.out.println("IIDS");
-        
-          Random randomno1 = new Random();
-          
+
+        Random randomno1 = new Random();
+
         for (String iid : iids) {
             System.out.println(iid);
 
             c = 0;
             outputLine[c++] = iid;
             outputLine[c++] = iid;
-            
+
             for (int i = 2; i < 1002; ++i) {
-            outputLine[c++] = String.valueOf(randomno1.nextGaussian());
+                outputLine[c++] = String.valueOf(randomno1.nextGaussian());
             }
             writer.writeNext(outputLine);
-            
+
 
         }
-    
-      writer.close();
+
+        writer.close();
 //   
     }
 

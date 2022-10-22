@@ -10,30 +10,27 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import org.apache.log4j.Logger;
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
 
 /**
- *
  * @author patri
  */
 public class ProcessCaseHpo {
 
 	private static final Logger LOGGER = Logger.getLogger(ProcessCaseHpo.class);
-	
+
 	/**
 	 * @param options
 	 * @throws IOException
@@ -53,13 +50,21 @@ public class ProcessCaseHpo {
 		Map<String, PredictionInfo> predictionInfo = HpoFinder.loadPredictionInfo(hpoPredictionInfoFile);
 
 		Ontology hpoOntology = HpoFinder.loadHpoOntology(hpoOboFile);
-		
+
 		HpoFinder hpoFinder = new HpoFinder(hpoOntology, predictionInfo);
 
 		//Map<String, String> updatedHpoId = loadUpdatedIds(updatedIdFile);
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(caseHpo))).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (caseHpo.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(caseHpo))))
+			)).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(caseHpo))).withCSVParser(parser).build();
+		}
+
 
 		CSVWriter writer = new CSVWriter(new FileWriter(outputFile), '\t', '\0', '\0', "\n");
 
@@ -72,22 +77,22 @@ public class ProcessCaseHpo {
 		outputLine[c++] = "OriginalHpoDescription";
 		outputLine[c++] = "ExcludeFromPrioritisation";
 		writer.writeNext(outputLine);
-		
+
 		int sampleCounter = 0;
 
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
 			++sampleCounter;
-			
+
 			String sampleId = nextLine[0];
 			HashSet<String> sampleHpo = new HashSet<>();
 
 			for (int i = 1; i < nextLine.length; i++) {
 
 				String hpo = nextLine[i];
-				
-				if(hpo.length() == 0){
+
+				if (hpo.length() == 0) {
 					continue;
 				}
 
@@ -97,10 +102,10 @@ public class ProcessCaseHpo {
 
 				if (sampleHpo.add(hpo)) {
 
-					if(!hpoOntology.containsTerm(hpo)){
+					if (!hpoOntology.containsTerm(hpo)) {
 						LOGGER.info("Warning term not found for: " + hpo + " of sample: " + sampleId);
 					}
-					
+
 					Term hpoTerm = hpoOntology.getTerm(hpo);
 					PredictionInfo info = predictionInfo.get(hpo);
 
@@ -109,10 +114,10 @@ public class ProcessCaseHpo {
 
 						List<Term> alternativeTerms = hpoFinder.getPredictableTerms(hpoTerm, correctedPCutoff);
 
-						if(alternativeTerms.isEmpty()){
+						if (alternativeTerms.isEmpty()) {
 							LOGGER.info("No alternative found for: " + hpo + " of sample: " + sampleId + " this term will be ignored");
 						}
-						
+
 						for (Term alternativeTerm : alternativeTerms) {
 							c = 0;
 							outputLine[c++] = sampleId;
@@ -142,9 +147,9 @@ public class ProcessCaseHpo {
 			}
 
 		}
-		
+
 		writer.close();
-		
+
 		LOGGER.info("Processed HPO terms of " + sampleCounter + " samples");
 
 	}
@@ -152,7 +157,14 @@ public class ProcessCaseHpo {
 	private static Map<String, String> loadUpdatedIds(File updatedIdFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(updatedIdFile))).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (updatedIdFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(updatedIdFile))))
+			)).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(updatedIdFile))).withCSVParser(parser).build();
+		}
 
 		HashMap<String, String> updates = new HashMap<>();
 

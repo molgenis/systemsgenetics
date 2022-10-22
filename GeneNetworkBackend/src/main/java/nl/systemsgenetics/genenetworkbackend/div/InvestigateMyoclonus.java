@@ -9,16 +9,16 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -64,7 +64,12 @@ public class InvestigateMyoclonus {
 			
 			String dnaNumber = dnaNumbers.get(i);
 			
-			final CSVReader gavinFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(vcfFiles.get(i)))).withSkipLines(1).withCSVParser(parser).build();
+			CSVReader gavinFileReader = null;
+			if (vcfFiles.get(i).getName().endsWith(".gz")) {
+				gavinFileReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(vcfFiles.get(i))))))).withSkipLines(1).withCSVParser(parser).build();
+			} else {
+				gavinFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(vcfFiles.get(i)))).withSkipLines(1).withCSVParser(parser).build();
+			}
 			while ((nextLine = gavinFileReader.readNext()) != null) {
 				
 				String ensgGene = symbolEnsgMapping.get(nextLine[8]);
@@ -85,8 +90,12 @@ public class InvestigateMyoclonus {
 	private static Map<String, String> loadHgncToEnsg(File mappingFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(mappingFile))).withSkipLines(1).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (mappingFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(mappingFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(mappingFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
 		HashMap<String, String> mapping = new HashMap<>();
 
 		String[] nextLine;

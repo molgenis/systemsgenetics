@@ -12,16 +12,14 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.zip.GZIPInputStream;
+
 import org.apache.commons.math3.util.FastMath;
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
@@ -292,8 +290,12 @@ public class ImproveHpoPredictionBasedOnChildTerms {
 	public static LinkedHashSet<String> readPredictedHpoTermFile(File predictedHpoTermFile) throws FileNotFoundException, IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(predictedHpoTermFile))).withSkipLines(1).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (predictedHpoTermFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(predictedHpoTermFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(predictedHpoTermFile))).withSkipLines(1).withCSVParser(parser).build();
+		}
 		LinkedHashSet<String> hpos = new LinkedHashSet<>();
 
 		String[] nextLine;

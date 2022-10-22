@@ -6,6 +6,7 @@
 package umcg.genetica.math.matrix2;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Collections;
@@ -28,11 +29,49 @@ public class DoubleMatrixDatasetRowIterable implements Iterable<double[]> {
 
 	public DoubleMatrixDatasetRowIterable(String fileName) throws IOException {
 
-		//Now load the row and column identifiers from files
-		originalRowMap = loadIdentifiers(fileName + ".rows.txt");
-		originalColMap = loadIdentifiers(fileName + ".cols.txt");
+		File fileBinary = null;
+		if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
+			fileBinary = new File(fileName);
+			if (fileName.endsWith(".dat")) {
+				fileName = fileName.substring(0, fileName.length() - 4);
+			} else if (fileName.endsWith(".dat.gz")) {
+				fileName = fileName.substring(0, fileName.length() - 7);
+			}
+		} else {
+			if (new File(fileName + ".dat").exists()) {
+				fileBinary = new File(fileName + ".dat");
+			} else if (new File(fileName + ".dat.gz").exists()) {
+				fileBinary = new File(fileName + ".dat.gz");
+			}
+		}
 
-		final File fileBinary = new File(fileName + ".dat");
+		if (fileBinary == null || !fileBinary.exists()) {
+			throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
+		}
+
+		//Now load the row and column identifiers from files
+		if (new File(fileName + ".rows.txt").exists()) {
+			originalRowMap = loadIdentifiers(fileName + ".rows.txt");
+		} else if (new File(fileName + ".rows.txt.gz").exists()) {
+			originalRowMap = loadIdentifiers(fileName + ".rows.txt.gz");
+		} else {
+			throw new FileNotFoundException("File not found: " + fileName + ".rows.txt or " + fileName + ".rows.txt.gz");
+		}
+
+		if (new File(fileName + ".cols.txt").exists()) {
+			originalColMap = loadIdentifiers(fileName + ".cols.txt");
+		} else if (new File(fileName + ".cols.txt.gz").exists()) {
+			originalColMap = loadIdentifiers(fileName + ".cols.txt.gz");
+		} else {
+			throw new FileNotFoundException("File not found: " + fileName + ".cols.txt or " + fileName + ".cols.txt.gz");
+		}
+
+		if (fileBinary.getName().endsWith(".dat.gz")) {
+			// move to TMP directory first
+			System.out.println("Attempting random access on gzipped matrix: " + fileBinary.getName());
+			fileBinary = DoubleMatrixDataset.unzipToTMP(fileBinary);
+		}
+
 		in = new RandomAccessFile(fileBinary, "r");
 
 		byte[] bytes = new byte[4];

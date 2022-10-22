@@ -10,17 +10,14 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 /**
- *
  * @author patri
  */
 public class MergeGavinPrioritization {
@@ -127,7 +124,12 @@ public class MergeGavinPrioritization {
 		writer.writeNext(outputLine);
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
+		CSVReader sampleFileReader = null;
+		if (sampleFile.getName().endsWith(".gz")) {
+			sampleFileReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(sampleFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			sampleFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 
 		Pattern pattern = Pattern.compile("CADD score of (.*) is");
 
@@ -151,7 +153,12 @@ public class MergeGavinPrioritization {
 
 			HashSet<String> genesWithStrongZ = new HashSet<>();
 
-			final CSVReader gnFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(prioFile))).withSkipLines(1).withCSVParser(parser).build();
+			CSVReader gnFileReader = null;
+			if (prioFile.getName().endsWith(".gz")) {
+				gnFileReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(prioFile)))))).withSkipLines(1).withCSVParser(parser).build();
+			} else {
+				gnFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(prioFile))).withSkipLines(1).withCSVParser(parser).build();
+			}
 			while ((nextLine = gnFileReader.readNext()) != null) {
 
 				String gene = nextLine[1];
@@ -162,7 +169,12 @@ public class MergeGavinPrioritization {
 
 			}
 
-			final CSVReader gavinFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(genoFile))).withSkipLines(1).withCSVParser(parser).build();
+			CSVReader gavinFileReader = null;
+			if (genoFile.getName().endsWith(".gz")) {
+				gavinFileReader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(genoFile)))))).withSkipLines(1).withCSVParser(parser).build();
+			} else {
+				gavinFileReader = new CSVReaderBuilder(new BufferedReader(new FileReader(genoFile))).withSkipLines(1).withCSVParser(parser).build();
+			}
 			while ((nextLine = gavinFileReader.readNext()) != null) {
 
 				Gene = nextLine[8];
@@ -177,7 +189,7 @@ public class MergeGavinPrioritization {
 //					System.out.println(genotypeInfo[2]);
 					System.out.println(Gene);
 					Matcher matcher = pattern.matcher(nextLine[22]);
-					
+
 					DNA_no = sample;
 					Chromosome = nextLine[0];
 					Start = nextLine[1];
@@ -209,7 +221,7 @@ public class MergeGavinPrioritization {
 					Eiwit_conservering = "";
 					t_m = "";
 					Mogelijke_splice_mutatie = "";
-					CADD_score =  matcher.find() ? matcher.group(1) : "";
+					CADD_score = matcher.find() ? matcher.group(1) : "";
 					RLV = nextLine[22];
 					Pseudogen__bekend = "";
 					Classificatie_volgens_beslisboom = "";

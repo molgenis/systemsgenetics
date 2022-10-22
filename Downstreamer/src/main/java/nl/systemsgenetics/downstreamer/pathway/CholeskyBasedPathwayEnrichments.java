@@ -184,12 +184,12 @@ public class CholeskyBasedPathwayEnrichments  { //extends PathwayEnrichments
             geneZscoresNullGwasNullBetasPathwayMatched.normalizeColumns();
 
             // Save normalized gene scores to file, to check distribution later on
-            geneZscoresPathwayMatched.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt").getAbsolutePath());
+            geneZscoresPathwayMatched.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz").getAbsolutePath());
 
             if (LOGGER.isDebugEnabled()) {
                 genePathwayZscores.saveBinary(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_normalizedPathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla")).getAbsolutePath());
                 geneZscoresPathwayMatched.saveBinary(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_normalizedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla")).getAbsolutePath());
-                geneZscoresNullGwasNullBetasPathwayMatched.save(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_normalizedNullGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt"));
+                geneZscoresNullGwasNullBetasPathwayMatched.save(new File(debugFolder, pathwayDatabase.getName() + "_Enrichment_normalizedNullGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz"));
             }
 
 
@@ -226,7 +226,7 @@ public class CholeskyBasedPathwayEnrichments  { //extends PathwayEnrichments
                     geneZscoresNullGwasSubsetGeneCorrelations = geneZscoresNullGwasCorrelationSubset.viewDice().calculateCorrelationMatrix();
 
                     if (LOGGER.isDebugEnabled()) {
-                        geneZscoresNullGwasSubsetGeneCorrelations.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneCor.txt"));
+                        geneZscoresNullGwasSubsetGeneCorrelations.save(new File(debugFolder, pathwayDatabase.getName() + "_" + chrArm + "_Enrichment_geneCor.txt.gz"));
                     }
 
                     if (this.ignoreGeneCorrelations) {
@@ -352,15 +352,15 @@ public class CholeskyBasedPathwayEnrichments  { //extends PathwayEnrichments
             //pValues.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_analyticalPvals" : "_cholesky_analyticalPvalsExHla"));
             //betasNull.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_cholesky_betas" : "_cholesky_betasExHla"));
             pValuesNull.saveBinary(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_EnrichmentNull" + (this.hlaGenesToExclude == null ? "_cholesky_analyticalPvals" : "_cholesky_analyticalPvalsExHla"));
-            betas.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_betas.txt" : "_cholesky_betasExHla.txt"));
-            standardErrors.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_se.txt" : "_cholesky_seExHla.txt"));
-            pValues.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_analyticalPvals.txt" : "_cholesky_analyticalPvalsExHla.txt"));
+            betas.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_betas.txt.gz" : "_cholesky_betasExHla.txt.gz"));
+            standardErrors.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_se.txt.gz" : "_cholesky_seExHla.txt.gz"));
+            pValues.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_analyticalPvals.txt.gz" : "_cholesky_analyticalPvalsExHla.txt.gz"));
 
             // Save as txt to avoid having to convert them later
             if (LOGGER.isDebugEnabled()) {
                 //fullCorrelationMatrix.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_correlationMatrix.txt" : "_cholesky_inverseCorrelationMatrixExHla.txt"));
-                geneZscoresPathwayMatched.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_geneZscoresPathwayMatched.txt" : "_cholesky_geneZscoresPathwayMatchedExHla.txt"));
-                genePathwayZscores.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_genePathwayZscores.txt" : "_cholesky_genePathwayZscoresExHla.txt"));
+                geneZscoresPathwayMatched.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_geneZscoresPathwayMatched.txt.gz" : "_cholesky_geneZscoresPathwayMatchedExHla.txt.gz"));
+                genePathwayZscores.save(intermediateFolder.getAbsolutePath() + "/" + pathwayDatabase.getName() + "_Enrichment" + (this.hlaGenesToExclude == null ? "_cholesky_genePathwayZscores.txt.gz" : "_cholesky_genePathwayZscoresExHla.txt.gz"));
             }
 
             this.getEnrichmentZscores();

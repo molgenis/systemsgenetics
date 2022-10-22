@@ -86,7 +86,7 @@ public class PrepareExternalGenePvalues {
 		
 		genePvalues.saveBinary(options.getOutputBasePath() + "_genePvalues");
 		genePvaluesNullGwas.saveBinary(options.getOutputBasePath() + "_genePvaluesNullGwas");
-		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt");
+		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt.gz");
 		geneMaxSnpZscore.saveBinary(options.getOutputBasePath() + "_geneMaxSnpScores");
 		geneMaxSnpZscoreNullGwas.saveBinary(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
 

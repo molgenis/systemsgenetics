@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -26,6 +25,7 @@ import org.molgenis.genotype.annotation.SampleAnnotation;
 import org.molgenis.genotype.oxford.GenGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.vcf.VcfGenotypeData;
+import org.molgenis.genotype.vcf.VcfGenotypeField.VcfGenotypeFormatSupplier;
 
 public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 {
@@ -122,22 +122,25 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 		this.genotypeDataCollection = genotypeDataCollection;
 	}
 
-	/**
-	 * Folder with VCF files. Matches all vcf.gz (case insensitive). Can only
-	 * handle one file per chr. vcf.gz.tbi should be present. All files must
-	 * have the same samples in the same order.
-	 * 
-	 * @param vcfFolder
-	 *            folder with vcf files
-	 * @param cacheSize
-	 *            size of the cache per vcf file.
-	 * @throws IOException
-	 * @throws IncompatibleMultiPartGenotypeDataException
-	 *             if the datasets are not compatible
-	 * @throws Exception
-	 *             If multiple files for one chr found
-	 */
 	public static MultiPartGenotypeData createFromVcfFolder(File vcfFolder, int cacheSize, double minimumPosteriorProbabilityToCall) throws IOException,
+			IncompatibleMultiPartGenotypeDataException
+	{
+		return createFromVcfFolder(vcfFolder, cacheSize, null, minimumPosteriorProbabilityToCall);
+	}
+
+	/**
+     * Folder with VCF files. Matches all vcf.gz (case insensitive). Can only
+     * handle one file per chr. vcf.gz.tbi should be present. All files must
+     * have the same samples in the same order.
+     *
+     * @param vcfFolder                 folder with vcf files
+     * @param cacheSize                 size of the cache per vcf file.
+     * @param vcfGenotypeFormatSupplier
+     * @throws IOException
+     * @throws IncompatibleMultiPartGenotypeDataException if the datasets are not compatible
+     * @throws Exception                                  If multiple files for one chr found
+     */
+	public static MultiPartGenotypeData createFromVcfFolder(File vcfFolder, int cacheSize, VcfGenotypeFormatSupplier vcfGenotypeFormatSupplier, double minimumPosteriorProbabilityToCall) throws IOException,
 			IncompatibleMultiPartGenotypeDataException
 	{
 
@@ -159,7 +162,11 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 			if (matcher.matches())
 			{
 				//LOGGER.debug("Adding to multipart data: " + file.getAbsolutePath());
-				genotypeDataSets.add(new VcfGenotypeData(file, cacheSize, minimumPosteriorProbabilityToCall));
+				VcfGenotypeData vcfGenotypeData = new VcfGenotypeData(file, cacheSize, minimumPosteriorProbabilityToCall);
+				if (vcfGenotypeFormatSupplier != null) {
+					vcfGenotypeData.setPreferredGenotypeFormat(vcfGenotypeFormatSupplier);
+				}
+				genotypeDataSets.add(vcfGenotypeData);
 			} 
 		}
 		

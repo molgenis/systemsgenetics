@@ -11,23 +11,20 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import org.biojava.nbio.ontology.Ontology;
 import org.biojava.nbio.ontology.Term;
 
 /**
- *
  * @author patri
  */
 public class processCaseHpo {
@@ -76,8 +73,12 @@ public class processCaseHpo {
 		Map<String, String> updatedHpoId = loadUpdatedIds(updatedIdFile);
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(caseHpo))).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (caseHpo.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(caseHpo)))))).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(caseHpo))).withCSVParser(parser).build();
+		}
 		CSVWriter writer = new CSVWriter(new FileWriter(outputFile), '\t', '\0', '\0', "\n");
 
 		String[] outputLine = new String[6];
@@ -99,8 +100,8 @@ public class processCaseHpo {
 			for (int i = 1; i < nextLine.length; i++) {
 
 				String hpo = nextLine[i];
-				
-				if(hpo.length() == 0){
+
+				if (hpo.length() == 0) {
 					continue;
 				}
 
@@ -118,10 +119,10 @@ public class processCaseHpo {
 
 						List<Term> alternativeTerms = hpoFinder.getPredictableTerms(hpoTerm, correctedPCutoff);
 
-						if(alternativeTerms.isEmpty()){
+						if (alternativeTerms.isEmpty()) {
 							System.out.println("Warning no alternative found for: " + hpo);
 						}
-						
+
 						for (Term alternativeTerm : alternativeTerms) {
 							c = 0;
 							outputLine[c++] = sampleId;
@@ -151,7 +152,7 @@ public class processCaseHpo {
 			}
 
 		}
-		
+
 		writer.close();
 
 	}
@@ -159,7 +160,12 @@ public class processCaseHpo {
 	private static Map<String, String> loadUpdatedIds(File updatedIdFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(updatedIdFile))).withCSVParser(parser).build();
+		CSVReader reader = null;
+		if (updatedIdFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(updatedIdFile)))))).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(updatedIdFile))).withCSVParser(parser).build();
+		}
 
 		HashMap<String, String> updates = new HashMap<>();
 

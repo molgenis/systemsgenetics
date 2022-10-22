@@ -316,7 +316,7 @@ public class DownstreamerOptions {
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
-		OptionBuilder.withDescription("Eigenvectors and princial componentens [path]_ev.txt & [path]_pc.txt");
+		OptionBuilder.withDescription("Eigenvectors and princial componentens [path]_ev.txt[.gz] & [path]_pc.txt[.gz]");
 		OptionBuilder.withLongOpt("pca");
 		OPTIONS.addOption(OptionBuilder.create("pca"));
 

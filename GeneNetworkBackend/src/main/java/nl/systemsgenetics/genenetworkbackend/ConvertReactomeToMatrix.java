@@ -4,17 +4,15 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /*
@@ -22,8 +20,8 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 /**
- *
  * @author patri
  */
 public class ConvertReactomeToMatrix {
@@ -39,21 +37,21 @@ public class ConvertReactomeToMatrix {
 		final File geneOrderFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\ensgHgncV98.txt");
 		final File outputFile = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\" + pathwayFile.getName() + "_matrix.txt.gz");
 		final File outputFile2 = new File("D:\\UMCG\\Genetica\\Projects\\GeneNetwork\\Reactome\\" + pathwayFile.getName() + "_genesInPathways.txt");
-		
+
 		HashMap<String, HashSet<String>> pathwayToGenes = readPathwayFile(pathwayFile);
 
 		ArrayList<String> geneOrder = readGenes(geneOrderFile);
 
 		System.out.println("Total genesets: " + pathwayToGenes.size());
-		
+
 		LinkedHashSet<String> geneOrder2 = new LinkedHashSet<>(geneOrder);
 
 		System.out.println("Genes in order file: " + geneOrder2.size());
 
 
 		DoubleMatrixDataset<String, String> pathwayMatrix = new DoubleMatrixDataset(geneOrder2, pathwayToGenes.keySet());
-		
-		
+
+
 		HashSet<String> genesWithPathway = new HashSet<>(10000);
 		BufferedWriter geneWriter = new BufferedWriter(new FileWriter(outputFile2));
 
@@ -62,15 +60,15 @@ public class ConvertReactomeToMatrix {
 			String pathway = pathwayToGenesEntry.getKey();
 
 			for (String gene : pathwayToGenesEntry.getValue()) {
-				
+
 				if (pathwayMatrix.containsRow(gene)) {
-					
-					if(genesWithPathway.add(gene)){
+
+					if (genesWithPathway.add(gene)) {
 						//add to genes file if not already done
 						geneWriter.write(gene);
 						geneWriter.write('\n');
 					}
-					
+
 					pathwayMatrix.setElement(gene, pathway, 1);
 				}
 
@@ -82,13 +80,21 @@ public class ConvertReactomeToMatrix {
 		pathwayMatrix.save(outputFile);
 
 		System.out.println("Genes in pathway: " + genesWithPathway.size());
-		
+
 	}
 
 	private static HashMap<String, HashSet<String>> readPathwayFile(File pathwayFile) throws Exception {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(pathwayFile))).withSkipLines(0).withCSVParser(parser).build();
+
+		CSVReader reader = null;
+		if (pathwayFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(
+					new InputStreamReader((new GZIPInputStream(new FileInputStream(pathwayFile))))
+			)).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(pathwayFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 
 		HashMap<String, HashSet<String>> pathwayToGenes = new HashMap<>();
 
@@ -118,8 +124,12 @@ public class ConvertReactomeToMatrix {
 	private static ArrayList<String> readGenes(File geneOrderFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
-
+		CSVReader reader = null;
+		if (geneOrderFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(geneOrderFile)))))).withSkipLines(0).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneOrderFile))).withSkipLines(0).withCSVParser(parser).build();
+		}
 		String[] nextLine;
 		ArrayList<String> geneOrder = new ArrayList<>();
 
