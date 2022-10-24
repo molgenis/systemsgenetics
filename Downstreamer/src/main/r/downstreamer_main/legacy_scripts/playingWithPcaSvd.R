@@ -270,12 +270,6 @@ plot(log(expSvd$d))
 abline(v=60)
 
 
-library(rpca)
-
-
-expRpca <- rpca(t(expSub2))
-
-
 
 library(corpcor)
 expSvdFast <- fast.svd(expSubScale)

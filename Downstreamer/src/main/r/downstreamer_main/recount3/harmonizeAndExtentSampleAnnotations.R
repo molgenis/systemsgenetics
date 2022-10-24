@@ -8,7 +8,7 @@ remoter::client("localhost", port = 55501, password = "laberkak")
 #save.image("tmp2.RData")
 
 
-
+  
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
 #load("tmp2.RData")
