@@ -1616,9 +1616,9 @@ combinedMeta$Tissue[combinedMeta$Cohort == "GSA"]
 
 
 
-#save(combinedMeta, file = "combinedMeta_2022_09_15.RData")
+#save(combinedMeta, file = "Metadata/combinedMeta_2022_09_15.RData")
 
-load(file = "combinedMeta_2022_08_19.RData")
+load(file = "Metadata/combinedMeta_2022_09_15.RData")
 
 pcsAndMeta <- merge(expPcs[,1:100], combinedMeta, by = 0, all.x = T)
 dim(pcsAndMeta)
