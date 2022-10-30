@@ -67,7 +67,7 @@ perTissueExp <- lapply(tissueClasses, function(tissue){
 tissue = "Kidney"
 
 
-sink <- perTissueExp <- lapply(tissueClasses, function(tissue){
+sink <- lapply(tissueClasses, function(tissue){
   cat(tissue, "\n")
 
   
@@ -113,7 +113,64 @@ sink <- perTissueExp <- lapply(tissueClasses, function(tissue){
   
 })
 
-save(perTissueExp, perTissuePca, file = "perTissueNormalization/tmpTestSession.RData")
+
+load(file = "Metadata/combinedMeta_2022_09_15.RData", verbose = T)
+
+metaNumeric <- as.matrix(combinedMeta[,sapply(combinedMeta, is.numeric)])
+
+
+
+marCorZPerTissue <- lapply(tissueClasses, function(tissue){
+
+  load(file = paste0("perTissueNormalization/vstPca/",make.names(tissue),".RData"), verbose = T)
+  
+  pcs <- tissueVstPca$expPcs
+  str(pcs)
+  metaTest <- metaNumeric[rownames(pcs),]
+  str(metaTest)
+
+  metaVPcsZ <- apply(expPcs, 2, function(x){
+    apply(metaTest, 2, function(y, x){
+      z <- !is.na(x) & !is.na(y)
+      if(sum(z) < 10){
+        return(0)
+      }
+      p <- cor.test(x[z],y[z])$p.value
+      return(-qnorm(p/2))
+    }, x = x)
+  })
+  
+  str(metaVPcsZ)
+  
+
+  maxCorZ <- apply(abs(metaVPcsZ), 1, max, na.rm = T)
+  maxCorZ[is.infinite(maxCorZ)] <- 0
+
+  return(maxCorZ)
+
+})
+
+str(marCorZPerTissue)
+
+hist(metaVPcsZ, breaks = 100)
+dev.off()
+library(heatmap3)
+rpng(width = 1000, height = 1000)
+heatmap3(metaVPcsZ, balanceColor = T, scale = "none", Rowv = NA, Colv =NA)
+dev.off()
+
+
+
+
+
+
+
+
+#OLD
+
+
+
+#save(perTissueExp, perTissuePca, file = "perTissueNormalization/tmpTestSession.RData")
 #load(file = "perTissueNormalization/tmpTestRlog.RData")
 
 save(expPcs, samplesWithPrediction, file = "perTissueNormalization/tmpTest2.RData")
