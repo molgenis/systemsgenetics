@@ -62,8 +62,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		rowIndices = new TLongArrayList(1000);
 
 		matrixFileWriter = new CountingOutputStream(new BufferedOutputStream(new FileOutputStream(matrixFile), 262144));
-		matrixFileWriter.write(MAGIC_BYTES);
-
+		
 	}
 
 	/**
@@ -118,6 +117,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		endBlockWriter.writeInt(numberOfRows);
 		endBlockWriter.writeInt(numberOfColumns);
 		endBlockWriter.writeLong(startOfEndBlock);
+		endBlockWriter.write(MAGIC_BYTES);
 
 		endBlockWriter.close();
 
