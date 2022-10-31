@@ -37,7 +37,13 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 	private final CountingOutputStream matrixFileWriter;//use counting to check how much byte each row used
 	private final int numberOfColumns;
 
-	public DoubleMatrixDatasetRowCompressedWriter(String path, List<Object> columns) throws FileNotFoundException, IOException {
+	public DoubleMatrixDatasetRowCompressedWriter(String path, final List<Object> columns) throws FileNotFoundException, IOException {
+
+		if (path.endsWith(".datg")) {
+			path = path.substring(0, path.length() - 5);
+		} else if (path.endsWith(".dat")) {
+			path = path.substring(0, path.length() - 4);
+		}
 
 		final File matrixFile = new File(path + ".datg");
 		final File rowFile = new File(path + ".rows.txt.gz");
@@ -68,11 +74,11 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 	 * @param rowData
 	 * @throws IOException
 	 */
-	public void addRow(String rowName, double[] rowData) throws IOException {
+	public void addRow(final String rowName, final double[] rowData) throws IOException {
 		addRow(rowName, new DenseDoubleMatrix1D(rowData));
 	}
 
-	public void addRow(String rowName, DoubleMatrix1D rowData) throws IOException {
+	public void addRow(final String rowName, final DoubleMatrix1D rowData) throws IOException {
 
 		outputLine[0] = rowName;
 		rowNamesWriter.writeNext(outputLine);
@@ -98,22 +104,27 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		final long startOfEndBlock = matrixFileWriter.getByteCount();
 
 		final int numberOfRows = rowIndices.size();
-		
-		final DataOutputStream endBlockWriter = new DataOutputStream(matrixFileWriter);
+
+		final GZIPOutputStream rowIndicesCompression = new GZIPOutputStream(matrixFileWriter);
+		final DataOutputStream rowIndicesWriter = new DataOutputStream(rowIndicesCompression);
 
 		for (int r = 0; r < numberOfRows; ++r) {
-			endBlockWriter.writeLong(rowIndices.get(r));
+			rowIndicesWriter.writeLong(rowIndices.get(r));
 		}
+		rowIndicesCompression.finish();
+		
+		final DataOutputStream endBlockWriter = new DataOutputStream(matrixFileWriter);
+		
 		endBlockWriter.writeInt(numberOfRows);
 		endBlockWriter.writeInt(numberOfColumns);
 		endBlockWriter.writeLong(startOfEndBlock);
 
 		endBlockWriter.close();
-		
+
 		rowNamesWriter.close();
 	}
 
-	public static final void saveDataset(String path, DoubleMatrixDataset dataset) throws FileNotFoundException, IOException {
+	public static final void saveDataset(final String path, final DoubleMatrixDataset dataset) throws FileNotFoundException, IOException {
 
 		final DoubleMatrixDatasetRowCompressedWriter writer = new DoubleMatrixDatasetRowCompressedWriter(path, dataset.getColObjects());
 
