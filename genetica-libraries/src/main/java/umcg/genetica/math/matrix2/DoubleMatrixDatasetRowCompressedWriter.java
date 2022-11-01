@@ -30,12 +30,14 @@ import org.apache.commons.io.output.CountingOutputStream;
 public class DoubleMatrixDatasetRowCompressedWriter {
 
 	protected static final byte[] MAGIC_BYTES = {85, 77, 67, 71};
-
+	protected static final long APPENDIX_BYTE_LENGTH = 20;
+	
 	private final CSVWriter rowNamesWriter;
 	private final TLongArrayList rowIndices;
 	private final String[] outputLine = new String[1];//used for CSV writer
 	private final CountingOutputStream matrixFileWriter;//use counting to check how much byte each row used
 	private final int numberOfColumns;
+	
 
 	public DoubleMatrixDatasetRowCompressedWriter(String path, final List<Object> columns) throws FileNotFoundException, IOException {
 

@@ -963,7 +963,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	protected static LinkedHashMap<String, Integer> loadIdentifiers(String filename) throws IOException {
-		TextFile tf = new TextFile(filename, false);
+		return loadIdentifiers(new File(filename));
+	}
+	
+	protected static LinkedHashMap<String, Integer> loadIdentifiers(File file) throws IOException {
+		TextFile tf = new TextFile(file, false);
 		String[] rowsArr = tf.readAsArray();
 		tf.close();
 		LinkedHashMap<String, Integer> map = new LinkedHashMap<>();
