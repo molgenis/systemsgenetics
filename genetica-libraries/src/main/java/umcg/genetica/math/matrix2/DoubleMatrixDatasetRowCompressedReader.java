@@ -5,12 +5,19 @@
  */
 package umcg.genetica.math.matrix2;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.input.RandomAccessFileInputStream;
 
@@ -24,28 +31,35 @@ public class DoubleMatrixDatasetRowCompressedReader {
 	private final LinkedHashMap<String, Integer> colMap;
 	private final int numberOfRows;
 	private final int numberOfColumns;
+	private final RandomAccessFile matrixFileReader;
+	private long[] rowIndices = null;
+	private final File matrixFile;
+	private final long startOfEndBlock;
 
 	public DoubleMatrixDatasetRowCompressedReader(String path) throws IOException {
 
 		if (path.endsWith(".datg")) {
 			path = path.substring(0, path.length() - 5);
 		}
-
-		final File matrixFile = new File(path + ".datg");
+		
+		matrixFile = new File(path + ".datg");
 		final File rowFile = new File(path + ".rows.txt.gz");
 		final File colFile = new File(path + ".cols.txt.gz");
 
 		rowMap = DoubleMatrixDataset.loadIdentifiers(rowFile);
 		colMap = DoubleMatrixDataset.loadIdentifiers(colFile);
 
-		RandomAccessFile matrixFileReader = new RandomAccessFile(matrixFile, "r");
+		matrixFileReader = new RandomAccessFile(matrixFile, "r");
 
 		matrixFileReader.seek(matrixFileReader.length() - DoubleMatrixDatasetRowCompressedWriter.APPENDIX_BYTE_LENGTH);
 
 		numberOfRows = matrixFileReader.readInt();
 		numberOfColumns = matrixFileReader.readInt();
 
-		final long startOfEndBlock = matrixFileReader.readLong();
+		System.out.println("rows " + numberOfRows);
+		System.out.println("cols " + numberOfColumns);
+
+		startOfEndBlock = matrixFileReader.readLong();
 
 		if (matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[0]
 				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[1]
@@ -53,45 +67,123 @@ public class DoubleMatrixDatasetRowCompressedReader {
 				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[3]) {
 			throw new IOException("Error parsing datg file.");
 		}
+	}
 
-		System.out.println(numberOfRows);
-		System.out.println(numberOfColumns);
-		System.out.println();
-		
+	public synchronized DoubleMatrixDataset<String, String> loadSubsetOfRows(String[] rowsToView) throws Exception {
+		return loadSubsetOfRows(Arrays.asList(rowsToView));
+	}
+	
+	public synchronized DoubleMatrixDataset<String, String> loadSubsetOfRows(Collection<String> rowsToView) throws IOException, Exception {
+
+		LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView.size());
+
+		for (String rowToView : rowsToView) {
+			rowsToViewHash.add(rowToView);
+		}
+
+		if (rowsToViewHash.size() != rowsToView.size()) {
+
+			StringBuilder duplicateRowsRequested = new StringBuilder();
+
+			HashSet<String> rowsSeen = new HashSet<>();
+
+			for (String rowToView : rowsToView) {
+
+				if (!rowsSeen.add(rowToView)) {
+					duplicateRowsRequested.append(rowToView);
+					duplicateRowsRequested.append(";");
+				}
+
+			}
+
+			throw new Exception("Duplicates in rows not allowed. Requested duplicate values: " + duplicateRowsRequested);
+		}
+
+		return loadSubsetOfRows(rowsToViewHash);
+
+	}
+
+	public synchronized void loadRowIndices() throws IOException{
+
 		matrixFileReader.seek(startOfEndBlock);
 		
-		DataInputStream test = new DataInputStream(new GZIPInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false), 262144)));
-		System.out.println(test.readLong());
-		System.out.println(test.readLong());
+		DataInputStream endBlockReader = new DataInputStream(new GZIPInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false), 262144)));
 		
-		test.close();
+		rowIndices = new long[numberOfRows];
 		
-		matrixFileReader.seek(31);
+		for(int r = 0 ; r < numberOfRows ; ++r){
+			rowIndices[r] = endBlockReader.readLong();
+		}
 		
-		test = new DataInputStream(new GZIPInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false), 262144)));
-		System.out.println(test.readDouble());
-		System.out.println(test.readDouble());
-		System.out.println(test.readDouble());
+		endBlockReader.available();
+		endBlockReader.close();
+
+	}
+	
+	public synchronized DoubleMatrixDataset<String, String> loadSubsetOfRows(LinkedHashSet<String> rowsToView) throws IOException {
 		
+		if(rowIndices == null){
+			//row indices not yet loaded, doing that now.
+			loadRowIndices();
+		}
 		
+		final LinkedHashMap<String, Integer> rowMapSelection = new LinkedHashMap<>();
+		for (String rowToView : rowsToView) {
+			if (!rowMap.containsKey(rowToView)) {
+				throw new RuntimeException("Matrix at: " + matrixFile.getAbsolutePath() + " does not contain this row: " + rowToView);
+			}
+			rowMapSelection.put(rowToView, rowMapSelection.size());
+		}
+
+		DoubleMatrixDataset dataset = new DoubleMatrixDataset(rowMapSelection, (LinkedHashMap) colMap.clone());
+		DoubleMatrix2D matrix = dataset.getMatrix();
+		
+		for (Map.Entry<String, Integer> rowToViewEntry : rowMapSelection.entrySet()) {
+			final String rowName = rowToViewEntry.getKey();
+			final int rowIndex = rowToViewEntry.getValue();
+			
+			
+			matrixFileReader.seek(rowIndices[rowMap.get(rowName)]);
+			
+			DataInputStream reader = new DataInputStream(new GZIPInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false), 262144)));
+
+			for (int c = 0; c < numberOfColumns; ++c) {
+				matrix.setQuick(rowIndex, c, reader.readDouble());
+			}
+			
+			reader.available();
+			
+			
+		}
+		
+		return dataset;
+		
+	}
+
+
+	public synchronized DoubleMatrixDataset<String, String> loadFullDataset() throws IOException {
+
+		//Move to start of file because we need to read everything
 		matrixFileReader.seek(0);
-		
-		test = new DataInputStream(new GZIPInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false), 262144)));
-		System.out.println(test.readDouble());
-		System.out.println(test.readDouble());
-		System.out.println(test.readDouble());
 
+		DataInputStream reader = new DataInputStream(new GZIPInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false), 262144)));
 		
-		
+		//make clones to make sure the oringal remains intact
+		DoubleMatrixDataset dataset = new DoubleMatrixDataset((LinkedHashMap) rowMap.clone(), (LinkedHashMap) colMap.clone());
+		DoubleMatrix2D matrix = dataset.getMatrix();
 
-//		DataInputStream test2 = new DataInputStream(new GZIPInputStream(new BufferedInputStream(test)));
-//		System.out.println(test2.readDouble());
-//		System.out.println(test2.readDouble());
-//		System.out.println(test2.readDouble());
-//		System.out.println(test2.readDouble());
-//		System.out.println(test2.readDouble());
-//		System.out.println(test2.readDouble());
-//		
+		for (int r = 0; r < numberOfRows; ++r) {
+			for (int c = 0; c < numberOfColumns; ++c) {
+				matrix.setQuick(r, c, reader.readDouble());
+			}
+		}
+
+		reader.available();//this will trigger reading the end of a gzip block which will check of the checksum of the read data is okay
+
+		reader.close();
+		
+		return dataset;
+
 	}
 
 }

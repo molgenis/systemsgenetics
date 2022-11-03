@@ -40,7 +40,7 @@ public class DoubleMatrixDatasetRowCompressedReaderTest {
 	}
 
 	@Test
-	public void testSomeMethod() throws IOException {
+	public void testSomeMethod() throws IOException, Exception {
 		
 		
 		DoubleMatrixDataset<String, String> dummyData = new DoubleMatrixDataset<>(2, 3);
@@ -52,13 +52,25 @@ public class DoubleMatrixDatasetRowCompressedReaderTest {
 		dummyData.setElementQuick(0, 0, 1);
 		dummyData.setElementQuick(0, 1, 2);
 		dummyData.setElementQuick(0, 2, 3);
-		dummyData.setElementQuick(0, 3, 4);
-		dummyData.setElementQuick(0, 4, 5);
-		dummyData.setElementQuick(0, 5, 6);
+		dummyData.setElementQuick(1, 0, 4);
+		dummyData.setElementQuick(1, 1, 5);
+		dummyData.setElementQuick(1, 2, 6);
 		
-		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\dummy", dummyData);
+		dummyData.printMatrix();
 		
-		new DoubleMatrixDatasetRowCompressedReader("D:\\UMCG\\Genetica\\Projects\\tmp\\dummy");
+		//DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\dummy", dummyData);
+		
+		long b = System.currentTimeMillis();
+		DoubleMatrixDataset<String, String> z = new DoubleMatrixDatasetRowCompressedReader("D:\\UMCG\\Genetica\\Projects\\tmp\\test5.datg").loadFullDataset();
+		System.out.println(System.currentTimeMillis() - b);
+		
+		
+		long a = System.currentTimeMillis();
+		DoubleMatrixDataset<String, String> y = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_predictions");
+		System.out.println(System.currentTimeMillis() - a);
+		
+	
+		DoubleMatrixDatasetTest.compareTwoMatrices(y, z);
 		
 	}
 	

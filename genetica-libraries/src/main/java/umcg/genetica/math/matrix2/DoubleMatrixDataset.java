@@ -1940,7 +1940,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		System.out.println("rows: " + rows() + " cols: " + columns());
 		System.out.println("Top left corner:");
 
-		ArrayList<C> colNames = new ArrayList(hashRows.keySet());
+		ArrayList<C> colNames = new ArrayList(hashCols.keySet());
 		ArrayList<R> rowNames = new ArrayList(hashRows.keySet());
 
 		for (int c = 0; c < Math.min(3, matrix.columns()); ++c) {

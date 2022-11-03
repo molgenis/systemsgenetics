@@ -45,9 +45,9 @@ public class DoubleMatrixDatasetRowCompressedWriterTest {
 	@Test
 	public void testSaveDataset() throws Exception {
 		
-		DoubleMatrixDataset<String, String> data = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_2020_07_18_raw");
+		DoubleMatrixDataset<String, String> data = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_predictions");
 		
-		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\test4", data);
+		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\test5", data);
 		
 	}
 	
