@@ -65,6 +65,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
     private final LinkedHashSet<VcfGenotypeFormat> genotypeProbabilitiesFieldPrecedence;
     private final LinkedHashSet<VcfGenotypeFormat> genotypeCallFieldPrecedence;
     private final LinkedHashSet<VcfGenotypeFormat> genotypeDosageFieldPrecedence;
+    private final LinkedHashSet<VcfGenotypeFormat> haplotypeProbabilitiesFieldPresedence;
 
 
     /**
@@ -138,6 +139,8 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
                 new LinkedHashSet<>(Arrays.asList(VcfGenotypeFormat.GT, VcfGenotypeFormat.GP, VcfGenotypeFormat.DS));
         genotypeDosageFieldPrecedence =
                 new LinkedHashSet<>(Arrays.asList(VcfGenotypeFormat.DS, VcfGenotypeFormat.GP, VcfGenotypeFormat.GT));
+        haplotypeProbabilitiesFieldPresedence =
+                new LinkedHashSet<>(Arrays.asList(VcfGenotypeFormat.HP, VcfGenotypeFormat.ADS));
 
         genotypeFormatSupplier = new VcfGenotypeFormatSupplier();
     }
@@ -321,15 +324,12 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
         LinkedHashSet<VcfGenotypeFormat> haplotypeProbabilitiesFields = getVcfHaplotypeFormats(variant);
 
         // If the requested format is set and present for this variant base decision on this format
-        VcfGenotypeFormat genotypeFormat = genotypeFormatSupplier.getVcfGenotypeFormat(
+        return genotypeFormatSupplier.VcfGenotypeFormatReadable(
                 vcfRecord, haplotypeProbabilitiesFields);
-
-        return (genotypeFormat != null);
     }
 
     private LinkedHashSet<VcfGenotypeFormat> getVcfHaplotypeFormats(GeneticVariant variant) {
-        LinkedHashSet<VcfGenotypeFormat> haplotypeProbabilitiesFields =
-                new LinkedHashSet<>(Arrays.asList(VcfGenotypeFormat.HP, VcfGenotypeFormat.ADS));
+        LinkedHashSet<VcfGenotypeFormat> haplotypeProbabilitiesFields = haplotypeProbabilitiesFieldPresedence;
 
         if (variant.hasPhasedGenotypes()) {
             haplotypeProbabilitiesFields.add(VcfGenotypeFormat.GT);

@@ -1,6 +1,5 @@
 package org.molgenis.genotype.vcf.VcfGenotypeField;
 
-import org.apache.commons.lang3.StringUtils;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.vcf.VcfRecord;
 
@@ -15,7 +14,7 @@ import java.util.List;
 public class VcfGenotypeFormatSupplier {
     private VcfGenotypeFormat preferredGenotypeFormat;
     private String preferredGenotypeFormatIdentifier;
-    private boolean raiseExceptionIfUnavailable;
+    private boolean forcePreferredGenotypeFormat;
 
     public VcfGenotypeFormatSupplier(VcfGenotypeFormat preferredGenotypeFormat) {
         this(preferredGenotypeFormat, preferredGenotypeFormat.toString(), false);
@@ -29,11 +28,11 @@ public class VcfGenotypeFormatSupplier {
         this(preferredGenotypeFormat, preferredGenotypeFormat.toString(), false);
     }
 
-    public VcfGenotypeFormatSupplier(VcfGenotypeFormat preferredGenotypeFormat, String formatIdentifier, boolean raiseExceptionIfUnavailable) {
+    public VcfGenotypeFormatSupplier(VcfGenotypeFormat preferredGenotypeFormat, String formatIdentifier, boolean forcePreferredGenotypeFormat) {
 
         this.preferredGenotypeFormat = preferredGenotypeFormat;
         this.preferredGenotypeFormatIdentifier = formatIdentifier;
-        this.raiseExceptionIfUnavailable = raiseExceptionIfUnavailable;
+        this.forcePreferredGenotypeFormat = forcePreferredGenotypeFormat;
     }
 
     public VcfGenotypeFormatSupplier() {
@@ -61,7 +60,7 @@ public class VcfGenotypeFormatSupplier {
             return preferredGenotypeFormat;
         }
 
-        if (this.raiseExceptionIfUnavailable) {
+        if (this.forcePreferredGenotypeFormat) {
             throw new GenotypeDataException(String.format(
                     "Preferred genotype format field (%s) is unavailable for vcf record: %n%s (%s:%s). " +
                             "Available format fields: %s",
@@ -78,6 +77,37 @@ public class VcfGenotypeFormatSupplier {
         }
 
         return null;
+    }
+
+    /**
+     * @param vcfRecord record, row, within a VCF file. corresponding to a particular variant.
+     * @param genotypeDosageFieldPrecedence LinkedHashSet that lists all formats that can be read,
+     *                                      in order of precedence (high precedence to low precedence).
+     * @return If there is a preferred genotype format supplied, this method only returns true if the
+     * preferred genotype format is available from the vcf record and the list of
+     * possible formats that can be read according to the genotype field precedence hash set.
+     * If a preferred genotype format is not supplied, this method will return true if one of
+     * the genotype field formats from the precedence list can be read from the vcf record.
+     * If nothing matches these conditions, false is returned.
+     */
+    public boolean VcfGenotypeFormatReadable(
+            VcfRecord vcfRecord,
+            LinkedHashSet<VcfGenotypeFormat> genotypeDosageFieldPrecedence) {
+
+        List<String> formatIdentifiers = Arrays.asList(vcfRecord.getFormat());
+
+        if (preferredGenotypeFormat != null) {
+            return genotypeDosageFieldPrecedence.contains(preferredGenotypeFormat)
+                    && formatIdentifiers.contains(this.getGenotypeFormatIdentifier(preferredGenotypeFormat));
+        }
+
+        for (VcfGenotypeFormat genotypeFormat: genotypeDosageFieldPrecedence) {
+            if (formatIdentifiers.contains(this.getGenotypeFormatIdentifier(genotypeFormat))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public VcfGenotypeFormat getPreferredGenotypeFormat() {
