@@ -113,6 +113,13 @@ sink <- lapply(tissueClasses, function(tissue){
   
 })
 
+str(vstExp)
+rownames(vstExp) <- (gsub("\\..+", "", rownames(vstExp)))
+write.table(vstExp, file = gzfile(paste0("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/perTissueNormalization/vstExp/",make.names(tissue),".txt.gz")), sep = "\t", col.names = NA, quote = F)
+
+eigenVec <- tissueVstPca$eigenVectors
+rownames(eigenVec) <- (gsub("\\..+", "", rownames(eigenVec)))
+write.table(eigenVec, file = gzfile(paste0("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/perTissueNormalization/vstPca/",make.names(tissue),"_eigenVec.txt.gz")), sep = "\t", col.names = NA, quote = F)
 
 load(file = "Metadata/combinedMeta_2022_09_15.RData", verbose = T)
 
@@ -125,9 +132,7 @@ marCorZPerTissue <- lapply(tissueClasses, function(tissue){
   load(file = paste0("perTissueNormalization/vstPca/",make.names(tissue),".RData"), verbose = T)
   
   pcs <- tissueVstPca$expPcs
-  str(pcs)
   metaTest <- metaNumeric[rownames(pcs),]
-  str(metaTest)
 
   metaVPcsZ <- apply(expPcs, 2, function(x){
     apply(metaTest, 2, function(y, x){
@@ -140,9 +145,6 @@ marCorZPerTissue <- lapply(tissueClasses, function(tissue){
     }, x = x)
   })
   
-  str(metaVPcsZ)
-  
-
   maxCorZ <- apply(abs(metaVPcsZ), 1, max, na.rm = T)
   maxCorZ[is.infinite(maxCorZ)] <- 0
 
@@ -151,6 +153,44 @@ marCorZPerTissue <- lapply(tissueClasses, function(tissue){
 })
 
 str(marCorZPerTissue)
+
+marCorZPerTissue2 <- do.call(cbind, marCorZPerTissue)
+str(marCorZPerTissue2)
+
+sort(apply(marCorZPerTissue2,1,max))
+
+marCorZPerTissue2["recount_qc.star.%_of_reads_mapped_to_multiple_loci",]
+library(vioplot)
+vioplot(marCorZPerTissue2["recount_qc.star.%_of_reads_mapped_to_multiple_loci",])
+
+library(beeswarm)
+beeswarm(marCorZPerTissue2["recount_qc.star.%_of_reads_mapped_to_multiple_loci",],
+         method = 'swarm',
+         pch = 16, ylim = c(0,30), ylab = "z-score", main = "Highest correlation between components and\n % non uniquely mapping reads.")
+
+dev.off()
+
+cor.test(pcs[,1], metaTest[,"recount_qc.star.%_of_reads_mapped_to_multiple_loci"])
+plot(pcs[,1], metaTest[,"recount_qc.star.%_of_reads_mapped_to_multiple_loci"], pch = 16, col=adjustcolor("grey", alpha.f = 0.5))
+dev.off()
+
+
+tissueSamplesInfo <- samplesWithPredictionNoOutliers[rownames(pcs),]
+studies <- length(unique(tissueSamplesInfo$study))
+
+library(viridisLite, lib.loc = .libPaths()[2])
+
+rpng(width = 1500, height = 1500)
+palette(adjustcolor(viridis(studies, option = "H"), alpha.f = 0.5))
+pchMap <- rep(c(15,16,17), length.out = studies)
+plot(pcs[,1],metaTest[,"recount_qc.star.%_of_reads_mapped_to_multiple_loci"], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
+
+dev.off()
+
+
+
+
+
 
 hist(metaVPcsZ, breaks = 100)
 dev.off()
