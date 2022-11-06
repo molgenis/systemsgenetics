@@ -25,12 +25,6 @@
 	</build>
 	<dependencies>
 		<dependency>
-			<groupId>com.github.luben</groupId>
-			<artifactId>zstd-jni</artifactId>
-			<version>1.5.2-5</version>
-		</dependency>
-
-		<dependency>
 			<groupId>com.googlecode.matrix-toolkits-java</groupId>
 			<artifactId>mtj</artifactId>
 			<version>1.0.2</version>
