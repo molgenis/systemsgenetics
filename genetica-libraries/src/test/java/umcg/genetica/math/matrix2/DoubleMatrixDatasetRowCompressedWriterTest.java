@@ -46,8 +46,12 @@ public class DoubleMatrixDatasetRowCompressedWriterTest {
 	public void testSaveDataset() throws Exception {
 		
 		DoubleMatrixDataset<String, String> data = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_predictions");
-		
+				
+		long a = System.currentTimeMillis();
 		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\test5", data);
+		System.out.println(System.currentTimeMillis() - a);
+		
+		
 		
 	}
 	
