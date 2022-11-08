@@ -196,7 +196,7 @@ public class DoubleMatrixDatasetRowCompressedReader {
 								+ ((long) (rowData[b++] & 255) << 24)
 								+ ((rowData[b++] & 255) << 16)
 								+ ((rowData[b++] & 255) << 8)
-								+ ((rowData[b++] & 255) << 0))
+								+ ((rowData[b++] & 255)))
 				);
 			}
 		}
