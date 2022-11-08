@@ -118,7 +118,7 @@ rownames(vstExp) <- (gsub("\\..+", "", rownames(vstExp)))
 write.table(vstExp, file = gzfile(paste0("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/perTissueNormalization/vstExp/",make.names(tissue),".txt.gz")), sep = "\t", col.names = NA, quote = F)
 
 eigenVec <- tissueVstPca$eigenVectors
-rownames(eigenVec) <- (gsub("\\..+", "", rownames(eigenVec)))
+rownames(vstExp) <- (gsub("\\..+", "", rownames(eigenVec)))
 write.table(eigenVec, file = gzfile(paste0("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/perTissueNormalization/vstPca/",make.names(tissue),"_eigenVec.txt.gz")), sep = "\t", col.names = NA, quote = F)
 
 load(file = "Metadata/combinedMeta_2022_09_15.RData", verbose = T)
