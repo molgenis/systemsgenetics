@@ -9,9 +9,7 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,8 +17,14 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.zip.Checksum;
 import java.util.zip.GZIPInputStream;
+import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4FastDecompressor;
+import net.jpountz.xxhash.XXHashFactory;
 import org.apache.commons.io.input.RandomAccessFileInputStream;
+
 
 /**
  *
@@ -32,10 +36,13 @@ public class DoubleMatrixDatasetRowCompressedReader {
 	private final LinkedHashMap<String, Integer> colMap;
 	private final int numberOfRows;
 	private final int numberOfColumns;
+	private final int bytesPerRow;
 	private final RandomAccessFile matrixFileReader;
-	private long[] rowIndices = null;
+	private final long[] blockIndices;
 	private final File matrixFile;
 	private final long startOfEndBlock;
+	private final int blockSize;
+	private final int rowsPerBlock;
 
 	public DoubleMatrixDatasetRowCompressedReader(String path) throws IOException {
 
@@ -68,6 +75,17 @@ public class DoubleMatrixDatasetRowCompressedReader {
 				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[3]) {
 			throw new IOException("Error parsing datg file.");
 		}
+		
+		bytesPerRow = numberOfColumns * 8;
+		
+		matrixFileReader.seek(startOfEndBlock);
+		DataInputStream blockIndicesReader = new DataInputStream(new LZ4BlockInputStream(new RandomAccessFileInputStream(matrixFileReader, false)));
+		blockIndices = new long[numberOfRows];
+		for (int r = 0; r < numberOfRows; ++r) {
+			blockIndices[r] = blockIndicesReader.readLong();
+		}
+		blockIndicesReader.close();
+		
 	}
 
 	public synchronized DoubleMatrixDataset<String, String> loadSubsetOfRows(String[] rowsToView) throws Exception {
@@ -104,29 +122,8 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 	}
 
-	public synchronized void loadRowIndices() throws IOException {
-
-		matrixFileReader.seek(startOfEndBlock);
-
-		DataInputStream endBlockReader = new DataInputStream(new GZIPInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false), 262144)));
-
-		rowIndices = new long[numberOfRows];
-
-		for (int r = 0; r < numberOfRows; ++r) {
-			rowIndices[r] = endBlockReader.readLong();
-		}
-
-		endBlockReader.available();
-		endBlockReader.close();
-
-	}
-
 	public synchronized DoubleMatrixDataset<String, String> loadSubsetOfRows(LinkedHashSet<String> rowsToView) throws IOException {
 
-		if (rowIndices == null) {
-			//row indices not yet loaded, doing that now.
-			loadRowIndices();
-		}
 
 		final LinkedHashMap<String, Integer> rowMapSelection = new LinkedHashMap<>();
 		for (String rowToView : rowsToView) {
@@ -143,7 +140,7 @@ public class DoubleMatrixDatasetRowCompressedReader {
 			final String rowName = rowToViewEntry.getKey();
 			final int rowIndex = rowToViewEntry.getValue();
 
-			matrixFileReader.seek(rowIndices[rowMap.get(rowName)]);
+			matrixFileReader.seek(blockIndices[rowMap.get(rowName)]);
 
 			DataInputStream reader = new DataInputStream(new GZIPInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false), 262144)));
 
@@ -161,29 +158,29 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 	public synchronized DoubleMatrixDataset<String, String> loadFullDataset() throws IOException {
 
-		//Move to start of file because we need to read everything
-		matrixFileReader.seek(0);
-
-		//Good expercience setting gzip buffer to 2 * number of columns 
-		final GZIPInputStream reader = new GZIPInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false),262144),2*numberOfColumns);
- 
+		final RandomAccessFileInputStream inputStream = new RandomAccessFileInputStream(matrixFileReader, false);//new CountingInputStream(new BufferedInputStream(new RandomAccessFileInputStream(matrixFileReader, false),262144));
+		
+		
 		//make clones to make sure the oringal remains intact
 		final DoubleMatrixDataset dataset = new DoubleMatrixDataset((LinkedHashMap) rowMap.clone(), (LinkedHashMap) colMap.clone());
 		final DoubleMatrix2D matrix = dataset.getMatrix();
 		
+		final LZ4FastDecompressor decompressor = LZ4Factory.fastestInstance().fastDecompressor();
+		final Checksum hasher = XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(); //0x9747b28c is the default seed used by default constructor
+		
 		final byte[] rowData = new byte[numberOfColumns * 8];
-		final int bytesPerRow = numberOfColumns * 8;
+		
 		int b;
+		LZ4BlockInputStream reader;
 		for (int r = 0; r < numberOfRows; ++r) {
-			b = 0;
+		
+			matrixFileReader.seek(blockIndices[r]);
+		
+			reader = new LZ4BlockInputStream(inputStream,decompressor, hasher);
+
 			//Benchmarking revealed that DataInputStream is slow when you can manage the exact amount of data needed
-			//However GZIPInputStream does not return large chunks when reading
-			///Therefore small loop to read all data in the row. 
-			//This is over 50% faster than wrapping GZIPInputStream in DataInputStream
-			while(b < bytesPerRow){
-				b += reader.read(rowData, b, bytesPerRow-b);
-			}
-			
+			reader.read(rowData, 0, bytesPerRow);
+
 			b = 0;
 			for (int c = 0; c < numberOfColumns; ++c) {
 
@@ -199,11 +196,9 @@ public class DoubleMatrixDatasetRowCompressedReader {
 								+ ((rowData[b++] & 255)))
 				);
 			}
+			
+			
 		}
-
-		reader.available();//this will trigger reading the end of the last gzip block which will check of the checksum of the read data is okay
-
-		reader.close();
 
 		return dataset;
 

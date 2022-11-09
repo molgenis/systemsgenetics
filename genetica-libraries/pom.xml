@@ -25,6 +25,11 @@
 	</build>
 	<dependencies>
 		<dependency>
+			<groupId>org.lz4</groupId>
+			<artifactId>lz4-java</artifactId>
+			<version>1.8.0</version>
+		</dependency>
+		<dependency>
 			<groupId>com.googlecode.matrix-toolkits-java</groupId>
 			<artifactId>mtj</artifactId>
 			<version>1.0.2</version>

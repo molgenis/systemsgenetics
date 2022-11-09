@@ -58,12 +58,16 @@ public class DoubleMatrixDatasetRowCompressedReaderTest {
 		
 		dummyData.printMatrix();
 		
-		//DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\dummy", dummyData);
+		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\dummy", dummyData);
+		
+			
+		DoubleMatrixDataset<String, String> dummyData2 = new DoubleMatrixDatasetRowCompressedReader("D:\\UMCG\\Genetica\\Projects\\tmp\\dummy").loadFullDataset();
+		dummyData.printMatrix();
+		
+
 		
 		
-		
-		
-		DoubleMatrixDatasetRowCompressedReader reader = new DoubleMatrixDatasetRowCompressedReader("D:\\UMCG\\Genetica\\Projects\\tmp\\test5.datg");
+		DoubleMatrixDatasetRowCompressedReader reader = new DoubleMatrixDatasetRowCompressedReader("D:\\UMCG\\Genetica\\Projects\\tmp\\test6.datg");
 
 		long b = System.currentTimeMillis();
 		DoubleMatrixDataset<String, String> z = reader.loadFullDataset();
