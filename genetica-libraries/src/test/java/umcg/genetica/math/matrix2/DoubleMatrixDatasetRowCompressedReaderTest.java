@@ -68,8 +68,7 @@ public class DoubleMatrixDatasetRowCompressedReaderTest {
 		long b = System.currentTimeMillis();
 		DoubleMatrixDataset<String, String> z = reader.loadFullDataset();
 		System.out.println(System.currentTimeMillis() - b);
-		
-		
+			
 		long a = System.currentTimeMillis();
 		DoubleMatrixDataset<String, String> y = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_predictions");
 		System.out.println(System.currentTimeMillis() - a);
