@@ -58,7 +58,7 @@ public class DoubleMatrixDatasetRowCompressedReaderTest {
 		
 		dummyData.printMatrix();
 		
-		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\dummy", dummyData);
+		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\dummy", dummyData, "dummy", "rows", "cols");
 		
 			
 		DoubleMatrixDataset<String, String> dummyData2 = new DoubleMatrixDatasetRowCompressedReader("D:\\UMCG\\Genetica\\Projects\\tmp\\dummy").loadFullDataset();
@@ -67,14 +67,14 @@ public class DoubleMatrixDatasetRowCompressedReaderTest {
 
 		
 		
-		DoubleMatrixDatasetRowCompressedReader reader = new DoubleMatrixDatasetRowCompressedReader("D:\\UMCG\\Genetica\\Projects\\tmp\\test6.datg");
+		DoubleMatrixDatasetRowCompressedReader reader = new DoubleMatrixDatasetRowCompressedReader("D:\\UMCG\\Genetica\\Projects\\tmp\\test7.datg");
 
 		long b = System.currentTimeMillis();
 		DoubleMatrixDataset<String, String> z = reader.loadFullDataset();
 		System.out.println(System.currentTimeMillis() - b);
 			
 		long a = System.currentTimeMillis();
-		DoubleMatrixDataset<String, String> y = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_predictions");
+		DoubleMatrixDataset<String, String> y = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_2020_07_18_raw");
 		System.out.println(System.currentTimeMillis() - a);
 		
 	

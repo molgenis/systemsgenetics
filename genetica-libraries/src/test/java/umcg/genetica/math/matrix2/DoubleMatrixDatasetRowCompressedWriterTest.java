@@ -45,17 +45,17 @@ public class DoubleMatrixDatasetRowCompressedWriterTest {
 	@Test
 	public void testSaveDataset() throws Exception {
 //		
-		DoubleMatrixDataset<String, String> data = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_predictions");
+//		DoubleMatrixDataset<String, String> data = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_predictions");
 				
-		long a = System.currentTimeMillis();
-		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\test6", data);
-		System.out.println(System.currentTimeMillis() - a);
-		
-//		DoubleMatrixDataset<String, String> data = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_2020_07_18_raw");
-//					
 //		long a = System.currentTimeMillis();
-//		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\test7", data);
+//		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\test6", data, "testData", "genes","pathways");
 //		System.out.println(System.currentTimeMillis() - a);
+//		
+		DoubleMatrixDataset<String, String> data = DoubleMatrixDataset.loadDoubleBinaryData("D:\\UMCG\\Genetica\\Projects\\tmp\\reactome_2020_07_18_raw");
+					
+		long a = System.currentTimeMillis();
+		DoubleMatrixDatasetRowCompressedWriter.saveDataset("D:\\UMCG\\Genetica\\Projects\\tmp\\test7", data);
+		System.out.println(System.currentTimeMillis() - a);
 //		
 //		
 	}
