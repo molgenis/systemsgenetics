@@ -75,8 +75,13 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 
 	public DoubleMatrixDatasetRowCompressedWriter(String path, final List<Object> columns, int rowsPerBlock, String datasetName, String dataOnRows, String dataOnCols) throws FileNotFoundException, IOException {
 
-		if ((columns.size() * 8l) > (Integer.MAX_VALUE - 8)) {
-			throw new IOException("Too many columns to write " + columns.size());
+		if ((columns.size() * 8l) > 33554432) {
+			//this limit is the max block size of lz4 blocks. Can be solved by using multiple block per row. 
+			throw new IOException("Too many columns to write " + columns.size() + " max is: " + 33554432/8);
+		}
+		
+		if((columns.size() * 8l * rowsPerBlock) > 33554432){
+			throw new IOException("Too many rows block");
 		}
 
 		this.rowsPerBlock = rowsPerBlock;
@@ -194,8 +199,6 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		final DataOutputStream metaDataBlockWriter = new DataOutputStream(matrixFileWriter);
 
 		final long startOfMetaDataBlock = matrixFileWriter.getByteCount();
-
-		System.out.println("dataset meta: " + datasetName + " " + dataOnRows + " " + dataOnCols );
 		
 		metaDataBlockWriter.writeUTF(datasetName);
 		metaDataBlockWriter.writeUTF(dataOnRows);

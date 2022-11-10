@@ -235,7 +235,7 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 	}
 
-	private final int prepareForRowRead(int r) throws IOException {
+	private int prepareForRowRead(int r) throws IOException {
 
 		int neededBlock = r / rowsPerBlock;
 		if (currentBlock != neededBlock) {
@@ -246,7 +246,7 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 	}
 
-	private final void loadBlockData(int block) throws IOException {
+	private void loadBlockData(int block) throws IOException {
 		matrixFileReader.seek(blockIndices[block]);
 		LZ4BlockInputStream reader = new LZ4BlockInputStream(inputStream, decompressor, hasher);
 		
