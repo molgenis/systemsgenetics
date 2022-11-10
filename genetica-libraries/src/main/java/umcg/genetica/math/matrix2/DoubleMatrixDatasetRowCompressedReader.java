@@ -73,15 +73,6 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 		matrixFileReader.seek(matrixFileReader.length() - DoubleMatrixDatasetRowCompressedWriter.APPENDIX_BYTE_LENGTH);
 
-//				metaDataBlockWriter.writeLong(Instant.now().getEpochSecond());
-//		metaDataBlockWriter.writeInt(numberOfRows);
-//		metaDataBlockWriter.writeInt(numberOfColumns);
-//		metaDataBlockWriter.writeLong(startOfIndexBlock);
-//		metaDataBlockWriter.writeLong(startOfMetaDataBlock);
-//		metaDataBlockWriter.writeInt(rowsPerBlock);
-//		metaDataBlockWriter.writeInt(0);//reserve
-//		metaDataBlockWriter.write(MAGIC_BYTES);
-//		
 		timestampCreated = matrixFileReader.readLong();
 
 		System.out.println("date: " + Instant.ofEpochSecond(timestampCreated).toString());
