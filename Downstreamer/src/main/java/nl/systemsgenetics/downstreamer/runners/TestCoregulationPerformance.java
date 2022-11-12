@@ -83,7 +83,7 @@ public class TestCoregulationPerformance {
 
 			final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase2.getLocation());
 
-			Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
+			Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap();
 
 			final LinkedHashSet<String> sharedGenes = new LinkedHashSet<>();
 
@@ -337,7 +337,7 @@ public class TestCoregulationPerformance {
 
 			final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase2.getLocation());
 
-			Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
+			Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap();
 
 			final LinkedHashSet<String> sharedGenes = new LinkedHashSet<>();
 			final double bonfSigThreshold = 0.05d / sharedGenes.size();

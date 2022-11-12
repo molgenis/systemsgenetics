@@ -65,7 +65,7 @@ public class PathwayDatabaseEnrichments {
 
             // Determine genes in the pathway
             DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(curTarget.getLocation());
-            Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
+            Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap();
 
             // Determine the overlapping genes
             Set<String> overlappingGenes = new HashSet<>(queryGenes);

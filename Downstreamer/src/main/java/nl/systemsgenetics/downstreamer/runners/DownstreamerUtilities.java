@@ -80,9 +80,9 @@ public class DownstreamerUtilities {
 			} else {
 
 				DoubleMatrixDatasetFastSubsetLoader loader = new DoubleMatrixDatasetFastSubsetLoader(options.getGwasZscoreMatrixPath());
-				Map<String, Integer> rows = loader.getOriginalRowMap();
+				Set<String> rows = loader.getOriginalRowMap();
 
-				genes.retainAll(rows.keySet());
+				genes.retainAll(rows);
 
 				expressionMatrix = loader.loadSubsetOfRowsBinaryDoubleData(genes);
 			}

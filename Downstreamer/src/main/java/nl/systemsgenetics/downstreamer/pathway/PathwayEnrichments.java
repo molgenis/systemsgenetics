@@ -156,7 +156,7 @@ public class PathwayEnrichments {
 		}
 
 		// Determine final set of genes to analyze and overlap with genes in pathway matrix
-		Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
+		Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap();
 		sharedGenes = new LinkedHashSet<>();
 
 		for (String gene : genesWithPvalue) {

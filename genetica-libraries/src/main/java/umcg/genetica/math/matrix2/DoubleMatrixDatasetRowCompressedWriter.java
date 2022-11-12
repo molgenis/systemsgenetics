@@ -17,14 +17,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.RandomAccessFile;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
-import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Factory;
 import org.apache.commons.io.output.CountingOutputStream;
 
 /**
@@ -59,6 +56,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 	private final String dataOnCols;//For instance pathays
 	private int numberOfRows = 0;
 	private final int blockSize;
+	private final static int MAX_ROWS = Integer.MAX_VALUE - 8;
 
 	public DoubleMatrixDatasetRowCompressedWriter(String path, final List<Object> columns) throws FileNotFoundException, IOException {
 		this(path, columns, "", "", "");
@@ -76,14 +74,14 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 	public DoubleMatrixDatasetRowCompressedWriter(String path, final List<Object> columns, int rowsPerBlock, String datasetName, String dataOnRows, String dataOnCols) throws FileNotFoundException, IOException {
 
 		if ((columns.size() * 8l) > 33554432) {
-			//this limit is the max block size of lz4 blocks. Can be solved by using multiple block per row. 
+			//this limit is the max block size of lz4 blocks. Can be solved by using multiple block per row but that is not implemented
 			throw new IOException("Too many columns to write " + columns.size() + " max is: " + 33554432/8);
 		}
 		
 		if((columns.size() * 8l * rowsPerBlock) > 33554432){
 			throw new IOException("Too many rows block");
 		}
-
+		
 		this.rowsPerBlock = rowsPerBlock;
 		this.bytesPerRow = columns.size() * 8;
 		rowBuffer = new byte[this.bytesPerRow];
@@ -134,10 +132,12 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 
 	public synchronized final void addRow(final String rowName, final DoubleMatrix1D rowData) throws IOException {
 
+		if(++numberOfRows >= MAX_ROWS){
+			throw new IOException("Reached max number of rows: " + numberOfRows);
+		}
+		
 		outputLine[0] = rowName;
 		rowNamesWriter.writeNext(outputLine);
-
-		numberOfRows++;
 
 		if (rowsInCurrentBlock == -1) {
 			startBlock();

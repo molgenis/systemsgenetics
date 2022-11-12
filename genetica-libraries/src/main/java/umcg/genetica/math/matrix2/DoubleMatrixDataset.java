@@ -123,7 +123,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			matrix = new DenseLargeDoubleMatrix2D(hashRows.size(), hashCols.size());
 		}
 
-
 	}
 
 	/**
@@ -186,13 +185,20 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadDoubleData(String fileName) throws IOException, Exception {
-		if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
-			return loadDoubleTextData(fileName, '\t');
-		} else if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
-			return loadDoubleBinaryData(fileName);
+
+		if (fileName.endsWith(".datg") || new File(fileName + ".datg").exists()) {
+			return new DoubleMatrixDatasetRowCompressedReader(fileName).loadFullDataset();
 		} else {
-			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set to: \"tab\" \n Input filename: " + fileName);
+			//old readers
+			if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
+				return loadDoubleTextData(fileName, '\t');
+			} else if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
+				return loadDoubleBinaryData(fileName);
+			} else {
+				throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set to: \"tab\" \n Input filename: " + fileName);
+			}
 		}
+
 	}
 
 	public static List<String> readDoubleTextDataColNames(String fileName, char delimiter) throws IOException {
@@ -252,37 +258,46 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, String[] rowsToView) throws IOException, Exception {
-		return loadSubsetOfRowsBinaryDoubleData(fileName, Arrays.asList(rowsToView));
+
+		if (fileName.endsWith(".datg") || new File(fileName + ".datg").exists()) {
+			return new DoubleMatrixDatasetRowCompressedReader(fileName).loadSubsetOfRows(rowsToView);
+		} else {
+			return loadSubsetOfRowsBinaryDoubleData(fileName, Arrays.asList(rowsToView));
+		}
 	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, Collection<String> rowsToView) throws IOException, Exception {
 
-		LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView.size());
+		if (fileName.endsWith(".datg") || new File(fileName + ".datg").exists()) {
+			return new DoubleMatrixDatasetRowCompressedReader(fileName).loadSubsetOfRows(rowsToView);
+		} else {
 
-		for (String rowToView : rowsToView) {
-			rowsToViewHash.add(rowToView);
-		}
-
-		if (rowsToViewHash.size() != rowsToView.size()) {
-
-			StringBuilder duplicateRowsRequested = new StringBuilder();
-
-			HashSet<String> rowsSeen = new HashSet<>();
+			LinkedHashSet<String> rowsToViewHash = new LinkedHashSet<>(rowsToView.size());
 
 			for (String rowToView : rowsToView) {
-
-				if (!rowsSeen.add(rowToView)) {
-					duplicateRowsRequested.append(rowToView);
-					duplicateRowsRequested.append(";");
-				}
-
+				rowsToViewHash.add(rowToView);
 			}
 
-			throw new Exception("Duplicates in rows not allowed. Requested duplicate values: " + duplicateRowsRequested);
+			if (rowsToViewHash.size() != rowsToView.size()) {
+
+				StringBuilder duplicateRowsRequested = new StringBuilder();
+
+				HashSet<String> rowsSeen = new HashSet<>();
+
+				for (String rowToView : rowsToView) {
+
+					if (!rowsSeen.add(rowToView)) {
+						duplicateRowsRequested.append(rowToView);
+						duplicateRowsRequested.append(";");
+					}
+
+				}
+
+				throw new Exception("Duplicates in rows not allowed. Requested duplicate values: " + duplicateRowsRequested);
+			}
+
+			return loadSubsetOfRowsBinaryDoubleData(fileName, rowsToViewHash);
 		}
-
-		return loadSubsetOfRowsBinaryDoubleData(fileName, rowsToViewHash);
-
 	}
 
 	/**
@@ -293,35 +308,38 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 */
 	public static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, LinkedHashSet<String> rowsToView) throws IOException {
 
-		//Now load the row and column identifiers from files
-		LinkedHashMap<String, Integer> originalRowMap = null;
-		LinkedHashMap<String, Integer> originalColMap = null;
-
-		if (fileName.endsWith(".dat")) {
-			fileName = fileName.substring(0, fileName.length() - 4);
-		} else if (fileName.endsWith(".dat.gz")) {
-			fileName = fileName.substring(0, fileName.length() - 7);
-		}
-
-		if (new File(fileName + ".rows.txt").exists()) {
-			originalRowMap = loadIdentifiers(fileName + ".rows.txt");
-		} else if (new File(fileName + ".rows.txt.gz").exists()) {
-			originalRowMap = loadIdentifiers(fileName + ".rows.txt.gz");
+		if (fileName.endsWith(".datg") || new File(fileName + ".datg").exists()) {
+			return new DoubleMatrixDatasetRowCompressedReader(fileName).loadSubsetOfRows(rowsToView);
 		} else {
-			throw new FileNotFoundException("File not found: " + fileName + ".rows.txt or " + fileName + ".rows.txt.gz");
+
+			//Now load the row and column identifiers from files
+			LinkedHashMap<String, Integer> originalRowMap = null;
+			LinkedHashMap<String, Integer> originalColMap = null;
+
+			if (fileName.endsWith(".dat")) {
+				fileName = fileName.substring(0, fileName.length() - 4);
+			} else if (fileName.endsWith(".dat.gz")) {
+				fileName = fileName.substring(0, fileName.length() - 7);
+			}
+
+			if (new File(fileName + ".rows.txt").exists()) {
+				originalRowMap = loadIdentifiers(fileName + ".rows.txt");
+			} else if (new File(fileName + ".rows.txt.gz").exists()) {
+				originalRowMap = loadIdentifiers(fileName + ".rows.txt.gz");
+			} else {
+				throw new FileNotFoundException("File not found: " + fileName + ".rows.txt or " + fileName + ".rows.txt.gz");
+			}
+
+			if (new File(fileName + ".cols.txt").exists()) {
+				originalColMap = loadIdentifiers(fileName + ".cols.txt");
+			} else if (new File(fileName + ".cols.txt.gz").exists()) {
+				originalColMap = loadIdentifiers(fileName + ".cols.txt.gz");
+			} else {
+				throw new FileNotFoundException("File not found: " + fileName + ".cols.txt or " + fileName + ".cols.txt.gz");
+			}
+
+			return loadSubsetOfRowsBinaryDoubleData(fileName, rowsToView, originalRowMap, originalColMap);
 		}
-
-		if (new File(fileName + ".cols.txt").exists()) {
-			originalColMap = loadIdentifiers(fileName + ".cols.txt");
-		} else if (new File(fileName + ".cols.txt.gz").exists()) {
-			originalColMap = loadIdentifiers(fileName + ".cols.txt.gz");
-		} else {
-			throw new FileNotFoundException("File not found: " + fileName + ".cols.txt or " + fileName + ".cols.txt.gz");
-		}
-
-
-		return loadSubsetOfRowsBinaryDoubleData(fileName, rowsToView, originalRowMap, originalColMap);
-
 	}
 
 	public static File unzipToTMP(File binaryGZipFile) throws IOException {
@@ -354,95 +372,99 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 */
 	protected static DoubleMatrixDataset<String, String> loadSubsetOfRowsBinaryDoubleData(String fileName, LinkedHashSet<String> rowsToView, LinkedHashMap<String, Integer> originalRowMap, LinkedHashMap<String, Integer> originalColMap) throws IOException {
 
-		LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<>(rowsToView.size());
-
-		DoubleMatrix2D matrix;
-
-		for (String rowToView : rowsToView) {
-			if (!originalRowMap.containsKey(rowToView)) {
-				throw new RuntimeException("Matrix at: " + fileName + " does not contain this row: " + rowToView);
-			}
-		}
-
-		if ((rowsToView.size() * (long) originalColMap.size()) < (Integer.MAX_VALUE - 2)) {
-			matrix = new DenseDoubleMatrix2D(rowsToView.size(), originalColMap.size());
+		if (fileName.endsWith(".datg") || new File(fileName + ".datg").exists()) {
+			return new DoubleMatrixDatasetRowCompressedReader(fileName).loadSubsetOfRows(rowsToView);
 		} else {
-			matrix = new DenseLargeDoubleMatrix2D(rowsToView.size(), originalColMap.size());
-		}
 
-		//First load the raw binary data:
-		File fileBinary = null;
-		if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
-			fileBinary = new File(fileName);
-		} else {
-			if (new File(fileName + ".dat").exists()) {
-				fileBinary = new File(fileName + ".dat");
-			} else if (new File(fileName + ".dat.gz").exists()) {
-				fileBinary = new File(fileName + ".dat.gz");
+			LinkedHashMap<String, Integer> rowMap = new LinkedHashMap<>(rowsToView.size());
+
+			DoubleMatrix2D matrix;
+
+			for (String rowToView : rowsToView) {
+				if (!originalRowMap.containsKey(rowToView)) {
+					throw new RuntimeException("Matrix at: " + fileName + " does not contain this row: " + rowToView);
+				}
 			}
-		}
 
-		if (fileBinary == null || !fileBinary.exists()) {
-			throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
-		}
-
-		if (fileBinary.getName().endsWith(".dat.gz")) {
-			// move to TMP directory first
-			System.out.println("Attempting random access on gzipped matrix: " + fileBinary.getName());
-			fileBinary = unzipToTMP(fileBinary);
-		}
-
-		final RandomAccessFile in = new RandomAccessFile(fileBinary, "r");
-		final int nrRows;
-		final int nrCols;
-		byte[] bytes = new byte[4];
-		in.read(bytes, 0, 4);
-		nrRows = byteArrayToInt(bytes);
-		in.read(bytes, 0, 4);
-		nrCols = byteArrayToInt(bytes);
-
-		if (nrRows != originalRowMap.size()) {
-			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows. Expected " + nrRows + ", found " + originalRowMap.size() + ". Maybe your rows file has duplicate IDs?");
-		}
-
-		if (nrCols != originalColMap.size()) {
-			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols. Expected " + nrCols + ", found " + originalColMap.size() + ". Maybe your rows file has duplicate IDs?");
-		}
-
-		final byte[] buffer = new byte[nrCols * 8];
-
-		final long rowLength = 8l * nrCols;
-		long bits;
-
-		int currentRowInSubset = 0;
-		for (String rowToView : rowsToView) {
-
-			rowMap.put(rowToView, currentRowInSubset);
-
-			long rowInFullMatrix = originalRowMap.get(rowToView);
-
-			in.seek(8 + (rowLength * rowInFullMatrix));
-
-			in.read(buffer, 0, nrCols * 8);
-			int bufferLoc = 0;
-			for (int col = 0; col < nrCols; col++) {
-				bits = (long) (buffer[bufferLoc++]) << 56
-						| (long) (0xff & buffer[bufferLoc++]) << 48
-						| (long) (0xff & buffer[bufferLoc++]) << 40
-						| (long) (0xff & buffer[bufferLoc++]) << 32
-						| (long) (0xff & buffer[bufferLoc++]) << 24
-						| (long) (0xff & buffer[bufferLoc++]) << 16
-						| (long) (0xff & buffer[bufferLoc++]) << 8
-						| (long) (0xff & buffer[bufferLoc++]);
-
-				matrix.setQuick(currentRowInSubset, col, Double.longBitsToDouble(bits));
+			if ((rowsToView.size() * (long) originalColMap.size()) < (Integer.MAX_VALUE - 2)) {
+				matrix = new DenseDoubleMatrix2D(rowsToView.size(), originalColMap.size());
+			} else {
+				matrix = new DenseLargeDoubleMatrix2D(rowsToView.size(), originalColMap.size());
 			}
-			currentRowInSubset++;
 
+			//First load the raw binary data:
+			File fileBinary = null;
+			if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
+				fileBinary = new File(fileName);
+			} else {
+				if (new File(fileName + ".dat").exists()) {
+					fileBinary = new File(fileName + ".dat");
+				} else if (new File(fileName + ".dat.gz").exists()) {
+					fileBinary = new File(fileName + ".dat.gz");
+				}
+			}
+
+			if (fileBinary == null || !fileBinary.exists()) {
+				throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
+			}
+
+			if (fileBinary.getName().endsWith(".dat.gz")) {
+				// move to TMP directory first
+				System.out.println("Attempting random access on gzipped matrix: " + fileBinary.getName());
+				fileBinary = unzipToTMP(fileBinary);
+			}
+
+			final RandomAccessFile in = new RandomAccessFile(fileBinary, "r");
+			final int nrRows;
+			final int nrCols;
+			byte[] bytes = new byte[4];
+			in.read(bytes, 0, 4);
+			nrRows = byteArrayToInt(bytes);
+			in.read(bytes, 0, 4);
+			nrCols = byteArrayToInt(bytes);
+
+			if (nrRows != originalRowMap.size()) {
+				throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows. Expected " + nrRows + ", found " + originalRowMap.size() + ". Maybe your rows file has duplicate IDs?");
+			}
+
+			if (nrCols != originalColMap.size()) {
+				throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols. Expected " + nrCols + ", found " + originalColMap.size() + ". Maybe your rows file has duplicate IDs?");
+			}
+
+			final byte[] buffer = new byte[nrCols * 8];
+
+			final long rowLength = 8l * nrCols;
+			long bits;
+
+			int currentRowInSubset = 0;
+			for (String rowToView : rowsToView) {
+
+				rowMap.put(rowToView, currentRowInSubset);
+
+				long rowInFullMatrix = originalRowMap.get(rowToView);
+
+				in.seek(8 + (rowLength * rowInFullMatrix));
+
+				in.read(buffer, 0, nrCols * 8);
+				int bufferLoc = 0;
+				for (int col = 0; col < nrCols; col++) {
+					bits = (long) (buffer[bufferLoc++]) << 56
+							| (long) (0xff & buffer[bufferLoc++]) << 48
+							| (long) (0xff & buffer[bufferLoc++]) << 40
+							| (long) (0xff & buffer[bufferLoc++]) << 32
+							| (long) (0xff & buffer[bufferLoc++]) << 24
+							| (long) (0xff & buffer[bufferLoc++]) << 16
+							| (long) (0xff & buffer[bufferLoc++]) << 8
+							| (long) (0xff & buffer[bufferLoc++]);
+
+					matrix.setQuick(currentRowInSubset, col, Double.longBitsToDouble(bits));
+				}
+				currentRowInSubset++;
+
+			}
+			in.close();
+			return new DoubleMatrixDataset<>(matrix, rowMap, originalColMap);
 		}
-		in.close();
-		return new DoubleMatrixDataset<>(matrix, rowMap, originalColMap);
-
 	}
 
 	/**
@@ -455,7 +477,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	 * then do viewColSelection. That option will keep all cols in memory
 	 */
 	public static DoubleMatrixDataset<String, String> loadSubsetOfBinaryDoubleData(String fileName, Set<String> desiredRows, Set<String> desiredCols) throws IOException {
-
 
 		//First load the raw binary data:
 		// strip .dat or .dat.gz from filename
@@ -530,7 +551,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		} else {
 			newColMap = originalColMap;
 		}
-
 
 		if (fileBinary == null || !fileBinary.exists()) {
 			throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
@@ -807,108 +827,129 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadDoubleBinaryData(String fileName) throws FileNotFoundException, IOException {
-		//First load the raw binary data:
-		File fileBinary = null;
-		if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
-			fileBinary = new File(fileName);
+
+		if (fileName.endsWith(".datg") || new File(fileName + ".datg").exists()) {
+			return new DoubleMatrixDatasetRowCompressedReader(fileName).loadFullDataset();
+		} else {
+			//old
+			//First load the raw binary data:
+			File fileBinary = null;
 			if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
 				fileBinary = new File(fileName);
-				if (fileName.endsWith(".dat")) {
-					fileName = fileName.substring(0, fileName.length() - 4);
-				} else if (fileName.endsWith(".dat.gz")) {
-					fileName = fileName.substring(0, fileName.length() - 7);
+				if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
+					fileBinary = new File(fileName);
+					if (fileName.endsWith(".dat")) {
+						fileName = fileName.substring(0, fileName.length() - 4);
+					} else if (fileName.endsWith(".dat.gz")) {
+						fileName = fileName.substring(0, fileName.length() - 7);
+					}
+				}
+			} else {
+				if (new File(fileName + ".dat").exists()) {
+					fileBinary = new File(fileName + ".dat");
+				} else if (new File(fileName + ".dat.gz").exists()) {
+					fileBinary = new File(fileName + ".dat.gz");
 				}
 			}
-		} else {
-			if (new File(fileName + ".dat").exists()) {
-				fileBinary = new File(fileName + ".dat");
-			} else if (new File(fileName + ".dat.gz").exists()) {
-				fileBinary = new File(fileName + ".dat.gz");
+
+			if (fileBinary == null || !fileBinary.exists()) {
+				throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
 			}
-		}
 
-		if (fileBinary == null || !fileBinary.exists()) {
-			throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
-		}
-
-		BufferedInputStream in;
-		if (fileBinary.getName().endsWith(".gz")) {
-			GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(fileBinary));
-			in = new BufferedInputStream(gzipInputStream);
-		} else {
-			in = new BufferedInputStream(new FileInputStream(fileBinary));
-		}
-
-
-		int nrRows;
-		int nrCols;
-		byte[] bytes = new byte[4];
-		in.read(bytes, 0, 4);
-		nrRows = byteArrayToInt(bytes);
-		in.read(bytes, 0, 4);
-		nrCols = byteArrayToInt(bytes);
-
-		DoubleMatrix2D matrix;
-		if ((nrRows * (long) nrCols) < (Integer.MAX_VALUE - 2)) {
-			matrix = new DenseDoubleMatrix2D(nrRows, nrCols);
-		} else {
-			matrix = new DenseLargeDoubleMatrix2D(nrRows, nrCols);
-		}
-
-		//Now load the row and column identifiers from files
-		LinkedHashMap<String, Integer> rowMap = null;
-		LinkedHashMap<String, Integer> colMap = null;
-		if (new File(fileName + ".rows.txt").exists()) {
-			rowMap = loadIdentifiers(fileName + ".rows.txt");
-		} else if (new File(fileName + ".rows.txt.gz").exists()) {
-			rowMap = loadIdentifiers(fileName + ".rows.txt.gz");
-		} else {
-			throw new FileNotFoundException("File not found: " + fileName + ".rows.txt or " + fileName + ".rows.txt.gz");
-		}
-
-		if (new File(fileName + ".cols.txt").exists()) {
-			colMap = loadIdentifiers(fileName + ".cols.txt");
-		} else if (new File(fileName + ".cols.txt.gz").exists()) {
-			colMap = loadIdentifiers(fileName + ".cols.txt.gz");
-		} else {
-			throw new FileNotFoundException("File not found: " + fileName + ".cols.txt or " + fileName + ".cols.txt.gz");
-		}
-
-		if (nrRows != rowMap.size()) {
-			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows. Expected " + nrRows + ", found " + rowMap.size() + ". Maybe your rows file has duplicate IDs?");
-		}
-
-		if (nrCols != colMap.size()) {
-			throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols. Expected " + nrCols + ", found " + colMap.size() + ". Maybe your rows file has duplicate IDs?");
-		}
-
-		byte[] buffer = new byte[nrCols * 8];
-		long bits;
-		for (int row = 0; row < nrRows; row++) {
-			in.read(buffer, 0, nrCols * 8);
-			int bufferLoc = 0;
-			for (int col = 0; col < nrCols; col++) {
-				bits = (long) (buffer[bufferLoc++]) << 56
-						| (long) (0xff & buffer[bufferLoc++]) << 48
-						| (long) (0xff & buffer[bufferLoc++]) << 40
-						| (long) (0xff & buffer[bufferLoc++]) << 32
-						| (long) (0xff & buffer[bufferLoc++]) << 24
-						| (long) (0xff & buffer[bufferLoc++]) << 16
-						| (long) (0xff & buffer[bufferLoc++]) << 8
-						| (long) (0xff & buffer[bufferLoc++]);
-
-				matrix.setQuick(row, col, Double.longBitsToDouble(bits));
+			BufferedInputStream in;
+			if (fileBinary.getName().endsWith(".gz")) {
+				GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(fileBinary));
+				in = new BufferedInputStream(gzipInputStream);
+			} else {
+				in = new BufferedInputStream(new FileInputStream(fileBinary));
 			}
+
+			int nrRows;
+			int nrCols;
+			byte[] bytes = new byte[4];
+			in.read(bytes, 0, 4);
+			nrRows = byteArrayToInt(bytes);
+			in.read(bytes, 0, 4);
+			nrCols = byteArrayToInt(bytes);
+
+			DoubleMatrix2D matrix;
+			if ((nrRows * (long) nrCols) < (Integer.MAX_VALUE - 2)) {
+				matrix = new DenseDoubleMatrix2D(nrRows, nrCols);
+			} else {
+				matrix = new DenseLargeDoubleMatrix2D(nrRows, nrCols);
+			}
+
+			//Now load the row and column identifiers from files
+			LinkedHashMap<String, Integer> rowMap = null;
+			LinkedHashMap<String, Integer> colMap = null;
+			if (new File(fileName + ".rows.txt").exists()) {
+				rowMap = loadIdentifiers(fileName + ".rows.txt");
+			} else if (new File(fileName + ".rows.txt.gz").exists()) {
+				rowMap = loadIdentifiers(fileName + ".rows.txt.gz");
+			} else {
+				throw new FileNotFoundException("File not found: " + fileName + ".rows.txt or " + fileName + ".rows.txt.gz");
+			}
+
+			if (new File(fileName + ".cols.txt").exists()) {
+				colMap = loadIdentifiers(fileName + ".cols.txt");
+			} else if (new File(fileName + ".cols.txt.gz").exists()) {
+				colMap = loadIdentifiers(fileName + ".cols.txt.gz");
+			} else {
+				throw new FileNotFoundException("File not found: " + fileName + ".cols.txt or " + fileName + ".cols.txt.gz");
+			}
+
+			if (nrRows != rowMap.size()) {
+				throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of rows. Expected " + nrRows + ", found " + rowMap.size() + ". Maybe your rows file has duplicate IDs?");
+			}
+
+			if (nrCols != colMap.size()) {
+				throw new RuntimeException("Matrix at: " + fileName + " does not have expected number of cols. Expected " + nrCols + ", found " + colMap.size() + ". Maybe your rows file has duplicate IDs?");
+			}
+
+			byte[] buffer = new byte[nrCols * 8];
+			long bits;
+			for (int row = 0; row < nrRows; row++) {
+				in.read(buffer, 0, nrCols * 8);
+				int bufferLoc = 0;
+				for (int col = 0; col < nrCols; col++) {
+					bits = (long) (buffer[bufferLoc++]) << 56
+							| (long) (0xff & buffer[bufferLoc++]) << 48
+							| (long) (0xff & buffer[bufferLoc++]) << 40
+							| (long) (0xff & buffer[bufferLoc++]) << 32
+							| (long) (0xff & buffer[bufferLoc++]) << 24
+							| (long) (0xff & buffer[bufferLoc++]) << 16
+							| (long) (0xff & buffer[bufferLoc++]) << 8
+							| (long) (0xff & buffer[bufferLoc++]);
+
+					matrix.setQuick(row, col, Double.longBitsToDouble(bits));
+				}
+			}
+			in.close();
+
+			DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
+			//LOGGER.log(Level.INFO, "Binary file ''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
+
+			return dataset;
 		}
-		in.close();
-
-		DoubleMatrixDataset<String, String> dataset = new DoubleMatrixDataset<String, String>(matrix, rowMap, colMap);
-		//LOGGER.log(Level.INFO, "Binary file ''{0}'' has been loaded, nrRows: {1} nrCols: {2}", new Object[]{fileName, nrRows, nrCols});
-
-		return dataset;
 	}
 
-	public void saveBinary(String path) throws IOException {
+	public void saveBinary(final String path) throws IOException{
+		DoubleMatrixDatasetRowCompressedWriter.saveDataset(path, this);
+	}
+	
+	/**
+	 * 
+	 * @param path
+	 * @param datasetName will be saved as metadata in binary file
+	 * @param dataOnRows will be saved as metadata in binary file
+	 * @param dataOnCols will be saved as metadata in binary file
+	 * @throws IOException 
+	 */
+	public void saveBinary(final String path, final String datasetName, final String dataOnRows, final String dataOnCols) throws IOException{
+		DoubleMatrixDatasetRowCompressedWriter.saveDataset(path, this, datasetName, dataOnRows, dataOnCols);
+	}
+	
+	public void saveBinaryOldFormat(String path) throws IOException {
 
 		final File matrixFile = new File(path + ".dat.gz");
 		final File rowFile = new File(path + ".rows.txt.gz");
@@ -916,9 +957,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		final String[] outputLine = new String[1];
 
-		final CSVWriter rowWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(rowFile)) {{
-			def.setLevel(Deflater.BEST_SPEED);
-		}}, "UTF8")), '\t', '\0', '\0', "\n");
+		final CSVWriter rowWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(rowFile)) {
+			{
+				def.setLevel(Deflater.BEST_SPEED);
+			}
+		}, "UTF8")), '\t', '\0', '\0', "\n");
 
 		for (R row : hashRows.keySet()) {
 			outputLine[0] = row.toString();
@@ -926,9 +969,11 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 		rowWriter.close();
 
-		final CSVWriter colWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(colFile)) {{
-			def.setLevel(Deflater.BEST_SPEED);
-		}}, "UTF8")), '\t', '\0', '\0', "\n");
+		final CSVWriter colWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(colFile)) {
+			{
+				def.setLevel(Deflater.BEST_SPEED);
+			}
+		}, "UTF8")), '\t', '\0', '\0', "\n");
 
 		for (C col : hashCols.keySet()) {
 			outputLine[0] = col.toString();
@@ -965,7 +1010,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	protected static LinkedHashMap<String, Integer> loadIdentifiers(String filename) throws IOException {
 		return loadIdentifiers(new File(filename));
 	}
-	
+
 	protected static LinkedHashMap<String, Integer> loadIdentifiers(File file) throws IOException {
 		TextFile tf = new TextFile(file, false);
 		String[] rowsArr = tf.readAsArray();
@@ -1050,9 +1095,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	protected static byte[] intToByteArray(int value) {
 		return new byte[]{(byte) (value >>> 24),
-				(byte) (value >>> 16),
-				(byte) (value >>> 8),
-				(byte) value};
+			(byte) (value >>> 16),
+			(byte) (value >>> 8),
+			(byte) value};
 	}
 
 	protected static int byteArrayToInt(byte[] b) {
@@ -1063,7 +1108,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	//Getters and setters
-
 	/**
 	 * @return Number of rows
 	 */
@@ -1715,9 +1759,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 //		for (int i = columns; --i >= 0;) {
 //			cols[i] = matrix.viewColumn(i);
 //		}
-		for (int i = columns; --i >= 0; ) {
+		for (int i = columns; --i >= 0;) {
 			//DoubleMatrix1D col1 = cols[i];
-			for (int j = i + 1; --j >= 0; ) {
+			for (int j = i + 1; --j >= 0;) {
 
 				if (i == j) {
 					correlations.setQuick(i, j, 1);
@@ -1986,18 +2030,18 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		final int nrRows = d1.rows();
 
 		final DoubleMatrix1D[] d1Cols = new DoubleMatrix1D[d1NrCols];
-		for (int i = d1NrCols; --i >= 0; ) {
+		for (int i = d1NrCols; --i >= 0;) {
 			d1Cols[i] = d1Matrix.viewColumn(i);
 		}
 
 		final DoubleMatrix1D[] d2Cols = new DoubleMatrix1D[d2NrCols];
-		for (int i = d2NrCols; --i >= 0; ) {
+		for (int i = d2NrCols; --i >= 0;) {
 			d2Cols[i] = d2Matrix.viewColumn(i);
 		}
 
-		for (int i = d1NrCols; --i >= 0; ) {
+		for (int i = d1NrCols; --i >= 0;) {
 			DoubleMatrix1D col1 = d1Cols[i];
-			for (int j = d2NrCols; --j >= 0; ) {
+			for (int j = d2NrCols; --j >= 0;) {
 
 				DoubleMatrix1D col2 = d2Cols[j];
 				double sumOfProducts = 0;

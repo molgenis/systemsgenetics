@@ -8,6 +8,7 @@ package nl.systemsgenetics.downstreamer.development;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Set;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -29,8 +30,8 @@ public class CorrelateExpressionToPredictions {
 		
 		DoubleMatrixDatasetFastSubsetLoader expressionDataLoader = new DoubleMatrixDatasetFastSubsetLoader(options.getY());
 		
-		LinkedHashSet<String> sharedGenes = new LinkedHashSet<>(corePredictionZscoresLoader.getOriginalRowMap().keySet());
-		sharedGenes.retainAll(expressionDataLoader.getOriginalRowMap().keySet());
+		Set<String> sharedGenes = new LinkedHashSet<>(corePredictionZscoresLoader.getOriginalRowMap());
+		sharedGenes.retainAll(expressionDataLoader.getOriginalRowMap());
 		
 		DoubleMatrixDataset<String, String> corePredictionZscores = corePredictionZscoresLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);
 		DoubleMatrixDataset<String, String> expressionData = expressionDataLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);

@@ -7,6 +7,7 @@ import umcg.genetica.io.text.TextFile;
 import java.io.IOException;
 import java.util.List;
 
+@Deprecated //is now directly availble in datg writer
 public class DoubleMatrixDatasetAppendableWriter {
 
 	private final TextFile rowIds;

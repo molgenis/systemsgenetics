@@ -30,7 +30,7 @@ public class NetworkProperties {
 
 		DoubleMatrixDatasetFastSubsetLoader networkLoader = new DoubleMatrixDatasetFastSubsetLoader(options.getGwasZscoreMatrixPath());
 
-		Set<String> genesInNetwork = networkLoader.getOriginalRowMap().keySet();
+		Set<String> genesInNetwork = networkLoader.getOriginalRowMap();
 		
         ArrayList<String> geneNames =  new ArrayList<>(genes.size());
 		for(Gene gene : genes){
