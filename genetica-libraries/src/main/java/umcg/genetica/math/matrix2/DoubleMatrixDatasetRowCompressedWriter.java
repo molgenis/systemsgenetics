@@ -181,7 +181,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		//Then number of row and columns
 		//Finaly start of row indices end block
 
-		if (rowsInCurrentBlock > 0) {
+		if (rowsInCurrentBlock > 0) {//>0 is correct this is count not index
 			closeBlock();
 		}
 
