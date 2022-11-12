@@ -75,13 +75,13 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 
 		if ((columns.size() * 8l) > 33554432) {
 			//this limit is the max block size of lz4 blocks. Can be solved by using multiple block per row but that is not implemented
-			throw new IOException("Too many columns to write " + columns.size() + " max is: " + 33554432/8);
+			throw new IOException("Too many columns to write " + columns.size() + " max is: " + 33554432 / 8);
 		}
-		
-		if((columns.size() * 8l * rowsPerBlock) > 33554432){
+
+		if ((columns.size() * 8l * rowsPerBlock) > 33554432) {
 			throw new IOException("Too many rows block");
 		}
-		
+
 		this.rowsPerBlock = rowsPerBlock;
 		this.bytesPerRow = columns.size() * 8;
 		rowBuffer = new byte[this.bytesPerRow];
@@ -115,7 +115,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		matrixFileWriter = new CountingOutputStream(new BufferedOutputStream(new FileOutputStream(matrixFile), 262144));
 
 		blockSize = bytesPerRow * rowsPerBlock;
-		
+
 	}
 
 	/**
@@ -132,10 +132,10 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 
 	public synchronized final void addRow(final String rowName, final DoubleMatrix1D rowData) throws IOException {
 
-		if(++numberOfRows >= MAX_ROWS){
+		if (++numberOfRows >= MAX_ROWS) {
 			throw new IOException("Reached max number of rows: " + numberOfRows);
 		}
-		
+
 		outputLine[0] = rowName;
 		rowNamesWriter.writeNext(outputLine);
 
@@ -180,8 +180,8 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		//here write row indicies to end of file
 		//Then number of row and columns
 		//Finaly start of row indices end block
-		
-		if(rowsInCurrentBlock > 0){
+
+		if (rowsInCurrentBlock > 0) {
 			closeBlock();
 		}
 
@@ -199,7 +199,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		final DataOutputStream metaDataBlockWriter = new DataOutputStream(matrixFileWriter);
 
 		final long startOfMetaDataBlock = matrixFileWriter.getByteCount();
-		
+
 		metaDataBlockWriter.writeUTF(datasetName);
 		metaDataBlockWriter.writeUTF(dataOnRows);
 		metaDataBlockWriter.writeUTF(dataOnCols);
@@ -221,7 +221,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 	public static final void saveDataset(final String path, final DoubleMatrixDataset dataset) throws FileNotFoundException, IOException {
 		saveDataset(path, dataset, "", "", "");
 	}
-	
+
 	public static final void saveDataset(final String path, final DoubleMatrixDataset dataset, String datasetName, String dataOnRows, String dataOnCols) throws FileNotFoundException, IOException {
 
 		final DoubleMatrixDatasetRowCompressedWriter writer = new DoubleMatrixDatasetRowCompressedWriter(path, dataset.getColObjects(), datasetName, dataOnRows, dataOnCols);

@@ -10,16 +10,13 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -96,8 +93,6 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 		timestampCreated = matrixFileReader.readLong();
 
-		System.out.println("date: " + Instant.ofEpochSecond(timestampCreated).toString());
-
 		numberOfRows = matrixFileReader.readInt();
 		numberOfColumns = matrixFileReader.readInt();
 
@@ -108,9 +103,6 @@ public class DoubleMatrixDatasetRowCompressedReader {
 		if (numberOfColumns != colMap.size()) {
 			throw new IOException("Number of columns in " + colFile.getAbsolutePath() + " (" + colMap.size() + ") does not match number of columns found in " + matrixFile.getAbsolutePath() + "(" + numberOfColumns + ")");
 		}
-
-		System.out.println("rows " + numberOfRows);
-		System.out.println("cols " + numberOfColumns);
 
 		startOfEndBlock = matrixFileReader.readLong();
 		final long startOfMetaDataBlock = matrixFileReader.readLong();
@@ -133,17 +125,11 @@ public class DoubleMatrixDatasetRowCompressedReader {
 		this.dataOnRows = matrixFileReader.readUTF();
 		this.dataOnCols = matrixFileReader.readUTF();
 
-		System.out.println("dataset meta: " + this.datasetName + " " + this.dataOnRows + " " + this.dataOnCols);
-
 		bytesPerRow = numberOfColumns * 8;
 		blockSize = bytesPerRow * rowsPerBlock;
 		blockData = new byte[blockSize];
 
-		System.out.println("rowsPerBlock: " + rowsPerBlock);
-
 		numberOfBlocks = (numberOfRows + rowsPerBlock - 1) / rowsPerBlock; // (x + y - 1) / y; = ceiling divide
-
-		System.out.println("numberOfBlocks " + numberOfBlocks);
 
 		matrixFileReader.seek(startOfEndBlock);
 		final DataInputStream blockIndicesReader = new DataInputStream(new LZ4BlockInputStream(new RandomAccessFileInputStream(matrixFileReader, false)));
@@ -327,6 +313,22 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 	public Set<String> getColumnIdentifiers() {
 		return Collections.unmodifiableSet(colMap.keySet());
+	}
+
+	public long getTimestampCreated() {
+		return timestampCreated;
+	}
+
+	public String getDatasetName() {
+		return datasetName;
+	}
+
+	public String getDataOnRows() {
+		return dataOnRows;
+	}
+
+	public String getDataOnCols() {
+		return dataOnCols;
 	}
 
 	private LinkedHashMap<String, Integer> loadIdentifiers(final File file) throws IOException {
