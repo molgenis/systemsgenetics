@@ -222,7 +222,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		saveDataset(path, dataset, "", "", "");
 	}
 
-	public static final void saveDataset(final String path, final DoubleMatrixDataset dataset, String datasetName, String dataOnRows, String dataOnCols) throws FileNotFoundException, IOException {
+	public static final void saveDataset(final String path, final DoubleMatrixDataset dataset, final String datasetName, final String dataOnRows, final String dataOnCols) throws FileNotFoundException, IOException {
 
 		final DoubleMatrixDatasetRowCompressedWriter writer = new DoubleMatrixDatasetRowCompressedWriter(path, dataset.getColObjects(), datasetName, dataOnRows, dataOnCols);
 
