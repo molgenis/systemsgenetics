@@ -335,9 +335,9 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 		final CSVParser identifierFileParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 
-		CSVReader reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)), "UTF8"))).withCSVParser(identifierFileParser).build();
+		final CSVReader reader = new CSVReaderBuilder(new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)), "UTF8"))).withCSVParser(identifierFileParser).build();
 
-		LinkedHashMap<String, Integer> map = new LinkedHashMap<>();
+		final LinkedHashMap<String, Integer> map = new LinkedHashMap<>();
 		String[] inputLine;
 		while ((inputLine = reader.readNext()) != null) {
 			map.put(inputLine[0], map.size());
