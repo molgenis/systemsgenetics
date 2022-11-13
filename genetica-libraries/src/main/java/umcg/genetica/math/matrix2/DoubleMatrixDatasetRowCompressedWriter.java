@@ -52,7 +52,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 	private final byte rowBuffer[];
 	private final int bytesPerRow;
 	private final String datasetName;
-	private final String dataOnRows;//For instnace genes
+	private final String dataOnRows;//For instance genes
 	private final String dataOnCols;//For instance pathays
 	private int numberOfRows = 0;
 	private final int blockSize;
