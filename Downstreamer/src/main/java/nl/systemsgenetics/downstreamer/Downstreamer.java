@@ -11,6 +11,7 @@ import java.util.*;
 
 import nl.systemsgenetics.downstreamer.development.CorrelateExpressionToPredictions;
 import nl.systemsgenetics.downstreamer.development.First1000qtl;
+import nl.systemsgenetics.downstreamer.io.DatToDatg;
 import nl.systemsgenetics.downstreamer.io.ExcelWriter;
 import nl.systemsgenetics.downstreamer.pathway.PredictedPathwayAnnotations;
 
@@ -239,7 +240,10 @@ public class Downstreamer {
 					break;
 				case PREPARE_GENE_PVALUES:
 					PrepareExternalGenePvalues.prepare(options);
-		
+					break;
+				case CONVERT_DAT_TO_DATG:
+					DatToDatg.convert(options);
+					break;
 			}
 		} catch (TabixFileNotFoundException e) {
 			System.err.println("Problem running mode: " + options.getMode());

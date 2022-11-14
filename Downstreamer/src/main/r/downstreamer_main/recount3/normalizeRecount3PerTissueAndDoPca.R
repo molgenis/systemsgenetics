@@ -4,7 +4,7 @@
 
 
 
-remoter::client("localhost", port = 55504)
+remoter::client("localhost", port = 55506)
 
 library(DESeq2)
 library(parallel)
@@ -14,10 +14,11 @@ setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
 
 load(file = "perTissueNormalization/selectedSamplesRawExpression.RData", verbose = T)
-load("tissuePredictions/samplesWithPrediction_16_09_22.RData", verbose = T)
+load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
 
-sort(table(samplesWithPrediction$predictedTissue))
-tissueClasses <- unique(samplesWithPrediction$predictedTissue)
+
+sort(table(samplesWithPredictionNoOutliers$predictedTissue))
+tissueClasses <- unique(samplesWithPredictionNoOutliers$predictedTissue)
 
 
 #tissueClasses <- tissueClasses[1:29]
@@ -26,12 +27,12 @@ tissueClasses <- unique(samplesWithPrediction$predictedTissue)
 #tissueClasses <- tissueClasses[c(1,2,6,14,55)]
 
 #limit expression to max int
-selectedSamplesExp[selectedSamplesExp > .Machine$integer.max] <- .Machine$integer.max
+#selectedSamplesExp[selectedSamplesExp > .Machine$integer.max] <- .Machine$integer.max
+tissue = "Kidney"
 
-
-mclapply(tissueClasses,  mc.cores = 10, function(tissue){
+lapply(tissueClasses, function(tissue){
   
-  tissueSamples <- rownames(samplesWithPrediction)[samplesWithPrediction$predictedTissue == tissue]
+  tissueSamples <- rownames(samplesWithPredictionNoOutliers)[samplesWithPredictionNoOutliers$predictedTissue == tissue]
   tissueExp <- selectedSamplesExp[,tissueSamples]
   numberOfSamples <- length(tissueSamples)
   
@@ -39,47 +40,87 @@ mclapply(tissueClasses,  mc.cores = 10, function(tissue){
   
   tissueExp <- tissueExp[includedGenes,]
   
-  mode(tissueExp) <- "integer"
+  print(paste(tissue,numberOfSamples,sum(includedGenes)))
   
   save(tissueExp, file = paste0("perTissueNormalization/raw/",make.names(tissue),".RData"))
   
 })
 
 
-tissueClasses <- unique(samplesWithPrediction$predictedTissue)
-
-#Run 1
-#tissueClasses <- tissueClasses[1:5]
-#Run 2
-run2Tisses <- c("Whole Blood", "T-Cells", "fibroblasts_cell-lines_smooth-muscle-cell_mesenchymal-stem-cells", "PBMC")
-tissueClasses <- run2Tisses
-#Run3
-run3Tisses <- c("derived-neural-progenitor_derived-neurons", "Macrophages", "Liver", "Macrophages-iPSC")
-tissueClasses <- run3Tisses
-
-#Run4 colorectal en prostate
-
-perTissueExp <- mclapply(tissueClasses,  mc.cores = 4, function(tissue){
+perTissueExp <- lapply(tissueClasses, function(tissue){
   
   load(file = paste0("perTissueNormalization/raw/",make.names(tissue),".RData"))
-  rlogExp <- rlog(tissueExp)
-  save(rlogExp, file = paste0("perTissueNormalization/rlogExp/",make.names(tissue),".RData"))
+  
+  #limit expression to max int
+  tissueExp[tissueExp > .Machine$integer.max] <- .Machine$integer.max
+
+  vstExp <- vst(tissueExp, nsub = 2000)
+  
+  save(vstExp, file = paste0("perTissueNormalization/vstExp/",make.names(tissue),".RData"))
   return(NULL)
   
 })
 
+
 #names(perTissueExp) <- tissueClasses
 #save(perTissueExp, file = "perTissueNormalization/selectedSamplesRawExpressionPerTissue.RData")
 tissue = "Kidney"
+load(file = "Metadata/combinedMeta_2022_09_15.RData", verbose = T)
 
-load(file = paste0("perTissueNormalization/rlogExp/",make.names(tissue),".RData"))
+covariatesToCorrectFor <- read.delim("CovariateNames.txt", header = F)$V1
 
-perTissuePca <- lapply(perTissueExp, function(exp){
+str(sum(is.na(combinedMeta[,"sra.sample_spots"])))
+
+#TCGA samples don't have sra.sample_spots instead use recount_qc.bc_frag.count
+missingSampleSpots <- is.na(combinedMeta[,"sra.sample_spots"])
+combinedMeta[missingSampleSpots,"sra.sample_spots"] <- combinedMeta[missingSampleSpots,"recount_qc.bc_frag.count"]
+
+#TCGA and Gtex don't report layout but is all paired
+missingLayout <- is.na(combinedMeta[,"sra.library_layout"])
+combinedMeta[missingLayout,"sra.library_layout"] <- "paired"
+
+combinedMetaSelection <- combinedMeta[,covariatesToCorrectFor]
+combinedMetaSelection$sra.library_layout <- as.factor(combinedMetaSelection$sra.library_layout)
+table(combinedMeta[,"sra.library_layout"],useNA = "a")
+
+cl <- makeCluster(20)
+
+tissue <- "Salivary Gland-Minor Salivary Gland"
+
+sink <- lapply(tissueClasses, function(tissue){
+  cat(tissue, "\n")
+  
+  
+  load(file = paste0("perTissueNormalization/vstExp/",make.names(tissue),".RData"))
+
+  combinedMetaTissue <- combinedMetaSelection[colnames(vstExp),]
+  if(min(table(combinedMetaTissue$sra.library_layout)) < 10){
+    combinedMetaTissue <- combinedMetaTissue[,-match("sra.library_layout",colnames(combinedMetaTissue))]
+  }
+  
+  vstExpCovCor <- parApply(cl, vstExp, 1 ,function(geneExp, combinedMetaTissue){
+    return(residuals(lm(geneExp ~ . ,data = combinedMetaTissue)))
+  }, combinedMetaTissue = combinedMetaTissue)
+  vstExpCovCor <- t(vstExpCovCor)
+  
+  
+  save(vstExpCovCor, file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
+
+})
+
+stopCluster(cl)
+
+
+sink <- lapply(tissueClasses, function(tissue){
+  cat(tissue, "\n")
+
+  
+  load(file = paste0("perTissueNormalization/vstExp/",make.names(tissue),".RData"))
   
   #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
-  expScale = rlogExp - rowMeans(rlogExp);
+  expScale = vstExpCovCor - rowMeans(vstExpCovCor);
   # Standardize each variable
-  expScale = expScale / sqrt(rowSums(expScale^2));   
+    expScale = expScale / sqrt(rowSums(expScale^2));   
   #expCov = tcrossprod(expScale);#equevelent to correlation due to center scale
   #expEigen <- eigen(expCov)
   #eigenVectors <- expEigen$vectors
@@ -93,22 +134,124 @@ perTissuePca <- lapply(perTissueExp, function(exp){
   #expPcs <- t(expScale) %*% expEigen$vectors[,1:10]
   #colnames(expPcs) <- paste0("PC_",1:ncol(expPcs))
   
-  expSvd <- svd(expScale, nu = 1000, nv = 1000)
+  nrSamples <- ncol(expScale)
   
+  expSvd <- svd(expScale, nu = ifelse(nrSamples < 500, nrSamples, 500), nv = ifelse(nrSamples < 50, nrSamples, 50))
+  
+
   eigenValues <- expSvd$d^2
   eigenVectors <- expSvd$u
-  colnames(eigenVectors) <- paste0("PC_",1:ncol(eigenVectors))
+  colnames(eigenVectors) <- paste0("Comp_",1:ncol(eigenVectors))
   rownames(eigenVectors) <- rownames(expScale)
   
-  expPcs <- expSvd$v[,1:25] %*% diag(expSvd$d[1:25])
-  colnames(expPcs) <- paste0("PC_",1:ncol(expPcs))
+  expPcs <- expSvd$v %*% diag(expSvd$d[1:ncol(expSvd$v)])
+  colnames(expPcs) <- paste0("Comp_",1:ncol(expPcs))
   rownames(expPcs) <- colnames(expScale)
   
-  return(list(eigenVectors, eigenValues, expPcs))
+  explainedVariance <- eigenValues * 100 / sum(eigenValues)
+  
+  
+  tissueVstPca <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)
+  str(tissueVstPca)
+  save(tissueVstPca, file = paste0("perTissueNormalization/vstPca/",make.names(tissue),".RData"))
   
 })
 
-save(perTissueExp, perTissuePca, file = "perTissueNormalization/tmpTestSession.RData")
+str(vstExp)
+rownames(vstExp) <- (gsub("\\..+", "", rownames(vstExp)))
+write.table(vstExp, file = gzfile(paste0("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/perTissueNormalization/vstExp/",make.names(tissue),".txt.gz")), sep = "\t", col.names = NA, quote = F)
+
+eigenVec <- tissueVstPca$eigenVectors
+rownames(vstExp) <- (gsub("\\..+", "", rownames(eigenVec)))
+write.table(eigenVec, file = gzfile(paste0("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/perTissueNormalization/vstPca/",make.names(tissue),"_eigenVec.txt.gz")), sep = "\t", col.names = NA, quote = F)
+
+
+metaNumeric <- as.matrix(combinedMeta[,sapply(combinedMeta, is.numeric)])
+
+
+
+marCorZPerTissue <- lapply(tissueClasses, function(tissue){
+
+  load(file = paste0("perTissueNormalization/vstPca/",make.names(tissue),".RData"), verbose = T)
+  
+  pcs <- tissueVstPca$expPcs
+  metaTest <- metaNumeric[rownames(pcs),]
+
+  metaVPcsZ <- apply(pcs, 2, function(x){
+    apply(metaTest, 2, function(y, x){
+      z <- !is.na(x) & !is.na(y)
+      if(sum(z) < 10){
+        return(0)
+      }
+      p <- cor.test(x[z],y[z])$p.value
+      return(-qnorm(p/2))
+    }, x = x)
+  })
+  
+  maxCorZ <- apply(abs(metaVPcsZ), 1, max, na.rm = T)
+  maxCorZ[is.infinite(maxCorZ)] <- 0
+
+  return(maxCorZ)
+
+})
+
+str(marCorZPerTissue)
+
+marCorZPerTissue2 <- do.call(cbind, marCorZPerTissue)
+str(marCorZPerTissue2)
+
+covariateZscores <- apply(marCorZPerTissue2,1,mean)
+
+marCorZPerTissue2["recount_qc.star.%_of_reads_mapped_to_multiple_loci",]
+library(vioplot)
+vioplot(marCorZPerTissue2["recount_qc.star.%_of_reads_mapped_to_multiple_loci",])
+
+library(beeswarm)
+beeswarm(marCorZPerTissue2["recount_qc.star.%_of_reads_mapped_to_multiple_loci",],
+         method = 'swarm',
+         pch = 16, ylim = c(0,30), ylab = "z-score", main = "Highest correlation between components and\n % non uniquely mapping reads.")
+
+dev.off()
+
+cor.test(pcs[,1], metaTest[,"recount_qc.star.%_of_reads_mapped_to_multiple_loci"])
+plot(pcs[,1], metaTest[,"recount_qc.star.%_of_reads_mapped_to_multiple_loci"], pch = 16, col=adjustcolor("grey", alpha.f = 0.5))
+dev.off()
+
+pcs <- expPcs
+
+
+tissueSamplesInfo <- samplesWithPredictionNoOutliers[rownames(pcs),]
+studies <- length(unique(tissueSamplesInfo$study))
+
+library(viridisLite, lib.loc = .libPaths()[2])
+
+rpng(width = 1500, height = 1500)
+palette(adjustcolor(viridis(studies, option = "H"), alpha.f = 0.5))
+pchMap <- rep(c(15,16,17), length.out = studies)
+plot(pcs[,1],metaTest[,"recount_qc.star.%_of_reads_mapped_to_multiple_loci"], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
+plot(pcs[,1],pcs[,2], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
+dev.off()
+
+
+
+
+
+
+hist(metaVPcsZ, breaks = 100)
+dev.off()
+library(heatmap3)
+rpng(width = 1000, height = 1000)
+heatmap3(metaVPcsZ, balanceColor = T, scale = "none", Rowv = NA, Colv =NA)
+dev.off()
+
+
+
+
+#OLD
+
+
+
+#save(perTissueExp, perTissuePca, file = "perTissueNormalization/tmpTestSession.RData")
 #load(file = "perTissueNormalization/tmpTestRlog.RData")
 
 save(expPcs, samplesWithPrediction, file = "perTissueNormalization/tmpTest2.RData")

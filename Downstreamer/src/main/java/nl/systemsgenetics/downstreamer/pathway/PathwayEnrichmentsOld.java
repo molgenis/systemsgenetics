@@ -112,7 +112,7 @@ public class PathwayEnrichmentsOld {
 
 		pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase.getLocation());
 
-		Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap().keySet();
+		Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap();
 
 		sharedGenes = new LinkedHashSet<>();
 

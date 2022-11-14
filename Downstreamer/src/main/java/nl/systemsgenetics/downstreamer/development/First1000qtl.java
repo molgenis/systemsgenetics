@@ -7,7 +7,7 @@ package nl.systemsgenetics.downstreamer.development;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.Set;
 import nl.systemsgenetics.downstreamer.DownstreamerOptions;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -32,10 +32,10 @@ public class First1000qtl {
 		
 		ArrayList<String> rowsToOutput = new ArrayList<>();
 		
-		Map<String, Integer> rowMap = loader.getOriginalRowMap(); 
+		Set<String> rowMap = loader.getOriginalRowMap(); 
 		
 		int i = 0;
-		for(String row : rowMap.keySet()){
+		for(String row : rowMap){
 			if(i++ > 1000){
 				break;
 			}

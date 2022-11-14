@@ -4,7 +4,7 @@
 
 
 
-remoter::client("localhost", port = 55506)
+remoter::client("localhost", port = 55508)#55506
 
 library(DESeq2)
 library(parallel)
@@ -314,20 +314,17 @@ sink <- lapply(tissueClasses, function(tissue, exp){
   
 }, exp = exp)
 
-#Create co-expression matrices
+#Create txt matrices
 sink <- lapply(tissueClasses, function(tissue){
   
   load(file = paste0("perTissueNormalization/globalQqnorm/",make.names(tissue),".RData"), verbose = T) 
   
-  #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
-  expScale = tissueExp - rowMeans(tissueExp);
-  # Standardize each variable
-  expScale = expScale / sqrt(rowSums(expScale^2));   
-  expCov = tcrossprod(expScale);#equevelent to correlation due to center scale
-  
-  write.table(expCov, file = paste0("perTissueNormalization/qqCoExp/",make.names(tissue),".txt"), sep = "\t", quote = F, col.names = NA)
+  write.table(tissueExp, file = gzfile(paste0("perTissueNormalization/qqExp/",make.names(tissue),".txt.gz")), sep = "\t", quote = F, col.names = NA)
   
 })
+
+
+cat(make.names(tissueClasses), sep = "\n")
 
 sink <- lapply(tissueClasses, function(tissue){
   
@@ -472,6 +469,7 @@ str(compSvd)
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
 load("problem.RData")
+load("solution.RData")
 
 
 combinedCompsPcs <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1:numberOfCompsEigenvalue1])
@@ -479,6 +477,8 @@ combinedCompsPcs2 <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1
 combinedCompsPcs3 <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1:numberOfCompsEigenvalue1])
 combinedCompsPcs4 <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1:numberOfCompsEigenvalue1])
 combinedCompsPcs5 <- compSvd$u[,1:numberOfCompsEigenvalue1] %*% diag(compSvd$d[1:numberOfCompsEigenvalue1])
+
+cor.test(combinedCompsPcs[,1], combinedCompsPcsCluser[,1])
 
 cor.test(combinedCompsPcs[,1], combinedCompsPcs2[,1])
 cor.test(combinedCompsPcs[,1], combinedCompsPcs3[,1])

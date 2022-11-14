@@ -276,7 +276,7 @@ public class DownstreamerMainAnalysis {
 
 		// GWAS pvalues
 		//DoubleMatrixDataset<String, String> gwasSnpZscores = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-		Set<String> traits = new DoubleMatrixDatasetFastSubsetLoader(options.getOutputBasePath() + "_genePvalues").getOriginalColMap().keySet();
+		Set<String> traits = new DoubleMatrixDatasetFastSubsetLoader(options.getOutputBasePath() + "_genePvalues").getOriginalColMap();
 		
 		// Gene info
 		IntervalTreeMap<Gene> genes = IoUtils.readGenesAsIntervalTree(options.getGeneInfoFile());
