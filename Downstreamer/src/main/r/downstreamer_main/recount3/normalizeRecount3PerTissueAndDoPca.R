@@ -115,7 +115,7 @@ sink <- lapply(tissueClasses, function(tissue){
   cat(tissue, "\n")
 
   
-  load(file = paste0("perTissueNormalization/vstExp/",make.names(tissue),".RData"))
+  load(file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
   
   #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
   expScale = vstExpCovCor - rowMeans(vstExpCovCor);
@@ -136,9 +136,9 @@ sink <- lapply(tissueClasses, function(tissue){
   
   nrSamples <- ncol(expScale)
   
-  expSvd <- svd(expScale, nu = ifelse(nrSamples < 500, nrSamples, 500), nv = ifelse(nrSamples < 50, nrSamples, 50))
+  expSvd <- svd(expScale, nu = nrSamples, nv = min(nrSamples, 50))
   
-
+  
   eigenValues <- expSvd$d^2
   eigenVectors <- expSvd$u
   colnames(eigenVectors) <- paste0("Comp_",1:ncol(eigenVectors))
@@ -152,10 +152,33 @@ sink <- lapply(tissueClasses, function(tissue){
   
   
   tissueVstPca <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)
-  str(tissueVstPca)
-  save(tissueVstPca, file = paste0("perTissueNormalization/vstPca/",make.names(tissue),".RData"))
+  
+  save(tissueVstPca, file = paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),".RData"))
   
 })
+
+
+sink <- lapply(tissueClasses, function(tissue){
+  cat(tissue, "\n")
+  
+  load(file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
+  
+  write.table(vstExpCovCor, file = gzfile(paste0("perTissueNormalization/dataForLude/",make.names(tissue),"_vstCovCor.txt.gz")))
+  
+
+})
+
+
+sink <- lapply(tissueClasses, function(tissue){
+  cat(tissue, "\n")
+  
+  load(file = paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),".RData"))
+  
+  write.table(tissueVstPca$eigenVectors, file = gzfile(paste0("perTissueNormalization/dataForLude/",make.names(tissue),"_eigenVec.txt.gz")))
+  
+  
+})
+
 
 str(vstExp)
 rownames(vstExp) <- (gsub("\\..+", "", rownames(vstExp)))
