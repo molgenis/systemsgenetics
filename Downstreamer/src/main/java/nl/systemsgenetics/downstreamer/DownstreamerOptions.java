@@ -102,8 +102,9 @@ public class DownstreamerOptions {
 		OptionBuilder.withDescription("On of the following modes:\n"
 				+ "* STEP1 - Run the Downstreamer prioritization.\n"
 				+ "* STEP2 - Run the Downstreamer prioritization starting at stage 2.\n"
-				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
-				+ "* CONVERT_TXT_MERGE - Merge multiple txt pvalue files into one matrix containing only overlapping snps"
+				+ "* CONVERT_TXT - Convert a txt z-score matrix to binary. Use --gwas, --output\n"
+				+ "* PREPARE_GWAS - Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores.\n"
+				+ "* PREPARE_GWAS_MERGE - Merge multiple txt pvalue files into one matrix containing only overlapping snps"
 				+ "* CONVERT_BIN - Convert a binary matrix to a txt. Use --gwas and --output optionally --columnsToExtract\n"
 				+ "* CONVERT_EXP - Convert a tab seperated expression matrix and normalize genes. Use --gwas (for exp data) and --output optionally --columnsToExtract\n"
 				+ "* TRANSPOSE - Transposes a binary matrix. Use --gwas and --output\n"
@@ -228,7 +229,7 @@ public class DownstreamerOptions {
 		OPTIONS.addOption(OptionBuilder.create("d"));
 
 		OptionBuilder.withArgName("boolean");
-		OptionBuilder.withDescription("When mode=CONVERT_TXT convert p-values to z-scores");
+		OptionBuilder.withDescription("When mode=PREPARE_GWAS convert p-values to z-scores");
 		OptionBuilder.withLongOpt("pvalueToZscore");
 		OPTIONS.addOption(OptionBuilder.create("p2z"));
 
@@ -470,7 +471,7 @@ public class DownstreamerOptions {
 			throw new ParseException("Could not parse -cwe as integerer: " + commandLine.getOptionValue("cwe"));
 		}
 
-		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.SUBSET_MATRIX || mode == DownstreamerMode.GET_MARKER_GENES || mode == DownstreamerMode.PREPARE_GENE_PVALUES || mode == DownstreamerMode.CONVERT_DAT_TO_DATG) {
+		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.PREPARE_GWAS || mode == DownstreamerMode.PREPARE_GWAS_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.SUBSET_MATRIX || mode == DownstreamerMode.GET_MARKER_GENES || mode == DownstreamerMode.PREPARE_GENE_PVALUES || mode == DownstreamerMode.CONVERT_DAT_TO_DATG) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -481,8 +482,13 @@ public class DownstreamerOptions {
 			gwasZscoreMatrixPath = null;
 		}
 
-		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.CONVERT_TXT_MERGE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.SUBSET_MATRIX) {
-			pvalueToZscore = commandLine.hasOption("p2z");
+		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.PREPARE_GWAS || mode == DownstreamerMode.PREPARE_GWAS_MERGE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.SUBSET_MATRIX) {
+			if (mode == DownstreamerMode.CONVERT_TXT && commandLine.hasOption("p2z")) {
+				throw new RuntimeException("Use mode PREPARE_GWAS to convert p-values to z-score. (this changed in version 1.32)");
+			} else {
+				pvalueToZscore = commandLine.hasOption("p2z");
+			}
+
 			if (commandLine.hasOption("co")) {
 				conversionColumnIncludeFilter = new File(commandLine.getOptionValue("co"));
 			} else {
@@ -744,7 +750,7 @@ public class DownstreamerOptions {
 					geneInfoFile = new File(commandLine.getOptionValue("ge"));
 				}
 				pathwayDatabases = null;
-				
+
 				if (!commandLine.hasOption("pgc")) {
 					throw new ParseException("--permutationGeneCorrelations not specified");
 				} else {
@@ -772,7 +778,7 @@ public class DownstreamerOptions {
 						throw new ParseException("Error parsing --permutationFDR \"" + commandLine.getOptionValue("pfdr") + "\" is not an int");
 					}
 				}
-				
+
 				genePruningR = 0;
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
@@ -1011,7 +1017,7 @@ public class DownstreamerOptions {
 					pathwayDatabasesToAnnotateWithGwas = Arrays.asList(commandLine.getOptionValues("annotDb"));
 				}
 				break;
-			case CONVERT_TXT_MERGE:
+			case PREPARE_GWAS_MERGE:
 
 				if (!commandLine.hasOption('r')) {
 					genotypeBasePath = null;
@@ -1228,27 +1234,29 @@ public class DownstreamerOptions {
 			case CONVERT_EQTL:
 				LOGGER.info(" * eQTL Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (pvalueToZscore) {
-					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
+					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: PREPARE_GWAS");
 				}
 				break;
 			case CONVERT_GTEX:
 				LOGGER.info(" * Gtex median tissue expression GCT file: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (pvalueToZscore) {
-					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
+					LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: PREPARE_GWAS");
 				}
 				break;
 			case CONVERT_TXT:
-				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * Txt matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (conversionColumnIncludeFilter != null) {
 					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
 				}
 				if (conversionRowIncludeFilter != null) {
 					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
 				}
-				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
+				if (trimGeneNames) {
+					LOGGER.info(" * Trimming gene names to remove .## from the row names");
+				}
 				break;
 			case SUBSET_MATRIX:
-				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
+				LOGGER.info(" * Input matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (conversionColumnIncludeFilter != null) {
 					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
 				}
@@ -1256,7 +1264,18 @@ public class DownstreamerOptions {
 					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
 				}
 				break;
-			case CONVERT_TXT_MERGE:
+			case PREPARE_GWAS:
+				LOGGER.info(" * Gwas summary statistics: " + gwasZscoreMatrixPath.getAbsolutePath());
+				if (conversionColumnIncludeFilter != null) {
+					LOGGER.info(" * Phenotypes to include: " + conversionColumnIncludeFilter.getAbsolutePath());
+				}
+				if (conversionRowIncludeFilter != null) {
+					LOGGER.info(" * Variants to include: " + conversionRowIncludeFilter.getAbsolutePath());
+				}
+				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
+
+				break;
+			case PREPARE_GWAS_MERGE:
 				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * Convert p-values to Z-score: " + (pvalueToZscore ? "on" : "off"));
 				if (genotypeBasePath != null) {
@@ -1309,7 +1328,7 @@ public class DownstreamerOptions {
 					LOGGER.info(" * Rows to include: " + conversionRowIncludeFilter.getAbsolutePath());
 				}
 				if (trimGeneNames) {
-					LOGGER.info("Trimming gene names to remove .## from the name");
+					LOGGER.info(" * Trimming gene names to remove .## from the name");
 				}
 				break;
 			case TRANSPOSE:
@@ -1324,6 +1343,9 @@ public class DownstreamerOptions {
 				}
 				if (columnsToExtract != null) {
 					LOGGER.info(" * Columns to use for correlation: " + String.join(" ", columnsToExtract));
+				}
+				if (trimGeneNames) {
+					LOGGER.info(" * Trimming gene names to remove .## from the name");
 				}
 				break;
 			case SPECIAL:
@@ -1378,10 +1400,10 @@ public class DownstreamerOptions {
 			case STEP2:
 				LOGGER.info(" * STEP1 data to use: " + run1BasePath.getAbsolutePath());
 				LOGGER.info(" * Cis window extend: " + cisWindowExtend);
-				if(covariates != null){
+				if (covariates != null) {
 					LOGGER.info(" * Covariates to correct for: " + covariates.getAbsolutePath());
 				}
-				
+
 				logSharedRun1Run2();
 
 				break;
@@ -1399,7 +1421,7 @@ public class DownstreamerOptions {
 	private void logSharedRun1Run2() {
 
 		if (pvalueToZscore) {
-			LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: CONVERT_TXT");
+			LOGGER.info("WARNING --pvalueToZscore is set but only effective for mode: PREPARE_GWAS");
 		}
 		LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
 		LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);

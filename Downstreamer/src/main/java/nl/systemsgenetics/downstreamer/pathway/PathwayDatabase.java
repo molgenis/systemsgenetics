@@ -58,10 +58,10 @@ public class PathwayDatabase {
 	}
 
 	public boolean exist() {
-		if (location.endsWith(".dat") || location.endsWith(".dat.gz")) {
+		if (location.endsWith(".datg") || location.endsWith(".dat") || location.endsWith(".dat.gz")) {
 			return new File(location).canRead();
 		}
-		if (new File(location + ".dat").canRead() || new File(location + ".dat.gz").canRead()) {
+		if (new File(location + ".datg").canRead() || new File(location + ".dat").canRead() || new File(location + ".dat.gz").canRead()) {
 			return true;
 		}
 		return false;

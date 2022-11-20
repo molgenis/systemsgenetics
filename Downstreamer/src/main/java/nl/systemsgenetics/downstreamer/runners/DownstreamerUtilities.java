@@ -75,6 +75,9 @@ public class DownstreamerUtilities {
 				genes.add(nextLine[0]);
 			}
 			LOGGER.info("Read " + genes.size() + " genes to load");
+			if (options.isTrimGeneNames()) {
+				LOGGER.info("Note: the genes to load filter is applied before trimming the gene names.");
+			}
 			if (options.getGwasZscoreMatrixPath().endsWith(".txt") || options.getGwasZscoreMatrixPath().endsWith("txt.gz")) {
 				expressionMatrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(options.getGwasZscoreMatrixPath(), '\t', genes, null);
 			} else {
@@ -95,11 +98,28 @@ public class DownstreamerUtilities {
 			}
 		}
 
-		// Normalize the input data
-		if (options.isNormalizeEigenvectors()) {
-			expressionMatrix.normalizeRows();
-			expressionMatrix.normalizeColumns();
-			LOGGER.info("Data row normalized and then column normalized");
+		if (options.isTrimGeneNames()) {
+			LinkedHashMap<String, Integer> oldHash = expressionMatrix.getHashRows();
+			LinkedHashMap<String, Integer> newHash = new LinkedHashMap<>(oldHash.size());
+
+			for (Map.Entry<String, Integer> oldEntry : oldHash.entrySet()) {
+
+				String oldGeneName = oldEntry.getKey();
+				int indexOfPoint = oldGeneName.indexOf('.');
+
+				if (indexOfPoint < 0) {
+					if (newHash.put(oldGeneName, oldEntry.getValue()) != null) {
+						throw new Exception("Can't trim gene names if this causes duplicate genes: " + oldGeneName);
+					}
+				} else {
+					if (newHash.put(oldGeneName.substring(0, indexOfPoint), oldEntry.getValue()) != null) {
+						throw new Exception("Can't trim gene names if this causes duplicate genes: " + oldGeneName);
+					}
+				}
+
+			}
+
+			expressionMatrix.setHashRows(newHash);
 		}
 
 		// Optionally select a subset of columns to use
@@ -115,6 +135,13 @@ public class DownstreamerUtilities {
 			}
 
 			expressionMatrix = expressionMatrix.viewColSelection(columnsToExtract);
+		}
+
+		// Normalize the input data
+		if (options.isNormalizeEigenvectors()) {
+			expressionMatrix.normalizeRows();
+			expressionMatrix.normalizeColumns();
+			LOGGER.info("Data row normalized and then column normalized");
 		}
 
 		// Calculate the correlation matrix
@@ -334,7 +361,8 @@ public class DownstreamerUtilities {
 	}
 
 	/**
-	 * Load existing results from step 2 from storage. If matchToNormalizedPvalues = true, the genePvalues and
+	 * Load existing results from step 2 from storage. If
+	 * matchToNormalizedPvalues = true, the genePvalues and
 	 * normalizedGenePvalues are matched.
 	 *
 	 * @param options
@@ -365,7 +393,8 @@ public class DownstreamerUtilities {
 	}
 
 	/**
-	 * Load a co-regulation matrix and set any gene-gene correlation between genes closer than 250kb to zero.
+	 * Load a co-regulation matrix and set any gene-gene correlation between
+	 * genes closer than 250kb to zero.
 	 *
 	 * @param options
 	 * @throws IOException
@@ -383,7 +412,6 @@ public class DownstreamerUtilities {
 		genesToKeep.retainAll(genes.keySet());
 		LOGGER.info("Retained " + genesToKeep.size() + " genes that overlap with --genes file");
 		corMatrix = corMatrix.viewSelection(genesToKeep, genesToKeep);
-
 
 		if (!corMatrix.getHashRows().keySet().containsAll(corMatrix.getHashCols().keySet())) {
 			throw new Exception("Co-expression matrix is not squared with same row and col names");
@@ -425,9 +453,9 @@ public class DownstreamerUtilities {
 
 	}
 
-
 	/**
-	 * Calculate skewness, kurtosis, mean and variance of the null distribution for a pathway database
+	 * Calculate skewness, kurtosis, mean and variance of the null distribution
+	 * for a pathway database
 	 *
 	 * @throws Exception
 	 */
@@ -458,7 +486,6 @@ public class DownstreamerUtilities {
 		return outputStats;
 	}
 
-
 	public static void calculateMeanLdScorePerGene(DownstreamerOptions options) throws IOException {
 
 		List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
@@ -466,18 +493,16 @@ public class DownstreamerUtilities {
 
 		IntervalTreeMap<LdScore> ldScores = readLdScores(options);
 
-
 		for (Gene curGene : genes) {
 
-
 		}
-
 
 	}
 
 	/**
-	 * Input a normalized expression matrix, and perform a t-test / MannWhitney between all the samples indicated in the grouping file and the rest.
-	 * Is parallelizable.
+	 * Input a normalized expression matrix, and perform a t-test / MannWhitney
+	 * between all the samples indicated in the grouping file and the rest. Is
+	 * parallelizable.
 	 *
 	 * @param options
 	 */
@@ -486,7 +511,7 @@ public class DownstreamerUtilities {
 		Set<String> allListedSamples = new HashSet<>();
 		Map<String, Set<String>> sampleGroups = new HashMap<>();
 		BufferedReader reader = new BufferedReader(new FileReader(options.getX()));
-/*		while (reader.ready()) {
+		/*		while (reader.ready()) {
 			String[] line = reader.readLine().split("\t");
 
 			Set<String> curSamples = new HashSet<>();
@@ -525,7 +550,6 @@ public class DownstreamerUtilities {
 
 		}
 
-
 		LOGGER.info("Read " + sampleGroups.size() + " sample groups over " + allListedSamples.size() + " samples");
 
 		List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
@@ -553,7 +577,6 @@ public class DownstreamerUtilities {
 
 		// Ttest object, and storage for output
 		//final TTest tTest = new TTest();
-
 		// Mann Whitney test
 		final MannWhitneyUTest mannWhitneyTest = new MannWhitneyUTest();
 
@@ -595,11 +618,9 @@ public class DownstreamerUtilities {
 					DoubleMatrix1D groupAValues = expression.viewSelection(curGene, groupA).getRow(gene);
 					DoubleMatrix1D groupBValues = expression.viewSelection(curGene, groupB).getRow(gene);
 
-
 					// Run T-test
 					//double tstat = tTest.t(groupAValues.toArray(), groupBValues.toArray());
 					//double pval = tTest.tTest(groupAValues.toArray(), groupBValues.toArray());
-
 					// Mann Whitney U
 					double[] groupAValueArray = groupAValues.toArray();
 					double[] groupBValueArray = groupBValues.toArray();
@@ -652,8 +673,7 @@ public class DownstreamerUtilities {
 	}
 
 	/**
-	 * HashMap<Trait, Map<Gene, distance>
-	 * <0 for other chr or outside cis window
+	 * HashMap<Trait, Map<Gene, distance> <0 for other chr or outside cis window
 	 *
 	 * @param options
 	 * @return
@@ -665,7 +685,6 @@ public class DownstreamerUtilities {
 		if (traitGeneDist != null) {
 			return traitGeneDist;
 		}
-
 
 		Map<String, ChrPosTreeMap<LeadVariant>> indepVariantsAsSummaryStatisticsRecord = IoUtils.loadLeadVariantsPerTrait(options);
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
@@ -718,7 +737,6 @@ public class DownstreamerUtilities {
 
 			}
 
-
 		}
 
 		traitGeneDist = traitGeneDist2;
@@ -748,7 +766,8 @@ public class DownstreamerUtilities {
 	}
 
 	/**
-	 * Read LD score files into an IntervalTreeMap in the format provided by https://github.com/bulik/ldsc
+	 * Read LD score files into an IntervalTreeMap in the format provided by
+	 * https://github.com/bulik/ldsc
 	 *
 	 * @param options
 	 * @return
@@ -777,9 +796,10 @@ public class DownstreamerUtilities {
 	}
 
 	/**
-	 * Calculate the benjamini hochberg adjusted p-values form a doublematrixdataset. Preserves the order of the orginal
-	 * input.
-	 * Adapted from: https://github.com/cBioPortal/cbioportal/blob/master/core/src/main/java/org/mskcc/cbio/portal/stats/BenjaminiHochbergFDR.java
+	 * Calculate the benjamini hochberg adjusted p-values form a
+	 * doublematrixdataset. Preserves the order of the orginal input. Adapted
+	 * from:
+	 * https://github.com/cBioPortal/cbioportal/blob/master/core/src/main/java/org/mskcc/cbio/portal/stats/BenjaminiHochbergFDR.java
 	 * and
 	 * https://stats.stackexchange.com/questions/238458/whats-the-formula-for-the-benjamini-hochberg-adjusted-p-value
 	 *
@@ -825,11 +845,11 @@ public class DownstreamerUtilities {
 		return output;
 	}
 
-
 	/**
 	 * Links a double with an ID. Used in adjustPvaluesBenjaminiHochberg.
 	 */
 	private static class DoubleElement {
+
 		protected double value;
 		protected String id;
 

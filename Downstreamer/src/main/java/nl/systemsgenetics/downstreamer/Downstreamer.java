@@ -45,8 +45,8 @@ public class Downstreamer {
 			+ "  \\---------------------------------------/";
 
 	/**
-	 * Main function for Downstreamer analysis, specific tasks are implemented in
-	 * respective runner classes.
+	 * Main function for Downstreamer analysis, specific tasks are implemented
+	 * in respective runner classes.
 	 *
 	 * @param args the command line arguments
 	 * @throws java.lang.InterruptedException
@@ -140,8 +140,11 @@ public class Downstreamer {
 				case CONVERT_EXP:
 					DownstreamerConverters.convertExpressionMatrixToBin(options);
 					break;
-				case CONVERT_TXT_MERGE:
-					DownstreamerConverters.mergeConvertTxt(options);
+				case PREPARE_GWAS:
+					DownstreamerConverters.prepareGwasSummaryStatistics(options);
+					break;
+				case PREPARE_GWAS_MERGE:
+					DownstreamerConverters.prepareGwasSummaryStatisticsMerge(options);
 					break;
 				case MERGE_BIN:
 					DownstreamerConverters.mergeBinMatrix(options);

@@ -9,17 +9,18 @@ remoter::client("localhost", port = 55506)
 library(DESeq2)
 library(parallel)
 library(viridisLite, lib.loc = .libPaths()[2])
+library("havok")
 
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
 
-load(file = "perTissueNormalization/selectedSamplesRawExpression.RData", verbose = T)
+#load(file = "perTissueNormalization/selectedSamplesRawExpression.RData", verbose = T)
 load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
 
 
 sort(table(samplesWithPredictionNoOutliers$predictedTissue))
 tissueClasses <- unique(samplesWithPredictionNoOutliers$predictedTissue)
-
+sort(tissueClasses)
 
 #tissueClasses <- tissueClasses[1:29]
 #tissueClasses <- tissueClasses[30:57]
@@ -85,11 +86,10 @@ table(combinedMeta[,"sra.library_layout"],useNA = "a")
 
 cl <- makeCluster(20)
 
-tissue <- "Salivary Gland-Minor Salivary Gland"
+tissue <- "Microglia"
 
 sink <- lapply(tissueClasses, function(tissue){
   cat(tissue, "\n")
-  
   
   load(file = paste0("perTissueNormalization/vstExp/",make.names(tissue),".RData"))
 
@@ -98,21 +98,38 @@ sink <- lapply(tissueClasses, function(tissue){
     combinedMetaTissue <- combinedMetaTissue[,-match("sra.library_layout",colnames(combinedMetaTissue))]
   }
   
+  geneMean <- rowMeans(vstExp)
+  
   vstExpCovCor <- parApply(cl, vstExp, 1 ,function(geneExp, combinedMetaTissue){
     return(residuals(lm(geneExp ~ . ,data = combinedMetaTissue)))
   }, combinedMetaTissue = combinedMetaTissue)
   vstExpCovCor <- t(vstExpCovCor)
   
+  vstExpCovCor <- vstExpCovCor + geneMean
   
   save(vstExpCovCor, file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
+  write.table(vstExpCovCor, file = gzfile(paste0("perTissueNormalization/dataForLude/",make.names(tissue),"_vstCovCor.txt.gz")), quote = F, sep = "\t", col.names = NA)
+  
 
 })
 
 stopCluster(cl)
 
 
-sink <- lapply(tissueClasses, function(tissue){
-  cat(tissue, "\n")
+cor.test(vstExpCovCor[,1], vstExp[,1])
+cor.test(vstExpCovCorOld[,1], vstExp[,1])
+
+cor.test(vstExpCovCor[,1], vstExpCovCorOld[,1])
+
+plot(vstExpCovCor[,1], vstExpCovCorOld[,1])
+dev.off()
+
+#vstExpCovCorOld <- vstExpCovCor
+sort(tissueClasses)
+tissue <- "Whole Blood"
+
+numberOfComps <- lapply(tissueClasses, function(tissue){
+  
 
   
   load(file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
@@ -151,23 +168,38 @@ sink <- lapply(tissueClasses, function(tissue){
   explainedVariance <- eigenValues * 100 / sum(eigenValues)
   
   
+  
+  
+  medianSingularValue <- median(expSvd$d)
+  
+  omega <- optimal_SVHT_coef(ncol(expScale) / nrow(expScale), sigma_known = F)
+  threshold <- omega * medianSingularValue
+  numberComponentsToInclude <- sum(expSvd$d > threshold )
+  
+  cat(paste0(tissue," ",numberComponentsToInclude) , "\n")
+  h <- cumsum(explainedVariance)[numberComponentsToInclude ]
+  
+  #rpng(width = 1000, height = 1000)
+  png(paste0("perTissueNormalization/vstCovCorPca/plots/",make.names(tissue),"_explainedVar.png"),width = 1000, height = 1000)
+  plot(cumsum(explainedVariance), pch = 16, cex = 0.5, xlab = "Component", ylab = "Cumulative explained %", main = tissue)
+  abline(h = h, lwd = 2, col = "darkred")
+  text(0,h+1,numberComponentsToInclude, adj = 0)
+  dev.off()
+  
+  
+  write.table(eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),"_eigenVec.txt.gz")), sep = "\t", quote = F, col.names = NA)
+  
+  
   tissueVstPca <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)
   
   save(tissueVstPca, file = paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),".RData"))
-  
+  return(numberComponentsToInclude)
 })
 
-
-sink <- lapply(tissueClasses, function(tissue){
-  cat(tissue, "\n")
-  
-  load(file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
-  
-  write.table(vstExpCovCor, file = gzfile(paste0("perTissueNormalization/dataForLude/",make.names(tissue),"_vstCovCor.txt.gz")))
-  
-
-})
-
+numberOfComps <- do.call("c", numberOfComps)
+names(numberOfComps) <- tissueClasses
+as.data.frame(numberOfComps)
+write.table(as.data.frame(numberOfComps), file = "perTissueNormalization/vstCovCorPca/compsPerTissue.txt", col.names = NA, quote = F, sep = "\t")
 
 sink <- lapply(tissueClasses, function(tissue){
   cat(tissue, "\n")

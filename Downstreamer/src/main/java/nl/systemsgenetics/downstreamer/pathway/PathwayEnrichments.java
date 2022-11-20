@@ -272,6 +272,14 @@ public class PathwayEnrichments {
 			inplaceDetermineRegressionResiduals(geneZscoresNullGwasNullBetas, finalCovariates);
 
 			geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz").getAbsolutePath());
+			
+			//TMP
+//			geneZscoresNullGwasCorrelation.viewDice().calculateCorrelationMatrix().save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_correlationMatrix" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz").getAbsolutePath());
+//			
+//			DoubleMatrixDataset<String, String> x = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes).createColumnForceNormalDuplicate();
+//			x.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_pathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz").getAbsolutePath());
+//			
+//			throw new RuntimeException("Testcode");
 		}
 
 		// Determine which genes will be merged to metagenes based on their genetic correlation

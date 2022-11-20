@@ -40,6 +40,80 @@ public class DownstreamerConverters {
 			throw new FileNotFoundException(options.getConversionRowIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
 		}
 
+		final List<String> columnsInMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(options.getGwasZscoreMatrixPath(), '\t');
+		HashSet<String> duplicateChecker = new HashSet<>(columnsInMatrix.size());
+
+		for (String pheno : columnsInMatrix) {
+			if (!duplicateChecker.add(pheno)) {
+				throw new Exception("Input matrix contains a duplicate columns column: " + pheno);
+			}
+		}
+
+		final List<String> rowsInMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(options.getGwasZscoreMatrixPath(), '\t');
+		duplicateChecker = new HashSet<>(rowsInMatrix.size());
+		for (String pheno : rowsInMatrix) {
+			if (!duplicateChecker.add(pheno)) {
+				throw new Exception("Input matrix contains a duplicate rows column: " + pheno);
+			}
+		}
+
+		DoubleMatrixDataset<String, String> matrix;
+		if (options.getConversionRowIncludeFilter() != null) {
+			if (options.isTrimGeneNames()) {
+				LOGGER.info("Note: the rows to load filter is applied before trimming the gene names.");
+			}
+			HashSet<String> rowsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getConversionColumnIncludeFilter()));
+			matrix = DoubleMatrixDataset.loadSubsetOfTextDoubleData(options.getGwasZscoreMatrixPath(), '\t', rowsToSelect, null);
+
+		} else {
+			matrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+		}
+
+		if (options.getConversionColumnIncludeFilter() != null) {
+			List<String> colsToSelect = IoUtils.readMatrixAnnotations(options.getConversionColumnIncludeFilter());
+			LOGGER.info("Number of selected columns: " + colsToSelect.size());
+			matrix = matrix.viewColSelection(colsToSelect);
+		}
+		
+		if (options.isTrimGeneNames()) {
+			LinkedHashMap<String, Integer> oldHash = matrix.getHashRows();
+			LinkedHashMap<String, Integer> newHash = new LinkedHashMap<>(oldHash.size());
+
+			for (Map.Entry<String, Integer> oldEntry : oldHash.entrySet()) {
+
+				String oldGeneName = oldEntry.getKey();
+				int indexOfPoint = oldGeneName.indexOf('.');
+
+				if (indexOfPoint < 0) {
+					if (newHash.put(oldGeneName, oldEntry.getValue()) != null) {
+						throw new Exception("Can't trim gene names if this causes duplicate genes: " + oldGeneName);
+					}
+				} else {
+					if (newHash.put(oldGeneName.substring(0, indexOfPoint), oldEntry.getValue()) != null) {
+						throw new Exception("Can't trim gene names if this causes duplicate genes: " + oldGeneName);
+					}
+				}
+
+			}
+
+			matrix.setHashRows(newHash);
+		}
+		
+		matrix.saveBinary(options.getOutputBasePath());
+
+
+	}
+
+	public static void prepareGwasSummaryStatistics(DownstreamerOptions options) throws IOException, Exception {
+
+		if (options.getConversionColumnIncludeFilter() != null && !options.getConversionColumnIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionColumnIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+
+		if (options.getConversionRowIncludeFilter() != null && !options.getConversionRowIncludeFilter().exists()) {
+			throw new FileNotFoundException(options.getConversionRowIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
+		}
+
 		final List<String> variantsInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataRowNames(options.getGwasZscoreMatrixPath(), '\t');
 		final List<String> phenotypesInZscoreMatrix = DoubleMatrixDataset.readDoubleTextDataColNames(options.getGwasZscoreMatrixPath(), '\t');
 
@@ -168,7 +242,7 @@ public class DownstreamerConverters {
 			matrix = matrix.viewColSelection(colsToSelect);
 		}
 
-		matrix.saveBinary(options.getOutputBasePath());
+		matrix.saveBinary(options.getOutputBasePath(), "Gwas summary statistics prepared for downstreamer", "Variants", "Phenotypes");
 
 	}
 
@@ -258,7 +332,7 @@ public class DownstreamerConverters {
 			LOGGER.info("Removing " + (rowNames.size() - nonNanRowNames.size()) + " rows with only zero's or NaN after normalizing");
 		}
 
-		matrix.saveBinary(options.getOutputBasePath());
+		matrix.saveBinary(options.getOutputBasePath(), "Expression data prepared and normalized for downstreamer", "Genes", "Samples");
 
 	}
 
@@ -469,7 +543,7 @@ public class DownstreamerConverters {
 
 	}
 
-	public static void mergeConvertTxt(DownstreamerOptions options) throws IOException, Exception {
+	public static void prepareGwasSummaryStatisticsMerge(DownstreamerOptions options) throws IOException, Exception {
 
 		if (options.getConversionRowIncludeFilter() != null && !options.getConversionRowIncludeFilter().exists()) {
 			throw new FileNotFoundException(options.getConversionRowIncludeFilter().getAbsolutePath() + " (The system cannot find the file specified)");
@@ -508,7 +582,6 @@ public class DownstreamerConverters {
 				try {
 
 					File summStatFile = summStat.getSummStatsFile();
-
 
 					InputStreamReader isr;
 					if (summStatFile.getName().endsWith("gz") || summStatFile.getName().endsWith("bgz")) {
@@ -665,7 +738,7 @@ public class DownstreamerConverters {
 		}
 
 		if (options.getGenotypeBasePath() != null) {
-			LOGGER.info("Loading genotype information to convert position  summary statistics to variant IDs");
+			LOGGER.info("Loading genotype information to convert position summary statistics to variant IDs");
 
 			File excludedVariantsFile = new File(options.getOutputBasePath() + "_updatedVariantIds.txt");
 			final CSVWriter updatedVariantWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(excludedVariantsFile)))), '\t', '\0', '\0', "\n");
@@ -754,7 +827,7 @@ public class DownstreamerConverters {
 
 		}
 
-		finalMergedPvalueMatrix.saveBinary(options.getOutputBasePath());
+		finalMergedPvalueMatrix.saveBinary(options.getOutputBasePath(), "Gwas summary statistics prepared for downstreamer", "Variants", "Phenotypes");
 	}
 
 	public static void tranposeBinMatrix(DownstreamerOptions options) throws IOException {
@@ -828,7 +901,6 @@ public class DownstreamerConverters {
 				matrix.save(options.getOutputBasePath() + ".txt.gz");
 			}
 		}
-
 
 	}
 

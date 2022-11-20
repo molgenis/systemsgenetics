@@ -130,7 +130,7 @@ public class DownstreamerMainAnalysis {
 
 		for (PathwayDatabase pd : pathwayDatabases) {
 			if (!pd.exist()) {
-				throw new FileNotFoundException("Could not read: " + pd.getLocation() + ".dat");
+				throw new FileNotFoundException("Could not read: " + pd.getLocation() + ".dat or .datg");
 			}
 		}
 
