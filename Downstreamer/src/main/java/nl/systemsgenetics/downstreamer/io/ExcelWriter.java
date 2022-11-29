@@ -7,8 +7,8 @@ package nl.systemsgenetics.downstreamer.io;
 
 import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
-import nl.systemsgenetics.downstreamer.Downstreamer;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 
 import java.io.File;
@@ -53,9 +53,9 @@ public class ExcelWriter {
 
 	private final String outputBasePath;
 	private final List<String> traits;
-	private final DownstreamerOptions options;
+	private final DownstreamerOptionsDeprecated options;
 
-	public ExcelWriter(List<String> traits, DownstreamerOptions options) {
+	public ExcelWriter(List<String> traits, DownstreamerOptionsDeprecated options) {
 		this.outputBasePath = options.getOutputBasePath();
 		this.traits = traits;
 		this.options = options;
@@ -438,7 +438,7 @@ public class ExcelWriter {
 
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Generated using Downstreamer " + Downstreamer.VERSION);
+		cell.setCellValue("Generated using Downstreamer " + DownstreamerDeprecated.VERSION);
 		cell.setCellStyle(styles.getBoldStyle());
 
 		overviewSheet.createRow(r++);

@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.downstreamer.pathway;
 
+
 import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
@@ -24,8 +25,8 @@ import java.util.stream.IntStream;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.Downstreamer;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.containers.GwasLocus;
 import nl.systemsgenetics.downstreamer.containers.LeadVariant;
 import nl.systemsgenetics.downstreamer.gene.Gene;
@@ -49,7 +50,7 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class PathwayEnrichments {
 
-	private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
+	private static final Logger LOGGER = Logger.getLogger(DownstreamerDeprecated.class);
 
 	private final PathwayDatabase pathwayDatabase;
 	private final HashSet<String> hlaGenesToExclude;
@@ -1351,7 +1352,7 @@ public class PathwayEnrichments {
 		return pValues;
 	}
 
-	public static PathwayEnrichments createPathwayEnrichmentsFromGenePvalues(DownstreamerOptions options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
+	public static PathwayEnrichments createPathwayEnrichmentsFromGenePvalues(DownstreamerOptionsDeprecated options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
 		DoubleMatrixDataset<String, String> geneQvalues;
 		DoubleMatrixDataset<String, String> geneBetas;
 
@@ -1366,7 +1367,7 @@ public class PathwayEnrichments {
 				geneQvalues);
 	}
 
-	public static PathwayEnrichments createPathwayEnrichmentsFromClosestGene(DownstreamerOptions options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
+	public static PathwayEnrichments createPathwayEnrichmentsFromClosestGene(DownstreamerOptionsDeprecated options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
 
 		ArrayList<String> traits = genePvalues.getColObjects();
 

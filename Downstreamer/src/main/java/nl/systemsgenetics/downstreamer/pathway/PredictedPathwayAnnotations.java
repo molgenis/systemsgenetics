@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import org.apache.log4j.Logger;
@@ -29,7 +29,7 @@ public class PredictedPathwayAnnotations {
 
 	private static final Logger LOGGER = Logger.getLogger(PredictedPathwayAnnotations.class);
 
-	public static void expandAnnotations(DownstreamerOptions options) throws Exception {
+	public static void expandAnnotations(DownstreamerOptionsDeprecated options) throws Exception {
 
 		List<PathwayDatabase> pathwayAnnotations = options.getPathwayDatabases();
 		List<PathwayDatabase> gnPredictions = options.getPathwayDatabases2();
