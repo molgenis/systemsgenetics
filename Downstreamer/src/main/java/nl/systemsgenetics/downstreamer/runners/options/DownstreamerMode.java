@@ -30,14 +30,14 @@ public enum DownstreamerMode {
 	PREPARE_GWAS("Convert a txt z-score matrix to binary. Use --gwas, --output and optionally --pvalueToZscore if the matrix contains p-values instead of z-scores."),
 	PREPARE_GWAS_MERGE("Merge multiple txt pvalue files into one matrix containing only overlapping snps"),
 
-	// Utilities relating to calculating co-regulation
+	// Utilities relating to calculating co-regulation, use OptionsModeCoreg
 	COREG_RTOZSCORE("Convert correlation matrix with r values to Z-score matrix. Must be used together with -ns. --gwas Input can be .txt or binary."),
 	COREG_CORRELATE_GENES("Create gene correlation matrix with 0 on diagonal. Use --gwas as input matrix (genes on row, tab separated), --output and --genes. Optionally use --corZscore to create Z-score matrix"),
 	COREG_REMOVE_CIS_COEXP("Set cis gene-gene correlation in the co-expression / co-regulation matrix to zero [not recommended]."),
 	COREG_PCA("Run a PCA on a matrix. Matrix must be binary."),
 	COREG_INVESTIGATE_NETWORK("Calculate degree statistics on a co-regulation matrix. Expects Z-scores, so run -m COREG_RTOZSCORE first."),
 
-	// Runners that expect the old main workflow
+	// Runners that expect the old main workflow, use DownstreamerOptionsDeprecated
 	STEP1("[deprecated] Run the Downstreamer prioritization"),
 	STEP2("[deprecated] Run the Downstreamer prioritization starting at stage 2"),
 	CREATE_EXCEL("[deprecated] Convert old implementation DS output to an Excel sheet"),
