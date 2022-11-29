@@ -176,10 +176,8 @@ public class Downstreamer {
                 case CONVERT_GTEX: DownstreamerConverters.convertGct(new OptionsModeConvert(args)); break;
                 case CONVERT_EQTL: DownstreamerConverters.convertEqtlToBin(new OptionsModeConvert(args)); break;
                 case CONVERT_PTOZSCORE: DownstreamerConverters.convertPvalueToZscore(new OptionsModeConvert(args)); break;
-
                 case PREPARE_GWAS: DownstreamerConverters.prepareGwasSummaryStatistics(new OptionsModeConvert(args)); break;
                 case PREPARE_GWAS_MERGE: DownstreamerConverters.prepareGwasSummaryStatisticsMerge(new OptionsModeConvert(args)); break;
-
                 case MATRIX_SUBSET: DownstreamerConverters.subsetMatrix(new OptionsModeConvert(args)); break;
                 case MATRIX_TRANSPOSE: DownstreamerConverters.tranposeBinMatrix(new OptionsModeConvert(args));break;
 
@@ -246,7 +244,7 @@ public class Downstreamer {
                     }
                     break;
                 default:
-                    throw new Exception("Mode not yet implemented or is deprecated.");
+                    throw new Exception("Mode not yet converted or is deprecated.");
             }
         } catch (ParseException e) {
             System.err.println("Problem running mode: " + options.getMode());

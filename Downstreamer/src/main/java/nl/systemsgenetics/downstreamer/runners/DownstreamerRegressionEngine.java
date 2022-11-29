@@ -168,7 +168,7 @@ public class DownstreamerRegressionEngine {
 
         LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
 
-        // TODO: parallelize. Altough not sure how this would work with the colt parralelization
+        // TODO: parallelize. Altough not sure how this would work with the colt parralelization, might be redundant?
         for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
             DoubleMatrix2D XCur = X.viewCol(curPathway).reshape(X.rows(), 1);
 
