@@ -2,7 +2,7 @@
 #remoter::server(verbose = T, port = 55556, password = "laberkak", sync = T)
 
 
-remoter::client("localhost", port = 55506, password = "laberkak")
+remoter::client("localhost", port = 55502, password = "laberkak")
 
 
 
@@ -101,14 +101,14 @@ tcgaExpVst <- assay(vst(tcgaExpRawDeSeq, blind = F))
 covariatesToCorrectFor <- read.delim("CovariateNames.txt", header = F)$V1
 #TCGA is all paired so don't correct for that
 covariatesToCorrectFor <- covariatesToCorrectFor[covariatesToCorrectFor != "sra.library_layout"]
-tcgaCancerForCorrection <- tcgaCancer[,covariatesToCorrectFor]
+
 
 #TCGA samples don't have sra.sample_spots instead use recount_qc.bc_frag.count
 missingSampleSpots <- is.na(tcgaCancer[,"sra.sample_spots"])
 tcgaCancer[missingSampleSpots,"sra.sample_spots"] <- tcgaCancer[missingSampleSpots,"recount_qc.bc_frag.count"]
+tcgaCancerForCorrection <- tcgaCancer[,covariatesToCorrectFor]
 
 
-dim(tcgaExpVst)
 
 tcgaExpVstGeneMean <- apply(tcgaExpVst, 1, mean)
 rpng(width = 1000, height = 1000)
@@ -126,7 +126,12 @@ tcgaExpVstCovCor2 <- tcgaExpVstCovCor + tcgaExpVstGeneMean
 
 str(tcgaExpVstCovCor2)
 
-write.table(tcgaExpVstCovCor2, file = gzfile("tcga/tcgaCancerVstCovCor.txt.gz"), sep = "\t", quote = F, col.names = NA)
+#write.table(tcgaExpVstCovCor2, file = gzfile("tcga/tcgaCancerVstCovCor.txt.gz"), sep = "\t", quote = F, col.names = NA)
+#write.table(tcgaCancer, file = gzfile("tcga/metaData.txt.gz"), sep = "\t", quote = F, col.names = NA)
+
+#save(tcgaCancer, file = "tcga/metaData.RData")
+#save(tcgaExpVstCovCor2, file = "tcga/tcgaCancerVstCovCor.RData")
+
 
 
 
