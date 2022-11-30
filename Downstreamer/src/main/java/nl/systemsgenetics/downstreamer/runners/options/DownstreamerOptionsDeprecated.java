@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package nl.systemsgenetics.downstreamer;
+package nl.systemsgenetics.downstreamer.runners.options;
 
 import edu.emory.mathcs.utils.ConcurrencyUtils;
 import htsjdk.tribble.SimpleFeature;
@@ -11,7 +11,7 @@ import htsjdk.tribble.SimpleFeature;
 import java.io.File;
 import java.util.*;
 
-import static nl.systemsgenetics.downstreamer.Downstreamer.LARGE_INT_FORMAT;
+import static nl.systemsgenetics.downstreamer.DownstreamerDeprecated.LARGE_INT_FORMAT;
 
 import nl.systemsgenetics.downstreamer.gene.GenePvalueCalculator;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
@@ -29,62 +29,76 @@ import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 /**
  * @author patri
  */
-public class DownstreamerOptions {
+@Deprecated
+public class DownstreamerOptionsDeprecated implements GenotypeFileProvider {
 
+	// Base options
 	private static final Options OPTIONS;
 	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();//Might be changed
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptions.class);
+	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptionsDeprecated.class);
 	private static final SimpleFeature HLA = new SimpleFeature("6", 20000000, 40000000);
-
 	private final DownstreamerMode mode;
-
-	private final String[] genotypeBasePath;
-	private final RandomAccessGenotypeDataReaderFormats genotypeType;
-	private final File genotypeSamplesFile;
 	private final File outputBasePath;
-	private final File run1BasePath;
-	private final File geneInfoFile;
-	private final File gwasZscoreMatrixPath;
-	private final File covariates;
-	private final int numberOfPermutations;
-	private final long numberOfPermutationsRescue;
-	private final int windowExtend;
-	private final double maxRBetweenVariants;
 	private final File logFile;
 	private final boolean debugMode;
 	private final File debugFolder;
+	private final boolean excludeHla;
+
+	// Gene options
+	private final File geneInfoFile;
+
+	// Genotype options
+	private final String[] genotypeBasePath;
+	private final RandomAccessGenotypeDataReaderFormats genotypeType;
+	private final File genotypeSamplesFile;
+
+	// RUN 1 options
+	private final File run1BasePath;
+	private final File gwasZscoreMatrixPath;
+	private final int numberOfPermutations;
+	private final long numberOfPermutationsRescue;
+	private final boolean correctForLambdaInflation;
+	private final double mafFilter;
+
+	// RUN 2 options
+	private final File covariates;
+	private final int windowExtend;
+	private final double maxRBetweenVariants;
 	private final File intermediateFolder;
 	private final File leadSnpsFolder;
-	private final boolean pvalueToZscore;
 	private final List<PathwayDatabase> pathwayDatabases;
-	private List<PathwayDatabase> pathwayDatabases2 = null;
-	private final File conversionColumnIncludeFilter;
-	private final File conversionRowIncludeFilter;
-	private final boolean correctForLambdaInflation;
 	private final int permutationPathwayEnrichment;
 	private final int permutationGeneCorrelations;
+	private final double genePruningR;
 	private final int permutationFDR;
 	private final boolean ignoreGeneCorrelations;
-	private final double genePruningR;
 	private final boolean forceNormalGenePvalues;
 	private final boolean forceNormalPathwayPvalues;
-	private final boolean normalizeEigenvectors;
 	private final int geneCorrelationWindow;
-	private final boolean excludeHla;
-	private boolean corMatrixZscores = false;
+	private final boolean quantileNormalizePermutations;
+	private final boolean regressGeneLengths;
+	private final int numberSamplesUsedForCor;
+
+	// RUN3 options
+	private List<PathwayDatabase> pathwayDatabases2 = null;
+	private List<String> pathwayDatabasesToAnnotateWithGwas;
+
+	// Converter options
+	private final boolean pvalueToZscore;
+	private final boolean normalizeEigenvectors;
+	private final File conversionColumnIncludeFilter;
+	private final File conversionRowIncludeFilter;
 	private String[] columnsToExtract = null; //Colums to extract when doing CONVERT_BIN or CONVERT_EXP or correlate_genes
+
+	// TBD
+	private boolean corMatrixZscores = false;
 	private final File variantFilterFile;
 	private boolean saveOuputAsExcelFiles;
 	private final File variantGeneLinkingFile;
 	private final boolean saveUsedVariantsPerGene;
-	private final double mafFilter;
-	private final boolean quantileNormalizePermutations;
-	private final boolean regressGeneLengths;
-	private final int numberSamplesUsedForCor;
 	private final boolean assignPathwayGenesToCisWindow;
 	private final String x;
 	private final String y;
-	private List<String> pathwayDatabasesToAnnotateWithGwas;
 	private Map<String, File> alternativeTopHitFiles;
 	private final boolean trimGeneNames; //for convert expression data mode
 	private final int cisWindowExtend;
@@ -405,7 +419,7 @@ public class DownstreamerOptions {
 
 	}
 
-	public DownstreamerOptions(String... args) throws ParseException {
+	public DownstreamerOptionsDeprecated(String... args) throws ParseException {
 
 		final CommandLineParser parser = new PosixParser();
 		final CommandLine commandLine = parser.parse(OPTIONS, args, false);
@@ -471,7 +485,7 @@ public class DownstreamerOptions {
 			throw new ParseException("Could not parse -cwe as integerer: " + commandLine.getOptionValue("cwe"));
 		}
 
-		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.PREPARE_GWAS || mode == DownstreamerMode.PREPARE_GWAS_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.CORRELATE_GENES || mode == DownstreamerMode.TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MERGE_BIN || mode == DownstreamerMode.PCA || mode == DownstreamerMode.INVESTIGATE_NETWORK || mode == DownstreamerMode.PTOZSCORE || mode == DownstreamerMode.R_2_Z_SCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.REMOVE_CIS_COEXP || mode == DownstreamerMode.SUBSET_MATRIX || mode == DownstreamerMode.GET_MARKER_GENES || mode == DownstreamerMode.PREPARE_GENE_PVALUES || mode == DownstreamerMode.CONVERT_DAT_TO_DATG) {
+		if (mode == DownstreamerMode.STEP2 || mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.PREPARE_GWAS || mode == DownstreamerMode.PREPARE_GWAS_MERGE || mode == DownstreamerMode.STEP1 || mode == DownstreamerMode.GET_NORMALIZED_GENEP || mode == DownstreamerMode.CONVERT_EQTL || mode == DownstreamerMode.FIRST1000 || mode == DownstreamerMode.CONVERT_GTEX || mode == DownstreamerMode.CONVERT_BIN || mode == DownstreamerMode.SPECIAL || mode == DownstreamerMode.COREG_CORRELATE_GENES || mode == DownstreamerMode.MATRIX_TRANSPOSE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.CONVERT_MERGE_BIN || mode == DownstreamerMode.COREG_PCA || mode == DownstreamerMode.COREG_INVESTIGATE_NETWORK || mode == DownstreamerMode.CONVERT_PTOZSCORE || mode == DownstreamerMode.COREG_RTOZSCORE || mode == DownstreamerMode.TOP_HITS || mode == DownstreamerMode.GET_PATHWAY_LOADINGS || mode == DownstreamerMode.COREG_REMOVE_CIS_COEXP || mode == DownstreamerMode.MATRIX_SUBSET || mode == DownstreamerMode.GET_MARKER_GENES || mode == DownstreamerMode.PREPARE_GENE_PVALUES || mode == DownstreamerMode.CONVERT_DAT_TO_DATG) {
 
 			if (!commandLine.hasOption("g")) {
 				throw new ParseException("Please provide --gwas for mode: " + mode.name());
@@ -482,7 +496,7 @@ public class DownstreamerOptions {
 			gwasZscoreMatrixPath = null;
 		}
 
-		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.PREPARE_GWAS || mode == DownstreamerMode.PREPARE_GWAS_MERGE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.SUBSET_MATRIX) {
+		if (mode == DownstreamerMode.CONVERT_TXT || mode == DownstreamerMode.PREPARE_GWAS || mode == DownstreamerMode.PREPARE_GWAS_MERGE || mode == DownstreamerMode.CONVERT_EXP || mode == DownstreamerMode.MATRIX_SUBSET) {
 			if (mode == DownstreamerMode.CONVERT_TXT && commandLine.hasOption("p2z")) {
 				throw new RuntimeException("Use mode PREPARE_GWAS to convert p-values to z-score. (this changed in version 1.32)");
 			} else {
@@ -597,7 +611,7 @@ public class DownstreamerOptions {
 				}
 
 				break;
-			case CORRELATE_GENES:
+			case COREG_CORRELATE_GENES:
 				if (commandLine.hasOption("ge")) {
 					geneInfoFile = new File(commandLine.getOptionValue("ge"));
 				} else {
@@ -728,8 +742,8 @@ public class DownstreamerOptions {
 				geneCorrelationWindow = 0;
 				pathwayDatabasesToAnnotateWithGwas = new ArrayList<>();
 				break;
-			case REMOVE_CIS_COEXP:
-			case INVESTIGATE_NETWORK:
+			case COREG_REMOVE_CIS_COEXP:
+			case COREG_INVESTIGATE_NETWORK:
 				if (!commandLine.hasOption("ge")) {
 					throw new ParseException("--genes not specified");
 				} else {
@@ -1151,7 +1165,7 @@ public class DownstreamerOptions {
 				break;
 		}
 
-		if (mode == DownstreamerMode.R_2_Z_SCORE) {
+		if (mode == DownstreamerMode.COREG_RTOZSCORE) {
 
 			if (!commandLine.hasOption("ns")) {
 				throw new ParseException("--numberSamplesUsedForCor not specified");
@@ -1255,7 +1269,7 @@ public class DownstreamerOptions {
 					LOGGER.info(" * Trimming gene names to remove .## from the row names");
 				}
 				break;
-			case SUBSET_MATRIX:
+			case MATRIX_SUBSET:
 				LOGGER.info(" * Input matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				if (conversionColumnIncludeFilter != null) {
 					LOGGER.info(" * Columns to include: " + conversionColumnIncludeFilter.getAbsolutePath());
@@ -1288,10 +1302,10 @@ public class DownstreamerOptions {
 					LOGGER.info(" * Reference genotype data type: " + genotypeType.getName());
 				}
 				break;
-			case MERGE_BIN:
+			case CONVERT_MERGE_BIN:
 				LOGGER.info(" * File with matrices to merge: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
-			case PCA:
+			case COREG_PCA:
 				LOGGER.info(" * Matrix to do PCA on: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
 			case PRIO_GENE_ENRICH:
@@ -1331,10 +1345,10 @@ public class DownstreamerOptions {
 					LOGGER.info(" * Trimming gene names to remove .## from the name");
 				}
 				break;
-			case TRANSPOSE:
+			case MATRIX_TRANSPOSE:
 				LOGGER.info(" * Matrix to transpose: " + gwasZscoreMatrixPath.getAbsolutePath());
 				break;
-			case CORRELATE_GENES:
+			case COREG_CORRELATE_GENES:
 				LOGGER.info(" * Gwas Z-score matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * First normalize eigen vectors: " + (normalizeEigenvectors ? "on" : "off"));
 				LOGGER.info(" * Convert r to Z-score: " + (corMatrixZscores ? "on" : "off"));
@@ -1407,7 +1421,7 @@ public class DownstreamerOptions {
 				logSharedRun1Run2();
 
 				break;
-			case REMOVE_CIS_COEXP:
+			case COREG_REMOVE_CIS_COEXP:
 				LOGGER.info(" * Gene-gene co-expression / co-regulation matrix: " + gwasZscoreMatrixPath.getAbsolutePath());
 				LOGGER.info(" * Gene info file: " + geneInfoFile.getAbsolutePath());
 				break;

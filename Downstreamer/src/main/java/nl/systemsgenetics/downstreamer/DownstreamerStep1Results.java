@@ -35,9 +35,11 @@ public class DownstreamerStep1Results {
 		this.geneMaxSnpZscoreNullGwas = geneMaxSnpZscoreNullGwas;
 	}
 
-	public static DownstreamerStep1Results loadFromDisk(String run1BasePath) throws IOException, Exception {
-		if (!new File(run1BasePath + "_genePvalues.dat").exists() && !new File(run1BasePath + "_genePvalues.dat.gz").exists()) {
-			throw new RuntimeException("Could not find gene pvalues at: " + run1BasePath + "_genePvalues.dat or " + run1BasePath + "_genePvalues.dat.gz");
+	public static DownstreamerStep1Results loadFromDisk(String run1BasePath) throws Exception {
+		if (!new File(run1BasePath + "_genePvalues.dat").exists() &&
+				!new File(run1BasePath + "_genePvalues.dat.gz").exists() && !new File(run1BasePath + "_genePvalues.datg").exists()
+		) {
+			throw new RuntimeException("Could not find gene pvalues at: " + run1BasePath + "_genePvalues.dat or " + run1BasePath + "_genePvalues.dat.gz or " + "_genePvalues.datg");
 		}
 		DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleBinaryData(run1BasePath + "_genePvalues");
 		DoubleMatrixDataset<String, String> genePvaluesNullGwas = DoubleMatrixDataset.loadDoubleBinaryData(run1BasePath + "_genePvaluesNullGwas");

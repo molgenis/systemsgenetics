@@ -5,7 +5,8 @@ import cern.colt.list.tint.IntArrayList;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.io.IoUtils;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
@@ -18,7 +19,6 @@ import umcg.genetica.math.stats.MannWhitneyUTest2;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.IntStream;
 
 public class PathwayDatabaseEnrichments {
@@ -26,9 +26,9 @@ public class PathwayDatabaseEnrichments {
 
     private static final int minimalGeneCountInPathway = 10;
 
-    public static void testPredictionPerformance(DownstreamerOptions options) throws Exception {
+    public static void testPredictionPerformance(DownstreamerOptionsDeprecated options) throws Exception {
         PathwayDatabaseEnrichmentExcelWriter writer = new PathwayDatabaseEnrichmentExcelWriter(options);
-        DownstreamerStep2Results step2Results = DownstreamerUtilities.loadExistingStep2Results(options, true);
+        DownstreamerStep2Results step2Results = IoUtils.loadExistingStep2Results(options, true);
         List<PathwayDatabase> targetPathwayDatabases = options.getPathwayDatabases2();
 
         // Sheet for databases that have been enriched (most likely just GenePriortization)

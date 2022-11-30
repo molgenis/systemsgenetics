@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -23,7 +23,7 @@ public class CorrelateExpressionToPredictions {
 		private static final Logger LOGGER = Logger.getLogger(CorrelateExpressionToPredictions.class);
 
 	
-	public static void run(DownstreamerOptions options) throws IOException, Exception{
+	public static void run(DownstreamerOptionsDeprecated options) throws IOException, Exception{
 		
 		DoubleMatrixDatasetFastSubsetLoader corePredictionZscoresLoader = new DoubleMatrixDatasetFastSubsetLoader(options.getIntermediateFolder() + "/" + options.getX() + "_Enrichment_zscoreExHla");
 		DoubleMatrixDataset<String, String> samplePredictionZscores = DoubleMatrixDataset.loadDoubleBinaryData(options.getIntermediateFolder() + "/expression_Enrichment_zscoreExHla");

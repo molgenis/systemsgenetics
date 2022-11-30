@@ -11,7 +11,8 @@ import htsjdk.samtools.util.Locatable;
  *
  * @author patri
  */
-public class LeadVariant implements Locatable{
+//TODO: integrate this with the SummaryStatistic objects, redundant with SummaryStatisticRecord
+public class LeadVariant implements Locatable {
 
 	final String variantId;
 	final String chr;

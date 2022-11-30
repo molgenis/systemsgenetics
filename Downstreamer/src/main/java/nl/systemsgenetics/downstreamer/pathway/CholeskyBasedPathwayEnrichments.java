@@ -12,13 +12,13 @@ import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleCholeskyDecomposit
 import cern.jet.math.tdouble.DoubleFunctions;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.log4j.Logger;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+//import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
@@ -32,7 +32,7 @@ import java.util.stream.IntStream;
 @Deprecated
 public class CholeskyBasedPathwayEnrichments  { //extends PathwayEnrichments
 
-    private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
+    private static final Logger LOGGER = Logger.getLogger(DownstreamerDeprecated.class);
 
     private final PathwayDatabase pathwayDatabase;
     private final HashSet<String> hlaGenesToExclude;
@@ -371,8 +371,8 @@ public class CholeskyBasedPathwayEnrichments  { //extends PathwayEnrichments
     }
 
 
-    public DoubleMatrixDataset<String, String> getqValues() {
-        throw new NotImplementedException();
+    public DoubleMatrixDataset<String, String> getqValues() throws Exception {
+        throw new Exception("Not implemented");
     }
 
     public DoubleMatrixDataset<String, String> getEnrichmentZscores() throws IOException {
