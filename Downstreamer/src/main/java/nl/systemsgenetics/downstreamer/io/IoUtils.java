@@ -48,7 +48,6 @@ public class IoUtils {
 
 	}
 
-
 	public static List<String> readMatrixAnnotations(File file) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();

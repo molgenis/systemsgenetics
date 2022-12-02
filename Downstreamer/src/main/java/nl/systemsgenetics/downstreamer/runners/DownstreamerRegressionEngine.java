@@ -8,6 +8,7 @@ import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
 import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeRegress;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.commons.lang3.ArrayUtils;
@@ -26,25 +27,68 @@ public class DownstreamerRegressionEngine {
 
     public static void run(OptionsModeRegress options) throws Exception {
 
+        LOGGER.info("Loading datasets");
+        // TODO: currently doesnt just load the subset, so not the most efficient but easier to implemnt
         DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleData(options.getExplanatoryVariables().getPath());
         DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleData(options.getResponseVariable().getPath());
-
         DoubleMatrixDataset<String, String> covariates = null;
-        if (options.hasCovariates()) {
-            covariates = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getPath());
+
+        // Subset the data
+        HashSet<String> rowsToSelect = null;
+        HashSet<String> colsToSelect = null;
+
+        if (options.hasRowIncludeFilter()) {
+            LOGGER.info("Filtering rows to rows provided in -ro");
+            rowsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getRowIncludeFilter()));
+            X = X.viewRowSelection(rowsToSelect);
+            Y = Y.viewRowSelection(rowsToSelect);
         }
 
+        if (options.hasColumnIncludeFilter()) {
+            colsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getColumnIncludeFilter()));
+            X = X.viewColSelection(colsToSelect);
+        }
+
+        if (options.hasCovariates()) {
+            covariates = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getPath());
+            if (rowsToSelect != null) {
+                covariates = covariates.viewRowSelection(rowsToSelect);
+            }
+        }
+
+        LOGGER.info("Dim X:" + X.getMatrix().rows() + "x" + X.getMatrix().columns());
+        LOGGER.info("Dim Y:" + Y.getMatrix().rows() + "x" + Y.getMatrix().columns());
+
+        // Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
         LinearRegressionResult output;
         if (options.hasSigma()) {
             DoubleMatrixDataset<String, String> Sigma = DoubleMatrixDataset.loadDoubleData(options.getSigma().getPath());
+
+            if (rowsToSelect != null) {
+                Sigma = Sigma.viewSelection(rowsToSelect, rowsToSelect);
+            }
+
+            LOGGER.info("Dim Sigma:" + Sigma.getMatrix().rows() + "x" + Sigma.getMatrix().columns());
+
+            LOGGER.info("Done loading datasets");
             output = performDownstreamerRegression(X, Y, covariates, Sigma, options.getPercentageOfVariance(),false, options);
 
         } else {
             DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
             DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
+
+            if (rowsToSelect != null) {
+                U = U.viewRowSelection(rowsToSelect);
+            }
+
+            LOGGER.info("Dim U:" + U.getMatrix().rows() + "x" + U.getMatrix().columns());
+            LOGGER.info("Dim L:" + L.getMatrix().rows() + "x" + L.getMatrix().columns());
+
+            LOGGER.info("Done loading datasets");
             output = performDownstreamerRegression(X, Y, covariates, U, L, options.getPercentageOfVariance(), true);
         }
 
+        // Save linear regression results
         output.save(options.getOutputBasePath(), false);
     }
 
