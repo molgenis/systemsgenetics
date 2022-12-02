@@ -2,9 +2,9 @@
 #remoter::server(verbose = T, port = 55556, password = "laberkak", sync = T)
 
 
-remoter::client("localhost", port = 55502, password = "laberkak")
+remoter::client("localhost", port = 55507, password = "laberkak")
 
-
+library(havok)
 
 
 
@@ -132,8 +132,8 @@ str(tcgaExpVstCovCor2)
 #save(tcgaCancer, file = "tcga/metaData.RData")
 #save(tcgaExpVstCovCor2, file = "tcga/tcgaCancerVstCovCor.RData")
 
-
-
+load("tcga/metaData.RData")
+load("tcga/tcgaCancerVstCovCor.RData")
 
 expScale = tcgaExpVstCovCor2 - rowMeans(tcgaExpVstCovCor2);
 #expScale = tcgaExpVst - rowMeans(tcgaExpVst);
@@ -195,5 +195,81 @@ plot(expPcs[,1],expPcs[,3], col = as.factor(tcgaCancer[,"tcga.gdc_cases.project.
 legend("topright", fill = 1:length(levels(as.factor(tcgaCancer[,"tcga.gdc_cases.project.primary_site"]))), legend = levels(as.factor(tcgaCancer[,"tcga.gdc_cases.project.primary_site"])))
 dev.off()
 
+
+
+
+#Per tissue networks
+tissues <- c("Prostate", "Breast", "Skin", "Colorectal", "Stomach", "Ovary")
+
+tissue <- tissues[1]
+
+
+numberOfComps <- lapply(tissues, function(tissue){
+  
+  tissueSamples <- rownames(tcgaCancer)[tcgaCancer$tcga.gdc_cases.project.primary_site == tissue]
+  
+  tissueExp <- tcgaExpVstCovCor2[,tissueSamples]
+  
+  #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
+  expScale = tissueExp - rowMeans(tissueExp);
+  # Standardize each variable
+  expScale = expScale / sqrt(rowSums(expScale^2));   
+  #expCov = tcrossprod(expScale);#equevelent to correlation due to center scale
+  #expEigen <- eigen(expCov)
+  #eigenVectors <- expEigen$vectors
+  #colnames(eigenVectors) <- paste0("PC_",1:ncol(eigenVectors))
+  #rownames(eigenVectors) <- rownames(expScale)
+  
+  #eigenValues <- expEigen$values
+  #names(eigenValues) <- paste0("PC_",1:length(eigenValues))
+  
+  #Here calculate sample principle components. Number needed is arbritary (no more than eigen vectors)
+  #expPcs <- t(expScale) %*% expEigen$vectors[,1:10]
+  #colnames(expPcs) <- paste0("PC_",1:ncol(expPcs))
+  
+  nrSamples <- ncol(expScale)
+  
+  expSvd <- svd(expScale, nu = nrSamples, nv = min(nrSamples, 50))
+  
+  
+  eigenValues <- expSvd$d^2
+  eigenVectors <- expSvd$u
+  colnames(eigenVectors) <- paste0("Comp_",1:ncol(eigenVectors))
+  rownames(eigenVectors) <- rownames(expScale)
+  
+  expPcs <- expSvd$v %*% diag(expSvd$d[1:ncol(expSvd$v)])
+  colnames(expPcs) <- paste0("Comp_",1:ncol(expPcs))
+  rownames(expPcs) <- colnames(expScale)
+  
+  explainedVariance <- eigenValues * 100 / sum(eigenValues)
+  
+  
+  
+  
+  medianSingularValue <- median(expSvd$d)
+  
+  omega <- optimal_SVHT_coef(ncol(expScale) / nrow(expScale), sigma_known = F)
+  threshold <- omega * medianSingularValue
+  numberComponentsToInclude <- sum(expSvd$d > threshold )
+  
+  cat(paste0(tissue," ",numberComponentsToInclude) , "\n")
+  h <- cumsum(explainedVariance)[numberComponentsToInclude ]
+  
+  #rpng(width = 1000, height = 1000)
+  png(paste0("tcga/tissuePca/plots/",make.names(tissue),"_explainedVar.png"),width = 1000, height = 1000)
+  plot(cumsum(explainedVariance), pch = 16, cex = 0.5, xlab = "Component", ylab = "Cumulative explained %", main = paste0("TCGA ", tissue))
+  abline(h = h, lwd = 2, col = "darkred")
+  text(0,h+1,numberComponentsToInclude, adj = 0)
+  dev.off()
+  
+  
+  write.table(eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),"_eigenVec.txt.gz")), sep = "\t", quote = F, col.names = NA)
+  
+  
+  tissuePca <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)
+  
+  save(tissuePca, file = paste0("tcga/tissuePca/",make.names(tissue),".RData"))
+  return(numberComponentsToInclude)
+})
 
 
