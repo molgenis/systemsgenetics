@@ -83,6 +83,11 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.ojalgo</groupId>
+			<artifactId>ojalgo</artifactId>
+			<version>52.0.1</version>
+		</dependency>
+		<dependency>
 			<groupId>com.github.samtools</groupId>
 			<artifactId>htsjdk</artifactId>
 			<version>2.23.0</version>

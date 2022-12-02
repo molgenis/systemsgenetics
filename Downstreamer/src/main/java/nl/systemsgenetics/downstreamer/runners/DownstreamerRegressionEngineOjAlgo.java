@@ -5,21 +5,25 @@ import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
-import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
+import me.tongfei.progressbar.ProgressBar;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeRegress;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.log4j.Logger;
+
+
+import org.ojalgo.function.constant.PrimitiveMath;
+import org.ojalgo.matrix.Primitive64Matrix;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 import java.util.*;
 
-public class DownstreamerRegressionEngine {
+public class DownstreamerRegressionEngineOjAlgo {
 
-    private static final Logger LOGGER = Logger.getLogger(DownstreamerRegressionEngine.class);
+    private static final Logger LOGGER = Logger.getLogger(DownstreamerRegressionEngineOjAlgo.class);
 
     // Vector functions
     public static final DoubleDoubleFunction minus = (a, b) -> a - b;
@@ -61,95 +65,26 @@ public class DownstreamerRegressionEngine {
 
         // Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
         LinearRegressionResult output;
-        if (options.hasSigma()) {
-            DoubleMatrixDataset<String, String> Sigma = DoubleMatrixDataset.loadDoubleData(options.getSigma().getPath());
 
-            if (rowsToSelect != null) {
-                Sigma = Sigma.viewSelection(rowsToSelect, rowsToSelect);
-            }
+        DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
+        DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
 
-            LOGGER.info("Dim Sigma:" + Sigma.getMatrix().rows() + "x" + Sigma.getMatrix().columns());
-
-            LOGGER.info("Done loading datasets");
-            output = performDownstreamerRegression(X, Y, covariates, Sigma, options.getPercentageOfVariance(),false, options);
-
-        } else {
-            DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
-            DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
-
-            if (rowsToSelect != null) {
-                U = U.viewRowSelection(rowsToSelect);
-            }
-
-            LOGGER.info("Dim U:" + U.getMatrix().rows() + "x" + U.getMatrix().columns());
-            LOGGER.info("Dim L:" + L.getMatrix().rows() + "x" + L.getMatrix().columns());
-
-            LOGGER.info("Done loading datasets");
-            output = performDownstreamerRegression(X, Y, covariates, U, L, options.getPercentageOfVariance(), true);
+        if (rowsToSelect != null) {
+            U = U.viewRowSelection(rowsToSelect);
         }
+
+        LOGGER.info("Dim U:" + U.getMatrix().rows() + "x" + U.getMatrix().columns());
+        LOGGER.info("Dim L:" + L.getMatrix().rows() + "x" + L.getMatrix().columns());
+
+        LOGGER.info("Done loading datasets");
+
+
+        output = performDownstreamerRegression(X, Y, covariates, U, L, options.getPercentageOfVariance(), false);
+
 
         // Save linear regression results
         output.save(options.getOutputBasePath(), false);
     }
-
-    /**
-     * Run DS regression if only Sigma is given. I.e. run an eigen decomposition first.
-     * @param X
-     * @param Y
-     * @param C
-     * @param Sigma
-     * @param percentageOfVariance
-     * @param fitIntercept
-     * @param optionsModeRegress
-     * @return
-     * @throws Exception
-     */
-    public static LinearRegressionResult performDownstreamerRegression(DoubleMatrixDataset<String, String> X,
-                                                                       DoubleMatrixDataset<String, String> Y,
-                                                                       DoubleMatrixDataset<String, String> C,
-                                                                       DoubleMatrixDataset<String, String> Sigma,
-                                                                       double percentageOfVariance,
-                                                                       boolean fitIntercept,
-                                                                       OptionsModeRegress optionsModeRegress) throws Exception {
-
-        int nColumns = Sigma.columns();
-
-        LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Running eigen decomposition on Sigma");
-        //eigenvalues are ordered in oposite order to R! so from small to large
-        DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(Sigma.getMatrix());
-
-        LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Done running eigen decomposition on Sigma");
-
-        LinkedHashMap<String, Integer> eigenNames = new LinkedHashMap<>();
-        LinkedHashMap<String, Integer> eigenNamesInverted = new LinkedHashMap<>();
-        for (int i = 0; i < nColumns; i++) {
-            eigenNames.put("V" + ((nColumns - 1) - i), i);
-            eigenNamesInverted.put("V" + i, i);
-        }
-
-        if (eigen.getImagEigenvalues().zSum() > 0) {
-            throw new Exception("Non real eigenvalues. Should not happen?");
-        }
-
-        // Re order and convert to DoubleMatrixDataset
-        DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(Sigma.getHashRows(), eigenNames);
-        U.setMatrix(eigen.getV());
-        U.reorderCols(eigenNamesInverted);
-
-        DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(nColumns, 1);
-        L.setHashRows(eigenNames);
-        L.setHashCols(new LinkedHashMap<String, Integer>() {{
-            put("diag", 0);
-        }});
-        L.setMatrix(eigen.getRealEigenvalues().reshape((int) eigen.getRealEigenvalues().size(), 1));
-        L.reorderRows(eigenNamesInverted);
-
-        U.save(optionsModeRegress.getOutputBasePath() + "_U.txt");
-        L.save(optionsModeRegress.getOutputBasePath() + "_L.txt");
-
-        return performDownstreamerRegression(X, Y, C, U, L, percentageOfVariance, fitIntercept);
-    }
-
 
     /**
      * Runs DS regression if eigendecompostion has been pre-computed. These are given by U and L. Expects that
@@ -207,6 +142,7 @@ public class DownstreamerRegressionEngine {
             predictorNames.add("intercept");
             degreesOfFreedom = degreesOfFreedom - 1;
         }
+
         predictorNames.add("main_effect");
         if (C != null) {
             predictorNames.addAll(C.getColObjects());
@@ -215,27 +151,29 @@ public class DownstreamerRegressionEngine {
 
         LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
 
-        // TODO: parallelize. Altough not sure how this would work with the colt parralelization, might be redundant?
+        Primitive64Matrix nYhat = convertToPrimitive(YHat);
+        Primitive64Matrix nUHatT = convertToPrimitive(UHatT);
+        Primitive64Matrix nX = convertToPrimitive(X);
+        Primitive64Matrix nLHatInv = convertToPrimitive(LHatInv);
+
+        ProgressBar pb = new ProgressBar("Linear regressions",  X.columns());
         for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
-            DoubleMatrix2D XCur = X.viewCol(curPathway).reshape(X.rows(), 1);
 
-            // If covariates are provided add them
-            if (C != null) {
-                XCur = DoubleFactory2D.dense.appendColumns(XCur, C.getMatrix());
-            }
 
+            Primitive64Matrix XCur = nX.column(curPathway);
             double[] curRes = downstreamerRegressionPrecomp(XCur,
-                    YHat,
-                    UHatT,
-                    diag(LHatInv),
+                    nYhat,
+                    nUHatT,
+                    diag(nLHatInv),
                     fitIntercept);
 
             result.appendBetas(curPathway, ArrayUtils.subarray(curRes, 0, curRes.length/2));
             result.appendSe(curPathway, ArrayUtils.subarray(curRes, curRes.length/2, curRes.length));
 
-            LOGGER.debug("debug point");
+            pb.step();
         }
 
+        pb.close();
         LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Done with regression for " + X.columns() + " pathways.");
 
         return result;
@@ -255,16 +193,12 @@ public class DownstreamerRegressionEngine {
      * @param fitIntercept Should an intercept term be fitted
      * @return double[] with beta and standard erros in the form  [beta_1, beta_2 ... beta_x, se_1, se_2 ... se_x]
      */
-    public static double[] downstreamerRegressionPrecomp(DoubleMatrix2D X, DoubleMatrix2D YHat, DoubleMatrix2D UHatT, DoubleMatrix2D LHatInv, boolean fitIntercept) {
+    public static double[] downstreamerRegressionPrecomp(Primitive64Matrix X, Primitive64Matrix YHat, Primitive64Matrix UHatT, Primitive64Matrix LHatInv, boolean fitIntercept) {
 
         // X.hat <- U.hat.t %*% X
-        double[] results = new double[X.columns() * 2];
-        DoubleMatrix2D XHat = mult(UHatT, X);
+        double[] results = new double[(int)X.countColumns() * 2];
+        Primitive64Matrix XHat = mult(UHatT, X);
 
-        if (fitIntercept) {
-            XHat = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(XHat.rows(), 1, 1), XHat);
-            results = new double[(X.columns() * 2) + 2];
-        }
 
         //-----------------------------------------------------------------------------------------
         // beta
@@ -272,31 +206,36 @@ public class DownstreamerRegressionEngine {
         //  a    <- crossprod(Y.hat, L.hat.inv) %*% X.hat
         //  b    <- solve(crossprod(X.hat, L.hat.inv) %*% X.hat)
         //  beta <- a %*% b
-        DoubleMatrix2D a = mult(crossprod(YHat, LHatInv), XHat);
-        DoubleMatrix2D b = inverse(mult(crossprod(XHat, LHatInv), XHat));
-        DoubleMatrix2D beta = mult(a, b);
+        Primitive64Matrix a = mult(crossprod(YHat, LHatInv), XHat);
+        Primitive64Matrix b = inverse(mult(crossprod(XHat, LHatInv), XHat));
+        Primitive64Matrix beta = mult(a, b);
 
         //-----------------------------------------------------------------------------------------
         // Residuals
         //-----------------------------------------------------------------------------------------
         // Predicted Y
-        DoubleMatrix1D predicted = tcrossprod(XHat, beta).viewColumn(0);
+        Primitive64Matrix predicted = tcrossprod(XHat, beta);
+
         // Original Y
-        DoubleMatrix1D residuals = YHat.viewColumn(0).copy();
+        Primitive64Matrix residuals = YHat.column(0);
+
         // Subtract predicted from original
-        residuals.assign(predicted, minus);
+        residuals = residuals.subtract(predicted);
 
         // Residual sum of squares
-        double rss = mult(crossprod(residuals, LHatInv), residuals.reshape((int) residuals.size(), 1)).get(0, 0);
+        double rss = mult(crossprod(residuals, LHatInv), residuals).get(0, 0);
 
         // Divide rss by the degrees of freedom
-        double rssW = rss / (XHat.rows() - XHat.columns());
+        double rssW = rss / (XHat.countRows() - XHat.countColumns());
 
         //-----------------------------------------------------------------------------------------
         // Standard error
         //-----------------------------------------------------------------------------------------
         // se     <- sqrt(diag(rss.w * b))
-        DoubleMatrix1D se = diag(b.assign(DoubleFunctions.mult(rssW))).assign(DoubleFunctions.sqrt);
+        Primitive64Matrix.DenseReceiver seTmp = diag(b.multiply(rssW)).copy();
+        seTmp.modifyAll(PrimitiveMath.ROOT.parameter(2));
+        Primitive64Matrix se = seTmp.get();
+        //DoubleMatrix1D se = diag(b.assign(DoubleFunctions.mult(rssW))).assign(DoubleFunctions.sqrt);
 
         // Put the results as an array in the form
         // [beta_1, beta_2 ... beta_x, se_1, se_2 ... se_x]
@@ -327,7 +266,123 @@ public class DownstreamerRegressionEngine {
         return result;
     }
 
+
+    private static Primitive64Matrix convertToPrimitive(DoubleMatrix1D input) {
+
+        //PhysicalStore.Factory<Double, Primitive64Store> storeFactory = Primitive64Store.FACTORY;
+        //Primitive64Store output = storeFactory.make(input.rows(), input.columns());
+        Primitive64Matrix.DenseReceiver output = Primitive64Matrix.FACTORY.makeDense(input.size(), 1);
+
+        for (int i=0; i < input.size(); i++) {
+            output.set(i, input.get(i));
+        }
+
+        return output.get();
+    }
+
+
+    private static Primitive64Matrix convertToPrimitive(DoubleMatrix2D input) {
+
+        //PhysicalStore.Factory<Double, Primitive64Store> storeFactory = Primitive64Store.FACTORY;
+        //Primitive64Store output = storeFactory.make(input.rows(), input.columns());
+        Primitive64Matrix.DenseReceiver output = Primitive64Matrix.FACTORY.makeDense(input.rows(), input.columns());
+
+        for (int i=0; i < input.rows(); i++) {
+            for (int j=0; j < input.columns(); j++) {
+                output.set(i, j, input.get(i, j));
+            }
+        }
+
+        return output.get();
+
+    }
+
+    private static Primitive64Matrix convertToPrimitive(DoubleMatrixDataset<String, String> input) {
+
+        //PhysicalStore.Factory<Double, Primitive64Store> storeFactory = Primitive64Store.FACTORY;
+        //Primitive64Store output = storeFactory.make(input.rows(), input.columns());
+        Primitive64Matrix.DenseReceiver output = Primitive64Matrix.FACTORY.makeDense(input.rows(), input.columns());
+
+        for (int i=0; i < input.rows(); i++) {
+            for (int j=0; j < input.columns(); j++) {
+                output.set(i, j, input.getElementQuick(i, j));
+            }
+        }
+
+        return output.get();
+
+    }
+
+
     // Below are just calls to DenseDoubleAlgebra.DEFAULT to clean up the code above.
+
+    /**
+     * Shorthand for A * t(B)
+     *
+     * @param A A matrix
+     * @param B A matrix
+     * @return
+     */
+    private static Primitive64Matrix tcrossprod(Primitive64Matrix A, Primitive64Matrix B) {
+        return A.multiply(B.transpose());
+    }
+
+    /**
+     * Shorthand for t(A) * B
+     *
+     * @param A A matrix
+     * @param B A matrix
+     * @return
+     */
+    private static Primitive64Matrix crossprod(Primitive64Matrix A, Primitive64Matrix B) {
+        return A.transpose().multiply(B);
+    }
+
+    /**
+     * Shorthand for A * B
+     *
+     * @param A A matrix
+     * @param B A matrix
+     * @return
+     */
+    private static Primitive64Matrix mult(Primitive64Matrix A, Primitive64Matrix B) {
+        return A.multiply(B);
+    }
+
+    /**
+     * Shorthand for A^-1
+     *
+     * @param A A matrix
+     * @return
+     */
+    private static Primitive64Matrix inverse(Primitive64Matrix A) {
+        return A.invert();
+    }
+
+
+    /**
+     * Shorthand for t(A)
+     *
+     * @param A
+     * @return
+     */
+    private static Primitive64Matrix transpose(Primitive64Matrix A) {
+        return A.transpose();
+    }
+
+    /**
+     * Shorthand for diag(A)
+     *
+     * @param A
+     * @return
+     */
+    private static Primitive64Matrix diag(Primitive64Matrix A) {
+        Primitive64Matrix.SparseReceiver sparseReceiver = Primitive64Matrix.FACTORY.makeSparse(A.countRows(), A.countRows());
+        sparseReceiver.fillDiagonal(A.columns(0));
+        return sparseReceiver.get();
+    }
+
+
 
     /**
      * Shorthand for A * t(B)
@@ -413,6 +468,5 @@ public class DownstreamerRegressionEngine {
     private static DoubleMatrix2D diag(DoubleMatrix1D A) {
         return DoubleFactory2D.dense.diagonal(A);
     }
-
 
 }
