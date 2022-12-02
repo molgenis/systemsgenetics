@@ -159,7 +159,6 @@ public class DownstreamerRegressionEngineOjAlgo {
         ProgressBar pb = new ProgressBar("Linear regressions",  X.columns());
         for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
 
-
             Primitive64Matrix XCur = nX.column(curPathway);
             double[] curRes = downstreamerRegressionPrecomp(XCur,
                     nYhat,
