@@ -7,7 +7,9 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
+import me.tongfei.progressbar.ProgressBar;
 import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeRegress;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.commons.lang3.ArrayUtils;
@@ -16,9 +18,9 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 import java.util.*;
 
-public class DownstreamerRegressionEngine {
+public class DownstreamerRegressionEnginePColt {
 
-    private static final Logger LOGGER = Logger.getLogger(DownstreamerRegressionEngine.class);
+    private static final Logger LOGGER = Logger.getLogger(DownstreamerRegressionEnginePColt.class);
 
     // Vector functions
     public static final DoubleDoubleFunction minus = (a, b) -> a - b;
@@ -26,23 +28,69 @@ public class DownstreamerRegressionEngine {
 
     public static void run(OptionsModeRegress options) throws Exception {
 
-        DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleTextData(options.getExplanatoryVariables().getPath(), '\t');
-        DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleTextData(options.getResponseVariable().getPath(), '\t');
-
+        LOGGER.info("Loading datasets");
+        // TODO: currently doesnt just load the subset, so not the most efficient but easier to implemnt
+        DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleData(options.getExplanatoryVariables().getPath());
+        DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleData(options.getResponseVariable().getPath());
         DoubleMatrixDataset<String, String> covariates = null;
+
+        // Subset the data
+        HashSet<String> rowsToSelect = null;
+        HashSet<String> colsToSelect = null;
+
+        if (options.hasRowIncludeFilter()) {
+            LOGGER.info("Filtering rows to rows provided in -ro");
+            rowsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getRowIncludeFilter()));
+            X = X.viewRowSelection(rowsToSelect);
+            Y = Y.viewRowSelection(rowsToSelect);
+        }
+
+        if (options.hasColumnIncludeFilter()) {
+            colsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getColumnIncludeFilter()));
+            X = X.viewColSelection(colsToSelect);
+        }
+
         if (options.hasCovariates()) {
-            covariates = DoubleMatrixDataset.loadDoubleTextData(options.getCovariates().getPath(), '\t');
+            covariates = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getPath());
+            if (rowsToSelect != null) {
+                covariates = covariates.viewRowSelection(rowsToSelect);
+            }
         }
 
+        LOGGER.info("Dim X:" + X.getMatrix().rows() + "x" + X.getMatrix().columns());
+        LOGGER.info("Dim Y:" + Y.getMatrix().rows() + "x" + Y.getMatrix().columns());
+
+        // Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
+        LinearRegressionResult output;
         if (options.hasSigma()) {
-            DoubleMatrixDataset<String, String> Sigma = DoubleMatrixDataset.loadDoubleTextData(options.getSigma().getPath(), '\t');
-            performDownstreamerRegression(X, Y, covariates, Sigma, options.getPercentageOfVariance(),false, options);
-        } else {
-            DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleTextData(options.getEigenvectors().getPath(), '\t');
-            DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleTextData(options.getEigenvalues().getPath(), '\t');
+            DoubleMatrixDataset<String, String> Sigma = DoubleMatrixDataset.loadDoubleData(options.getSigma().getPath());
 
-            performDownstreamerRegression(X, Y, covariates, U, L, options.getPercentageOfVariance(), true);
+            if (rowsToSelect != null) {
+                Sigma = Sigma.viewSelection(rowsToSelect, rowsToSelect);
+            }
+
+            LOGGER.info("Dim Sigma:" + Sigma.getMatrix().rows() + "x" + Sigma.getMatrix().columns());
+
+            LOGGER.info("Done loading datasets");
+            output = performDownstreamerRegression(X, Y, covariates, Sigma, options.getPercentageOfVariance(),false, options);
+
+        } else {
+            DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
+            DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
+
+            if (rowsToSelect != null) {
+                U = U.viewRowSelection(rowsToSelect);
+            }
+
+            LOGGER.info("Dim U:" + U.getMatrix().rows() + "x" + U.getMatrix().columns());
+            LOGGER.info("Dim L:" + L.getMatrix().rows() + "x" + L.getMatrix().columns());
+
+            LOGGER.info("Done loading datasets");
+            output = performDownstreamerRegression(X, Y, covariates, U, L, options.getPercentageOfVariance(), true);
         }
+
+        // Save linear regression results
+        output.save(options.getOutputBasePath(), false);
     }
 
     /**
@@ -169,8 +217,11 @@ public class DownstreamerRegressionEngine {
         LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
 
         // TODO: parallelize. Altough not sure how this would work with the colt parralelization, might be redundant?
+
+        ProgressBar pb = new ProgressBar("Linear regressions",  X.columns());
         for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
-            DoubleMatrix2D XCur = X.viewCol(curPathway).reshape(X.rows(), 1);
+            //DoubleMatrix2D XCur = X.viewCol(curPathway).reshape(X.rows(), 1);
+            DoubleMatrix2D XCur = X.viewColAsMmatrix(curPathway);
 
             // If covariates are provided add them
             if (C != null) {
@@ -186,9 +237,10 @@ public class DownstreamerRegressionEngine {
             result.appendBetas(curPathway, ArrayUtils.subarray(curRes, 0, curRes.length/2));
             result.appendSe(curPathway, ArrayUtils.subarray(curRes, curRes.length/2, curRes.length));
 
-            LOGGER.debug("debug point");
+            pb.step();
         }
 
+        pb.close();
         LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Done with regression for " + X.columns() + " pathways.");
 
         return result;
@@ -212,6 +264,7 @@ public class DownstreamerRegressionEngine {
 
         // X.hat <- U.hat.t %*% X
         double[] results = new double[X.columns() * 2];
+
         DoubleMatrix2D XHat = mult(UHatT, X);
 
         if (fitIntercept) {

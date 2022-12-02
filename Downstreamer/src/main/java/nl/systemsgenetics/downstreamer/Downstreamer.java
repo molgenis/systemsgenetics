@@ -165,7 +165,7 @@ public class Downstreamer {
             // Execute the right mode
             switch (options.getMode()) {
                 // New main analyses
-                case REGRESS: DownstreamerRegressionEngine.run(new OptionsModeRegress(args)); break;
+                case REGRESS: DownstreamerRegressionEngineOjAlgo.run(new OptionsModeRegress(args)); break;
 
                 // Converter utils that share OptionsModeConvert()
                 case CONVERT_TXT: DownstreamerConverters.convertTxtToBin(new OptionsModeConvert(args)); break;

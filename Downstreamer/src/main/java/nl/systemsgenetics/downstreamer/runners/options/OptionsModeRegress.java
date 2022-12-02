@@ -12,6 +12,8 @@ public class OptionsModeRegress extends OptionsBase {
     private final File sigma;
     private final File eigenvectors;
     private final File eigenvalues;
+    private final File columnIncludeFilter;
+    private final File rowIncludeFilter;
 
     private final double percentageOfVariance;
 
@@ -65,6 +67,19 @@ public class OptionsModeRegress extends OptionsBase {
         OptionBuilder.withLongOpt("perc-variance");
         OptionBuilder.isRequired();
         OPTIONS.addOption(OptionBuilder.create("p"));
+
+        OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Optional file with columns in X to subset before regression");
+        OptionBuilder.withLongOpt("cols");
+        OPTIONS.addOption(OptionBuilder.create("co"));
+
+        OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("Optional file with rows to subset before regression");
+        OptionBuilder.withLongOpt("rows");
+        OPTIONS.addOption(OptionBuilder.create("ro"));
+
     }
 
     public OptionsModeRegress(String... args) throws ParseException {
@@ -109,6 +124,19 @@ public class OptionsModeRegress extends OptionsBase {
 
         percentageOfVariance = Double.parseDouble(commandLine.getOptionValue("p"));
 
+        // Optional arguments
+        if (commandLine.hasOption("co")) {
+            columnIncludeFilter = new File(commandLine.getOptionValue("co"));
+        } else {
+            columnIncludeFilter = null;
+        }
+
+        if (commandLine.hasOption("ro")) {
+            rowIncludeFilter = new File(commandLine.getOptionValue("ro"));
+        } else {
+            rowIncludeFilter = null;
+        }
+
     }
 
     public File getResponseVariable() {
@@ -143,7 +171,21 @@ public class OptionsModeRegress extends OptionsBase {
         return percentageOfVariance;
     }
 
+    public File getColumnIncludeFilter() {
+        return columnIncludeFilter;
+    }
+
+    public File getRowIncludeFilter() {
+        return rowIncludeFilter;
+    }
+
+
     public boolean hasSigma() {
         return sigma != null;
     }
+
+    public boolean hasColumnIncludeFilter (){return columnIncludeFilter !=null;}
+
+    public boolean hasRowIncludeFilter (){return rowIncludeFilter !=null;}
+
 }

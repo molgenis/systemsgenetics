@@ -71,4 +71,18 @@ public class LinearRegressionResult {
     public DoubleMatrixDataset<String, String> getPvalues() {
         throw new NotImplementedException("Not yet implemented");
     }
+
+
+    public void save(String basePath, boolean isBinary) throws Exception{
+
+        String finalPath = basePath + "_df_" + degreesOfFreedom;
+
+        if (isBinary) {
+            beta.saveBinary(finalPath + "_betas");
+            standardError.saveBinary(finalPath + "_se");
+        } else {
+            beta.save(finalPath + "_betas");
+            standardError.save(finalPath + "_se");
+        }
+    }
 }
