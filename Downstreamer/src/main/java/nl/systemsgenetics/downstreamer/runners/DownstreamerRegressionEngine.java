@@ -26,23 +26,26 @@ public class DownstreamerRegressionEngine {
 
     public static void run(OptionsModeRegress options) throws Exception {
 
-        DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleTextData(options.getExplanatoryVariables().getPath(), '\t');
-        DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleTextData(options.getResponseVariable().getPath(), '\t');
+        DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleData(options.getExplanatoryVariables().getPath());
+        DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleData(options.getResponseVariable().getPath());
 
         DoubleMatrixDataset<String, String> covariates = null;
         if (options.hasCovariates()) {
-            covariates = DoubleMatrixDataset.loadDoubleTextData(options.getCovariates().getPath(), '\t');
+            covariates = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getPath());
         }
 
+        LinearRegressionResult output;
         if (options.hasSigma()) {
-            DoubleMatrixDataset<String, String> Sigma = DoubleMatrixDataset.loadDoubleTextData(options.getSigma().getPath(), '\t');
-            performDownstreamerRegression(X, Y, covariates, Sigma, options.getPercentageOfVariance(),false, options);
-        } else {
-            DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleTextData(options.getEigenvectors().getPath(), '\t');
-            DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleTextData(options.getEigenvalues().getPath(), '\t');
+            DoubleMatrixDataset<String, String> Sigma = DoubleMatrixDataset.loadDoubleData(options.getSigma().getPath());
+            output = performDownstreamerRegression(X, Y, covariates, Sigma, options.getPercentageOfVariance(),false, options);
 
-            performDownstreamerRegression(X, Y, covariates, U, L, options.getPercentageOfVariance(), true);
+        } else {
+            DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
+            DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
+            output = performDownstreamerRegression(X, Y, covariates, U, L, options.getPercentageOfVariance(), true);
         }
+
+        output.save(options.getOutputBasePath(), false);
     }
 
     /**

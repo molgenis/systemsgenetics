@@ -48,7 +48,7 @@ public class IoUtils {
 
 	}
 
-	// Generic readers
+
 	public static List<String> readMatrixAnnotations(File file) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
@@ -480,6 +480,9 @@ public class IoUtils {
 			return leadVariantsPerTrait;
 		}
 	}
+
+
+
 
 
 }
