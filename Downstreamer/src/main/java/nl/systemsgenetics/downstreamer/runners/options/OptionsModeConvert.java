@@ -101,7 +101,11 @@ public class OptionsModeConvert extends OptionsBase implements GenotypeFileProvi
             columnsToExtract = null;
         }
 
-        optionsHelperGenotypeData = new OptionsHelperGenotypeData(commandLine);
+        if (commandLine.hasOption("r")) {
+            optionsHelperGenotypeData = new OptionsHelperGenotypeData(commandLine);
+        } else {
+            optionsHelperGenotypeData = null;
+        }
 
     }
 

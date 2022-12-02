@@ -58,6 +58,11 @@ public class OptionsHelperGenotypeData implements GenotypeFileProvider {
 
     public OptionsHelperGenotypeData(CommandLine commandLine) throws ParseException {
 
+        // To avoid nullpointer and help debugging
+        if (!commandLine.hasOption("r")) {
+            throw new ParseException("-r must be specific when providing genotype data");
+        }
+
         genotypeBasePath = commandLine.getOptionValues('r');
 
         // Sample filter
