@@ -5,10 +5,13 @@ import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
+import cern.colt.matrix.tdouble.algo.SparseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
+import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
 import me.tongfei.progressbar.ProgressBar;
 import nl.systemsgenetics.downstreamer.Downstreamer;
+import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeRegress;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
@@ -169,6 +172,7 @@ public class DownstreamerRegressionEnginePColt {
                                                                        DoubleMatrixDataset<String, String> C,
                                                                        DoubleMatrixDataset<String, String> U,
                                                                        DoubleMatrixDataset<String, String> L,
+                                                                       HashMap<Integer, List<String>> blockDiagonalIndices,
                                                                        double percentageOfVariance,
                                                                        boolean fitIntercept) {
 
@@ -191,6 +195,7 @@ public class DownstreamerRegressionEnginePColt {
 
         // Pre-transpose U as this can be re-used as well
         DoubleMatrix2D UHatT = transpose(U.getMatrix());
+        //UHatT = DoubleFactory2D.sparse.make(UHatT.toArray());
         DoubleMatrix1D LHatInv = L.viewCol(0).copy();
         LHatInv.assign(DoubleFunctions.inv);
 
@@ -216,8 +221,6 @@ public class DownstreamerRegressionEnginePColt {
 
         LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
 
-        // TODO: parallelize. Altough not sure how this would work with the colt parralelization, might be redundant?
-
         ProgressBar pb = new ProgressBar("Linear regressions",  X.columns());
         for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
             //DoubleMatrix2D XCur = X.viewCol(curPathway).reshape(X.rows(), 1);
@@ -231,7 +234,8 @@ public class DownstreamerRegressionEnginePColt {
             double[] curRes = downstreamerRegressionPrecomp(XCur,
                     YHat,
                     UHatT,
-                    diag(LHatInv),
+                    LHatInv,
+                    blockDiagonalIndices,
                     fitIntercept);
 
             result.appendBetas(curPathway, ArrayUtils.subarray(curRes, 0, curRes.length/2));
@@ -260,16 +264,21 @@ public class DownstreamerRegressionEnginePColt {
      * @param fitIntercept Should an intercept term be fitted
      * @return double[] with beta and standard erros in the form  [beta_1, beta_2 ... beta_x, se_1, se_2 ... se_x]
      */
-    public static double[] downstreamerRegressionPrecomp(DoubleMatrix2D X, DoubleMatrix2D YHat, DoubleMatrix2D UHatT, DoubleMatrix2D LHatInv, boolean fitIntercept) {
+    public static double[] downstreamerRegressionPrecomp(DoubleMatrix2D XHat, DoubleMatrix2D YHat, DoubleMatrix2D UHatT, DoubleMatrix1D LHatInv, HashMap<Integer, List<String>> blockDiagonalIndices, boolean fitIntercept) {
 
-        // X.hat <- U.hat.t %*% X
-        double[] results = new double[X.columns() * 2];
+        double[] results = new double[XHat.columns() * 2];
 
-        DoubleMatrix2D XHat = mult(UHatT, X);
+        if (blockDiagonalIndices != null) {
+            XCur = mult(UHatT, XCur);
+        } else {
+            XCur = mult(UHatT, XCur);
+        }
+
+
 
         if (fitIntercept) {
             XHat = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(XHat.rows(), 1, 1), XHat);
-            results = new double[(X.columns() * 2) + 2];
+            results = new double[(XHat.columns() * 2) + 2];
         }
 
         //-----------------------------------------------------------------------------------------
@@ -278,8 +287,13 @@ public class DownstreamerRegressionEnginePColt {
         //  a    <- crossprod(Y.hat, L.hat.inv) %*% X.hat
         //  b    <- solve(crossprod(X.hat, L.hat.inv) %*% X.hat)
         //  beta <- a %*% b
-        DoubleMatrix2D a = mult(crossprod(YHat, LHatInv), XHat);
-        DoubleMatrix2D b = inverse(mult(crossprod(XHat, LHatInv), XHat));
+
+        //DoubleMatrix2D a = mult(crossprod(YHat, LHatInv), XHat);
+        //DoubleMatrix2D b = inverse(mult(crossprod(XHat, LHatInv), XHat));
+
+        // Alternative for YHat %*% LHatInv, bit quicker
+        DoubleMatrix2D a = mult(prodDiag(YHat, LHatInv), XHat);
+        DoubleMatrix2D b = inverse(mult(prodDiag(XHat, LHatInv), XHat));
         DoubleMatrix2D beta = mult(a, b);
 
         //-----------------------------------------------------------------------------------------
@@ -293,7 +307,10 @@ public class DownstreamerRegressionEnginePColt {
         residuals.assign(predicted, minus);
 
         // Residual sum of squares
-        double rss = mult(crossprod(residuals, LHatInv), residuals.reshape((int) residuals.size(), 1)).get(0, 0);
+        //double rss = mult(crossprod(residuals, LHatInv), residuals.reshape((int) residuals.size(), 1)).get(0, 0);
+
+        // Alternative for residuals %*% LHatInv, bit quicker
+        double rss = mult(prodDiag(residuals, LHatInv), residuals.reshape((int) residuals.size(), 1)).get(0, 0);
 
         // Divide rss by the degrees of freedom
         double rssW = rss / (XHat.rows() - XHat.columns());
@@ -315,6 +332,17 @@ public class DownstreamerRegressionEnginePColt {
         }
 
         return results;
+
+    }
+
+
+    private static DoubleMatrix2D prodDiag(DoubleMatrix1D A, DoubleMatrix1D diag) {
+        DoubleMatrix2D results = DoubleFactory2D.dense.make((int)A.size(), 1);
+        for (int i=0; i < A.size() -1; i++) {
+            results.setQuick(i, 1, A.getQuick(i) * diag.get(i));
+        }
+
+        return(transpose(results));
     }
 
     private static DoubleMatrix1D cumulativeSum(DoubleMatrix1D A, boolean asPercentage) {
@@ -334,7 +362,6 @@ public class DownstreamerRegressionEnginePColt {
     }
 
     // Below are just calls to DenseDoubleAlgebra.DEFAULT to clean up the code above.
-
     /**
      * Shorthand for A * t(B)
      *
@@ -343,7 +370,7 @@ public class DownstreamerRegressionEnginePColt {
      * @return
      */
     private static DoubleMatrix2D tcrossprod(DoubleMatrix2D A, DoubleMatrix2D B) {
-        return DenseDoubleAlgebra.DEFAULT.mult(A, transpose(B));
+        return mult(A, transpose(B));
     }
 
     /**
@@ -354,7 +381,7 @@ public class DownstreamerRegressionEnginePColt {
      * @return
      */
     private static DoubleMatrix2D crossprod(DoubleMatrix2D A, DoubleMatrix2D B) {
-        return DenseDoubleAlgebra.DEFAULT.mult(transpose(A), B);
+        return mult(transpose(A), B);
     }
 
     /**
@@ -365,7 +392,7 @@ public class DownstreamerRegressionEnginePColt {
      * @return
      */
     private static DoubleMatrix2D crossprod(DoubleMatrix1D A, DoubleMatrix2D B) {
-        return DenseDoubleAlgebra.DEFAULT.mult(transpose(A.reshape((int) A.size(), 1)), B);
+        return mult(transpose(A.reshape((int) A.size(), 1)), B);
     }
 
     /**
@@ -376,7 +403,9 @@ public class DownstreamerRegressionEnginePColt {
      * @return
      */
     private static DoubleMatrix2D mult(DoubleMatrix2D A, DoubleMatrix2D B) {
-        return DenseDoubleAlgebra.DEFAULT.mult(A, B);
+        DoubleMatrix2D C = DoubleFactory2D.dense.make(A.rows(), B.columns());
+        A.zMult(B, C);
+        return C;
     }
 
     /**
@@ -388,7 +417,6 @@ public class DownstreamerRegressionEnginePColt {
     private static DoubleMatrix2D inverse(DoubleMatrix2D A) {
         return DenseDoubleAlgebra.DEFAULT.inverse(A);
     }
-
 
     /**
      * Shorthand for t(A)
@@ -407,7 +435,7 @@ public class DownstreamerRegressionEnginePColt {
      * @return
      */
     private static DoubleMatrix1D diag(DoubleMatrix2D A) {
-        return DoubleFactory2D.dense.diagonal(A);
+        return DoubleFactory2D.sparse.diagonal(A);
     }
 
     /**
@@ -417,7 +445,31 @@ public class DownstreamerRegressionEnginePColt {
      * @return
      */
     private static DoubleMatrix2D diag(DoubleMatrix1D A) {
-        return DoubleFactory2D.dense.diagonal(A);
+        return DoubleFactory2D.sparse.diagonal(A);
+    }
+
+    private static DoubleMatrix2D prodDiag(DoubleMatrix2D A, DoubleMatrix1D diag) {
+
+        DoubleMatrix2D results = A.copy();
+        for (int j=0; j<A.columns(); j++) {
+            for (int i=0; i<A.rows(); i++) {
+                results.setQuick(i, j, A.getQuick(i, j) * diag.get(i));
+            }
+        }
+
+        return(transpose(results));
+    }
+
+    private static DoubleMatrix2D divDiag(DoubleMatrix2D A, DoubleMatrix1D diag) {
+
+        DoubleMatrix2D results = A.copy();
+        for (int j=0; j<A.columns(); j++) {
+            for (int i=0; i<A.rows(); i++) {
+                results.setQuick(i, j, A.getQuick(i, j) / diag.get(i));
+            }
+        }
+
+        return(transpose(results));
     }
 
 

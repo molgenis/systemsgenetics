@@ -17,6 +17,10 @@ import org.apache.log4j.Logger;
 
 import org.ojalgo.function.constant.PrimitiveMath;
 import org.ojalgo.matrix.Primitive64Matrix;
+import org.ojalgo.matrix.QuaternionMatrix;
+import org.ojalgo.matrix.store.SparseStore;
+import org.ojalgo.structure.Mutate1D;
+import org.ojalgo.structure.Mutate2D;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 import java.util.*;
@@ -151,11 +155,15 @@ public class DownstreamerRegressionEngineOjAlgo {
 
         LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
 
-        Primitive64Matrix nYhat = convertToPrimitive(YHat);
-        Primitive64Matrix nUHatT = convertToPrimitive(UHatT);
-        Primitive64Matrix nX = convertToPrimitive(X);
-        Primitive64Matrix nLHatInv = convertToPrimitive(LHatInv);
 
+        LOGGER.info("Converting to ojAlgo");
+
+        Primitive64Matrix nYhat = convertToPrimitive(YHat, false);
+        Primitive64Matrix nUHatT = convertToPrimitive(UHatT, true);
+        Primitive64Matrix nX = convertToPrimitive(X);
+        Primitive64Matrix nLHatInv = diag(convertToPrimitive(LHatInv, false));
+
+        LOGGER.info("Done converting to ojAlgo");
         ProgressBar pb = new ProgressBar("Linear regressions",  X.columns());
         for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
 
@@ -163,7 +171,7 @@ public class DownstreamerRegressionEngineOjAlgo {
             double[] curRes = downstreamerRegressionPrecomp(XCur,
                     nYhat,
                     nUHatT,
-                    diag(nLHatInv),
+                    nLHatInv,
                     fitIntercept);
 
             result.appendBetas(curPathway, ArrayUtils.subarray(curRes, 0, curRes.length/2));
@@ -197,7 +205,6 @@ public class DownstreamerRegressionEngineOjAlgo {
         // X.hat <- U.hat.t %*% X
         double[] results = new double[(int)X.countColumns() * 2];
         Primitive64Matrix XHat = mult(UHatT, X);
-
 
         //-----------------------------------------------------------------------------------------
         // beta
@@ -266,33 +273,60 @@ public class DownstreamerRegressionEngineOjAlgo {
     }
 
 
-    private static Primitive64Matrix convertToPrimitive(DoubleMatrix1D input) {
+    private static Primitive64Matrix convertToPrimitive(DoubleMatrix1D input, boolean sparse) {
 
         //PhysicalStore.Factory<Double, Primitive64Store> storeFactory = Primitive64Store.FACTORY;
         //Primitive64Store output = storeFactory.make(input.rows(), input.columns());
-        Primitive64Matrix.DenseReceiver output = Primitive64Matrix.FACTORY.makeDense(input.size(), 1);
 
-        for (int i=0; i < input.size(); i++) {
-            output.set(i, input.get(i));
+        if (sparse) {
+           Primitive64Matrix.SparseReceiver output = Primitive64Matrix.FACTORY.makeSparse(input.size(), 1);
+
+            for (int i=0; i < input.size(); i++) {
+                output.set(i, input.get(i));
+            }
+            return output.get();
+        } else  {Primitive64Matrix.DenseReceiver output = Primitive64Matrix.FACTORY.makeDense(input.size(), 1);
+            for (int i=0; i < input.size(); i++) {
+                output.set(i, input.get(i));
+            }
+            return output.get();
         }
 
-        return output.get();
+
     }
 
 
-    private static Primitive64Matrix convertToPrimitive(DoubleMatrix2D input) {
+    private static Primitive64Matrix convertToPrimitive(DoubleMatrix2D input, boolean sparse) {
 
         //PhysicalStore.Factory<Double, Primitive64Store> storeFactory = Primitive64Store.FACTORY;
         //Primitive64Store output = storeFactory.make(input.rows(), input.columns());
-        Primitive64Matrix.DenseReceiver output = Primitive64Matrix.FACTORY.makeDense(input.rows(), input.columns());
 
-        for (int i=0; i < input.rows(); i++) {
-            for (int j=0; j < input.columns(); j++) {
-                output.set(i, j, input.get(i, j));
+        if (sparse) {
+            Primitive64Matrix.SparseReceiver output = Primitive64Matrix.FACTORY.makeSparse(input.rows(), input.columns());
+
+            for (int i=0; i < input.rows(); i++) {
+                for (int j=0; j < input.columns(); j++) {
+                    double val =  input.get(i, j);
+                    if (val != 0) {
+                        output.fillOne(i, j, val);
+                    }
+                    //double val = input.get(i, j);
+                    //if (val != 0) {
+                     //   output.set(i, j, val);
+                    //}
+                }
             }
-        }
+            return output.get();
+        } else  {
+            Primitive64Matrix.DenseReceiver output = Primitive64Matrix.FACTORY.makeDense(input.rows(), input.columns());
+            for (int i=0; i < input.rows(); i++) {
+                for (int j=0; j < input.columns(); j++) {
+                    output.set(i, j, input.get(i, j));
+                }
+            }
 
-        return output.get();
+            return output.get();
+        }
 
     }
 
