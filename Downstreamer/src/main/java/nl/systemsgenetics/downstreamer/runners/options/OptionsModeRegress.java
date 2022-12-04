@@ -14,6 +14,7 @@ public class OptionsModeRegress extends OptionsBase {
     private final File eigenvalues;
     private final File columnIncludeFilter;
     private final File rowIncludeFilter;
+    private final File genes;
 
     private final double percentageOfVariance;
 
@@ -80,6 +81,12 @@ public class OptionsModeRegress extends OptionsBase {
         OptionBuilder.withLongOpt("rows");
         OPTIONS.addOption(OptionBuilder.create("ro"));
 
+        OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm");
+        OptionBuilder.withLongOpt("genes");
+        OPTIONS.addOption(OptionBuilder.create("ge"));
+
     }
 
     public OptionsModeRegress(String... args) throws ParseException {
@@ -114,7 +121,9 @@ public class OptionsModeRegress extends OptionsBase {
             throw new ParseException("Either specify -s or -U + -L");
         }
 
-        // Optional covariates
+        percentageOfVariance = Double.parseDouble(commandLine.getOptionValue("p"));
+
+        // Optional arguments
         if (commandLine.hasOption('c')) {
             covariates = new File(commandLine.getOptionValue('c'));
             if (!explanatoryVariables.exists()) throw new ParseException("File in -c does not exist");
@@ -122,19 +131,25 @@ public class OptionsModeRegress extends OptionsBase {
             covariates = null;
         }
 
-        percentageOfVariance = Double.parseDouble(commandLine.getOptionValue("p"));
-
-        // Optional arguments
         if (commandLine.hasOption("co")) {
             columnIncludeFilter = new File(commandLine.getOptionValue("co"));
+            if (!columnIncludeFilter.exists()) throw new ParseException("-co does not exist");
         } else {
             columnIncludeFilter = null;
         }
 
         if (commandLine.hasOption("ro")) {
             rowIncludeFilter = new File(commandLine.getOptionValue("ro"));
+            if (!rowIncludeFilter.exists()) throw new ParseException("-ro does not exist");
         } else {
             rowIncludeFilter = null;
+        }
+
+        if (commandLine.hasOption("ge")) {
+            genes = new File(commandLine.getOptionValue("ge"));
+            if (!genes.exists()) throw new ParseException("--genes does not exist");
+        } else {
+            genes = null;
         }
 
     }
@@ -179,6 +194,9 @@ public class OptionsModeRegress extends OptionsBase {
         return rowIncludeFilter;
     }
 
+    public File getGenes() {
+        return genes;
+    }
 
     public boolean hasSigma() {
         return sigma != null;
@@ -187,5 +205,7 @@ public class OptionsModeRegress extends OptionsBase {
     public boolean hasColumnIncludeFilter (){return columnIncludeFilter !=null;}
 
     public boolean hasRowIncludeFilter (){return rowIncludeFilter !=null;}
+
+    public boolean hasGenes() {return genes != null;}
 
 }
