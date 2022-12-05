@@ -14,6 +14,7 @@ import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeRegress;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.util.FastMath;
 import org.apache.log4j.Logger;
 import org.jblas.DoubleMatrix;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -36,12 +37,10 @@ public class DownstreamerRegressionEnginePColt {
         return used;
     }
 
-
     public static void run(OptionsModeRegress options) throws Exception {
 
         LOGGER.warn("Assumes input data are in the same order unless -ro is specified. Order in -ro should match with -u and -l");
-        LOGGER.info("Loading datasets");
-        LOGGER.info("[MEM] " + memUsage());
+        logInfoFancy("Loading datasets");
 
         // TODO: currently doesnt just load the subset, so not the most efficient but easier to implemnt
         DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleData(options.getExplanatoryVariables().getPath());
@@ -54,7 +53,7 @@ public class DownstreamerRegressionEnginePColt {
         HashSet<String> colsToSelect = null;
 
         if (options.hasRowIncludeFilter()) {
-            LOGGER.info("Filtering rows to rows provided in -ro");
+            logInfoFancy("Filtering rows to rows provided in -ro");
             rowsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getRowIncludeFilter()));
             X = X.viewRowSelection(rowsToSelect);
             Y = Y.viewRowSelection(rowsToSelect);
@@ -79,9 +78,8 @@ public class DownstreamerRegressionEnginePColt {
             blockDiagonalIndices = createBlockDiagonalIndexFromGenes(options.getGenes(), X.getRowObjects());
         }
 
-        LOGGER.info("Dim X:" + X.getMatrix().rows() + "x" + X.getMatrix().columns());
-        LOGGER.info("Dim Y:" + Y.getMatrix().rows() + "x" + Y.getMatrix().columns());
-        LOGGER.info("[MEM] " + memUsage());
+        logInfoFancy("Dim X:" + X.getMatrix().rows() + "x" + X.getMatrix().columns());
+        logInfoFancy("Dim Y:" + Y.getMatrix().rows() + "x" + Y.getMatrix().columns());
 
         // Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
         LinearRegressionResult output;
@@ -89,22 +87,19 @@ public class DownstreamerRegressionEnginePColt {
             throw new Exception("Not supported atm. Please pre-calculate the eigen decomposition");
         } else {
             DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
+            logInfoFancy("Dim U:" + U.getMatrix().rows() + "x" + U.getMatrix().columns());
+
             DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
+            logInfoFancy("Dim L:" + L.getMatrix().rows() + "x" + L.getMatrix().columns());
 
             if (rowsToSelect != null) {
                 U = U.viewRowSelection(rowsToSelect);
             }
 
-            LOGGER.info("Dim U:" + U.getMatrix().rows() + "x" + U.getMatrix().columns());
-            LOGGER.info("Dim L:" + L.getMatrix().rows() + "x" + L.getMatrix().columns());
-            LOGGER.info("[MEM] " + memUsage());
-
-            LOGGER.info("Done loading datasets");
+            logInfoFancy("Done loading datasets");
             output = performDownstreamerRegression(X, Y, C, U, L,
                     blockDiagonalIndices,
-                    options.getPercentageOfVariance(),
-                    options.fitIntercept(),
-                    options.useJblas());
+                    options);
         }
 
         // Save linear regression results
@@ -131,21 +126,19 @@ public class DownstreamerRegressionEnginePColt {
                                                                        DoubleMatrixDataset<String, String> U,
                                                                        DoubleMatrixDataset<String, String> L,
                                                                        List<int[]> blockDiagonalIndices,
-                                                                       double percentageOfVariance,
-                                                                       boolean fitIntercept,
-                                                                       boolean useJblas) {
+                                                                       OptionsModeRegress options) {
 
         DoubleMatrix1D varPerEigen = cumulativeSum(L.viewCol(0), true);
         List<String> colsToMaintain = new ArrayList<>();
 
         for (int i = 0; i < varPerEigen.size(); i++) {
-            if (percentageOfVariance > varPerEigen.get(i)) {
+            if (options.getPercentageOfVariance() > varPerEigen.get(i)) {
                 colsToMaintain.add(U.getColObjects().get(i));
             }
         }
 
         int numVectorsToMaintain = colsToMaintain.size();
-        LOGGER.info("Maintaining " + numVectorsToMaintain + " eigenvectors explaining " + varPerEigen.get(numVectorsToMaintain - 1) + " % of the variance.");
+        logInfoFancy("Maintaining " + numVectorsToMaintain + " eigenvectors explaining " + varPerEigen.get(numVectorsToMaintain - 1) + " % of the variance.");
 
         // Subset U and L on the number of eigenvectors to maintain
         U = U.viewColSelection(colsToMaintain);
@@ -162,14 +155,15 @@ public class DownstreamerRegressionEnginePColt {
         // Pre-compute Y^ as this can be re-used
         DoubleMatrix2D YHat = mult(UHatT, Y.getMatrix());
 
-        LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Starting regression for " + X.columns() + " pathways.");
+        logInfoFancy("Starting regression for " + X.columns() + " pathways.");
 
         // Determine the degrees of freedom. -1 for main_effect
         int degreesOfFreedom = numVectorsToMaintain - 1;
 
         // Set the names of the predictors in the correct order
+        // and determine the degrees of freedom
         List<String> predictorNames = new ArrayList<>();
-        if (fitIntercept) {
+        if (options.fitIntercept()) {
             predictorNames.add("intercept");
             degreesOfFreedom = degreesOfFreedom - 1;
         }
@@ -184,35 +178,47 @@ public class DownstreamerRegressionEnginePColt {
         DoubleMatrix2D ChatCache = null;
 
         if (blockDiagonalIndices != null) {
-            LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Precomputing XHat and CHat ");
-            XhatCache = multBlockDiagonalSubsetPerCol(UHatT, X.getMatrix(), blockDiagonalIndices, useJblas);
+            logInfoFancy("Precomputing XHat and CHat");
+            XhatCache = multBlockDiagonalSubsetPerCol(UHatT, X.getMatrix(), blockDiagonalIndices, options.useJblas());
 
             if (C != null) {
-                ChatCache = multBlockDiagonalSubsetPerCol(UHatT, C.getMatrix(), blockDiagonalIndices, useJblas);
+                ChatCache = multBlockDiagonalSubsetPerCol(UHatT, C.getMatrix(), blockDiagonalIndices, options.useJblas());
             }
-            LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Done ");
+            logInfoFancy("Done");
         } else {
             if (C != null) {
                 ChatCache = mult(UHatT, C.getMatrix());
             }
         }
 
+        // Center and scale.
+        if (options.centerAndScale()) {
+
+            centerAndScale(YHat);
+
+            if (XhatCache != null) {
+                centerAndScale(XhatCache);
+            }
+
+            if (ChatCache != null) {
+                centerAndScale(YHat);
+            }
+        }
+
         // Object to save output
         LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
 
-        LOGGER.info("[MEM] " + memUsage());
         ProgressBar pb = new ProgressBar("Linear regressions", X.columns());
 
         // Calculate beta's and SE for each pathway
         for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
 
+            // Get the current pathway, if not pre-multiplied by eigenvectors, do so now.
             DoubleMatrix2D XCur;
-
             if (XhatCache == null) {
-                XCur = X.viewColAsMmatrix(curPathway);
-                XCur = mult(UHatT, XCur);
+                XCur = mult(UHatT, X.viewColAsMmatrix(curPathway));
             } else {
-                XCur = XhatCache.viewColumn(curPathway).reshape(XhatCache.rows(), 1);
+                XCur = XhatCache.viewSelection(null, new int[]{curPathway});
             }
 
             // If covariates are provided add them
@@ -220,23 +226,32 @@ public class DownstreamerRegressionEnginePColt {
                 XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache);
             }
 
+            // If not pre-computing Xhat, center and scale here
+            if (options.centerAndScale() && XhatCache == null) {
+                centerAndScale(XCur);
+            }
+
             double[] curRes = downstreamerRegressionPrecomp(XCur,
                     YHat,
                     LHatInv,
-                    fitIntercept);
+                    options.fitIntercept());
 
             result.appendBetas(curPathway, ArrayUtils.subarray(curRes, 0, curRes.length / 2));
             result.appendSe(curPathway, ArrayUtils.subarray(curRes, curRes.length / 2, curRes.length));
 
             pb.step();
         }
-        LOGGER.info("[MEM] " + memUsage());
-
         pb.close();
-        LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Done with regression for " + X.columns() + " pathways.");
+
+        logInfoFancy("Done with regression for " + X.columns() + " pathways.");
 
         return result;
     }
+
+    private static void logInfoFancy(String message) {
+        LOGGER.info("[" + Downstreamer.TIME_FORMAT.format(new Date()) + "] [MEM: " + String.format("%,.2f", memUsage()) + "G] " + message);
+    }
+
 
     /**
      * Generic implementation of the downstreamer regression model where:
@@ -360,7 +375,47 @@ public class DownstreamerRegressionEnginePColt {
         return blockDiagonalIndices;
     }
 
+
     // Arithmatic functions to make code more readable //
+
+    /**
+     * Set mean to 0 and sd to 1 for each column in the data.
+     * Lifted from DoubleMatrixDataset.normalizeColumns()
+     * Refactored to center and scale to avoid confusion with DoubleMatrix2D.normalize()
+     * which normalizes the data so their sum = 1
+     * @param matrix
+     */
+    private static void centerAndScale(DoubleMatrix2D matrix) {
+
+        final int rows = matrix.rows();
+
+        for (int c = 0; c < matrix.columns(); ++c) {
+
+            DoubleMatrix1D col = matrix.viewColumn(c);
+
+            double colSum = 0;
+
+            for (int e = 0; e < rows; ++e) {
+                colSum += col.getQuick(e);
+            }
+
+            final double mean = colSum / rows;
+
+            double varSum = 0;
+            for (int e = 0; e < rows; ++e) {
+                varSum += (col.getQuick(e) - mean) * (col.getQuick(e) - mean);
+            }
+
+            double sd = FastMath.sqrt(varSum / (rows - 1));
+
+            for (int e = 0; e < rows; ++e) {
+                col.setQuick(e, (col.getQuick(e) - mean) / sd);
+            }
+
+        }
+
+    }
+
 
     /**
      * Calculate the cumlative sum of the elements in A.
@@ -389,9 +444,10 @@ public class DownstreamerRegressionEnginePColt {
      * and columns that are exactly zero. @param index gives the indices to multiply together.
      * JBlas is much quicker on larger matrices but has memory overhead compared to colt matrix mult.
      *
-     * @param Ac
-     * @param Bc
+     * @param A
+     * @param B
      * @param index
+     * @param useJblas
      * @return
      */
     private static DoubleMatrix2D multBlockDiagonalSubsetPerCol(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index, boolean useJblas) {
@@ -559,6 +615,7 @@ public class DownstreamerRegressionEnginePColt {
     private static DoubleMatrix2D multI(DoubleMatrix2D A, DoubleMatrix2D B, DoubleMatrix2D C) {
         return A.zMult(B, C);
     }
+
 
     /**
      * Shorthand for A * B

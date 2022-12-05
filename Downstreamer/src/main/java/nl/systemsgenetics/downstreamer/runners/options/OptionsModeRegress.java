@@ -19,6 +19,7 @@ public class OptionsModeRegress extends OptionsBase {
     private final double percentageOfVariance;
     private final boolean useJblas;
     private final boolean fitIntercept;
+    private final boolean centerAndScale;
 
     static {
         // The response variable
@@ -85,17 +86,17 @@ public class OptionsModeRegress extends OptionsBase {
 
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArg();
-        OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm");
+        OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm. This is used to speed up computation by only considering correlations on the same chromosome arm.");
         OptionBuilder.withLongOpt("genes");
         OPTIONS.addOption(OptionBuilder.create("ge"));
 
         OptionBuilder.withArgName("boolean");
-        OptionBuilder.withDescription("Use parallel colt pure java implementation for larger matrix computations. Slower but might work if your BLAS/LAPACK is misbehaving.");
+        OptionBuilder.withDescription("Use parallel colt's pure java implementation for larger matrix computations instead of JBlas. Slower but might work if your BLAS/LAPACK is misbehaving or unavailable.");
         OptionBuilder.withLongOpt("use-colt");
         OPTIONS.addOption(OptionBuilder.create("uc"));
 
         OptionBuilder.withArgName("boolean");
-        OptionBuilder.withDescription("Fit an intercept. Not reccomended for downstreamer analysis pipeline as data are centered and scaled.");
+        OptionBuilder.withDescription("Fit an intercept. Not recomended for regular Downstreamer analysis pipeline as data are centered and scaled.");
         OptionBuilder.withLongOpt("fit-intercept");
         OPTIONS.addOption(OptionBuilder.create("fi"));
 
@@ -167,6 +168,7 @@ public class OptionsModeRegress extends OptionsBase {
         // Boolean flags
         useJblas = !commandLine.hasOption("uc");
         fitIntercept = commandLine.hasOption("i");
+        centerAndScale = true;
 
     }
 
@@ -222,6 +224,9 @@ public class OptionsModeRegress extends OptionsBase {
         return fitIntercept;
     }
 
+    public boolean centerAndScale() {
+        return centerAndScale;
+    }
     public boolean hasSigma() {
         return sigma != null;
     }

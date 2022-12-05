@@ -26,6 +26,7 @@ public class Downstreamer {
     public static final DecimalFormat LARGE_INT_FORMAT = new DecimalFormat("###,###");
     public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
     public static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    public static final DateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
 
     private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
     private static final String HEADER
