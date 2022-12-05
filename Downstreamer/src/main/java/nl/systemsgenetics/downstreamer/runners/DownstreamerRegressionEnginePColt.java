@@ -1,7 +1,6 @@
 package nl.systemsgenetics.downstreamer.runners;
 
 import cern.colt.function.tdouble.DoubleDoubleFunction;
-import cern.colt.function.tdouble.DoubleProcedure;
 import cern.colt.matrix.tdouble.DoubleFactory1D;
 import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
@@ -19,6 +18,8 @@ import org.apache.log4j.Logger;
 import org.jblas.DoubleMatrix;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 public class DownstreamerRegressionEnginePColt {
@@ -36,9 +37,10 @@ public class DownstreamerRegressionEnginePColt {
         // TODO: currently doesnt just load the subset, so not the most efficient but easier to implemnt
         DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleData(options.getExplanatoryVariables().getPath());
         DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleData(options.getResponseVariable().getPath());
-        DoubleMatrixDataset<String, String> covariates = null;
+        DoubleMatrixDataset<String, String> C = null;
 
-        // Subset the data
+        // Subset and overlap the data
+        // TODO: implement data checks, NA's and row order here!
         HashSet<String> rowsToSelect = null;
         HashSet<String> colsToSelect = null;
 
@@ -55,42 +57,17 @@ public class DownstreamerRegressionEnginePColt {
         }
 
         if (options.hasCovariates()) {
-            throw new Exception("Covariates not yet supported");
-
-/*            covariates = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getPath());
+            C = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getPath());
             if (rowsToSelect != null) {
-                covariates = covariates.viewRowSelection(rowsToSelect);
-            }*/
+                C = C.viewRowSelection(rowsToSelect);
+            }
         }
 
+        // At this point it is assumed all matching of genes has been done
         List<int[]> blockDiagonalIndices = null;
-        List<String> rowOrder = X.getRowObjects();
 
         if (options.hasGenes()) {
-
-            // Determine the indices in the matrix that lie together on a chromosome arm
-            blockDiagonalIndices = new ArrayList<>();
-            Map<String, List<Integer>> blockDiagonalIndicesTmp = new HashMap<>();
-            Map<String, List<Gene>> genes = IoUtils.readGenesAsChrArmMap(options.getGenes());
-
-            for (String key : genes.keySet()) {
-                for (Gene curGene : genes.get(key)) {
-                    int idx = rowOrder.indexOf(curGene.getGene());
-                    if (idx > -1) {
-                        if (!blockDiagonalIndicesTmp.containsKey(key)) {
-                            blockDiagonalIndicesTmp.put(key, new ArrayList<>());
-                        }
-                        blockDiagonalIndicesTmp.get(key).add(idx);
-                    }
-                }
-            }
-
-            // Convert to int[] so it's easier to use with DoubleMatrix2D;
-            for (List<Integer> curList : blockDiagonalIndicesTmp.values()) {
-                blockDiagonalIndices.add(curList.stream().mapToInt(i -> i).toArray());
-            }
-
-            LOGGER.info("Dim Y:" + Y.getMatrix().rows() + "x" + Y.getMatrix().columns());
+            blockDiagonalIndices = createBlockDiagonalIndexFromGenes(options.getGenes(), X.getRowObjects());
         }
 
         LOGGER.info("Dim X:" + X.getMatrix().rows() + "x" + X.getMatrix().columns());
@@ -99,7 +76,7 @@ public class DownstreamerRegressionEnginePColt {
         // Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
         LinearRegressionResult output;
         if (options.hasSigma()) {
-            throw new Exception("Not supported atm");
+            throw new Exception("Not supported atm. Please pre-calculate the eigen decomposition");
         } else {
             DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
             DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
@@ -112,7 +89,11 @@ public class DownstreamerRegressionEnginePColt {
             LOGGER.info("Dim L:" + L.getMatrix().rows() + "x" + L.getMatrix().columns());
 
             LOGGER.info("Done loading datasets");
-            output = performDownstreamerRegression(X, Y, covariates, U, L, blockDiagonalIndices, options.getPercentageOfVariance(), true);
+            output = performDownstreamerRegression(X, Y, C, U, L,
+                    blockDiagonalIndices,
+                    options.getPercentageOfVariance(),
+                    options.fitIntercept(),
+                    options.useJblas());
         }
 
         // Save linear regression results
@@ -140,7 +121,8 @@ public class DownstreamerRegressionEnginePColt {
                                                                        DoubleMatrixDataset<String, String> L,
                                                                        List<int[]> blockDiagonalIndices,
                                                                        double percentageOfVariance,
-                                                                       boolean fitIntercept) {
+                                                                       boolean fitIntercept,
+                                                                       boolean useJblas) {
 
         DoubleMatrix1D varPerEigen = cumulativeSum(L.viewCol(0), true);
         List<String> colsToMaintain = new ArrayList<>();
@@ -162,9 +144,9 @@ public class DownstreamerRegressionEnginePColt {
         DoubleMatrix2D UHatT = transpose(U.getMatrix());
         //UHatT = DoubleFactory2D.sparse.make(UHatT.toArray());
 
+        // Calculate inverse of eigenvalues
         DoubleMatrix1D LHatInv = L.viewCol(0).copy();
         LHatInv.assign(DoubleFunctions.inv);
-        DoubleMatrix2D LHatInvM = diag(LHatInv);
 
         // Pre-compute Y^ as this can be re-used
         DoubleMatrix2D YHat = mult(UHatT, Y.getMatrix());
@@ -186,39 +168,48 @@ public class DownstreamerRegressionEnginePColt {
             degreesOfFreedom = degreesOfFreedom - C.columns();
         }
 
-        LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
-
+        // Pre calculate predictors and covariates in eigenvectors space.
         DoubleMatrix2D XhatCache = null;
+        DoubleMatrix2D ChatCache = null;
+
         if (blockDiagonalIndices != null) {
-            LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Precomputing XHat ");
-            XhatCache = multBlockDiagonalSubsetPerColJblas(UHatT, X.getMatrix(), blockDiagonalIndices);
+            LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Precomputing XHat and CHat ");
+            XhatCache = multBlockDiagonalSubsetPerCol(UHatT, X.getMatrix(), blockDiagonalIndices, useJblas);
+
+            if (C != null) {
+                ChatCache = multBlockDiagonalSubsetPerCol(UHatT, C.getMatrix(), blockDiagonalIndices, useJblas);
+            }
             LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Done ");
+        } else {
+            if (C != null) {
+                ChatCache = mult(UHatT, C.getMatrix());
+            }
         }
 
+        // Object to save output
+        LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
         ProgressBar pb = new ProgressBar("Linear regressions", X.columns());
+
+        // Calculate beta's and SE for each pathway
         for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
-            //DoubleMatrix2D XCur = X.viewCol(curPathway).reshape(X.rows(), 1);
-            // DoubleMatrix2D XCur = X.viewColAsMmatrix(curPathway);
+
             DoubleMatrix2D XCur;
 
             if (XhatCache == null) {
-                 XCur = X.viewColAsMmatrix(curPathway);
-
-                // If covariates are provided add them
-                if (C != null) {
-                    XCur = DoubleFactory2D.dense.appendColumns(XCur, C.getMatrix());
-                }
-
+                XCur = X.viewColAsMmatrix(curPathway);
                 XCur = mult(UHatT, XCur);
             } else {
                 XCur = XhatCache.viewColumn(curPathway).reshape(XhatCache.rows(), 1);
             }
 
+            // If covariates are provided add them
+            if (ChatCache != null) {
+                XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache);
+            }
+
             double[] curRes = downstreamerRegressionPrecomp(XCur,
                     YHat,
-                    UHatT,
-                    LHatInvM,
-                    blockDiagonalIndices,
+                    LHatInv,
                     fitIntercept);
 
             result.appendBetas(curPathway, ArrayUtils.subarray(curRes, 0, curRes.length / 2));
@@ -235,27 +226,21 @@ public class DownstreamerRegressionEnginePColt {
 
     /**
      * Generic implementation of the downstreamer regression model where:
-     * t(UHat) * Y
-     * t(UHat)
-     * solve(LHat)
+     * XHat = t(UHat) * X
+     * YHat = t(UHat) * Y
+     * LHatInv = 1/diag(LHat)
      * have been pre-computed to save time as these remain constant for all pathways in X.
      *
-     * @param XHat         Predictors
-     * @param YHat         t(UHat) * Y
-     * @param UHatT        t(UHat)
-     * @param LHatInv      1/diag(LHat)
+     * @param XHat         Predictors, e x p matrix XHat = t(UHat) * X
+     * @param YHat         Response, e x 1 matrix t(UHat) * Y
+     * @param LHatInv      Inverse eigenvalues, e x 1 matrix, 1/diag(LHat)
      * @param fitIntercept Should an intercept term be fitted
      * @return double[] with beta and standard erros in the form  [beta_1, beta_2 ... beta_x, se_1, se_2 ... se_x]
      */
-    public static double[] downstreamerRegressionPrecomp(DoubleMatrix2D XHat, DoubleMatrix2D YHat, DoubleMatrix2D UHatT, DoubleMatrix2D LHatInv, Collection<int[]> blockDiagonalIndices, boolean fitIntercept) {
+    public static double[] downstreamerRegressionPrecomp(DoubleMatrix2D XHat, DoubleMatrix2D YHat, DoubleMatrix1D LHatInv, boolean fitIntercept) {
 
+        // TODO: DoubleMatrix2D
         double[] results = new double[XHat.columns() * 2];
-
-        // if (blockDiagonalIndices != null) {
-        //    XHat = multBlockDiagonalSubsetAOnCols(UHatT, XHat, blockDiagonalIndices);
-        //} else {
-        //    XHat = mult(UHatT, XHat);
-        // }
 
         if (fitIntercept) {
             results = new double[(XHat.columns() * 2) + 2];
@@ -265,35 +250,34 @@ public class DownstreamerRegressionEnginePColt {
         //-----------------------------------------------------------------------------------------
         // beta
         //-----------------------------------------------------------------------------------------
+        //   crossprod = t(A) * B > this is the R code used for testing
         //  a    <- crossprod(Y.hat, L.hat.inv) %*% X.hat
         //  b    <- solve(crossprod(X.hat, L.hat.inv) %*% X.hat)
         //  beta <- a %*% b
 
-        //DoubleMatrix2D a = mult(crossprod(YHat, LHatInv), XHat);
-        //DoubleMatrix2D b = inverse(mult(crossprod(XHat, LHatInv), XHat));
+        //DoubleMatrix2D a = mult(tmult(YHat, LHatInv), XHat);
+        //DoubleMatrix2D b = inverse(mult(tmult(XHat, LHatInv), XHat));
 
         // Alternative for YHat %*% LHatInv, bit quicker
-        DoubleMatrix2D a = mult(transpose(prodDiag(YHat, diag(LHatInv))), XHat);
-        DoubleMatrix2D b = inverse(mult(transpose(prodDiag(XHat, diag(LHatInv))), XHat));
+        DoubleMatrix2D a = mult(transpose(multDiag(YHat, LHatInv)), XHat);
+        DoubleMatrix2D b = inverse(mult(transpose(multDiag(XHat, LHatInv)), XHat));
         DoubleMatrix2D beta = mult(a, b);
 
         //-----------------------------------------------------------------------------------------
         // Residuals
         //-----------------------------------------------------------------------------------------
         // Predicted Y
-        DoubleMatrix1D predicted = tcrossprod(XHat, beta).viewColumn(0);
+        DoubleMatrix1D predicted = multT(XHat, beta).viewColumn(0);
         // Original Y
         DoubleMatrix1D residuals = YHat.viewColumn(0).copy();
         // Subtract predicted from original
         residuals.assign(predicted, minus);
 
         // Residual sum of squares
-        //double rss = mult(crossprod(residuals, LHatInv), residuals.reshape((int) residuals.size(), 1)).get(0, 0);
+        //double rss = mult(tmult(residuals, LHatInv), residuals.reshape((int) residuals.size(), 1)).get(0, 0);
 
         // Alternative for residuals %*% LHatInv, bit quicker,
-        double rss = mult(prodDiagT(residuals, diag(LHatInv)), residuals);
-        //DoubleMatrix2D tmp = residuals.reshape((int) residuals.size(), 1);
-        //double rss = mult(transpose(prodDiag(tmp, diag(LHatInv))), tmp).get(0,0);
+        double rss = mult(tMultDiag(residuals, LHatInv), residuals);
 
         // Divide rss by the degrees of freedom
         double rssW = rss / (XHat.rows() - XHat.columns());
@@ -318,75 +302,115 @@ public class DownstreamerRegressionEnginePColt {
     }
 
 
-    private static DoubleMatrix1D cumulativeSum(DoubleMatrix1D A, boolean asPercentage) {
+    /**
+     * Creates a list of row indices that are on a chromsome arm, and are thus block diagonal.
+     * This is assumed to be true and is not checked.
+     *
+     * @param geneFile Ensembl file specified by --genes
+     * @param rowOrder A list with gene ids in the order of the data.
+     * @return
+     * @throws IOException
+     */
+    private static List<int[]> createBlockDiagonalIndexFromGenes(File geneFile, List<String> rowOrder) throws IOException {
+
+        // Determine the indices in the matrix that lie together on a chromosome arm
+        List<int[]> blockDiagonalIndices = new ArrayList<>();
+        Map<String, List<Integer>> blockDiagonalIndicesTmp = new HashMap<>();
+        Map<String, List<Gene>> genes = IoUtils.readGenesAsChrArmMap(geneFile);
+
+        int totalCount = 0;
+
+        for (String key : genes.keySet()) {
+            for (Gene curGene : genes.get(key)) {
+                int idx = rowOrder.indexOf(curGene.getGene());
+                if (idx > -1) {
+                    if (!blockDiagonalIndicesTmp.containsKey(key)) {
+                        blockDiagonalIndicesTmp.put(key, new ArrayList<>());
+                    }
+                    blockDiagonalIndicesTmp.get(key).add(idx);
+                    totalCount++;
+                }
+            }
+        }
+
+        if (rowOrder.size() > totalCount) {
+            throw new IllegalArgumentException("There were genes on rows not found in --genes file. " +
+                    "Please make sure all genes are available in --genes or use -ro to make select a subset.");
+        }
+
+        // Convert to int[] so it's easier to use with DoubleMatrix2D;
+        for (List<Integer> curList : blockDiagonalIndicesTmp.values()) {
+            blockDiagonalIndices.add(curList.stream().mapToInt(i -> i).toArray());
+        }
+
+        return blockDiagonalIndices;
+    }
+
+    // Arithmatic functions to make code more readable //
+
+    /**
+     * Calculate the cumlative sum of the elements in A.
+     * @param a             Vector to calculate cumulative sum for
+     * @param asPercentage  Should results be returned as a proportion
+     * @return
+     */
+    private static DoubleMatrix1D cumulativeSum(DoubleMatrix1D a, boolean asPercentage) {
 
         double totalSum = 1;
         if (asPercentage) {
-            totalSum = A.zSum();
+            totalSum = a.zSum();
         }
-        DoubleMatrix1D result = A.like();
+        DoubleMatrix1D result = a.like();
         double runningSum = 0;
-        for (int i = 0; i < A.size(); i++) {
-            runningSum = runningSum + A.get(i);
+        for (int i = 0; i < a.size(); i++) {
+            runningSum = runningSum + a.get(i);
             result.set(i, runningSum / totalSum);
         }
 
         return result;
     }
 
-    // Below are just calls to DenseDoubleAlgebra.DEFAULT to clean up the code above.
-
     /**
-     * Shorthand for A * t(B)
+     * Calculate A %*% B for a matrix A whose structure has some form of block diagonality. I.e. there are rows
+     * and columns that are exactly zero. @param index gives the indices to multiply together.
+     * JBlas is much quicker on larger matrices but has memory overhead compared to colt matrix mult.
      *
-     * @param A A matrix
-     * @param B A matrix
+     * @param Ac
+     * @param Bc
+     * @param index
      * @return
      */
-    private static DoubleMatrix2D tcrossprod(DoubleMatrix2D A, DoubleMatrix2D B) {
-        return mult(A, transpose(B));
+    private static DoubleMatrix2D multBlockDiagonalSubsetPerCol(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index, boolean useJblas) {
+        if (useJblas) {
+            return  multBlockDiagonalSubsetPerColJblas(A, B, index);
+        } else {
+            return  multBlockDiagonalSubsetPerColPcolt(A, B, index);
+        }
     }
 
     /**
-     * Shorthand for t(A) * B
+     * Calculate A %*% B for a matrix A whose structure has some form of block diagonality. I.e. there are rows
+     * and columns that are exactly zero. @param index gives the indices to multiply together.
+     * Uses Jblas for matrix multiplications. This does give memory overhead but is much quciker.
      *
-     * @param A A matrix
-     * @param B A matrix
+     * @param Ac
+     * @param Bc
+     * @param index
      * @return
      */
-    private static DoubleMatrix2D crossprod(DoubleMatrix2D A, DoubleMatrix2D B) {
-        return mult(transpose(A), B);
-    }
-
-    /**
-     * Shorthand for t(A) * B
-     *
-     * @param A A column vector
-     * @param B A matrix
-     * @return
-     */
-    private static DoubleMatrix2D crossprod(DoubleMatrix1D A, DoubleMatrix2D B) {
-        return mult(transpose(A.reshape((int) A.size(), 1)), B);
-    }
-
-
     private static DoubleMatrix2D multBlockDiagonalSubsetPerColJblas(DoubleMatrix2D Ac, DoubleMatrix2D Bc, List<int[]> index) {
 
         DoubleMatrix2D C = DoubleFactory2D.dense.make(Ac.rows(), Bc.columns());
-
-        DoubleMatrix A = new DoubleMatrix(Ac.toArray());
-        DoubleMatrix B = new DoubleMatrix(Bc.toArray());
-
-        //ProgressBar pb = new ProgressBar("Precomp XHat", index.size() * B.columns);
-        ProgressBar pb = new ProgressBar("Precomp XHat", B.columns * index.size());
+        ProgressBar pb = new ProgressBar("Multiplying per block", Bc.columns() * index.size());
 
         DoubleMatrix[] Acache = new DoubleMatrix[index.size()];
         DoubleMatrix[] Bcache = new DoubleMatrix[index.size()];
 
         int[][] AcacheIndices = new int[index.size()][];
 
+        // Compile the subset caches. Precomputing saves overhead, but is more memory intense.
         for (int i = 0; i < index.size(); i++) {
-            Acache[i] = A.getColumns(index.get(i));
+            Acache[i] = new DoubleMatrix(Ac.viewSelection(null, index.get(i)).toArray());
             DoubleMatrix tmp = Acache[i].rowSums();
             ArrayList<Integer> tmpIndices = new ArrayList<>();
             for (int j = 0; j < tmp.rows; j++) {
@@ -397,14 +421,16 @@ public class DownstreamerRegressionEnginePColt {
 
             AcacheIndices[i] = tmpIndices.stream().mapToInt(p -> p).toArray();
             Acache[i] = Acache[i].getRows(AcacheIndices[i]);
-            Bcache[i] = B.getRows(index.get(i));
+            Bcache[i] = new DoubleMatrix(Bc.viewSelection(index.get(i), null).toArray());
         }
 
+        // Perform per block multiplication
         for (int i = 0; i < index.size(); i++) {
+            // Re-cyle temorary results matrix
             DoubleMatrix Ctmp = new DoubleMatrix(Acache[i].rows, 1);
 
-            for (int col = 0; col < B.columns; col++) {
-
+            for (int col = 0; col < Bc.columns(); col++) {
+                // Jblas multiplication
                 Acache[i].mmuli(Bcache[i].getColumn(col), Ctmp);
                 for (int j = 0; j < Ctmp.rows; j++) {
                     int idx = AcacheIndices[i][j];
@@ -412,31 +438,38 @@ public class DownstreamerRegressionEnginePColt {
                 }
                 pb.step();
             }
-
         }
         pb.close();
 
         return C;
     }
 
-    private static DoubleMatrix2D multBlockDiagonalSubsetPerCol(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index) {
+    /**
+     * Calculate A %*% B for a matrix A whose structure has some form of block diagonality. I.e. there are rows
+     * and columns that are exactly zero. @param index gives the indices to multiply together.
+     *
+     * @param Ac
+     * @param Bc
+     * @param index
+     * @return
+     */
+    private static DoubleMatrix2D multBlockDiagonalSubsetPerColPcolt(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index) {
 
         DoubleMatrix2D C = DoubleFactory2D.dense.make(A.rows(), B.columns());
-        DoubleMatrix2D tmp = DoubleFactory2D.dense.make(A.rows(), 1);
 
-        //ProgressBar pb = new ProgressBar("Precomp XHat", index.size() * B.columns);
-        ProgressBar pb = new ProgressBar("Precomp XHat", B.columns() * index.size());
+        ProgressBar pb = new ProgressBar("Multiplying per block", B.columns() * index.size());
 
         DoubleMatrix2D[] Acache = new DoubleMatrix2D[index.size()];
         DoubleMatrix2D[] Bcache = new DoubleMatrix2D[index.size()];
 
         int[][] AcacheIndices = new int[index.size()][];
 
+        // Compile the subset caches. Precomputing saves overhead. Views are returned so is memory efficient.
         for (int i = 0; i < index.size(); i++) {
             Acache[i] = A.viewSelection(null, index.get(i));
             ArrayList<Integer> tmpIndices = new ArrayList<>();
 
-            for (int j=0; j < A.rows(); j++) {
+            for (int j = 0; j < A.rows(); j++) {
                 double rowSum = Acache[i].viewRow(j).zSum();
                 if (rowSum != 0) {
                     tmpIndices.add(j);
@@ -448,7 +481,9 @@ public class DownstreamerRegressionEnginePColt {
             Bcache[i] = B.viewSelection(index.get(i), null);
         }
 
+        // Perform per block multiplication
         for (int i = 0; i < index.size(); i++) {
+            // Re-cyle temorary results matrix
             DoubleMatrix2D Ctmp = DoubleFactory2D.dense.make(Acache[i].rows(), 1);
 
             for (int col = 0; col < B.columns(); col++) {
@@ -467,6 +502,49 @@ public class DownstreamerRegressionEnginePColt {
         return C;
     }
 
+    /**
+     * Shorthand for A * t(B)
+     *
+     * @param A A matrix
+     * @param B A matrix
+     * @return
+     */
+    private static DoubleMatrix2D multT(DoubleMatrix2D A, DoubleMatrix2D B) {
+        return mult(A, B.viewDice());
+    }
+
+    /**
+     * Shorthand for t(A) * B
+     *
+     * @param A A matrix
+     * @param B A matrix
+     * @return
+     */
+    private static DoubleMatrix2D tMult(DoubleMatrix2D A, DoubleMatrix2D B) {
+        return mult(A.viewDice(), B);
+    }
+
+    /**
+     * Shorthand for t(A) * B
+     *
+     * @param A A column vector
+     * @param B A matrix
+     * @return
+     */
+    private static DoubleMatrix2D tMult(DoubleMatrix1D a, DoubleMatrix2D B) {
+        return mult(a.reshape((int) a.size(), 1).viewDice(), B);
+    }
+
+    /**
+     * Shorthand for A * B but save the result in C
+     *
+     * @param A A matrix
+     * @param B A matrix
+     * @return
+     */
+    private static DoubleMatrix2D multI(DoubleMatrix2D A, DoubleMatrix2D B, DoubleMatrix2D C) {
+        return A.zMult(B, C);
+    }
 
     /**
      * Shorthand for A * B
@@ -476,22 +554,19 @@ public class DownstreamerRegressionEnginePColt {
      * @return
      */
     private static DoubleMatrix2D mult(DoubleMatrix2D A, DoubleMatrix2D B) {
-        //DoubleMatrix2D C = DoubleFactory2D.dense.make(A.rows(), B.columns());
-        //A.zMult(B, C);
-        // return C;
         return DenseDoubleAlgebra.DEFAULT.mult(A, B);
     }
 
-    private static double mult(DoubleMatrix1D A, DoubleMatrix1D B) {
-        return DenseDoubleAlgebra.DEFAULT.mult(A, B);
+    private static double mult(DoubleMatrix1D a, DoubleMatrix1D b) {
+        return DenseDoubleAlgebra.DEFAULT.mult(a, b);
     }
 
-        /**
-         * Shorthand for A^-1
-         *
-         * @param A A matrix
-         * @return
-         */
+    /**
+     * Shorthand for A^-1
+     *
+     * @param A A matrix
+     * @return
+     */
     private static DoubleMatrix2D inverse(DoubleMatrix2D A) {
         return DenseDoubleAlgebra.DEFAULT.inverse(A);
     }
@@ -503,7 +578,7 @@ public class DownstreamerRegressionEnginePColt {
      * @return
      */
     private static DoubleMatrix2D transpose(DoubleMatrix2D A) {
-        return DenseDoubleAlgebra.DEFAULT.transpose(A);
+        return A.viewDice();
     }
 
     /**
@@ -522,53 +597,43 @@ public class DownstreamerRegressionEnginePColt {
      * @param A
      * @return
      */
-    private static DoubleMatrix2D diag(DoubleMatrix1D A) {
-        return DoubleFactory2D.sparse.diagonal(A);
+    private static DoubleMatrix2D diag(DoubleMatrix1D a) {
+        return DoubleFactory2D.sparse.diagonal(a);
     }
 
-    private static DoubleMatrix2D prodDiag(DoubleMatrix2D A, DoubleMatrix1D diag) {
-
+    /**
+     * Calculate the pairwise product between a matrix and a "diagonal" matrix column wise. The diagonal is represented
+     * as a vector.
+     *
+     * @param A
+     * @param diag
+     * @return
+     */
+    private static DoubleMatrix2D multDiag(DoubleMatrix2D A, DoubleMatrix1D diag) {
         DoubleMatrix2D results = A.copy();
         for (int j = 0; j < A.columns(); j++) {
             for (int i = 0; i < A.rows(); i++) {
                 results.setQuick(i, j, A.getQuick(i, j) * diag.get(i));
             }
         }
-
         return (results);
     }
 
-    private static DoubleMatrix2D divDiag(DoubleMatrix2D A, DoubleMatrix1D diag) {
-
-        DoubleMatrix2D results = A.copy();
-        for (int j = 0; j < A.columns(); j++) {
-            for (int i = 0; i < A.rows(); i++) {
-                results.setQuick(i, j, A.getQuick(i, j) / diag.get(i));
-            }
-        }
-
-        return (transpose(results));
-    }
-
-    private static DoubleMatrix1D prodDiagT(DoubleMatrix1D A, DoubleMatrix1D diag) {
-        DoubleMatrix1D results = DoubleFactory1D.dense.make((int) A.size());
-        for (int i = 0; i < A.size(); i++) {
-            results.setQuick(i, A.getQuick(i) * diag.get(i));
+    /**
+     * Calculate the pairwise product between a vector and a diagonal matrix column wise. The diagonal is represented
+     * as a vector.
+     *
+     * @param A
+     * @param diag
+     * @return
+     */
+    private static DoubleMatrix1D tMultDiag(DoubleMatrix1D a, DoubleMatrix1D diag) {
+        DoubleMatrix1D results = DoubleFactory1D.dense.make((int) a.size());
+        for (int i = 0; i < a.size(); i++) {
+            results.setQuick(i, a.getQuick(i) * diag.get(i));
         }
 
         return (results);
     }
-
-
-    private static DoubleMatrix2D prodDiag(DoubleMatrix1D A, DoubleMatrix1D diag) {
-        DoubleMatrix2D results = DoubleFactory2D.dense.make((int) A.size(), 1);
-        for (int i = 0; i < A.size(); i++) {
-            results.setQuick(i, 0, A.getQuick(i) * diag.get(i));
-        }
-
-        return (results);
-    }
-
-
 
 }

@@ -17,6 +17,8 @@ public class OptionsModeRegress extends OptionsBase {
     private final File genes;
 
     private final double percentageOfVariance;
+    private final boolean useJblas;
+    private final boolean fitIntercept;
 
     static {
         // The response variable
@@ -87,6 +89,16 @@ public class OptionsModeRegress extends OptionsBase {
         OptionBuilder.withLongOpt("genes");
         OPTIONS.addOption(OptionBuilder.create("ge"));
 
+        OptionBuilder.withArgName("boolean");
+        OptionBuilder.withDescription("Use parallel colt pure java implementation for larger matrix computations. Slower but might work if your BLAS/LAPACK is misbehaving.");
+        OptionBuilder.withLongOpt("use-colt");
+        OPTIONS.addOption(OptionBuilder.create("uc"));
+
+        OptionBuilder.withArgName("boolean");
+        OptionBuilder.withDescription("Fit an intercept. Not reccomended for downstreamer analysis pipeline as data are centered and scaled.");
+        OptionBuilder.withLongOpt("fit-intercept");
+        OPTIONS.addOption(OptionBuilder.create("fi"));
+
     }
 
     public OptionsModeRegress(String... args) throws ParseException {
@@ -152,6 +164,10 @@ public class OptionsModeRegress extends OptionsBase {
             genes = null;
         }
 
+        // Boolean flags
+        useJblas = !commandLine.hasOption("uc");
+        fitIntercept = commandLine.hasOption("i");
+
     }
 
     public File getResponseVariable() {
@@ -196,6 +212,14 @@ public class OptionsModeRegress extends OptionsBase {
 
     public File getGenes() {
         return genes;
+    }
+
+    public boolean useJblas(){
+        return useJblas;
+    }
+
+    public boolean fitIntercept() {
+        return fitIntercept;
     }
 
     public boolean hasSigma() {
