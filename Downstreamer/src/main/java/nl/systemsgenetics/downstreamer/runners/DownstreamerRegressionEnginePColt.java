@@ -30,10 +30,19 @@ public class DownstreamerRegressionEnginePColt {
     public static final DoubleDoubleFunction minus = (a, b) -> a - b;
     public static final DoubleDoubleFunction plus = (a, b) -> a + b;
 
+    private static double memUsage() {
+        Runtime rt = Runtime.getRuntime();
+        double used = (rt.totalMemory() - rt.freeMemory()) / 1024.0 / 1024 / 1024;
+        return used;
+    }
+
+
     public static void run(OptionsModeRegress options) throws Exception {
 
         LOGGER.warn("Assumes input data are in the same order unless -ro is specified. Order in -ro should match with -u and -l");
         LOGGER.info("Loading datasets");
+        LOGGER.info("[MEM] " + memUsage());
+
         // TODO: currently doesnt just load the subset, so not the most efficient but easier to implemnt
         DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleData(options.getExplanatoryVariables().getPath());
         DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleData(options.getResponseVariable().getPath());
@@ -72,6 +81,7 @@ public class DownstreamerRegressionEnginePColt {
 
         LOGGER.info("Dim X:" + X.getMatrix().rows() + "x" + X.getMatrix().columns());
         LOGGER.info("Dim Y:" + Y.getMatrix().rows() + "x" + Y.getMatrix().columns());
+        LOGGER.info("[MEM] " + memUsage());
 
         // Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
         LinearRegressionResult output;
@@ -87,6 +97,7 @@ public class DownstreamerRegressionEnginePColt {
 
             LOGGER.info("Dim U:" + U.getMatrix().rows() + "x" + U.getMatrix().columns());
             LOGGER.info("Dim L:" + L.getMatrix().rows() + "x" + L.getMatrix().columns());
+            LOGGER.info("[MEM] " + memUsage());
 
             LOGGER.info("Done loading datasets");
             output = performDownstreamerRegression(X, Y, C, U, L,
@@ -188,6 +199,8 @@ public class DownstreamerRegressionEnginePColt {
 
         // Object to save output
         LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
+
+        LOGGER.info("[MEM] " + memUsage());
         ProgressBar pb = new ProgressBar("Linear regressions", X.columns());
 
         // Calculate beta's and SE for each pathway
@@ -217,6 +230,7 @@ public class DownstreamerRegressionEnginePColt {
 
             pb.step();
         }
+        LOGGER.info("[MEM] " + memUsage());
 
         pb.close();
         LOGGER.info("[" + Downstreamer.DATE_TIME_FORMAT.format(new Date()) + "] Done with regression for " + X.columns() + " pathways.");
