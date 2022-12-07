@@ -37,66 +37,117 @@ public class DownstreamerRegressionEnginePColt {
         return used;
     }
 
+    private static void logInfoFancy(String message) {
+        LOGGER.info("[" + Downstreamer.TIME_FORMAT.format(new Date()) + "] [MEM: " + String.format("%,.2f", memUsage()) + "G] " + message);
+    }
+
     public static void run(OptionsModeRegress options) throws Exception {
 
         LOGGER.warn("Assumes input data are in the same order unless -ro is specified. Order in -ro should match with -u and -l");
         logInfoFancy("Loading datasets");
 
-        // TODO: currently doesnt just load the subset, so not the most efficient but easier to implemnt
         DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleData(options.getExplanatoryVariables().getPath());
-        DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleData(options.getResponseVariable().getPath());
-        DoubleMatrixDataset<String, String> C = null;
+        logInfoFancy("Dim X:" + X.rows() + "x" + X.columns());
 
-        // Subset and overlap the data
-        // TODO: implement data checks, NA's and row order here!
-        HashSet<String> rowsToSelect = null;
-        HashSet<String> colsToSelect = null;
+        DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleData(options.getResponseVariable().getPath());
+        logInfoFancy("Dim Y:" + Y.rows() + "x" + Y.columns());
+
+        // Keep track of overlapping rows
+        HashSet<String> overlappingRows = new HashSet<>(X.getRowObjects());
+        overlappingRows.retainAll(Y.getRowObjects());
+
+        // Covariates
+        DoubleMatrixDataset<String, String> C = null;
+        if (options.hasCovariates()) {
+            C = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getPath());
+            logInfoFancy("Dim C:" + C.rows() + "x" + C.columns());
+
+            overlappingRows.retainAll(C.getRowObjects());
+        }
+
+        DoubleMatrixDataset<String, String> Sigma = null;
+        DoubleMatrixDataset<String, String> U = null;
+        DoubleMatrixDataset<String, String> L = null;
+
+        if (options.hasSigma()) {
+            throw new Exception("Not yet supported");
+        } else {
+            U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
+            logInfoFancy("Dim U:" + U.rows() + "x" + U.columns());
+
+            L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
+            logInfoFancy("Dim L:" + L.rows() + "x" + L.columns());
+
+            overlappingRows.retainAll(U.getRowObjects());
+        }
 
         if (options.hasRowIncludeFilter()) {
             logInfoFancy("Filtering rows to rows provided in -ro");
-            rowsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getRowIncludeFilter()));
-            X = X.viewRowSelection(rowsToSelect);
-            Y = Y.viewRowSelection(rowsToSelect);
+            overlappingRows.retainAll(IoUtils.readMatrixAnnotations(options.getRowIncludeFilter()));
         }
 
         if (options.hasColumnIncludeFilter()) {
-            colsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getColumnIncludeFilter()));
+            logInfoFancy("Filtering cols in X to those provided in -co");
+            HashSet<String> colsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getColumnIncludeFilter()));
             X = X.viewColSelection(colsToSelect);
         }
 
-        if (options.hasCovariates()) {
-            C = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getPath());
-            if (rowsToSelect != null) {
-                C = C.viewRowSelection(rowsToSelect);
-            }
+        // Scanning for NA's
+        logInfoFancy("Screening for NA values. These are removed row wise. If you want to remove them column wise, please do so first.");
+
+        Set<String> rowsWithNA = checkNaRowwise(Y);
+        rowsWithNA.addAll(checkNaRowwise(Y));
+
+        if (C != null) {
+            rowsWithNA.addAll(checkNaRowwise(C));
         }
 
-        // At this point it is assumed all matching of genes has been done
+        if (U != null ) {
+            rowsWithNA.addAll(checkNaRowwise(U));
+        }
+
+        if (Sigma != null ) {
+            rowsWithNA.addAll(checkNaRowwise(Sigma));
+        }
+
+        overlappingRows.removeAll(rowsWithNA);
+        logInfoFancy("Removed " + rowsWithNA.size() + " rows with NA values.");
+
+        // Convert to list to ensure consistent order
+        List<String> finalRowSelection = new ArrayList<>(overlappingRows);
+
+        // Subset on overlapping rows and make sure everything is in the same order
+        X = X.viewRowSelection(finalRowSelection);
+        Y = Y.viewRowSelection(finalRowSelection);
+
+        if (C != null) {
+            C = C.viewRowSelection(finalRowSelection);
+        }
+
+        if (U != null ) {
+            U = U.viewRowSelection(finalRowSelection);
+        }
+
+        if (Sigma != null ) {
+            Sigma = Sigma.viewSelection(finalRowSelection, finalRowSelection);
+        }
+
+        logInfoFancy("Done loading datasets");
+        logInfoFancy("Maintaining " + overlappingRows.size() + " overlapping rows");
+
+        // At this point it is assumed all matching of genes has been done. There should be no missing genes in
+        // the genes file (this is checked and error is thrown). If there are, users can use -ro
         List<int[]> blockDiagonalIndices = null;
 
         if (options.hasGenes()) {
             blockDiagonalIndices = createBlockDiagonalIndexFromGenes(options.getGenes(), X.getRowObjects());
         }
 
-        logInfoFancy("Dim X:" + X.getMatrix().rows() + "x" + X.getMatrix().columns());
-        logInfoFancy("Dim Y:" + Y.getMatrix().rows() + "x" + Y.getMatrix().columns());
-
         // Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
         LinearRegressionResult output;
         if (options.hasSigma()) {
             throw new Exception("Not supported atm. Please pre-calculate the eigen decomposition");
         } else {
-            DoubleMatrixDataset<String, String> U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
-            logInfoFancy("Dim U:" + U.getMatrix().rows() + "x" + U.getMatrix().columns());
-
-            DoubleMatrixDataset<String, String> L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
-            logInfoFancy("Dim L:" + L.getMatrix().rows() + "x" + L.getMatrix().columns());
-
-            if (rowsToSelect != null) {
-                U = U.viewRowSelection(rowsToSelect);
-            }
-
-            logInfoFancy("Done loading datasets");
             output = performDownstreamerRegression(X, Y, C, U, L,
                     blockDiagonalIndices,
                     options);
@@ -248,10 +299,6 @@ public class DownstreamerRegressionEnginePColt {
         return result;
     }
 
-    private static void logInfoFancy(String message) {
-        LOGGER.info("[" + Downstreamer.TIME_FORMAT.format(new Date()) + "] [MEM: " + String.format("%,.2f", memUsage()) + "G] " + message);
-    }
-
 
     /**
      * Generic implementation of the downstreamer regression model where:
@@ -330,6 +377,24 @@ public class DownstreamerRegressionEnginePColt {
         return results;
     }
 
+    /**
+     * Checks for NA values, returns an index of which rows have NA.
+     */
+    public static Set<String> checkNaRowwise(DoubleMatrixDataset<String, String> input) {
+
+        Set<String> rowsWithNa = new HashSet<>();
+
+        for (int i=0; i< input.rows(); i++) {
+            for (int j=0; j< input.columns(); j++) {
+                if (Double.isNaN(input.getElementQuick(i, j))) {
+                    rowsWithNa.add(input.getRowObjects().get(i));
+                    break;
+                }
+            }
+        }
+        return rowsWithNa;
+    }
+
 
     /**
      * Creates a list of row indices that are on a chromsome arm, and are thus block diagonal.
@@ -383,6 +448,7 @@ public class DownstreamerRegressionEnginePColt {
      * Lifted from DoubleMatrixDataset.normalizeColumns()
      * Refactored to center and scale to avoid confusion with DoubleMatrix2D.normalize()
      * which normalizes the data so their sum = 1
+     *
      * @param matrix
      */
     private static void centerAndScale(DoubleMatrix2D matrix) {
@@ -419,8 +485,9 @@ public class DownstreamerRegressionEnginePColt {
 
     /**
      * Calculate the cumlative sum of the elements in A.
-     * @param a             Vector to calculate cumulative sum for
-     * @param asPercentage  Should results be returned as a proportion
+     *
+     * @param a            Vector to calculate cumulative sum for
+     * @param asPercentage Should results be returned as a proportion
      * @return
      */
     private static DoubleMatrix1D cumulativeSum(DoubleMatrix1D a, boolean asPercentage) {
@@ -439,6 +506,7 @@ public class DownstreamerRegressionEnginePColt {
         return result;
     }
 
+
     /**
      * Calculate A %*% B for a matrix A whose structure has some form of block diagonality. I.e. there are rows
      * and columns that are exactly zero. @param index gives the indices to multiply together.
@@ -452,9 +520,9 @@ public class DownstreamerRegressionEnginePColt {
      */
     private static DoubleMatrix2D multBlockDiagonalSubsetPerCol(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index, boolean useJblas) {
         if (useJblas) {
-            return  multBlockDiagonalSubsetPerColJblas(A, B, index);
+            return multBlockDiagonalSubsetPerColJblas(A, B, index);
         } else {
-            return  multBlockDiagonalSubsetPerColPcolt(A, B, index);
+            return multBlockDiagonalSubsetPerColPcolt(A, B, index);
         }
     }
 

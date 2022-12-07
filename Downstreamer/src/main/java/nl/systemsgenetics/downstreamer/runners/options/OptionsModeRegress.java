@@ -21,6 +21,10 @@ public class OptionsModeRegress extends OptionsBase {
     private final boolean fitIntercept;
     private final boolean centerAndScale;
 
+    private final boolean inverseNormalY;
+    private final boolean inverseNormalX;
+    private final boolean inverseNormalC;
+
     static {
         // The response variable
         OptionBuilder.withArgName("path");
@@ -100,6 +104,21 @@ public class OptionsModeRegress extends OptionsBase {
         OptionBuilder.withLongOpt("fit-intercept");
         OPTIONS.addOption(OptionBuilder.create("fi"));
 
+        OptionBuilder.withArgName("boolean");
+        OptionBuilder.withDescription("Inverse normal transform y");
+        OptionBuilder.withLongOpt("int-y");
+        OPTIONS.addOption(OptionBuilder.create());
+
+        OptionBuilder.withArgName("boolean");
+        OptionBuilder.withDescription("Inverse normal transform x");
+        OptionBuilder.withLongOpt("int-x");
+        OPTIONS.addOption(OptionBuilder.create());
+
+        OptionBuilder.withArgName("boolean");
+        OptionBuilder.withDescription("Inverse normal transform c");
+        OptionBuilder.withLongOpt("int-c");
+        OPTIONS.addOption(OptionBuilder.create());
+
     }
 
     public OptionsModeRegress(String... args) throws ParseException {
@@ -168,7 +187,11 @@ public class OptionsModeRegress extends OptionsBase {
         // Boolean flags
         useJblas = !commandLine.hasOption("uc");
         fitIntercept = commandLine.hasOption("i");
-        centerAndScale = true;
+        centerAndScale = false;
+
+        inverseNormalY = commandLine.hasOption("int-y");
+        inverseNormalX = commandLine.hasOption("int-x");
+        inverseNormalC = commandLine.hasOption("int-c");
 
     }
 
@@ -227,6 +250,19 @@ public class OptionsModeRegress extends OptionsBase {
     public boolean centerAndScale() {
         return centerAndScale;
     }
+
+    public boolean isInverseNormalY() {
+        return inverseNormalY;
+    }
+
+    public boolean isInverseNormalX() {
+        return inverseNormalX;
+    }
+
+    public boolean isInverseNormalC() {
+        return inverseNormalC;
+    }
+
     public boolean hasSigma() {
         return sigma != null;
     }
