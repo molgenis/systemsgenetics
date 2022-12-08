@@ -95,26 +95,26 @@ public class DownstreamerRegressionEnginePColt {
         // Scanning for NA's
         logInfoFancy("Screening for NA values. These are removed row wise. If you want to remove them column wise, please do so first.");
 
-        Set<String> rowsWithNA = checkNaRowwise(Y);
-        rowsWithNA.addAll(checkNaRowwise(Y));
+        Set<String> rowsWithNA = checkNaRowWise(Y);
+        rowsWithNA.addAll(checkNaRowWise(Y));
 
         if (C != null) {
-            rowsWithNA.addAll(checkNaRowwise(C));
+            rowsWithNA.addAll(checkNaRowWise(C));
         }
 
         if (U != null ) {
-            rowsWithNA.addAll(checkNaRowwise(U));
+            rowsWithNA.addAll(checkNaRowWise(U));
         }
 
         if (Sigma != null ) {
-            rowsWithNA.addAll(checkNaRowwise(Sigma));
+            rowsWithNA.addAll(checkNaRowWise(Sigma));
         }
 
         overlappingRows.removeAll(rowsWithNA);
         logInfoFancy("Removed " + rowsWithNA.size() + " rows with NA values.");
 
         // Convert to list to ensure consistent order
-        List<String> finalRowSelection = new ArrayList<>(overlappingRows);
+        final List<String> finalRowSelection = new ArrayList<>(overlappingRows);
 
         // Subset on overlapping rows and make sure everything is in the same order
         X = X.viewRowSelection(finalRowSelection);
@@ -134,6 +134,22 @@ public class DownstreamerRegressionEnginePColt {
 
         logInfoFancy("Done loading datasets");
         logInfoFancy("Maintaining " + overlappingRows.size() + " overlapping rows");
+
+        // Inverse normal transform
+        if (options.isInverseNormalY()) {
+            logInfoFancy("Applying INT to Y");
+            Y.createColumnForceNormalInplace();
+        }
+
+        if (options.isInverseNormalX()) {
+            logInfoFancy("Applying INT to X");
+            X.createColumnForceNormalInplace();
+        }
+
+        if (options.isInverseNormalC() && C != null) {
+            logInfoFancy("Applying INT to C");
+            C.createColumnForceNormalInplace();
+        }
 
         // At this point it is assumed all matching of genes has been done. There should be no missing genes in
         // the genes file (this is checked and error is thrown). If there are, users can use -ro
@@ -380,7 +396,7 @@ public class DownstreamerRegressionEnginePColt {
     /**
      * Checks for NA values, returns an index of which rows have NA.
      */
-    public static Set<String> checkNaRowwise(DoubleMatrixDataset<String, String> input) {
+    public static Set<String> checkNaRowWise(DoubleMatrixDataset<String, String> input) {
 
         Set<String> rowsWithNa = new HashSet<>();
 
