@@ -186,7 +186,7 @@ public class OptionsModeRegress extends OptionsBase {
 
         // Boolean flags
         useJblas = !commandLine.hasOption("uc");
-        fitIntercept = commandLine.hasOption("i");
+        fitIntercept = commandLine.hasOption("fi");
         centerAndScale = false;
 
         inverseNormalY = commandLine.hasOption("int-y");
