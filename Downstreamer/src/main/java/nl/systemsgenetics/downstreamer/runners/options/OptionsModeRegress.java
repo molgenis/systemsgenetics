@@ -100,7 +100,7 @@ public class OptionsModeRegress extends OptionsBase {
         OPTIONS.addOption(OptionBuilder.create("uc"));
 
         OptionBuilder.withArgName("boolean");
-        OptionBuilder.withDescription("Fit an intercept. Not recomended for regular Downstreamer analysis pipeline as data are centered and scaled.");
+        OptionBuilder.withDescription("Fit an intercept. ");
         OptionBuilder.withLongOpt("fit-intercept");
         OPTIONS.addOption(OptionBuilder.create("fi"));
 
