@@ -284,7 +284,7 @@ rpng(width = 1500, height = 1500)
 palette(adjustcolor(viridis(studies, option = "H"), alpha.f = 0.5))
 pchMap <- rep(c(15,16,17), length.out = studies)
 plot(pcs[,1],metaTest[,"recount_qc.star.%_of_reads_mapped_to_multiple_loci"], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
-plot(pcs[,1],pcs[,2], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
+plot(pcs[,1],pcs[,2], col = as.factor(tifssueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
 dev.off()
 
 
