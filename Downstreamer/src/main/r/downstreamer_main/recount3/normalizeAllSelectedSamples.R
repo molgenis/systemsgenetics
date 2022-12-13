@@ -122,7 +122,7 @@ recountHealthyExpNorm <- t(recountHealthyExpNorm)
 recountHealthyExpNorm <- recountHealthyExpNorm + geneMean
 
 #save(recountHealthyExpNorm, file = paste0("CombinedHealthyTissue/combinedHealthyTissue_TPM_Log2_QQ_CovCor_Exp.RData"))
-
+load(file = paste0("CombinedHealthyTissue/combinedHealthyTissue_TPM_Log2_QQ_CovCor_Exp.RData"), verbose = T)
 
 #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
 expScale = recountHealthyExpNorm - rowMeans(recountHealthyExpNorm);
@@ -215,6 +215,9 @@ library(pheatmap)
 library(viridisLite, lib.loc = .libPaths()[2])
 
 
+write.table(medianPerTissue, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissue.txt.gz")), sep = "\t", quote = F, col.names = NA)
+
+
 
 medianPerTissueCor <- cor(medianPerTissue)
 diag(medianPerTissueCor) <- NA
@@ -224,6 +227,9 @@ pheatmap(medianPerTissueCor, scale = "none", labels_row = shortTissue, labels_co
 dev.off()
 
 medianPerTissueScaled <- t(scale(t(medianPerTissue)))
+write.table(medianPerTissueScaled, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueScaled.txt.gz")), sep = "\t", quote = F, col.names = NA)
+
+
 medianPerTissueScaledCor <- cor(medianPerTissueScaled)
 diag(medianPerTissueScaledCor) <- 0
 clust2 <- hclust(as.dist(1 - medianPerTissueScaledCor))
@@ -233,6 +239,8 @@ dev.off()
 
 
 medianOfmedianPerTissue <- apply(medianPerTissue, 1, median)
+write.table(medianOfmedianPerTissue, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueCorrected.txt.gz")), sep = "\t", quote = F, col.names = NA)
+
 
 medianOfmedianPerTissueUnique <- medianPerTissue - medianOfmedianPerTissue
 medianOfmedianPerTissueUniqueCor <- cor(medianOfmedianPerTissueUnique)
@@ -240,4 +248,15 @@ diag(medianOfmedianPerTissueUniqueCor) <- 0
 clust3 <- hclust(as.dist(1 - medianOfmedianPerTissueUniqueCor))
 rpng(width = 1000, height = 1000)
 pheatmap(medianOfmedianPerTissueUniqueCor, scale = "none", col = colHeatmap, breaks = colBreaks, labels_row = shortTissue, labels_col = shortTissue, cluster_rows = clust3, cluster_cols = clust3, border_color = NA)
+dev.off()
+
+
+medianPerTissue2 <- medianPerTissue
+medianPerTissue2[medianPerTissue2 <= 2] <- NA
+sum(!is.na(medianPerTissue2[,2]))
+medianPerTissueCor2 <- cor(medianPerTissue2, use = "pairwise.complete.obs" )
+diag(medianPerTissueCor2) <- NA
+clust4 <- hclust(as.dist(1 - medianPerTissueCor2))
+rpng(width = 1000, height = 1000)
+pheatmap(medianPerTissueCor2, scale = "none", labels_row = shortTissue, labels_col = shortTissue, cluster_rows = clust4, cluster_cols = clust4, border_color = NA)
 dev.off()
