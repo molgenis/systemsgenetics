@@ -441,12 +441,12 @@ public class GenotypeHarmonizerParamaters {
                         + "\" is not a supported genotype field.");
             }
 
-            boolean raiseExceptionIfUnavailable = true;
+            boolean forcePreferredGenotypeFormat = true;
             if (genotypeFormatArguments.length > 2) {
                 if (genotypeFormatArguments[2].equals("suppress")) {
                     System.out.println("WARNING: requested to supress exceptions if preferred genotype format is unavailable. For those variants the default will be chosen.");
                     LOGGER.warn("WARNING: requested to supress exceptions if preferred genotype format is unavailable. For those variants the default will be chosen.");
-                    raiseExceptionIfUnavailable = false;
+                    forcePreferredGenotypeFormat = false;
                 }
             }
 
@@ -454,7 +454,7 @@ public class GenotypeHarmonizerParamaters {
                     VcfGenotypeFormat.valueOf(genotypeFormatArguments[0]),
                     genotypeFormatArguments.length > 1 ?
                             genotypeFormatArguments[1] : genotypeFormatArguments[0],
-                    raiseExceptionIfUnavailable);
+                    forcePreferredGenotypeFormat);
         }
 
         vcfGenotypeFormatSupplier = nonFinalVcfGenotypeFormatSupplier;
