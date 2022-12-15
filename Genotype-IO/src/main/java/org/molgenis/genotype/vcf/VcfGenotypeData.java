@@ -324,7 +324,7 @@ public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements
         LinkedHashSet<VcfGenotypeFormat> haplotypeProbabilitiesFields = getVcfHaplotypeFormats(variant);
 
         // If the requested format is set and present for this variant base decision on this format
-        return genotypeFormatSupplier.VcfGenotypeFormatReadable(
+        return genotypeFormatSupplier.vcfGenotypeFormatReadable(
                 vcfRecord, haplotypeProbabilitiesFields);
     }
 

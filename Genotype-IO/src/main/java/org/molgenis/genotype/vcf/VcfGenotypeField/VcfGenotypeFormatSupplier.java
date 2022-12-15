@@ -54,24 +54,36 @@ public class VcfGenotypeFormatSupplier {
 
         List<String> formatIdentifiers = Arrays.asList(vcfRecord.getFormat());
 
-        if (preferredGenotypeFormat != null
-                && genotypeDosageFieldPrecedence.contains(preferredGenotypeFormat)
-                && formatIdentifiers.contains(this.getGenotypeFormatIdentifier(preferredGenotypeFormat))) {
-            return preferredGenotypeFormat;
-        }
-
-        if (this.forcePreferredGenotypeFormat) {
-            throw new GenotypeDataException(String.format(
-                    "Preferred genotype format field (%s) is unavailable for vcf record: %n%s (%s:%s). " +
-                            "Available format fields: %s",
-                    preferredGenotypeFormatIdentifier,
-                    String.join(", ", vcfRecord.getIdentifiers()),
-                    vcfRecord.getChromosome(), vcfRecord.getPosition(),
-                    String.join(", ", vcfRecord.getFormat())));
+        // Check if the preferred genotype format is set
+        if (preferredGenotypeFormat != null) {
+            // If it is set, check if it is available, and, if it is not, if we should write exceptions or not.
+            if (genotypeDosageFieldPrecedence.contains(preferredGenotypeFormat)
+                    && isGenotypeFormatPresent(formatIdentifiers, preferredGenotypeFormat)) {
+                return preferredGenotypeFormat;
+            } else if (this.forcePreferredGenotypeFormat) {
+                if (!isGenotypeFormatPresent(formatIdentifiers, preferredGenotypeFormat)) {
+                    throw new GenotypeDataException(String.format(
+                            "Preferred genotype format field (%s) is unavailable for vcf record: %n%s (%s:%s). " +
+                                    "Available format fields: %s",
+                            preferredGenotypeFormatIdentifier,
+                            String.join(", ", vcfRecord.getIdentifiers()),
+                            vcfRecord.getChromosome(), vcfRecord.getPosition(),
+                            String.join(", ", vcfRecord.getFormat())));
+                } else if (!genotypeDosageFieldPrecedence.contains(preferredGenotypeFormat)) {
+                    throw new GenotypeDataException(String.format(
+                            "Preferred genotype format field (%s) cannot be used. " +
+                                    "Requested to load vcf record %n%s (%s:%s). " +
+                                    "Possible format fields: %s",
+                            preferredGenotypeFormatIdentifier,
+                            String.join(", ", vcfRecord.getIdentifiers()),
+                            vcfRecord.getChromosome(), vcfRecord.getPosition(),
+                            String.join(", ", Arrays.toString(genotypeDosageFieldPrecedence.toArray()))));
+                }
+            }
         }
 
         for (VcfGenotypeFormat genotypeFormat: genotypeDosageFieldPrecedence) {
-            if (formatIdentifiers.contains(this.getGenotypeFormatIdentifier(genotypeFormat))) {
+            if (isGenotypeFormatPresent(formatIdentifiers, genotypeFormat)) {
                 return genotypeFormat;
             }
         }
@@ -90,24 +102,46 @@ public class VcfGenotypeFormatSupplier {
      * the genotype field formats from the precedence list can be read from the vcf record.
      * If nothing matches these conditions, false is returned.
      */
-    public boolean VcfGenotypeFormatReadable(
+    public boolean vcfGenotypeFormatReadable(
             VcfRecord vcfRecord,
             LinkedHashSet<VcfGenotypeFormat> genotypeDosageFieldPrecedence) {
 
         List<String> formatIdentifiers = Arrays.asList(vcfRecord.getFormat());
 
+        // Test if the preferred genotype format is present
+        // Test if we should suppress exception if this is not the case
+        // Test if the
+
         if (preferredGenotypeFormat != null) {
-            return genotypeDosageFieldPrecedence.contains(preferredGenotypeFormat)
-                    && formatIdentifiers.contains(this.getGenotypeFormatIdentifier(preferredGenotypeFormat));
+            if (isGenotypeFormatPresent(formatIdentifiers, preferredGenotypeFormat)) {
+                return genotypeDosageFieldPrecedence.contains(preferredGenotypeFormat);
+            } else if (this.forcePreferredGenotypeFormat) {
+                throw new GenotypeDataException(String.format(
+                        "Preferred genotype format field (%s) is unavailable for vcf record: %n%s (%s:%s). " +
+                                "Available format fields: %s",
+                        preferredGenotypeFormatIdentifier,
+                        String.join(", ", vcfRecord.getIdentifiers()),
+                        vcfRecord.getChromosome(), vcfRecord.getPosition(),
+                        String.join(", ", vcfRecord.getFormat())));
+            }
         }
 
         for (VcfGenotypeFormat genotypeFormat: genotypeDosageFieldPrecedence) {
-            if (formatIdentifiers.contains(this.getGenotypeFormatIdentifier(genotypeFormat))) {
+            if (isGenotypeFormatPresent(formatIdentifiers, genotypeFormat)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    public boolean isPreferredGenotypeFormatPresent(VcfRecord vcfRecord) {
+        List<String> formatIdentifiers = Arrays.asList(vcfRecord.getFormat());
+        return isGenotypeFormatPresent(formatIdentifiers, preferredGenotypeFormat);
+    }
+
+    private boolean isGenotypeFormatPresent(List<String> formatIdentifiers, VcfGenotypeFormat genotypeFormat) {
+        return formatIdentifiers.contains(this.getGenotypeFormatIdentifier(genotypeFormat));
     }
 
     public VcfGenotypeFormat getPreferredGenotypeFormat() {
