@@ -182,10 +182,10 @@ dev.off()
 
 
 
-
+all(rownames(samplesWithPredictionNoOutliers) == colnames(recountHealthyExpNorm))
 
 str(samplesWithPredictionNoOutliers)
-tissueClasses <- unique(samplesWithPredictionNoOutliers$predictedTissue     )
+tissueClasses <- unique(samplesWithPredictionNoOutliers$predictedTissue)
 
 tissue <- tissueClasses[1]
 medianPerTissueList <- lapply(tissueClasses, function(tissue){
@@ -239,10 +239,11 @@ dev.off()
 
 
 medianOfmedianPerTissue <- apply(medianPerTissue, 1, median)
-write.table(medianOfmedianPerTissue, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueCorrected.txt.gz")), sep = "\t", quote = F, col.names = NA)
 
 
 medianOfmedianPerTissueUnique <- medianPerTissue - medianOfmedianPerTissue
+write.table(medianOfmedianPerTissueUnique, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueCorrected.txt.gz")), sep = "\t", quote = F, col.names = NA)
+
 medianOfmedianPerTissueUniqueCor <- cor(medianOfmedianPerTissueUnique)
 diag(medianOfmedianPerTissueUniqueCor) <- 0
 clust3 <- hclust(as.dist(1 - medianOfmedianPerTissueUniqueCor))
