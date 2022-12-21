@@ -31,13 +31,13 @@ public class DownstreamerRegressionEnginePColt {
     public static final DoubleDoubleFunction minus = (a, b) -> a - b;
     public static final DoubleDoubleFunction plus = (a, b) -> a + b;
 
-    private static double memUsage() {
+    public static double memUsage() {
         Runtime rt = Runtime.getRuntime();
         double used = (rt.totalMemory() - rt.freeMemory()) / 1024.0 / 1024 / 1024;
         return used;
     }
 
-    private static void logInfoFancy(String message) {
+    public static void logInfoFancy(String message) {
         LOGGER.info("[" + Downstreamer.TIME_FORMAT.format(new Date()) + "] [MEM: " + String.format("%,.2f", memUsage()) + "G] " + message);
     }
 

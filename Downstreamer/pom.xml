@@ -83,6 +83,11 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>com.github.haifengl</groupId>
+			<artifactId>smile-core</artifactId>
+			<version>3.0.0</version>
+		</dependency>
+		<dependency>
 			<groupId>org.jblas</groupId>
 			<artifactId>jblas</artifactId>
 			<version>1.2.5</version>
