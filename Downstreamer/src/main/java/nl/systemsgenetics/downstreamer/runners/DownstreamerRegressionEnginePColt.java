@@ -8,6 +8,7 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.jet.math.tdouble.DoubleFunctions;
 import me.tongfei.progressbar.ProgressBar;
+import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeRegress;
@@ -781,6 +782,10 @@ public class DownstreamerRegressionEnginePColt {
         }
 
         return (results);
+    }
+
+    private static void logInfoMem(String msg) {
+        Downstreamer.logInfoMem(msg, LOGGER);
     }
 
 }

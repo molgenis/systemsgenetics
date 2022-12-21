@@ -331,8 +331,8 @@ public class Downstreamer {
         return used;
     }
 
-    public static void logInfoMem(String message) {
-        LOGGER.info("[mem: " + String.format("%,.2f", memUsage()) + "G] " + message);
+    public static void logInfoMem(String message, Logger logger) {
+        logger.info("[mem: " + String.format("%,.2f", memUsage()) + "G] " + message);
     }
 
 

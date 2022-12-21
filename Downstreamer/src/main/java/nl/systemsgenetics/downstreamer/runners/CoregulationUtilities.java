@@ -14,6 +14,7 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import me.tongfei.progressbar.ProgressBar;
+import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeCoreg;
@@ -25,7 +26,6 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.PearsonRToZscoreBinned;
 import umcg.genetica.math.stats.ZScores;
 
-import static nl.systemsgenetics.downstreamer.Downstreamer.logInfoMem;
 
 /**
  *
@@ -146,6 +146,10 @@ public class CoregulationUtilities {
 		LOGGER.info("Done, saving output");
 		output.save(options.getOutputBasePath() + ".network_properties.tsv");
 
+	}
+
+	private static void logInfoMem(String msg) {
+		Downstreamer.logInfoMem(msg, LOGGER);
 	}
 
 	/**
