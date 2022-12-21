@@ -12,17 +12,13 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.appender.FileAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.apache.logging.log4j.core.config.builder.api.*;
-import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.apache.logging.log4j.core.layout.PatternLayout;
-import org.junit.runner.manipulation.Filter;
 
 import java.io.File;
 import java.io.IOException;
@@ -176,7 +172,7 @@ public class Downstreamer {
             // Execute the right mode
             switch (options.getMode()) {
                 // New main analyses
-                case REGRESS: DownstreamerRegressionEnginePColt.run(new OptionsModeRegress(args)); break;
+                case REGRESS: DownstreamerRegressionEngine.run(new OptionsModeRegress(args)); break;
 
                 // Converter utils that share OptionsModeConvert()
                 case CONVERT_TXT: DownstreamerConverters.convertTxtToBin(new OptionsModeConvert(args)); break;
@@ -334,8 +330,6 @@ public class Downstreamer {
     public static void logInfoMem(String message, Logger logger) {
         logger.info("[mem: " + String.format("%,.2f", memUsage()) + "G] " + message);
     }
-
-
 
     public static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
 

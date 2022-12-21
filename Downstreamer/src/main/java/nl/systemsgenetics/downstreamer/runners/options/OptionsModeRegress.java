@@ -25,6 +25,8 @@ public class OptionsModeRegress extends OptionsBase {
     private final boolean inverseNormalX;
     private final boolean inverseNormalC;
 
+    private final boolean regressCovariates;
+
     static {
         // The response variable
         OptionBuilder.withArgName("path");
@@ -100,9 +102,14 @@ public class OptionsModeRegress extends OptionsBase {
         OPTIONS.addOption(OptionBuilder.create("uc"));
 
         OptionBuilder.withArgName("boolean");
-        OptionBuilder.withDescription("Fit an intercept.");
-        OptionBuilder.withLongOpt("fit-intercept");
-        OPTIONS.addOption(OptionBuilder.create("fi"));
+        OptionBuilder.withDescription("Do not fit the intercept in the model.");
+        OptionBuilder.withLongOpt("no-intercept");
+        OPTIONS.addOption(OptionBuilder.create("ni"));
+
+        OptionBuilder.withArgName("boolean");
+        OptionBuilder.withDescription("Instead of including the covariates in the wheighted model, regress them out using OLS first, run the weighted regression on these residuals");
+        OptionBuilder.withLongOpt("regress-covariates");
+        OPTIONS.addOption(OptionBuilder.create("rc"));
 
         OptionBuilder.withArgName("boolean");
         OptionBuilder.withDescription("Inverse normal transform y");
@@ -186,8 +193,13 @@ public class OptionsModeRegress extends OptionsBase {
 
         // Boolean flags
         useJblas = !commandLine.hasOption("uc");
-        fitIntercept = commandLine.hasOption("fi");
+        fitIntercept = !commandLine.hasOption("ni");
         centerAndScale = false;
+
+        regressCovariates = commandLine.hasOption("rc");
+        if (regressCovariates && covariates == null) {
+            throw new ParseException("Missing -c while -rc is specified.");
+        }
 
         inverseNormalY = commandLine.hasOption("int-y");
         inverseNormalX = commandLine.hasOption("int-x");
@@ -261,6 +273,10 @@ public class OptionsModeRegress extends OptionsBase {
 
     public boolean isInverseNormalC() {
         return inverseNormalC;
+    }
+
+    public boolean regressCovariates() {
+        return regressCovariates;
     }
 
     public boolean hasSigma() {

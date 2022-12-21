@@ -24,11 +24,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static nl.systemsgenetics.downstreamer.Downstreamer.logInfoMem;
+public class DownstreamerRegressionEngine {
 
-public class DownstreamerRegressionEnginePColt {
-
-    private static final Logger LOGGER = LogManager.getLogger(DownstreamerRegressionEnginePColt.class);
+    private static final Logger LOGGER = LogManager.getLogger(DownstreamerRegressionEngine.class);
 
     // Vector functions
     public static final DoubleDoubleFunction minus = (a, b) -> a - b;
@@ -95,11 +93,11 @@ public class DownstreamerRegressionEnginePColt {
             rowsWithNA.addAll(checkNaRowWise(C));
         }
 
-        if (U != null ) {
+        if (U != null) {
             rowsWithNA.addAll(checkNaRowWise(U));
         }
 
-        if (Sigma != null ) {
+        if (Sigma != null) {
             rowsWithNA.addAll(checkNaRowWise(Sigma));
         }
 
@@ -107,7 +105,10 @@ public class DownstreamerRegressionEnginePColt {
         logInfoMem("Removed " + rowsWithNA.size() + " rows with NA values.");
 
         // Convert to list to ensure consistent order
-        final List<String> finalRowSelection = new ArrayList<>(overlappingRows);
+        //final List<String> finalRowSelection = new ArrayList<>(overlappingRows);
+
+        List<String> finalRowSelection = Y.getRowObjects();
+        finalRowSelection.remove(0);
 
         // Subset on overlapping rows and make sure everything is in the same order
         X = X.viewRowSelection(finalRowSelection);
@@ -117,16 +118,17 @@ public class DownstreamerRegressionEnginePColt {
             C = C.viewRowSelection(finalRowSelection);
         }
 
-        if (U != null ) {
+        if (U != null) {
             U = U.viewRowSelection(finalRowSelection);
         }
 
-        if (Sigma != null ) {
+        if (Sigma != null) {
             Sigma = Sigma.viewSelection(finalRowSelection, finalRowSelection);
         }
 
         logInfoMem("Done loading datasets");
         logInfoMem("Maintaining " + overlappingRows.size() + " overlapping rows");
+
 
         // Inverse normal transform
         if (options.isInverseNormalY()) {
@@ -142,6 +144,22 @@ public class DownstreamerRegressionEnginePColt {
         if (options.isInverseNormalC() && C != null) {
             logInfoMem("Applying INT to C");
             C.createColumnForceNormalInplace();
+        }
+
+        // Center and scale.
+        if (options.centerAndScale()) {
+            centerAndScale(Y);
+            centerAndScale(X);
+            if (C != null) {
+                centerAndScale(C);
+            }
+        }
+
+        if (options.regressCovariates()) {
+            logInfoMem("Regressing out effects of covariates before main regression using OLS model.");
+            inplaceDetermineOlsRegressionResiduals(Y, C);
+            // Set covariates to null so they are not used for the rest of the regression
+            C = null;
         }
 
         // At this point it is assumed all matching of genes has been done. There should be no missing genes in
@@ -251,23 +269,8 @@ public class DownstreamerRegressionEnginePColt {
             }
         }
 
-        // Center and scale.
-        if (options.centerAndScale()) {
-
-            centerAndScale(YHat);
-
-            if (XhatCache != null) {
-                centerAndScale(XhatCache);
-            }
-
-            if (ChatCache != null) {
-                centerAndScale(YHat);
-            }
-        }
-
         // Object to save output
         LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
-
         ProgressBar pb = new ProgressBar("Linear regressions", X.columns());
 
         // Calculate beta's and SE for each pathway
@@ -393,8 +396,8 @@ public class DownstreamerRegressionEnginePColt {
 
         Set<String> rowsWithNa = new HashSet<>();
 
-        for (int i=0; i< input.rows(); i++) {
-            for (int j=0; j< input.columns(); j++) {
+        for (int i = 0; i < input.rows(); i++) {
+            for (int j = 0; j < input.columns(); j++) {
                 if (Double.isNaN(input.getElementQuick(i, j))) {
                     rowsWithNa.add(input.getRowObjects().get(i));
                     break;
@@ -451,6 +454,11 @@ public class DownstreamerRegressionEnginePColt {
 
 
     // Arithmatic functions to make code more readable //
+
+    private static void centerAndScale(DoubleMatrixDataset matrix) {
+        centerAndScale(matrix.getMatrix());
+    }
+
 
     /**
      * Set mean to 0 and sd to 1 for each column in the data.
@@ -648,6 +656,37 @@ public class DownstreamerRegressionEnginePColt {
 
         return C;
     }
+
+
+    /**
+     * Fit an OLS model to each column in Y seperately and overwrite the values of Y by the residuals of the regression.
+     * @param Y
+     * @param X
+     */
+    public static void inplaceDetermineOlsRegressionResiduals(DoubleMatrixDataset Y, DoubleMatrixDataset X) {
+
+        // Build design matrix with intercept
+        DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X.getMatrix());
+
+        // b = (t(X) X)^-1 t(X) y
+        // Pre compute this component as thsi is constant for the design matrix
+        DoubleMatrix2D XtXi = inverse(tMult(design, design));
+
+        // Loop over columns in y
+        for (int col=0; col < Y.columns(); col++) {
+
+            // Beta
+            DoubleMatrix2D y = Y.viewCol(col).reshape(Y.rows(), 1);
+            DoubleMatrix2D betas = mult(mult(XtXi, design.viewDice()), y);
+
+            // Predicted Y
+            DoubleMatrix2D predicted = mult(betas.viewDice(), design.viewDice());
+
+            // Subtract predicted from original to get residuals
+            Y.viewCol(col).assign(predicted.viewRow(0), minus);
+        }
+    }
+
 
     /**
      * Shorthand for A * t(B)
