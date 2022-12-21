@@ -26,7 +26,8 @@ import nl.systemsgenetics.downstreamer.io.CoregeneEnrichmentExcelWriter;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.FisherExactTest;
@@ -38,7 +39,7 @@ import umcg.genetica.math.stats.MannWhitneyUTest2;
 @Deprecated
 public class TestCoregulationPerformance {
 
-	private static final Logger LOGGER = Logger.getLogger(TestCoregulationPerformance.class);
+	private static final Logger LOGGER = LogManager.getLogger(TestCoregulationPerformance.class);
 
 	public static void testCoreGenePredictionPerformance(DownstreamerOptionsDeprecated options) throws IOException, Exception {
 

@@ -3,12 +3,13 @@ package nl.systemsgenetics.downstreamer.runners.options;
 import edu.emory.mathcs.utils.ConcurrencyUtils;
 import htsjdk.tribble.SimpleFeature;
 import org.apache.commons.cli.*;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.File;
 
 public class OptionsBase {
-    private static final Logger LOGGER = Logger.getLogger(OptionsBase.class);
+    private static final Logger LOGGER = LogManager.getLogger(OptionsBase.class);
     protected static final Options OPTIONS;
 
     // Common static variables

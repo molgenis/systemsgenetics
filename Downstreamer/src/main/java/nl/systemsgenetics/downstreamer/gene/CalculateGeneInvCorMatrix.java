@@ -21,7 +21,8 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -30,7 +31,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  */
 public class CalculateGeneInvCorMatrix {
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerDeprecated.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerDeprecated.class);
 
 	/**
 	 *

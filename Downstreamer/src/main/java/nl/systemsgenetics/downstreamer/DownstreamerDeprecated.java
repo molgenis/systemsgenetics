@@ -12,15 +12,16 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import nl.systemsgenetics.downstreamer.development.CorrelateExpressionToPredictions;
-import nl.systemsgenetics.downstreamer.pathway.PredictedPathwayAnnotations;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.time.DurationFormatUtils;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.FileAppender;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
@@ -36,7 +37,7 @@ public class DownstreamerDeprecated {
 	public static final DecimalFormat LARGE_INT_FORMAT = new DecimalFormat("###,###");
 	public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerDeprecated.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerDeprecated.class);
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"
 			+ "  |             Downstreamer              |\n"
@@ -96,22 +97,15 @@ public class DownstreamerDeprecated {
 		}
 
 		try {
-			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() != DownstreamerMode.STEP1);
-			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
-			Logger.getRootLogger().removeAllAppenders();
-			Logger.getRootLogger().addAppender(logFileAppender);
+			Level loggingLevel = Level.INFO;
+			if (options.isDebugMode()) {
+				loggingLevel = Level.DEBUG;
+				options.getDebugFolder().mkdir();
+			}
 
+			Downstreamer.initializeLoggers(loggingLevel, options.getLogFile());
 			LOGGER.info("Downstreamer" + VERSION);
 			LOGGER.info("Current date and time: " + startDateTime);
-
-			Logger.getRootLogger().addAppender(logConsoleInfoAppender);
-
-			if (options.isDebugMode()) {
-				Logger.getRootLogger().setLevel(Level.DEBUG);
-				options.getDebugFolder().mkdir();
-			} else {
-				Logger.getRootLogger().setLevel(Level.INFO);
-			}
 
 		} catch (IOException e) {
 			System.err.println("Failed to create logger: " + e.getMessage());

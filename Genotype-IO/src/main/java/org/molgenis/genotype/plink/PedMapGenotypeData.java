@@ -18,7 +18,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.*;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
@@ -43,7 +44,7 @@ import org.molgenis.genotype.variant.sampleProvider.SampleVariantsProvider;
 
 public class PedMapGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
 
-	private static final Logger LOG = Logger.getLogger(PedMapGenotypeData.class);
+	private static final Logger LOG = LogManager.getLogger(PedMapGenotypeData.class);
 	private final int sampleVariantProviderUniqueId;
 	private TIntObjectMap<List<Alleles>> sampleAllelesBySnpIndex = new TIntObjectHashMap<List<Alleles>>(1000, 0.75f);
 	private GeneticVariantRange snps;

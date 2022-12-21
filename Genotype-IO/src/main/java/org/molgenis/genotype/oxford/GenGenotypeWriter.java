@@ -11,7 +11,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeWriter;
@@ -28,7 +29,7 @@ public class GenGenotypeWriter implements GenotypeWriter {
 	public static final Charset FILE_ENCODING = Charset.forName("UTF-8");
 	public static final char LINE_ENDING = '\n';
 	private static final char SEPARATOR = ' ';
-	private static final Logger LOGGER = Logger.getLogger(GenGenotypeWriter.class);
+	private static final Logger LOGGER = LogManager.getLogger(GenGenotypeWriter.class);
 	private final GenotypeData genotypeData;
 
 	public GenGenotypeWriter(GenotypeData genotypeData) {

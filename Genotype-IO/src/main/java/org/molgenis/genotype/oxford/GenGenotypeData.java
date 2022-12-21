@@ -15,7 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -54,7 +55,7 @@ public class GenGenotypeData extends AbstractRandomAccessGenotypeData implements
 	private final List<Sample> samples;
 	private final LinkedHashSet<String> sequenceNames;
 	private final int byteToReadForSampleAlleles;
-	private static final Logger LOGGER = Logger.getLogger(GenGenotypeData.class);
+	private static final Logger LOGGER = LogManager.getLogger(GenGenotypeData.class);
 	private final double minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;

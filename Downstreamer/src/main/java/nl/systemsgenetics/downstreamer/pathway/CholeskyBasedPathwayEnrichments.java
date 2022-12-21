@@ -17,7 +17,8 @@ import nl.systemsgenetics.downstreamer.gene.Gene;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 //import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -32,7 +33,7 @@ import java.util.stream.IntStream;
 @Deprecated
 public class CholeskyBasedPathwayEnrichments  { //extends PathwayEnrichments
 
-    private static final Logger LOGGER = Logger.getLogger(DownstreamerDeprecated.class);
+    private static final Logger LOGGER = LogManager.getLogger(DownstreamerDeprecated.class);
 
     private final PathwayDatabase pathwayDatabase;
     private final HashSet<String> hlaGenesToExclude;

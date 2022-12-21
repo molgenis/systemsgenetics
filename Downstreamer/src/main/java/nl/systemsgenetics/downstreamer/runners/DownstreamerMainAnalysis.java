@@ -13,7 +13,8 @@ import nl.systemsgenetics.downstreamer.gene.GenePvalueCalculator;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
@@ -32,7 +33,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
  */
 public class DownstreamerMainAnalysis {
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerMainAnalysis.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerMainAnalysis.class);
 
 	/**
 	 * Calculate the real gene p-values from GWAS z-scores as well as those for

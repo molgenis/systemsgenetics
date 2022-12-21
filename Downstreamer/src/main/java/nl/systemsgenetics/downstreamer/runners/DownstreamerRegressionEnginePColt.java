@@ -8,14 +8,14 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.jet.math.tdouble.DoubleFunctions;
 import me.tongfei.progressbar.ProgressBar;
-import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeRegress;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.util.FastMath;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.jblas.DoubleMatrix;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -23,34 +23,26 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static nl.systemsgenetics.downstreamer.Downstreamer.logInfoMem;
+
 public class DownstreamerRegressionEnginePColt {
 
-    private static final Logger LOGGER = Logger.getLogger(DownstreamerRegressionEnginePColt.class);
+    private static final Logger LOGGER = LogManager.getLogger(DownstreamerRegressionEnginePColt.class);
 
     // Vector functions
     public static final DoubleDoubleFunction minus = (a, b) -> a - b;
     public static final DoubleDoubleFunction plus = (a, b) -> a + b;
 
-    public static double memUsage() {
-        Runtime rt = Runtime.getRuntime();
-        double used = (rt.totalMemory() - rt.freeMemory()) / 1024.0 / 1024 / 1024;
-        return used;
-    }
-
-    public static void logInfoFancy(String message) {
-        LOGGER.info("[" + Downstreamer.TIME_FORMAT.format(new Date()) + "] [MEM: " + String.format("%,.2f", memUsage()) + "G] " + message);
-    }
-
     public static void run(OptionsModeRegress options) throws Exception {
 
         LOGGER.warn("Assumes input data are in the same order unless -ro is specified. Order in -ro should match with -u and -l");
-        logInfoFancy("Loading datasets");
+        logInfoMem("Loading datasets");
 
         DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleData(options.getExplanatoryVariables().getPath());
-        logInfoFancy("Dim X:" + X.rows() + "x" + X.columns());
+        logInfoMem("Dim X:" + X.rows() + "x" + X.columns());
 
         DoubleMatrixDataset<String, String> Y = DoubleMatrixDataset.loadDoubleData(options.getResponseVariable().getPath());
-        logInfoFancy("Dim Y:" + Y.rows() + "x" + Y.columns());
+        logInfoMem("Dim Y:" + Y.rows() + "x" + Y.columns());
 
         // Keep track of overlapping rows
         HashSet<String> overlappingRows = new HashSet<>(X.getRowObjects());
@@ -60,7 +52,7 @@ public class DownstreamerRegressionEnginePColt {
         DoubleMatrixDataset<String, String> C = null;
         if (options.hasCovariates()) {
             C = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getPath());
-            logInfoFancy("Dim C:" + C.rows() + "x" + C.columns());
+            logInfoMem("Dim C:" + C.rows() + "x" + C.columns());
 
             overlappingRows.retainAll(C.getRowObjects());
         }
@@ -73,27 +65,27 @@ public class DownstreamerRegressionEnginePColt {
             throw new Exception("Not yet supported");
         } else {
             U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
-            logInfoFancy("Dim U:" + U.rows() + "x" + U.columns());
+            logInfoMem("Dim U:" + U.rows() + "x" + U.columns());
 
             L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
-            logInfoFancy("Dim L:" + L.rows() + "x" + L.columns());
+            logInfoMem("Dim L:" + L.rows() + "x" + L.columns());
 
             overlappingRows.retainAll(U.getRowObjects());
         }
 
         if (options.hasRowIncludeFilter()) {
-            logInfoFancy("Filtering rows to rows provided in -ro");
+            logInfoMem("Filtering rows to rows provided in -ro");
             overlappingRows.retainAll(IoUtils.readMatrixAnnotations(options.getRowIncludeFilter()));
         }
 
         if (options.hasColumnIncludeFilter()) {
-            logInfoFancy("Filtering cols in X to those provided in -co");
+            logInfoMem("Filtering cols in X to those provided in -co");
             HashSet<String> colsToSelect = new HashSet<>(IoUtils.readMatrixAnnotations(options.getColumnIncludeFilter()));
             X = X.viewColSelection(colsToSelect);
         }
 
         // Scanning for NA's
-        logInfoFancy("Screening for NA values. These are removed row wise. If you want to remove them column wise, please do so first.");
+        logInfoMem("Screening for NA values. These are removed row wise. If you want to remove them column wise, please do so first.");
 
         Set<String> rowsWithNA = checkNaRowWise(Y);
         rowsWithNA.addAll(checkNaRowWise(Y));
@@ -111,7 +103,7 @@ public class DownstreamerRegressionEnginePColt {
         }
 
         overlappingRows.removeAll(rowsWithNA);
-        logInfoFancy("Removed " + rowsWithNA.size() + " rows with NA values.");
+        logInfoMem("Removed " + rowsWithNA.size() + " rows with NA values.");
 
         // Convert to list to ensure consistent order
         final List<String> finalRowSelection = new ArrayList<>(overlappingRows);
@@ -132,22 +124,22 @@ public class DownstreamerRegressionEnginePColt {
             Sigma = Sigma.viewSelection(finalRowSelection, finalRowSelection);
         }
 
-        logInfoFancy("Done loading datasets");
-        logInfoFancy("Maintaining " + overlappingRows.size() + " overlapping rows");
+        logInfoMem("Done loading datasets");
+        logInfoMem("Maintaining " + overlappingRows.size() + " overlapping rows");
 
         // Inverse normal transform
         if (options.isInverseNormalY()) {
-            logInfoFancy("Applying INT to Y");
+            logInfoMem("Applying INT to Y");
             Y.createColumnForceNormalInplace();
         }
 
         if (options.isInverseNormalX()) {
-            logInfoFancy("Applying INT to X");
+            logInfoMem("Applying INT to X");
             X.createColumnForceNormalInplace();
         }
 
         if (options.isInverseNormalC() && C != null) {
-            logInfoFancy("Applying INT to C");
+            logInfoMem("Applying INT to C");
             C.createColumnForceNormalInplace();
         }
 
@@ -205,7 +197,7 @@ public class DownstreamerRegressionEnginePColt {
         }
 
         int numVectorsToMaintain = colsToMaintain.size();
-        logInfoFancy("Maintaining " + numVectorsToMaintain + " eigenvectors explaining " + varPerEigen.get(numVectorsToMaintain - 1) + " % of the variance.");
+        logInfoMem("Maintaining " + numVectorsToMaintain + " eigenvectors explaining " + varPerEigen.get(numVectorsToMaintain - 1) + " % of the variance.");
 
         // Subset U and L on the number of eigenvectors to maintain
         U = U.viewColSelection(colsToMaintain);
@@ -222,7 +214,7 @@ public class DownstreamerRegressionEnginePColt {
         // Pre-compute Y^ as this can be re-used
         DoubleMatrix2D YHat = mult(UHatT, Y.getMatrix());
 
-        logInfoFancy("Starting regression for " + X.columns() + " pathways.");
+        logInfoMem("Starting regression for " + X.columns() + " pathways.");
 
         // Determine the degrees of freedom. -1 for main_effect
         int degreesOfFreedom = numVectorsToMaintain - 1;
@@ -245,13 +237,13 @@ public class DownstreamerRegressionEnginePColt {
         DoubleMatrix2D ChatCache = null;
 
         if (blockDiagonalIndices != null) {
-            logInfoFancy("Precomputing XHat and CHat");
+            logInfoMem("Precomputing XHat and CHat");
             XhatCache = multBlockDiagonalSubsetPerCol(UHatT, X.getMatrix(), blockDiagonalIndices, options.useJblas());
 
             if (C != null) {
                 ChatCache = multBlockDiagonalSubsetPerCol(UHatT, C.getMatrix(), blockDiagonalIndices, options.useJblas());
             }
-            logInfoFancy("Done");
+            logInfoMem("Done");
         } else {
             if (C != null) {
                 ChatCache = mult(UHatT, C.getMatrix());
@@ -310,7 +302,7 @@ public class DownstreamerRegressionEnginePColt {
         }
         pb.close();
 
-        logInfoFancy("Done with regression for " + X.columns() + " pathways.");
+        logInfoMem("Done with regression for " + X.columns() + " pathways.");
 
         return result;
     }

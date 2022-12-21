@@ -14,7 +14,8 @@ import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprec
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.runners.options.GenotypeFileProvider;
 import nl.systemsgenetics.downstreamer.summarystatistic.LdScore;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
@@ -34,7 +35,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 public class IoUtils {
 
-	private static final Logger LOGGER = Logger.getLogger(IoUtils.class);
+	private static final Logger LOGGER = LogManager.getLogger(IoUtils.class);
 	private static Map<String, ChrPosTreeMap<LeadVariant>> leadVariantsPerTraitCache = null;
 	private static class LeadVariantFileNameFilter implements FilenameFilter {
 

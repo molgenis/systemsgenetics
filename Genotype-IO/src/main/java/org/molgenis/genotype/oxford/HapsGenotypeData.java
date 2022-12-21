@@ -11,7 +11,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
@@ -58,7 +59,7 @@ public class HapsGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final List<Sample> samples;
 	private final HashSet<String> sequenceNames;
 	private final int byteToReadForSampleAlleles;
-	private static final Logger LOGGER = Logger.getLogger(HapsGenotypeData.class);
+	private static final Logger LOGGER = LogManager.getLogger(HapsGenotypeData.class);
 	private AllelesAndPhasing last;
 	private GeneticVariantMeta geneticVariantMeta = GeneticVariantMetaMap.getGeneticVariantMetaGt();
 

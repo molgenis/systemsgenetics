@@ -16,7 +16,8 @@ import java.util.Set;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -25,7 +26,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  */
 public class PrepareExternalGenePvalues {
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerUtilities.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerUtilities.class);
 
 	public static void prepare(DownstreamerOptionsDeprecated options) throws Exception {
 

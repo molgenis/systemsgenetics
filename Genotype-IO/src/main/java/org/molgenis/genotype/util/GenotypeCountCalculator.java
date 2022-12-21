@@ -6,7 +6,8 @@ package org.molgenis.genotype.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -17,7 +18,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class GenotypeCountCalculator {
 	
-	private static final Logger LOGGER = Logger.getLogger(GenotypeCountCalculator.class);
+	private static final Logger LOGGER = LogManager.getLogger(GenotypeCountCalculator.class);
 	
 	public static ArrayList<GenotypeCount> countGenotypes(GeneticVariant variant){
 		

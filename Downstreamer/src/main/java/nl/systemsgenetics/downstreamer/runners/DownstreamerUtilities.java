@@ -17,7 +17,8 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeCoreg;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.PcaColt;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.PearsonRToZscoreBinned;
@@ -38,7 +39,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
  */
 public class DownstreamerUtilities {
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerUtilities.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerUtilities.class);
 
 	private static HashMap<String, HashMap<String, NearestVariant>> traitGeneDist = null;
 

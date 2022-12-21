@@ -13,7 +13,8 @@ import java.util.List;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
@@ -27,7 +28,7 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class PredictedPathwayAnnotations {
 
-	private static final Logger LOGGER = Logger.getLogger(PredictedPathwayAnnotations.class);
+	private static final Logger LOGGER = LogManager.getLogger(PredictedPathwayAnnotations.class);
 
 	public static void expandAnnotations(DownstreamerOptionsDeprecated options) throws Exception {
 

@@ -2,7 +2,7 @@ package umcg.genetica.io.gtf;
 
 import java.io.File;
 import java.util.List;
-import org.apache.log4j.BasicConfigurator;
+//import org.apache.logging.log4j.BasicConfigurator;
 import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
 
 /**
@@ -16,7 +16,7 @@ public class TestGffIntervalTree {
      */
     public static void main(String[] args) throws Exception {
         
-		BasicConfigurator.configure();
+		//BasicConfigurator.configure();
 		
 		GtfReader reader = new GtfReader(new File("D:\\UMCG\\Genetica\\Projects\\RnaSeqEqtl\\Homo_sapiens.GRCh37.71.cut.sorted.gtf"));
 		

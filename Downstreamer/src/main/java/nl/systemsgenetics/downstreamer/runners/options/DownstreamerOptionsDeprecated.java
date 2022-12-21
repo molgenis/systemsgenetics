@@ -22,7 +22,8 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 
@@ -35,7 +36,7 @@ public class DownstreamerOptionsDeprecated implements GenotypeFileProvider {
 	// Base options
 	private static final Options OPTIONS;
 	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();//Might be changed
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptionsDeprecated.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerOptionsDeprecated.class);
 	private static final SimpleFeature HLA = new SimpleFeature("6", 20000000, 40000000);
 	private final DownstreamerMode mode;
 	private final File outputBasePath;

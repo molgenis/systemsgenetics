@@ -16,7 +16,8 @@ import java.util.HashMap;
 import java.util.zip.GZIPInputStream;
 
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * @author patri
@@ -27,7 +28,7 @@ public class PathwayAnnotations {
 	private final ArrayList<String> annotationHeaders;
 	private final String setName;
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptionsDeprecated.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerOptionsDeprecated.class);
 
 	public PathwayAnnotations(final File annotationFile) throws FileNotFoundException, IOException {
 

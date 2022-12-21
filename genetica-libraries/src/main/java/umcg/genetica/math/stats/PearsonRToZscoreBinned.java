@@ -87,7 +87,7 @@ public class PearsonRToZscoreBinned {
 		// Important to use this T distribution as the others gave massive issues with numerical preciscion
 		// either above p < 1e-16 for colt, or arround p < 1e-60? for JSci
 		// The values this produces match well with R
-		TDistribution tDist = new TDistribution(163);
+		TDistribution tDist = new TDistribution(df);
 
 		for (int bin = 0; bin < totalNumberOfBins; ++bin) {
 			if (bin == this.binsPerSide) {
@@ -98,9 +98,15 @@ public class PearsonRToZscoreBinned {
 				double curZ = corBinCenter * maxZscore;
 				rLookupTable[bin] = exactZscoreToR(curZ, df, tDist);
 
+				// Hack to deal with slight differences in numerical precision.
+				// The inverse conversion caps out arround ~37.5 instead of 38.4
+				// In these cases return an R of 1.
+				if(Double.isNaN(rLookupTable[bin])) {
+					rLookupTable[bin] = 1;
+				}
+
 			}
 		}
-
 
 	}
 
@@ -186,7 +192,6 @@ public class PearsonRToZscoreBinned {
 		}
 
 	}
-
 
 
 	public static double exactZscoreToR(double z, double df, TDistribution tDist) {

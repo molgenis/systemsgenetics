@@ -11,7 +11,8 @@ import nl.systemsgenetics.downstreamer.io.GwasSummStats;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeConvert;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -30,7 +31,7 @@ import java.util.zip.GZIPOutputStream;
  */
 public class DownstreamerConverters {
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerConverters.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerConverters.class);
 
 	public static void convertTxtToBin(OptionsModeConvert options) throws IOException, Exception {
 

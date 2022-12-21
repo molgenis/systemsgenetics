@@ -10,7 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 
@@ -20,7 +21,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
  */
 public class CorrelateExpressionToPredictions {
 
-		private static final Logger LOGGER = Logger.getLogger(CorrelateExpressionToPredictions.class);
+		private static final Logger LOGGER = LogManager.getLogger(CorrelateExpressionToPredictions.class);
 
 	
 	public static void run(DownstreamerOptionsDeprecated options) throws IOException, Exception{

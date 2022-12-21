@@ -14,16 +14,18 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import me.tongfei.progressbar.ProgressBar;
-import nl.systemsgenetics.downstreamer.development.originalLude.PerformDEPICT2Analysis;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeCoreg;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.PcaColt;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.PearsonRToZscoreBinned;
 import umcg.genetica.math.stats.ZScores;
+
+import static nl.systemsgenetics.downstreamer.Downstreamer.logInfoMem;
 
 /**
  *
@@ -31,7 +33,7 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class CoregulationUtilities {
 
-	private static final Logger LOGGER = Logger.getLogger(CoregulationUtilities.class);
+	private static final Logger LOGGER = LogManager.getLogger(CoregulationUtilities.class);
 	
 	/**
 	 * Take a co-regulation matrix and for each gene determine the number of connections that gene has. Reports at
@@ -40,10 +42,10 @@ public class CoregulationUtilities {
 	public static void coregInvestigateNetwork(OptionsModeCoreg options) throws Exception {
 
 		int df = options.getNumberSamplesUsedForCor()-2;
-		DownstreamerRegressionEnginePColt.logInfoFancy("Hello there.");
+		logInfoMem("Hello there.");
 
 		DoubleMatrixDataset<String, String> zScoreMatrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-		DownstreamerRegressionEnginePColt.logInfoFancy("Loaded " + zScoreMatrix.rows() + " rows x " + zScoreMatrix.columns() + " columns");
+		logInfoMem("Loaded " + zScoreMatrix.rows() + " rows x " + zScoreMatrix.columns() + " columns");
 
 		if (options.getGeneInfoFile() != null) {
 			LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
@@ -68,13 +70,7 @@ public class CoregulationUtilities {
 		final int genesInMatrix = zScoreMatrix.rows();
 
 		// Calculate z-scores back to pearson R
-		//DoubleMatrixDataset<String, String> pearsonMatrix = zScoreMatrix.duplicate();
-		//DownstreamerRegressionEnginePColt.logInfoFancy("Done copying z-score matrix.");
-
-		PearsonRToZscoreBinned zToR = new PearsonRToZscoreBinned(1000000, df+2);
-		//PearsonRToZscoreBinned.exactInplaceZToR(pearsonMatrix, df);
-
-		//DownstreamerRegressionEnginePColt.logInfoFancy("Done converting to pearson R");
+		PearsonRToZscoreBinned zToR = new PearsonRToZscoreBinned(1000000, 12);
 
 		List<String> colnames = new ArrayList<>();
 		colnames.add("z_mean");
