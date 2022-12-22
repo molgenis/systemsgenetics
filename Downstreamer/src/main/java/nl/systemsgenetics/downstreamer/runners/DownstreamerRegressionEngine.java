@@ -285,11 +285,6 @@ public class DownstreamerRegressionEngine {
                 XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache);
             }
 
-            // If not pre-computing Xhat, center and scale here
-            if (options.centerAndScale() && XhatCache == null) {
-                centerAndScale(XCur);
-            }
-
             double[] curRes = downstreamerRegressionPrecomp(XCur,
                     YHat,
                     LHatInv,
