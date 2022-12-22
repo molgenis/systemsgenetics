@@ -44,7 +44,7 @@ public class OptionsModeRegress extends OptionsBase {
         OptionBuilder.isRequired();
         OPTIONS.addOption(OptionBuilder.create("x"));
 
-        // The explanatory variable
+        // The covariates
         OptionBuilder.withArgName("cov");
         OptionBuilder.hasArgs();
         OptionBuilder.withDescription("The optional covariates for regression.");
@@ -107,7 +107,7 @@ public class OptionsModeRegress extends OptionsBase {
         OPTIONS.addOption(OptionBuilder.create("ni"));
 
         OptionBuilder.withArgName("boolean");
-        OptionBuilder.withDescription("Instead of including the covariates in the wheighted model, regress them out using OLS first, run the weighted regression on these residuals");
+        OptionBuilder.withDescription("Instead of including the covariates in the weighted model, regress them out using OLS first, run the weighted regression on these residuals");
         OptionBuilder.withLongOpt("regress-covariates");
         OPTIONS.addOption(OptionBuilder.create("rc"));
 
