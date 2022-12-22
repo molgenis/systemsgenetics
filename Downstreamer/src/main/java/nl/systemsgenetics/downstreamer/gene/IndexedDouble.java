@@ -1,7 +1,7 @@
 package nl.systemsgenetics.downstreamer.gene;
 
+// TODO: Move this to IO package?
 public class IndexedDouble implements Comparable<IndexedDouble> {
-
 
     private Double value;
     private int index;
@@ -26,8 +26,6 @@ public class IndexedDouble implements Comparable<IndexedDouble> {
     public void setIndex(int index) {
         this.index = index;
     }
-
-
 
     @Override
     public int compareTo(IndexedDouble o) {

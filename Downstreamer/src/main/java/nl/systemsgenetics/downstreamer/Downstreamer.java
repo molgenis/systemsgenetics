@@ -331,6 +331,12 @@ public class Downstreamer {
         logger.info("[mem: " + String.format("%,.2f", memUsage()) + "G] " + message);
     }
 
+    public static String formatMsForLog(long ms) {
+        //return LOG_TIME_FORMAT.format(new Date(ms));
+        return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
+    }
+
+
     public static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
 
         private final String errorSource;
@@ -353,9 +359,5 @@ public class Downstreamer {
         }
     }
 
-    public static String formatMsForLog(long ms) {
-        //return LOG_TIME_FORMAT.format(new Date(ms));
-        return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
-    }
 
 }

@@ -14,6 +14,7 @@ import java.util.Set;
 /**
  * The type Ld matrix.
  */
+// TODO: update this, must be better way
 public class ldMatrix {
 
     private static Logger LOGGER = LogManager.getLogger(ldMatrix.class);

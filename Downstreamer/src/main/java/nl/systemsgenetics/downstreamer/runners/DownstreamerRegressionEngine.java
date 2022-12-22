@@ -34,7 +34,6 @@ public class DownstreamerRegressionEngine {
 
     public static void run(OptionsModeRegress options) throws Exception {
 
-        LOGGER.warn("Assumes input data are in the same order unless -ro is specified. Order in -ro should match with -u and -l");
         logInfoMem("Loading datasets");
 
         DoubleMatrixDataset<String, String> X = DoubleMatrixDataset.loadDoubleData(options.getExplanatoryVariables().getPath());
@@ -44,7 +43,7 @@ public class DownstreamerRegressionEngine {
         logInfoMem("Dim Y:" + Y.rows() + "x" + Y.columns());
 
         // Keep track of overlapping rows
-        HashSet<String> overlappingRows = new HashSet<>(X.getRowObjects());
+        LinkedHashSet<String> overlappingRows = new LinkedHashSet<>(X.getRowObjects());
         overlappingRows.retainAll(Y.getRowObjects());
 
         // Covariates
@@ -61,7 +60,7 @@ public class DownstreamerRegressionEngine {
         DoubleMatrixDataset<String, String> L = null;
 
         if (options.hasSigma()) {
-            throw new Exception("Not yet supported");
+            throw new Exception("Eigen decomp of sigma is not yet supported here, please pre-compute and use -u -l");
         } else {
             U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
             logInfoMem("Dim U:" + U.rows() + "x" + U.columns());
@@ -104,11 +103,8 @@ public class DownstreamerRegressionEngine {
         overlappingRows.removeAll(rowsWithNA);
         logInfoMem("Removed " + rowsWithNA.size() + " rows with NA values.");
 
-        // Convert to list to ensure consistent order
-        //final List<String> finalRowSelection = new ArrayList<>(overlappingRows);
-
-        List<String> finalRowSelection = Y.getRowObjects();
-        finalRowSelection.remove(0);
+        // Convert to list to ensure consistent order, altough might be redundant as linkedHasSet should respect order
+        final List<String> finalRowSelection = new ArrayList<>(overlappingRows);
 
         // Subset on overlapping rows and make sure everything is in the same order
         X = X.viewRowSelection(finalRowSelection);
@@ -128,7 +124,6 @@ public class DownstreamerRegressionEngine {
 
         logInfoMem("Done loading datasets");
         logInfoMem("Maintaining " + overlappingRows.size() + " overlapping rows");
-
 
         // Inverse normal transform
         if (options.isInverseNormalY()) {
@@ -155,6 +150,7 @@ public class DownstreamerRegressionEngine {
             }
         }
 
+        // Instead of including covariates in the model, first regress their effects using OLS
         if (options.regressCovariates()) {
             logInfoMem("Regressing out effects of covariates before main regression using OLS model.");
             inplaceDetermineOlsRegressionResiduals(Y, C);
