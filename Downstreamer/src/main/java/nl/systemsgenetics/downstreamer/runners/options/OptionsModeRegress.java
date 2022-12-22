@@ -31,7 +31,8 @@ public class OptionsModeRegress extends OptionsBase {
         // The response variable
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArgs();
-        OptionBuilder.withDescription("The response variable for regression (the gene-pvalues).");
+        OptionBuilder.withDescription("The response variable for regression (the gene-pvalues). Currently supports only" +
+                "one column. ");
         OptionBuilder.withLongOpt("response");
         OptionBuilder.isRequired();
         OPTIONS.addOption(OptionBuilder.create("y"));
@@ -39,7 +40,8 @@ public class OptionsModeRegress extends OptionsBase {
         // The explanatory variable
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArgs();
-        OptionBuilder.withDescription("The explanatory variable for regression (the pathway). Each column in this matrix is treated as a seperate regression.");
+        OptionBuilder.withDescription("The explanatory variable for regression (the pathway)." +
+                " Each column in this matrix is treated as a seperate regression.");
         OptionBuilder.withLongOpt("explain");
         OptionBuilder.isRequired();
         OPTIONS.addOption(OptionBuilder.create("x"));
@@ -54,26 +56,30 @@ public class OptionsModeRegress extends OptionsBase {
         // The correlation matrix to use for eigen decomp
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArgs();
-        OptionBuilder.withDescription("The correlation matrix to be used as Sigma (the gene-gene correlation matrix). If not specified, must provide -U and -L");
+        OptionBuilder.withDescription("The correlation matrix to be used as Sigma (the gene-gene correlation matrix). " +
+                "If not specified, must provide -U and -L");
         OptionBuilder.withLongOpt("sigma");
         OPTIONS.addOption(OptionBuilder.create("s"));
 
         // The eigen decomp
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArgs();
-        OptionBuilder.withDescription("The eigenvector matrix, assumed to be sorted on decreasing order of eigenvalues. Should have dimnames");
+        OptionBuilder.withDescription("The eigenvector matrix, assumed to be sorted on decreasing order of eigenvalues. " +
+                "Should have dimnames");
         OptionBuilder.withLongOpt("eigenvectors");
         OPTIONS.addOption(OptionBuilder.create("u"));
 
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArgs();
-        OptionBuilder.withDescription("The eigenvalues, assumed to be sorted on decreasing order. Should be a 1 column matrix with dimnames.");
+        OptionBuilder.withDescription("The eigenvalues, assumed to be sorted on decreasing order. Should be a 1 column " +
+                "matrix with dimnames.");
         OptionBuilder.withLongOpt("eigenvalues");
         OPTIONS.addOption(OptionBuilder.create("l"));
 
         OptionBuilder.withArgName("double between 0-1");
         OptionBuilder.hasArgs();
-        OptionBuilder.withDescription("The number of eigenvectors explaining the percentage of variance to use in the regression.");
+        OptionBuilder.withDescription("The number of eigenvectors explaining the percentage of variance to use in" +
+                " the regression.");
         OptionBuilder.withLongOpt("perc-variance");
         OptionBuilder.isRequired();
         OPTIONS.addOption(OptionBuilder.create("p"));
@@ -92,12 +98,18 @@ public class OptionsModeRegress extends OptionsBase {
 
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArg();
-        OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm. This is used to speed up computation by only considering correlations on the same chromosome arm.");
+        OptionBuilder.withDescription("File with gene info. " +
+                "col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm. " +
+                "This is used to speed up computation by only considering correlations on the same chromosome arm. " +
+                "NOTE: This assumes -u and -l have been calculated on a block diagonal. Otherwise you won't get a " +
+                "speed benefit as there will be non-zero eigenvectors between off-diagonal pairs that need to be considered. " +
+                "The results should still be valid, but executing time will suffer greatly.");
         OptionBuilder.withLongOpt("genes");
         OPTIONS.addOption(OptionBuilder.create("ge"));
 
         OptionBuilder.withArgName("boolean");
-        OptionBuilder.withDescription("Use parallel colt's pure java implementation for larger matrix computations instead of JBlas. Slower but might work if your BLAS/LAPACK is misbehaving or unavailable.");
+        OptionBuilder.withDescription("Use parallel colt's pure java implementation for larger matrix computations " +
+                "instead of JBlas. Slower but might work if your BLAS/LAPACK is misbehaving or unavailable.");
         OptionBuilder.withLongOpt("use-colt");
         OPTIONS.addOption(OptionBuilder.create("uc"));
 
@@ -107,7 +119,8 @@ public class OptionsModeRegress extends OptionsBase {
         OPTIONS.addOption(OptionBuilder.create("ni"));
 
         OptionBuilder.withArgName("boolean");
-        OptionBuilder.withDescription("Instead of including the covariates in the weighted model, regress them out using OLS first, run the weighted regression on these residuals");
+        OptionBuilder.withDescription("Instead of including the covariates in the weighted model, regress them out first," +
+                " run the weighted regression on these residuals. The covariates are removed in eigenvector space.");
         OptionBuilder.withLongOpt("regress-covariates");
         OPTIONS.addOption(OptionBuilder.create("rc"));
 

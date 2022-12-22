@@ -150,14 +150,6 @@ public class DownstreamerRegressionEngine {
             }
         }
 
-        // Instead of including covariates in the model, first regress their effects using OLS
-        if (options.regressCovariates()) {
-            logInfoMem("Regressing out effects of covariates before main regression using OLS model.");
-            inplaceDetermineOlsRegressionResiduals(Y, C);
-            // Set covariates to null so they are not used for the rest of the regression
-            C = null;
-        }
-
         // At this point it is assumed all matching of genes has been done. There should be no missing genes in
         // the genes file (this is checked and error is thrown). If there are, users can use -ro
         List<int[]> blockDiagonalIndices = null;
@@ -251,6 +243,7 @@ public class DownstreamerRegressionEngine {
         DoubleMatrix2D XhatCache = null;
         DoubleMatrix2D ChatCache = null;
 
+        // Pre-calculate XHat and Xhat in a block diagonal way, or using full matrix mult.
         if (blockDiagonalIndices != null) {
             logInfoMem("Precomputing XHat and CHat");
             XhatCache = multBlockDiagonalSubsetPerCol(UHatT, X.getMatrix(), blockDiagonalIndices, options.useJblas());
@@ -263,6 +256,15 @@ public class DownstreamerRegressionEngine {
             if (C != null) {
                 ChatCache = mult(UHatT, C.getMatrix());
             }
+        }
+
+        // Instead of including covariates in the model, first regress their effects
+        if (options.regressCovariates()) {
+            logInfoMem("Regressing out effects of covariates before main regression.");
+            inplaceDownstreamerRegressionResidualsPrecomp(YHat, ChatCache, LHatInv);
+
+            // Set covariates to null so they are not used for the rest of the regression
+            ChatCache = null;
         }
 
         // Object to save output
@@ -280,7 +282,7 @@ public class DownstreamerRegressionEngine {
                 XCur = XhatCache.viewSelection(null, new int[]{curPathway});
             }
 
-            // If covariates are provided add them
+            // If covariates are provided add them to the design matrix
             if (ChatCache != null) {
                 XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache);
             }
@@ -379,6 +381,68 @@ public class DownstreamerRegressionEngine {
 
         return results;
     }
+
+
+    /**
+     * Fit a regression model in eigenvector space using precomputed components. Residuals replace original values in Y
+     * Models are fit per col of Y
+     * @param Y Response variables, rows are samples. Should be in eigenvector space
+     * @param X Predictors to regress, rows are samples. Should be in eigenvectors space
+     * @param LHatInv Matrix containing the eigenvalues.
+     */
+    public static void inplaceDownstreamerRegressionResidualsPrecomp(DoubleMatrix2D Y, DoubleMatrix2D X, DoubleMatrix1D LHatInv) {
+
+        DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X);
+
+        // For docs on the stats see comments in downstreamerRegressionPrecomp() above
+        DoubleMatrix2D b = inverse(mult(transpose(multDiag(design, LHatInv)), design));
+
+        // Loop over columns in y
+        for (int col=0; col < Y.columns(); col++) {
+
+            DoubleMatrix2D a = mult(transpose(multDiag(Y.viewColumn(col).reshape(Y.rows(), 1), LHatInv)), design);
+            DoubleMatrix2D betas = mult(a, b);
+
+            // Predicted Y
+            DoubleMatrix1D predicted = multT(design, betas).viewColumn(0);
+
+            // Subtract predicted from original to get residuals
+            Y.viewColumn(col).assign(predicted, minus);
+        }
+    }
+
+    /**
+     * Fit an OLS model to each column in Y seperately and overwrite the values of Y by the residuals of the regression.
+     * @param Y Response variables, rows are samples.
+     * @param X Predictors to regress, rows are samples.
+     */
+    public static void inplaceDetermineOlsRegressionResiduals(DoubleMatrixDataset Y, DoubleMatrixDataset X) {
+
+        // Build design matrix with intercept
+        DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X.getMatrix());
+
+        // b = (t(X) X)^-1 t(X) y
+        // Pre compute this component as thsi is constant for the design matrix
+        DoubleMatrix2D XtXi = inverse(tMult(design, design));
+
+        // Loop over columns in y
+        for (int col=0; col < Y.columns(); col++) {
+
+            // Beta
+            DoubleMatrix2D y = Y.viewCol(col).reshape(Y.rows(), 1);
+            DoubleMatrix2D betas = mult(mult(XtXi, design.viewDice()), y);
+
+            // Predicted Y
+            DoubleMatrix2D predicted = mult(betas.viewDice(), design.viewDice());
+
+            // Subtract predicted from original to get residuals
+            Y.viewCol(col).assign(predicted.viewRow(0), minus);
+        }
+    }
+
+
+
+
 
     /**
      * Checks for NA values, returns an index of which rows have NA.
@@ -648,35 +712,6 @@ public class DownstreamerRegressionEngine {
         return C;
     }
 
-
-    /**
-     * Fit an OLS model to each column in Y seperately and overwrite the values of Y by the residuals of the regression.
-     * @param Y
-     * @param X
-     */
-    public static void inplaceDetermineOlsRegressionResiduals(DoubleMatrixDataset Y, DoubleMatrixDataset X) {
-
-        // Build design matrix with intercept
-        DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X.getMatrix());
-
-        // b = (t(X) X)^-1 t(X) y
-        // Pre compute this component as thsi is constant for the design matrix
-        DoubleMatrix2D XtXi = inverse(tMult(design, design));
-
-        // Loop over columns in y
-        for (int col=0; col < Y.columns(); col++) {
-
-            // Beta
-            DoubleMatrix2D y = Y.viewCol(col).reshape(Y.rows(), 1);
-            DoubleMatrix2D betas = mult(mult(XtXi, design.viewDice()), y);
-
-            // Predicted Y
-            DoubleMatrix2D predicted = mult(betas.viewDice(), design.viewDice());
-
-            // Subtract predicted from original to get residuals
-            Y.viewCol(col).assign(predicted.viewRow(0), minus);
-        }
-    }
 
 
     /**
