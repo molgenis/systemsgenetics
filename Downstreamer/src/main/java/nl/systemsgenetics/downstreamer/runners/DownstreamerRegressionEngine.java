@@ -385,7 +385,7 @@ public class DownstreamerRegressionEngine {
 
     /**
      * Fit a regression model in eigenvector space using precomputed components. Residuals replace original values in Y
-     * Models are fit per col of Y
+     * Models are fit per col of Y. This function is usefull for regressing the effects of covariates.
      * @param Y Response variables, rows are samples. Should be in eigenvector space
      * @param X Predictors to regress, rows are samples. Should be in eigenvectors space
      * @param LHatInv Matrix containing the eigenvalues.
