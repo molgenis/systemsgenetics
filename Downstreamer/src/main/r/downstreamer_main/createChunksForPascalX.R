@@ -4,7 +4,7 @@
 library(pbdZMQ)
 sessionInfo()
 
-remoter::client("localhost", port = 55556)#55501
+remoter::client("localhost", port = 55506)#55501  55556
 
 
 genes <- read.delim("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/genes_Ensembl94.txt.gz", check.names = F)
@@ -19,6 +19,13 @@ genes <- genes[,c("Gene stable ID", "Chromosome/scaffold name", "Gene start (bp)
 str(genes[101:200,])
 
 write.table(genes, gzfile("/groups/umcg-fg/tmp01/projects/downstreamer/PascalX_bundle/genes_Ensembl94.txt.gz"), sep = "\t", quote = FALSE, row.names = F)
+
+testList <- lapply(as.character(1:22), function(chr){
+  genesChr <- genes[genes$`Chromosome/scaffold name` == chr,]
+  return(genesChr[1:2,])
+})
+testGenes <- do.call(rbind, testList)
+write.table(testGenes, gzfile("/groups/umcg-fg/tmp01/projects/downstreamer/PascalX_bundle/genes_Ensembl94_testData.txt.gz"), sep = "\t", quote = FALSE, row.names = F)
 
 
 chr = "1"

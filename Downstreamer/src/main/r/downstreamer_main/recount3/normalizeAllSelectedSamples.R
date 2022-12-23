@@ -4,7 +4,7 @@
 
 
 
-remoter::client("localhost", port = 55556)#55501
+remoter::client("localhost", port = 55506)#55501  55556
 
 library("havok")
 library(parallel)
@@ -121,6 +121,7 @@ recountHealthyExpNorm <- t(recountHealthyExpNorm)
 
 recountHealthyExpNorm <- recountHealthyExpNorm + geneMean
 
+setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 #save(recountHealthyExpNorm, file = paste0("CombinedHealthyTissue/combinedHealthyTissue_TPM_Log2_QQ_CovCor_Exp.RData"))
 load(file = paste0("CombinedHealthyTissue/combinedHealthyTissue_TPM_Log2_QQ_CovCor_Exp.RData"), verbose = T)
 
@@ -159,25 +160,75 @@ explainedVariance <- eigenValues * 100 / sum(eigenValues)
 
 
 combinedHealtyTissuePca <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)
-
+str(combinedHealtyTissuePca)
 #save(combinedHealtyTissuePca, file = paste0("CombinedHealthyTissue/combinedHealthyTissue_PCA.RData"))
+load(paste0("CombinedHealthyTissue/combinedHealthyTissue_PCA.RData"))
 
-medianSingularValue <- median(sqrt(eigenValues))
+ncol(expScale)
+head(colnames(expScale))
 
-omega <- optimal_SVHT_coef(nrow(expScale) / ncol(expScale), sigma_known = F)
+str(expScale[r,])
+
+
+
+
+numberGenes <- nrow(expScale)
+
+comp <- 1
+library(parallel)
+cronbachAlpha <- mclapply(as.list(1:2000), function(comp,numberGenes, expScale,combinedHealtyTissuePca){
+
+  geneVariance <- sapply(1:nrow(expScale), function(r){
+    var(expScale[r,] * combinedHealtyTissuePca$eigenVectors[r,comp])
+  })
+    return((numberGenes / (numberGenes - 1))*(1 - (sum(geneVariance) / var(t(expScale) %*% combinedHealtyTissuePca$eigenVectors[,comp]))))
+},  mc.cores = 20, numberGenes = numberGenes, expScale = expScale,combinedHealtyTissuePca = combinedHealtyTissuePca)
+
+cronbachAlpha <- unlist(cronbachAlpha)
+
+#save(cronbachAlpha, file = paste0("CombinedHealthyTissue/combinedHealthyTissue_PCA_cronbach.RData"))
+
+(numberComponentsToInclude <- min(which(cronbachAlpha2 < 0.7))-1)
+
+plot(cronbachAlpha2)
+abline(v = numberComponentsToInclude, lwd = 2, col = "darkred")
+dev.off()
+
+
+rpng(width = 1000, height = 1000)
+plot(cronbachAlpha[1:1000], cumsum(combinedHealtyTissuePca$explainedVariance)[1:1000], pch = 16, cex = 0.5, xlab = "Cronbach alpha", ylab = "Cumulative explained %", xlim = c(1,0))
+abline(v = cumsum(combinedHealtyTissuePca$explainedVariance)[numberComponentsToInclude], lwd = 2, col = "darkred")
+dev.off()
+
+
+
+medianSingularValue <- median(sqrt(combinedHealtyTissuePca$eigenValues))
+(2.858 * medianSingularValue)^2
+
+
+
+omega <- optimal_SVHT_coef(nrow(combinedHealtyTissuePca$eigenVectors) / nrow(combinedHealtyTissuePca$expPcs), sigma_known = F)
 threshold <- omega * medianSingularValue
-numberComponentsToInclude <- sum(sqrt(eigenValues) > threshold )
+#numberComponentsToInclude <- sum(sqrt(combinedHealtyTissuePca$eigenValues) > threshold )
 
-h <- cumsum(explainedVariance)[numberComponentsToInclude ]
+h <- cumsum(combinedHealtyTissuePca$explainedVariance)[numberComponentsToInclude ]
 
-
+sum(combinedHealtyTissuePca$explainedVariance[1:100])
 png(paste0("CombinedHealthyTissue/explainedVar.png"),width = 1000, height = 1000)
-plot(cumsum(explainedVariance), pch = 16, cex = 0.5, xlab = "Component", ylab = "Cumulative explained %")
+rpng(width = 1000, height = 1000)
+plot(cumsum(combinedHealtyTissuePca$explainedVariance), pch = 16, cex = 0.5, xlab = "Component", ylab = "Cumulative explained %")
 abline(h = h, lwd = 2, col = "darkred")
 text(0,h+1,numberComponentsToInclude, adj = 0)
 dev.off()
 
-#write.table(eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_eigenVec.txt.gz")), sep = "\t", quote = F, col.names = NA)
+rpng(width = 1000, height = 1000)
+plot(combinedHealtyTissuePca$eigenValues)
+abline(v = numberComponentsToInclude, lwd = 2, col = "darkred")
+dev.off()
+
+#write.table(combinedHealtyTissuePca$eigenValues, file = "tmp_eigenvalues.txt", sep = "\t", quote = F, col.names = F)
+
+#write.table(combinedHealtyTissuePca$eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_eigenVec.txt.gz")), sep = "\t", quote = F, col.names = NA)
 
 
 
