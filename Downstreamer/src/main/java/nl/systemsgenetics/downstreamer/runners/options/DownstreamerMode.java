@@ -32,6 +32,7 @@ public enum DownstreamerMode {
 
 	// Utilities relating to calculating co-regulation, use OptionsModeCoreg
 	COREG_RTOZSCORE("Convert correlation matrix with r values to Z-score matrix. Must be used together with -ns. --gwas Input can be .txt or binary."),
+	COREG_ZSCORETOR("Convert Z-score matrix to correlation matrix with r values. Must be used together with -ns. --gwas Input can be .txt or binary."),
 	COREG_CORRELATE_GENES("Create gene correlation matrix with 0 on diagonal. Use --gwas as input matrix (genes on row, tab separated), --output and --genes. Optionally use --corZscore to create Z-score matrix"),
 	COREG_REMOVE_CIS_COEXP("Set cis gene-gene correlation in the co-expression / co-regulation matrix to zero [not recommended]."),
 	COREG_PCA("Run a PCA on a matrix. Matrix must be binary."),

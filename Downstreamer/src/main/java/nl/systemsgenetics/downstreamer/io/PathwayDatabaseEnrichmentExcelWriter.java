@@ -5,7 +5,8 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.CellType;
@@ -25,7 +26,7 @@ import java.util.*;
 
 public class PathwayDatabaseEnrichmentExcelWriter {
 
-    private static final Logger LOGGER = Logger.getLogger(PathwayDatabaseEnrichmentExcelWriter.class);
+    private static final Logger LOGGER = LogManager.getLogger(PathwayDatabaseEnrichmentExcelWriter.class);
     private DownstreamerOptionsDeprecated options;
 
     public PathwayDatabaseEnrichmentExcelWriter(DownstreamerOptionsDeprecated options) {

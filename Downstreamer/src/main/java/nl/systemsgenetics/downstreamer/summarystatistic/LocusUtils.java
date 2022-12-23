@@ -6,7 +6,8 @@ import nl.systemsgenetics.downstreamer.summarystatistic.filters.RegionFilter;
 import nl.systemsgenetics.downstreamer.summarystatistic.filters.SummaryStatisticsRecordFilter;
 import nl.systemsgenetics.downstreamer.summarystatistic.filters.VariantIdFilter;
 import org.apache.commons.cli.MissingOptionException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.util.Ld;
 import org.molgenis.genotype.util.LdCalculatorException;
@@ -20,7 +21,7 @@ import java.util.*;
  */
 public class LocusUtils {
 
-    private static final Logger LOGGER = Logger.getLogger(LocusUtils.class);
+    private static final Logger LOGGER = LogManager.getLogger(LocusUtils.class);
 
 
     /**

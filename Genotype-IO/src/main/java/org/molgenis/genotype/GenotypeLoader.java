@@ -9,7 +9,8 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import static org.molgenis.genotype.GenotypeFileType.*;
 
 /**
@@ -18,7 +19,7 @@ import static org.molgenis.genotype.GenotypeFileType.*;
  */
 public class GenotypeLoader {
 
-	private static final Logger LOGGER = Logger.getLogger(GenotypeLoader.class);
+	private static final Logger LOGGER = LogManager.getLogger(GenotypeLoader.class);
 
 	public static RandomAccessGenotypeData load(String... paths) {
 		return load(Arrays.asList(paths));

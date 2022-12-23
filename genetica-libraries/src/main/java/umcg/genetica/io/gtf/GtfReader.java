@@ -13,7 +13,6 @@ import java.io.Reader;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
-import org.apache.log4j.Logger;
 import umcg.genetica.collections.intervaltree.PerChrIntervalTree;
 
 /**
@@ -27,8 +26,7 @@ public class GtfReader implements GffReaderInterface{
 	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
 	private static final Pattern SPACE_PATTERN = Pattern.compile(" ");
 	private static final Pattern SEMICOLON_PATTERN = Pattern.compile(";");
-	private static final Logger LOGGER = Logger.getLogger(GtfReader.class);
-	
+
 	private final BufferedReader gtfFileBufferedReader;
 
 	public GtfReader(File gftFile) throws FileNotFoundException{

@@ -4,6 +4,8 @@ import org.apache.commons.cli.*;
 
 import java.io.File;
 
+import static nl.systemsgenetics.downstreamer.runners.options.DownstreamerMode.*;
+
 public class OptionsModeCoreg extends OptionsBase {
 
     // TODO: refactor to input file
@@ -58,7 +60,7 @@ public class OptionsModeCoreg extends OptionsBase {
 
         OptionBuilder.withArgName("int");
         OptionBuilder.hasArg();
-        OptionBuilder.withDescription("For mode COREG_R_TO_ZSCORE: Specify the number of samples used to create the correlation matrix");
+        OptionBuilder.withDescription("For mode R_TO_ZSCORE | ZSCORE_TO_R | INVESTIGATE_NETWORK: Specify the number of samples used to create the correlation matrix");
         OptionBuilder.withLongOpt("numberSamplesUsedForCor");
         OPTIONS.addOption(OptionBuilder.create("ns"));
 
@@ -98,7 +100,7 @@ public class OptionsModeCoreg extends OptionsBase {
 
         try {
 
-            if (getMode() == DownstreamerMode.COREG_RTOZSCORE) {
+            if (getMode() == COREG_RTOZSCORE || getMode() == COREG_INVESTIGATE_NETWORK) {
                 if (!commandLine.hasOption("ns")) {
                     throw new ParseException("--numberSamplesUsedForCor not specified");
                 } else {
@@ -108,7 +110,7 @@ public class OptionsModeCoreg extends OptionsBase {
                 numberSamplesUsedForCor = 0;
             }
 
-            if (getMode() == DownstreamerMode.COREG_REMOVE_CIS_COEXP) {
+            if (getMode() == COREG_REMOVE_CIS_COEXP) {
                 cisWindow = Integer.parseInt(commandLine.getOptionValue("cwe", "250000"));
             } else {
                 cisWindow = 0;

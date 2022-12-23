@@ -3,7 +3,8 @@ package org.molgenis.genotype.trityper;
 import java.io.*;
 import java.util.HashSet;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
@@ -19,7 +20,7 @@ import org.molgenis.genotype.variant.id.GeneticVariantId;
  */
 public class TriTyperGenotypeWriter implements GenotypeWriter {
 	
-	private static Logger LOGGER = Logger.getLogger(TriTyperGenotypeWriter.class);
+	private static Logger LOGGER = LogManager.getLogger(TriTyperGenotypeWriter.class);
 	private final GenotypeData genotypeData;
 	
 	public TriTyperGenotypeWriter(GenotypeData genotypeData) {

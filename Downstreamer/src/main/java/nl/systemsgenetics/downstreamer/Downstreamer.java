@@ -7,8 +7,20 @@ import nl.systemsgenetics.downstreamer.runners.*;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
-import org.apache.log4j.*;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.PatternLayout;
+
+import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -26,8 +38,9 @@ public class Downstreamer {
     public static final DecimalFormat LARGE_INT_FORMAT = new DecimalFormat("###,###");
     public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
     public static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    public static final DateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
 
-    private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
+    private static final Logger LOGGER = LogManager.getLogger(Downstreamer.class);
     private static final String HEADER
 
 
@@ -46,6 +59,7 @@ public class Downstreamer {
      */
     public static void main(String[] args) throws InterruptedException {
 
+        System.out.println();
         System.out.println(HEADER);
         System.out.println();
         System.out.println("       --- Version: " + VERSION + " ---");
@@ -60,6 +74,7 @@ public class Downstreamer {
 
         System.out.flush(); //flush to make sure header is before errors
         Thread.sleep(25); //Allows flush to complete
+
 
         OptionsBase options;
 
@@ -88,26 +103,18 @@ public class Downstreamer {
 
         // Initialize logfile
         try {
-            // Append to the existing logfile
-            FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), true);
-            ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
-            Logger.getRootLogger().removeAllAppenders();
-            Logger.getRootLogger().addAppender(logFileAppender);
+
+            Level loggingLevel = Level.INFO;
+            if (options.isDebugMode()) {
+                loggingLevel = Level.DEBUG;
+                options.getDebugFolder().mkdir();
+            }
+
+            initializeLoggers(loggingLevel, options.getLogFile());
 
             // Create a seperator in the log, so seperate runs are easier to spot
-            LOGGER.info("\n");
-            LOGGER.info(StringUtils.repeat("-", 80));
             LOGGER.info("Downstreamer" + VERSION);
             LOGGER.info("Current date and time: " + startDateTime);
-
-            Logger.getRootLogger().addAppender(logConsoleInfoAppender);
-
-            if (options.isDebugMode()) {
-                Logger.getRootLogger().setLevel(Level.DEBUG);
-                options.getDebugFolder().mkdir();
-            } else {
-                Logger.getRootLogger().setLevel(Level.INFO);
-            }
 
         } catch (IOException e) {
             System.err.println("Failed to create logger: " + e.getMessage());
@@ -165,7 +172,7 @@ public class Downstreamer {
             // Execute the right mode
             switch (options.getMode()) {
                 // New main analyses
-                case REGRESS: DownstreamerRegressionEngineOjAlgo.run(new OptionsModeRegress(args)); break;
+                case REGRESS: DownstreamerRegressionEngine.run(new OptionsModeRegress(args)); break;
 
                 // Converter utils that share OptionsModeConvert()
                 case CONVERT_TXT: DownstreamerConverters.convertTxtToBin(new OptionsModeConvert(args)); break;
@@ -267,7 +274,68 @@ public class Downstreamer {
         currentDataTime = new Date();
         LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
         LOGGER.info(StringUtils.repeat("-", 80));
+        LOGGER.info("");
     }
+
+    public static void initializeLoggers(Level loggingLevel, File logFile) throws IOException {
+        Configurator.setRootLevel(loggingLevel);
+        LoggerContext context  = LoggerContext.getContext(false);
+        Configuration config = context.getConfiguration();
+
+        PatternLayout loggingLayoutFull = PatternLayout.newBuilder()
+                .withPattern("[%level] %d{ABSOLUTE} - %c{1} - %msg%n")
+                .build();
+
+        PatternLayout loggingLayoutReduced = PatternLayout.newBuilder()
+                .withPattern("[%level] %d{HH:mm:ss} - %msg%n")
+                .build();
+
+        // Stdout appender
+        ConsoleAppender stdOut = ConsoleAppender.newBuilder()
+                .setName("stdout")
+                .setLayout(loggingLayoutReduced)
+                .build();
+        stdOut.start();
+
+        // Log file appender
+        FileAppender file = FileAppender.newBuilder()
+                .setName("file")
+                .setLayout(loggingLayoutFull)
+                .withFileName(logFile.getCanonicalPath())
+                .build();
+        file.start();
+
+        // Make sure any existing loggers are removed
+        for (Appender appender : context.getRootLogger().getAppenders().values()) {
+            context.getRootLogger().removeAppender(appender);
+        }
+
+        // Add the appenders to the root logger
+        Logger rootLogger = context.getRootLogger();
+        LoggerConfig rootLoggerConfig = config.getRootLogger();
+
+        rootLoggerConfig.addAppender(stdOut, loggingLevel, null);
+        rootLoggerConfig.addAppender(file, loggingLevel, null);
+        config.addLogger(rootLogger.getName(), rootLoggerConfig);
+
+        context.updateLoggers(config);
+    }
+
+    public static double memUsage() {
+        Runtime rt = Runtime.getRuntime();
+        double used = (rt.totalMemory() - rt.freeMemory()) / 1024.0 / 1024 / 1024;
+        return used;
+    }
+
+    public static void logInfoMem(String message, Logger logger) {
+        logger.info("[mem: " + String.format("%,.2f", memUsage()) + "G] " + message);
+    }
+
+    public static String formatMsForLog(long ms) {
+        //return LOG_TIME_FORMAT.format(new Date(ms));
+        return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
+    }
+
 
     public static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
 
@@ -291,9 +359,5 @@ public class Downstreamer {
         }
     }
 
-    public static String formatMsForLog(long ms) {
-        //return LOG_TIME_FORMAT.format(new Date(ms));
-        return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
-    }
 
 }

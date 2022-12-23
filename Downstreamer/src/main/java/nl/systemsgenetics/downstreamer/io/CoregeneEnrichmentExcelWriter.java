@@ -19,7 +19,8 @@ import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprec
 import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.CellType;
@@ -44,7 +45,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 @Deprecated
 public class CoregeneEnrichmentExcelWriter {
 
-	private static final Logger LOGGER = Logger.getLogger(CoregeneEnrichmentExcelWriter.class);
+	private static final Logger LOGGER = LogManager.getLogger(CoregeneEnrichmentExcelWriter.class);
 
 	public static void write(
 			final DownstreamerOptionsDeprecated options,

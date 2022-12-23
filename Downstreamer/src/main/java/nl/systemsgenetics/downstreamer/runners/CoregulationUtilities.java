@@ -13,15 +13,19 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import me.tongfei.progressbar.ProgressBar;
+import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeCoreg;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.PcaColt;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.PearsonRToZscoreBinned;
 import umcg.genetica.math.stats.ZScores;
+
 
 /**
  *
@@ -29,73 +33,123 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class CoregulationUtilities {
 
-	private static final Logger LOGGER = Logger.getLogger(CoregulationUtilities.class);
+	private static final Logger LOGGER = LogManager.getLogger(CoregulationUtilities.class);
 	
 	/**
 	 * Take a co-regulation matrix and for each gene determine the number of connections that gene has. Reports at
 	 * bonferoni significant z-scores, as well as the sumchisqr for each gene.
-	 * A bit redundant with above, but didnt realise it was implemented already :'(
 	 */
 	public static void coregInvestigateNetwork(OptionsModeCoreg options) throws Exception {
-		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
-		LOGGER.info("Loaded " + genes.size() + " genes");
 
-		DoubleMatrixDataset<String, String> corMatrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		int df = options.getNumberSamplesUsedForCor()-2;
+		logInfoMem("Hello there.");
 
-		List<String> genesToKeep = corMatrix.getRowObjects();
-		LOGGER.info("Read " + genesToKeep.size() + " genes in correlation matrix");
-		genesToKeep.retainAll(genes.keySet());
-		LOGGER.info("Retained " + genesToKeep.size() + " genes that overlap with --genes file");
-		corMatrix = corMatrix.viewSelection(genesToKeep, genesToKeep);
+		DoubleMatrixDataset<String, String> zScoreMatrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		logInfoMem("Loaded " + zScoreMatrix.rows() + " rows x " + zScoreMatrix.columns() + " columns");
 
-		if (!corMatrix.getHashRows().keySet().containsAll(corMatrix.getHashCols().keySet())) {
+		if (options.getGeneInfoFile() != null) {
+			LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+			LOGGER.info("Loaded " + genes.size() + " genes");
+
+			List<String> genesToKeep = zScoreMatrix.getRowObjects();
+			LOGGER.info("Read " + genesToKeep.size() + " genes in correlation matrix");
+			genesToKeep.retainAll(genes.keySet());
+
+			LOGGER.info("Retained " + genesToKeep.size() + " genes that overlap with --genes file");
+			zScoreMatrix = zScoreMatrix.viewSelection(genesToKeep, genesToKeep);
+
+			if (!genes.keySet().containsAll(zScoreMatrix.getHashRows().keySet())) {
+				throw new Exception("Not all genes Co-expression matrix are found in gene mapping file");
+			}
+		}
+
+		if (!zScoreMatrix.getHashRows().keySet().containsAll(zScoreMatrix.getHashCols().keySet())) {
 			throw new Exception("Co-expression matrix is not squared with same row and col names");
 		}
 
-		if (!genes.keySet().containsAll(corMatrix.getHashRows().keySet())) {
-			throw new Exception("Not all genes Co-expression matrix are found in gene mapping file");
-		}
+		final int genesInMatrix = zScoreMatrix.rows();
 
-		final int genesInMatrix = corMatrix.rows();
-		Set<String> colnames = new HashSet<>();
-		colnames.add("sum_chi_sqr");
+		// Calculate z-scores back to pearson R
+		PearsonRToZscoreBinned zToR = new PearsonRToZscoreBinned(1000000, 12);
+
+		List<String> colnames = new ArrayList<>();
+		colnames.add("z_mean");
+		colnames.add("z2_sum");
+		colnames.add("z2_mean");
+		
 		colnames.add("z_nominal");
 		colnames.add("z_bonf_sig");
+		
+		colnames.add("r_mean");
+		colnames.add("r2_sum");
+		colnames.add("r2_mean");
+		colnames.add("r2adj_sum");
 
 		double zNominal = Math.abs(ZScores.pToZTwoTailed(0.05));
 		double zBonfSig = Math.abs(ZScores.pToZTwoTailed(0.05/genesInMatrix));
 
-		DoubleMatrixDataset<String, String> output = new DoubleMatrixDataset<>(corMatrix.getRowObjects(), colnames);
+		DoubleMatrixDataset<String, String> output = new DoubleMatrixDataset<>(zScoreMatrix.getRowObjects(), colnames);
 
+		ProgressBar pb = new ProgressBar("Coregulation summary stats", genesInMatrix);
 		for (int i = 0; i < genesInMatrix; ++i) {
 
-			double curSumChiSqr = 0;
+			double curSumZ = 0;
+			double curSumZ2 = 0;
 			double curZNominal = 0;
 			double curZBonfSig = 0;
+			double curSumR = 0;
+			double curSumR2 = 0;
+			double curSumR2adj = 0;
 
 			for(int j =0 ; j < genesInMatrix; j++) {
 
-				double curVal = corMatrix.getElementQuick(i, j);
-				curSumChiSqr += (curVal * curVal);
+				double curZ = zScoreMatrix.getElementQuick(i, j);
+				curSumZ = curSumZ + curZ;
+				curSumZ2 += (curZ * curZ);
 
-				if (Math.abs(curVal) > zNominal) {
+				if (Math.abs(curZ) > zNominal) {
 					curZNominal ++;
 				}
 
-				if (Math.abs(curVal) > zBonfSig) {
+				if (Math.abs(curZ) > zBonfSig) {
 					curZBonfSig ++;
 				}
 
+				double curR = zToR.lookupRforZscore(curZ);
+
+				if (Double.isNaN(curR)) {
+					LOGGER.debug("point");
+				}
+
+				curSumR = curSumR + curR;
+				double curR2 = curR * curR;
+				curSumR2 = curSumR2 + (curR2);
+
+				double curR2adj = curR2 - ((1-curR2) / df);
+				curSumR2adj = curSumR2adj + curR2adj;
 			}
 
-			output.setElementQuick(i, 0, curSumChiSqr);
-			output.setElementQuick(i, 1, curZNominal);
-			output.setElementQuick(i, 2, curZBonfSig);
+			output.setElementQuick(i, 0, curSumZ / genesInMatrix);
+			output.setElementQuick(i, 1, curSumZ2);
+			output.setElementQuick(i, 2, curSumZ2 / genesInMatrix);
+			output.setElementQuick(i, 3, curZNominal);
+			output.setElementQuick(i, 4, curZBonfSig);
+			output.setElementQuick(i, 5, curSumR / genesInMatrix);
+			output.setElementQuick(i, 6, curSumR2);
+			output.setElementQuick(i, 7, curSumR2 / genesInMatrix);
+			output.setElementQuick(i, 8, curSumR2adj);
+
+			pb.step();
 		}
 
+		pb.close();
 		LOGGER.info("Done, saving output");
-		output.save(options.getOutputBasePath() + ".degree.tsv");
+		output.save(options.getOutputBasePath() + ".network_properties.tsv");
 
+	}
+
+	private static void logInfoMem(String msg) {
+		Downstreamer.logInfoMem(msg, LOGGER);
 	}
 
 	/**
@@ -235,6 +289,38 @@ public class CoregulationUtilities {
 
 		LOGGER.info("Correlation matrix saved to: " + options.getOutputBasePath() + ".dat");
 	}
+
+
+	/**
+	 * Converts a matrix of Pearson R values to z-scores. Diagonal of this
+	 * matrix is set to 1.
+	 *
+	 * @param options
+	 * @throws FileNotFoundException
+	 * @throws Exception
+	 */
+	public static void coregConvertZscoreToR(OptionsModeCoreg options) throws FileNotFoundException, Exception {
+		DoubleMatrixDataset<String, String> corMatrix;
+
+		if (options.getGwasZscoreMatrixPath().endsWith(".txt") || options.getGwasZscoreMatrixPath().endsWith("txt.gz")) {
+			corMatrix = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
+		} else {
+			corMatrix = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
+		}
+
+		PearsonRToZscoreBinned tmp = new PearsonRToZscoreBinned((int)20, options.getNumberSamplesUsedForCor());
+		tmp.inplaceZToR(corMatrix);
+		LOGGER.info("Converted Z-scores to correlations");
+
+		for (int i = 0; i < corMatrix.columns(); ++i) {
+			corMatrix.setElementQuick(i, i, 1);
+		}
+
+		corMatrix.saveBinary(options.getOutputBasePath());
+
+		LOGGER.info("Correlation matrix saved to: " + options.getOutputBasePath() + ".datg");
+	}
+
 
 	/**
 	 * Load a co-regulation matrix and set any gene-gene correlation between

@@ -7,7 +7,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 
@@ -20,7 +21,7 @@ import org.molgenis.genotype.GenotypeDataException;
 public class Utils {
 
 	public static final Map<Character, Character> COMPLEMENTAL_NUCLEOTIDES = new HashMap<Character, Character>();
-	private static final Logger LOGGER = Logger.getLogger(GenotypeData.class);
+	private static final Logger LOGGER = LogManager.getLogger(GenotypeData.class);
 
 	static {
 		COMPLEMENTAL_NUCLEOTIDES.put('A', 'T');

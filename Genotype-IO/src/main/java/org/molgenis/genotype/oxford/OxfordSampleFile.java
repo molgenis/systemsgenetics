@@ -19,7 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import static org.molgenis.genotype.GenotypeData.SAMPLE_MISSING_RATE_FLOAT;
 
@@ -36,7 +37,7 @@ import au.com.bytecode.opencsv.CSVReader;
  */
 public class OxfordSampleFile {
 
-	private static final Logger LOGGER = Logger.getLogger(OxfordSampleFile.class);
+	private static final Logger LOGGER = LogManager.getLogger(OxfordSampleFile.class);
 	private final File sampleFile;
 	private final Map<String, SampleAnnotation> sampleAnnotations;
 	private final List<Sample> samples;

@@ -33,7 +33,8 @@ import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -61,7 +62,7 @@ import umcg.genetica.math.stats.ZScores;
 @Deprecated
 public class PathwayEnrichmentsOld {
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptionsDeprecated.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerOptionsDeprecated.class);
 
 	public static HashMap<PathwayDatabase, DoubleMatrixDataset<String, String>> performEnrichmentAnalysis(final DoubleMatrixDataset<String, String> geneZscores, final DoubleMatrixDataset<String, String> geneZscoresNullGwas, final HashSet<String> genesWithPvalue, final List<PathwayDatabase> pathwayDatabases, List<Gene> genes, final String outputBasePath, final HashSet<String> hlaGenesToExclude, final int nrSampleToUseForCorrelation, final int nrSamplesToUseForNullBetas, final double genePruningR, final boolean ignoreGeneCorrelations, final boolean forceNormalGenePvalues, final boolean forceNormalPathwayPvalues, final int correlationWindow) throws IOException, Exception {
 

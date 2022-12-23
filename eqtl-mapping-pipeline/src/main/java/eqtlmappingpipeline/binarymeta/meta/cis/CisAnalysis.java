@@ -289,7 +289,7 @@ public class CisAnalysis extends MetaAnalyze {
             // open binary file
             String filename = m_settings.getOutput() + m_settings.getDatasetnames().get(d) + "-eQTLs.dat";
             if (perm > 0) {
-                filename = m_settings.getOutput() + m_settings.getDatasetnames().get(d) + "-PermutedDataPermutationRound-" + perm + ".dat";;
+                filename = m_settings.getOutput() + m_settings.getDatasetnames().get(d) + "-PermutedDataPermutationRound-" + perm + ".dat";
             }
 
             System.out.println("Loading file: " + filename);

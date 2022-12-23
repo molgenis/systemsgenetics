@@ -11,7 +11,8 @@ import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.io.PathwayDatabaseEnrichmentExcelWriter;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.FisherExactTest;
@@ -22,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
 public class PathwayDatabaseEnrichments {
-    private static final Logger LOGGER = Logger.getLogger(PathwayDatabaseEnrichments.class);
+    private static final Logger LOGGER = LogManager.getLogger(PathwayDatabaseEnrichments.class);
 
     private static final int minimalGeneCountInPathway = 10;
 

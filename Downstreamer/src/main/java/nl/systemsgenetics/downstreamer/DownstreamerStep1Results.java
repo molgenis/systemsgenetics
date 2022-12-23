@@ -7,11 +7,9 @@ package nl.systemsgenetics.downstreamer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.List;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
-import nl.systemsgenetics.downstreamer.gene.Gene;
-import org.apache.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -25,7 +23,7 @@ public class DownstreamerStep1Results {
 	private final DoubleMatrixDataset<String, String> geneMaxSnpZscore;
 	private final DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas;
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerStep1Results.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerStep1Results.class);
 
 	public DownstreamerStep1Results(DoubleMatrixDataset<String, String> genePvalues, DoubleMatrixDataset<String, String> genePvaluesNullGwas, DoubleMatrixDataset<String, String> geneVariantCount, DoubleMatrixDataset<String, String> geneMaxSnpZscore, DoubleMatrixDataset<String, String> geneMaxSnpZscoreNullGwas) {
 		this.genePvalues = genePvalues;

@@ -41,7 +41,8 @@ import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprec
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
@@ -58,7 +59,7 @@ public class GenePvalueCalculator {
 
 	public static final int MAX_ROUND_1_RESCUE = 10000000;
 
-	private static final Logger LOGGER = Logger.getLogger(GenePvalueCalculator.class);
+	private static final Logger LOGGER = LogManager.getLogger(GenePvalueCalculator.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
 	private static final int PERMUTATION_STEP = 1000;
 	private static final int MIN_PERMUTATIONS = 10000;

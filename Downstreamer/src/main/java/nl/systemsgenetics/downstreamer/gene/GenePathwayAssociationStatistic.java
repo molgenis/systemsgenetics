@@ -1,5 +1,6 @@
 package nl.systemsgenetics.downstreamer.gene;
 
+@Deprecated // TODO: If this ends up being used, make it integrate with LinearRegressionResult
 public class GenePathwayAssociationStatistic {
     private String pathway;
     private String gene;

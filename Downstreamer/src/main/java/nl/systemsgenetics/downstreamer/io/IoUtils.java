@@ -14,7 +14,8 @@ import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprec
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.runners.options.GenotypeFileProvider;
 import nl.systemsgenetics.downstreamer.summarystatistic.LdScore;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
@@ -34,7 +35,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 public class IoUtils {
 
-	private static final Logger LOGGER = Logger.getLogger(IoUtils.class);
+	private static final Logger LOGGER = LogManager.getLogger(IoUtils.class);
 	private static Map<String, ChrPosTreeMap<LeadVariant>> leadVariantsPerTraitCache = null;
 	private static class LeadVariantFileNameFilter implements FilenameFilter {
 
@@ -184,10 +185,38 @@ public class IoUtils {
 		String[] nextLine;
 		while ((nextLine = reader.readNext()) != null) {
 
-			if (!genes.keySet().contains(nextLine[1])) {
+			if (!genes.containsKey(nextLine[1])) {
 				genes.put(nextLine[1], new ArrayList<>());
 			}
 			genes.get(nextLine[1]).add(new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]));
+
+		}
+
+		return genes;
+
+	}
+
+	public static LinkedHashMap<String, List<Gene>> readGenesAsChrArmMap(File geneFile) throws IOException {
+
+		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+		CSVReader reader = null;
+		if (geneFile.getName().endsWith(".gz")) {
+			reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(geneFile)))))).withSkipLines(1).withCSVParser(parser).build();
+		} else {
+			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
+		}
+
+		final LinkedHashMap<String, List<Gene>> genes = new LinkedHashMap<>();
+
+		String[] nextLine;
+		while ((nextLine = reader.readNext()) != null) {
+
+			Gene curGene = new Gene(nextLine[0], nextLine[1], Integer.parseInt(nextLine[2]), Integer.parseInt(nextLine[3]), nextLine[5], nextLine[6]);
+
+			if (!genes.containsKey(curGene.getChrAndArm())) {
+				genes.put(curGene.getChrAndArm(), new ArrayList<>());
+			}
+			genes.get(curGene.getChrAndArm()).add(curGene);
 
 		}
 

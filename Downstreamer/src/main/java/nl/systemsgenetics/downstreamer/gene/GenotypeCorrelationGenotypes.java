@@ -9,7 +9,8 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -21,7 +22,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 @Deprecated
 public class GenotypeCorrelationGenotypes implements GenotypeCorrelationSource {
 
-	private static final Logger LOGGER = Logger.getLogger(GenotypeCorrelationGenotypes.class);
+	private static final Logger LOGGER = LogManager.getLogger(GenotypeCorrelationGenotypes.class);
 	private static final DoubleMatrixDataset<String, String> EMPTY_DATASET = new DoubleMatrixDataset<>(0, 0);
 
 	private final RandomAccessGenotypeData referenceGenotypes;

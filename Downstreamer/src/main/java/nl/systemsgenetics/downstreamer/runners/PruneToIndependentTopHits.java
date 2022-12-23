@@ -18,7 +18,8 @@ import nl.systemsgenetics.downstreamer.runners.options.GenotypeFileProvider;
 import nl.systemsgenetics.downstreamer.summarystatistic.Locus;
 import nl.systemsgenetics.downstreamer.summarystatistic.LocusUtils;
 import nl.systemsgenetics.downstreamer.summarystatistic.SummaryStatisticRecord;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -33,7 +34,7 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class PruneToIndependentTopHits {
 
-	private static final Logger LOGGER = Logger.getLogger(PruneToIndependentTopHits.class);
+	private static final Logger LOGGER = LogManager.getLogger(PruneToIndependentTopHits.class);
 
 	public static void prune(final DownstreamerOptionsDeprecated options) throws Exception {
 		prune(options, null);

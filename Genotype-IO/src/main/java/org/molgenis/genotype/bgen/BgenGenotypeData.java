@@ -7,7 +7,8 @@ package org.molgenis.genotype.bgen;
 import com.github.luben.zstd.Zstd;
 import com.google.common.math.IntMath;
 //import io.airlift.compress.zstd.ZstdDecompressor;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.*;
 import org.molgenis.genotype.annotation.Annotation;
 import org.molgenis.genotype.annotation.SampleAnnotation;
@@ -57,7 +58,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private static final int[] FIRST_BYTE_MASK = {0, 128, 192, 224, 240, 248, 252, 254, 255};
 
 	private static final double DEFAULT_MINIMUM_POSTERIOR_PROBABILITY_TO_CALL = 0.4f;
-	private static final Logger LOGGER = Logger.getLogger(BgenGenotypeData.class);
+	private static final Logger LOGGER = LogManager.getLogger(BgenGenotypeData.class);
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 
 	private final RandomAccessFile bgenFile;

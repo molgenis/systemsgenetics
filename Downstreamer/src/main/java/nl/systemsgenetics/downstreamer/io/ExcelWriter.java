@@ -26,7 +26,8 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
 import static nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities.getDistanceGeneToTopCisSnpPerTrait;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.*;
@@ -47,7 +48,7 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class ExcelWriter {
 
-	private static final Logger LOGGER = Logger.getLogger(ExcelWriter.class);
+	private static final Logger LOGGER = LogManager.getLogger(ExcelWriter.class);
 
 	private ExcelStyles styles;
 

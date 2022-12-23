@@ -83,9 +83,9 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.ojalgo</groupId>
-			<artifactId>ojalgo</artifactId>
-			<version>52.0.1</version>
+			<groupId>org.jblas</groupId>
+			<artifactId>jblas</artifactId>
+			<version>1.2.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.samtools</groupId>
@@ -125,7 +125,12 @@
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
-			<version>2.17.2</version>
+			<version>2.19.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>2.19.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
@@ -140,6 +145,14 @@
 				<exclusion>
 					<groupId>com.facebook.presto.hive</groupId>
 					<artifactId>hive-apache</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>log4j-core</groupId>
+					<artifactId>log4j-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>log4j-api</groupId>
+					<artifactId>log4j-api</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>

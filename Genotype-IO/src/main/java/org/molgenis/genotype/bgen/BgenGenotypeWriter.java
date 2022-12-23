@@ -18,7 +18,8 @@ import java.util.stream.IntStream;
 
 import com.github.luben.zstd.Zstd;
 import com.google.common.collect.Iterators;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.*;
 import org.molgenis.genotype.oxford.OxfordSampleFileWriter;
 import org.molgenis.genotype.util.Utils;
@@ -31,7 +32,7 @@ import org.molgenis.genotype.variant.NotASnpException;
  */
 public class BgenGenotypeWriter implements GenotypeWriter {
 
-	private static final Logger LOGGER = Logger.getLogger(BgenGenotypeWriter.class);
+	private static final Logger LOGGER = LogManager.getLogger(BgenGenotypeWriter.class);
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 	private final GenotypeData genotypeData;
 	private final double maxValue;
