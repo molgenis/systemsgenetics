@@ -126,11 +126,11 @@ dev.off()
 
 #vstExpCovCorOld <- vstExpCovCor
 sort(tissueClasses)
-tissue <- "Whole Blood"
+tissue <- "Kidney"
 
 numberOfComps <- lapply(tissueClasses, function(tissue){
-  
 
+  
   
   load(file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
   
@@ -153,6 +153,8 @@ numberOfComps <- lapply(tissueClasses, function(tissue){
   
   nrSamples <- ncol(expScale)
   
+
+  
   expSvd <- svd(expScale, nu = nrSamples, nv = min(nrSamples, 50))
   
   
@@ -168,29 +170,83 @@ numberOfComps <- lapply(tissueClasses, function(tissue){
   explainedVariance <- eigenValues * 100 / sum(eigenValues)
   
   
+  numberGenes <- nrow(expScale)
+  
+  str(cumsum(explainedVariance))
+  plot(cumsum(explainedVariance))
+  dev.off()
+  
+  (numberComponentsToInclude <- which.max(cumsum(explainedVariance) >= 80))
+  cumsum(explainedVariance)[numberComponentsToInclude]
+    
+    
+  cronbachAlpha <- lapply(as.list(1:min(2000, nrSamples)), function(comp,numberGenes, expScale,eigenVectors){
+    
+    geneVariance <- sapply(1:nrow(expScale), function(r){
+      var(expScale[r,] * eigenVectors[r,comp])
+    })
+    return((numberGenes / (numberGenes - 1))*(1 - (sum(geneVariance) / var(t(expScale) %*% eigenVectors[,comp]))))
+  }, numberGenes = numberGenes, expScale = expScale,eigenVectors = eigenVectors)
+  #,  mc.cores = 20
+  cronbachAlpha <- unlist(cronbachAlpha)
+  
+  cronbachAlpha <- cronbachAlpha[cronbachAlpha>0]
+  
+  (numberComponentsToInclude <- min(which(cronbachAlpha < 0.7))-1)
+  eigenValues[numberComponentsToInclude]
+  
+  tail(cronbachAlpha)
+  rpng(width = 1000, height = 1000)
+  #png(paste0("perTissueNormalization/vstCovCorPca/plots/",make.names(tissue),"_explainedVar.png"),width = 1000, height = 1000)
+  plot(cronbachAlpha, cumsum(explainedVariance[1:length(cronbachAlpha)]), pch = 16, cex = 0.5, xlab = "Cronbach", ylab = "Cumulative explained %", main = tissue, xlim = c(1,max(0,min(cronbachAlpha))))
+  abline(h = cumsum(explainedVariance[1:length(cronbachAlpha)])[numberComponentsToInclude], lwd = 2, col = "darkred")
+  #text(0,h+1,numberComponentsToInclude, adj = 0)
+  dev.off()
+  
+  min(eigenValues[1:500])
+  min(cronbachAlpha[1:500])
+  
+  rpng(width = 1000, height = 1000)
+  plot(cronbachAlpha, eigenValues[1:length(cronbachAlpha)], pch = 16, cex = 0.5, xlab = "Cronbach alpha", ylab = "Eigenvalues", xlim = c(1,min(cronbachAlpha)), log='y')
+  abline(h = eigenValues[numberComponentsToInclude], lwd = 2, col = "darkred")
+  dev.off()
   
   
-  medianSingularValue <- median(expSvd$d)
+  rpng(width = 1000, height = 1000)
+  plot(eigenValues, pch = 16, cex = 1, ylab = "Eigenvalues", log='y')
+  abline(h = eigenValues[numberComponentsToInclude], lwd = 2, col = "darkred")
+  dev.off()
   
-  omega <- optimal_SVHT_coef(ncol(expScale) / nrow(expScale), sigma_known = F)
-  threshold <- omega * medianSingularValue
-  numberComponentsToInclude <- sum(expSvd$d > threshold )
+  sum(!eigenValues >= 0.001)
+  eigenValues2 <- eigenValues[eigenValues >= 0.001]
+  rpng(width = 1000, height = 1000)
+  plot(eigenValues2, pch = 16, cex = 1, ylab = "Eigenvalues", log='y')
+  abline(h = 3.3, lwd = 2, col = "navyblue")
+  dev.off()
   
-  cat(paste0(tissue," ",numberComponentsToInclude) , "\n")
-  h <- cumsum(explainedVariance)[numberComponentsToInclude ]
+  
+  
+  #medianSingularValue <- median(expSvd$d)
+  
+  #omega <- optimal_SVHT_coef(ncol(expScale) / nrow(expScale), sigma_known = F)
+  #threshold <- omega * medianSingularValue
+  #numberComponentsToInclude <- sum(expSvd$d > threshold )
+  
+  #cat(paste0(tissue," ",numberComponentsToInclude) , "\n")
+  #h <- cumsum(explainedVariance)[numberComponentsToInclude ]
   
   #rpng(width = 1000, height = 1000)
-  png(paste0("perTissueNormalization/vstCovCorPca/plots/",make.names(tissue),"_explainedVar.png"),width = 1000, height = 1000)
-  plot(cumsum(explainedVariance), pch = 16, cex = 0.5, xlab = "Component", ylab = "Cumulative explained %", main = tissue)
-  abline(h = h, lwd = 2, col = "darkred")
-  text(0,h+1,numberComponentsToInclude, adj = 0)
-  dev.off()
+  #png(paste0("perTissueNormalization/vstCovCorPca/plots/",make.names(tissue),"_explainedVar.png"),width = 1000, height = 1000)
+  #plot(cumsum(explainedVariance), pch = 16, cex = 0.5, xlab = "Component", ylab = "Cumulative explained %", main = tissue)
+  #abline(h = h, lwd = 2, col = "darkred")
+  #text(0,h+1,numberComponentsToInclude, adj = 0)
+  #dev.off()
   
   
   write.table(eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),"_eigenVec.txt.gz")), sep = "\t", quote = F, col.names = NA)
   
   
-  tissueVstPca <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)
+  tissueVstPca <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance, cronbachAlpha = cronbachAlpha)
   
   save(tissueVstPca, file = paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),".RData"))
   return(numberComponentsToInclude)

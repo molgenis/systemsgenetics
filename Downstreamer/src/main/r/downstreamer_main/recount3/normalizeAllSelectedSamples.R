@@ -196,9 +196,17 @@ dev.off()
 
 
 rpng(width = 1000, height = 1000)
-plot(cronbachAlpha[1:1000], cumsum(combinedHealtyTissuePca$explainedVariance)[1:1000], pch = 16, cex = 0.5, xlab = "Cronbach alpha", ylab = "Cumulative explained %", xlim = c(1,0))
-abline(v = cumsum(combinedHealtyTissuePca$explainedVariance)[numberComponentsToInclude], lwd = 2, col = "darkred")
+plot(cronbachAlpha[1:1000], cumsum(combinedHealtyTissuePca$explainedVariance)[1:1000], pch = 16, cex = 0.5, xlab = "Cronbach alpha", ylab = "Cumulative explained %", xlim = c(1,min(cronbachAlpha[1:1000])))
+abline(h = cumsum(combinedHealtyTissuePca$explainedVariance)[numberComponentsToInclude], lwd = 2, col = "darkred")
 dev.off()
+
+
+rpng(width = 1000, height = 1000)
+plot(cronbachAlpha[1:1000], combinedHealtyTissuePca$eigenValues[1:1000], pch = 16, cex = 0.5, xlab = "Cronbach alpha", ylab = "Eigenvalues", xlim = c(1,min(cronbachAlpha[1:1000])), log='y')
+abline(h = combinedHealtyTissuePca$eigenValues[numberComponentsToInclude], lwd = 2, col = "darkred")
+dev.off()
+
+
 
 
 
