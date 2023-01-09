@@ -63,7 +63,7 @@ public class DownstreamerRegressionEngine {
             throw new Exception("Eigen decomp of sigma is not yet supported here, please pre-compute and use -u -l");
         } else {
             U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
-            logInfoMem("Dim U:" + U.rows() + "x" + U.columns());
+            logInfoMem("Dim U:" + U.rows() + "x" + U.columns());	
 
             L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
             logInfoMem("Dim L:" + L.rows() + "x" + L.columns());
@@ -177,11 +177,11 @@ public class DownstreamerRegressionEngine {
      * Runs DS regression if eigendecompostion has been pre-computed. These are given by U and L. Expects that
      * these still need to be filtered. If they are pre-selected make sure to set percentageOfVariance to 1.
      *
-     * @param X
-     * @param Y
-     * @param C
-     * @param U
-     * @param L
+     * @param X pathway scores 
+     * @param Y trait gene scores 
+     * @param C covariates on columns genes on rows
+     * @param U eigenvectors that describe gene-gene correlations
+     * @param L single column with on each row the eigenvalue of a component
      * @param percentageOfVariance
      * @param fitIntercept
      * @return
@@ -318,7 +318,7 @@ public class DownstreamerRegressionEngine {
      * @param fitIntercept Should an intercept term be fitted
      * @return double[] with beta and standard erros in the form  [beta_1, beta_2 ... beta_x, se_1, se_2 ... se_x]
      */
-    public static double[] downstreamerRegressionPrecomp(DoubleMatrix2D XHat, DoubleMatrix2D YHat, DoubleMatrix1D LHatInv, boolean fitIntercept) {
+    private static double[] downstreamerRegressionPrecomp(DoubleMatrix2D XHat, DoubleMatrix2D YHat, DoubleMatrix1D LHatInv, boolean fitIntercept) {
 
         // TODO: DoubleMatrix2D
         double[] results = new double[XHat.columns() * 2];
@@ -390,7 +390,7 @@ public class DownstreamerRegressionEngine {
      * @param X Predictors to regress, rows are samples. Should be in eigenvectors space
      * @param LHatInv Matrix containing the eigenvalues.
      */
-    public static void inplaceDownstreamerRegressionResidualsPrecomp(DoubleMatrix2D Y, DoubleMatrix2D X, DoubleMatrix1D LHatInv) {
+    private static void inplaceDownstreamerRegressionResidualsPrecomp(DoubleMatrix2D Y, DoubleMatrix2D X, DoubleMatrix1D LHatInv) {
 
         DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X);
 
@@ -416,7 +416,7 @@ public class DownstreamerRegressionEngine {
      * @param Y Response variables, rows are samples.
      * @param X Predictors to regress, rows are samples.
      */
-    public static void inplaceDetermineOlsRegressionResiduals(DoubleMatrixDataset Y, DoubleMatrixDataset X) {
+    private static void inplaceDetermineOlsRegressionResiduals(DoubleMatrixDataset Y, DoubleMatrixDataset X) {
 
         // Build design matrix with intercept
         DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X.getMatrix());
@@ -447,7 +447,7 @@ public class DownstreamerRegressionEngine {
     /**
      * Checks for NA values, returns an index of which rows have NA.
      */
-    public static Set<String> checkNaRowWise(DoubleMatrixDataset<String, String> input) {
+    private static Set<String> checkNaRowWise(DoubleMatrixDataset<String, String> input) {
 
         Set<String> rowsWithNa = new HashSet<>();
 

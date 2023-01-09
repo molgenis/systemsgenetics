@@ -59,11 +59,6 @@ public class OptionsBase {
 
     public OptionsBase(String[] args) throws ParseException {
 
-        // If just want help, this avoids confusing errors
-        if (args[0].equals("-h") && args.length == 1|| args[0].equals("--help") && args.length == 1) {
-            throw new ParseException("-h provided");
-        }
-
         // Parse arguments
         final CommandLineParser parser = new RelaxedParser();
         final CommandLine commandLine = parser.parse(OPTIONS, args, false);
