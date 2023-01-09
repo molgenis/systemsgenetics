@@ -78,7 +78,7 @@ public class Downstreamer {
         OptionsBase options;
 
         // If no arguments are provided print help
-        if (args.length == 0) {
+        if (args.length == 0 || args[0].equals("-h") && args.length == 1|| args[0].equals("--help") && args.length == 1) {
             OptionsBase.printHelp();
             return;
         }

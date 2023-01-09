@@ -126,11 +126,11 @@ dev.off()
 
 #vstExpCovCorOld <- vstExpCovCor
 sort(tissueClasses)
-tissue <- "Whole Blood"
+tissue <- "Prostate"
 
 numberOfComps <- lapply(tissueClasses, function(tissue){
-  
 
+  
   
   load(file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
   
@@ -153,6 +153,8 @@ numberOfComps <- lapply(tissueClasses, function(tissue){
   
   nrSamples <- ncol(expScale)
   
+
+  
   expSvd <- svd(expScale, nu = nrSamples, nv = min(nrSamples, 50))
   
   
@@ -168,22 +170,48 @@ numberOfComps <- lapply(tissueClasses, function(tissue){
   explainedVariance <- eigenValues * 100 / sum(eigenValues)
   
   
+  numberGenes <- nrow(expScale)
   
   
-  medianSingularValue <- median(expSvd$d)
+  numberComponentsToInclude <- which.max(cumsum(explainedVariance) >= 80)
+  #cumsum(explainedVariance)[numberComponentsToInclude]
+    
+  #   
+  # cronbachAlpha <- lapply(as.list(1:min(2000, nrSamples)), function(comp,numberGenes, expScale,eigenVectors){
+  #   
+  #   geneVariance <- sapply(1:nrow(expScale), function(r){
+  #     var(expScale[r,] * eigenVectors[r,comp])
+  #   })
+  #   return((numberGenes / (numberGenes - 1))*(1 - (sum(geneVariance) / var(t(expScale) %*% eigenVectors[,comp]))))
+  # }, numberGenes = numberGenes, expScale = expScale,eigenVectors = eigenVectors)
+  # #,  mc.cores = 20
+  # cronbachAlpha <- unlist(cronbachAlpha)
+  # 
+  # cronbachAlpha <- cronbachAlpha[cronbachAlpha>0]
+  # 
+  # (numberComponentsToInclude <- min(which(cronbachAlpha < 0.7))-1)
   
-  omega <- optimal_SVHT_coef(ncol(expScale) / nrow(expScale), sigma_known = F)
-  threshold <- omega * medianSingularValue
-  numberComponentsToInclude <- sum(expSvd$d > threshold )
+  
+  #medianSingularValue <- median(expSvd$d)
+  
+  #omega <- optimal_SVHT_coef(ncol(expScale) / nrow(expScale), sigma_known = F)
+  #threshold <- omega * medianSingularValue
+  #numberComponentsToInclude <- sum(expSvd$d > threshold )
   
   cat(paste0(tissue," ",numberComponentsToInclude) , "\n")
   h <- cumsum(explainedVariance)[numberComponentsToInclude ]
-  
+
   #rpng(width = 1000, height = 1000)
   png(paste0("perTissueNormalization/vstCovCorPca/plots/",make.names(tissue),"_explainedVar.png"),width = 1000, height = 1000)
   plot(cumsum(explainedVariance), pch = 16, cex = 0.5, xlab = "Component", ylab = "Cumulative explained %", main = tissue)
   abline(h = h, lwd = 2, col = "darkred")
   text(0,h+1,numberComponentsToInclude, adj = 0)
+  dev.off()
+
+  #rpng(width = 1000, height = 1000)
+  png(paste0("perTissueNormalization/vstCovCorPca/plots/",make.names(tissue),"_eigenvalues.png"),width = 1000, height = 1000)
+  plot(eigenValues, log = "y", ylab = "Eigenvalues")
+  abline(v = numberComponentsToInclude, lwd = 2, col = "darkred")
   dev.off()
   
   
@@ -198,7 +226,22 @@ numberOfComps <- lapply(tissueClasses, function(tissue){
 
 numberOfComps <- do.call("c", numberOfComps)
 names(numberOfComps) <- tissueClasses
-as.data.frame(numberOfComps)
+#as.data.frame(numberOfComps)
+
+nrSamplesCombined <- nrow(samplesWithPredictionNoOutliers)
+nrComponentsCominbedNetwork <- 848
+
+sampleCounts <- table(samplesWithPredictionNoOutliers$predictedTissue)
+
+rpng(width = 1000, height = 1000)
+plot(as.numeric(sampleCounts[names(numberOfComps)]), numberOfComps, 
+     xlim = c(min(sampleCounts),nrSamplesCombined), 
+     ylim = c(min(numberOfComps,nrComponentsCominbedNetwork),max(numberOfComps, nrComponentsCominbedNetwork)), 
+     log = "xy", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.7) ,
+     xlab = "Number of samples", ylab = "Number of components")
+points(nrSamplesCombined, nrComponentsCominbedNetwork, pch = 16, col=adjustcolor("magenta1", alpha.f = 0.5))
+dev.off()
+
 write.table(as.data.frame(numberOfComps), file = "perTissueNormalization/vstCovCorPca/compsPerTissue.txt", col.names = NA, quote = F, sep = "\t")
 
 sink <- lapply(tissueClasses, function(tissue){
@@ -284,7 +327,7 @@ rpng(width = 1500, height = 1500)
 palette(adjustcolor(viridis(studies, option = "H"), alpha.f = 0.5))
 pchMap <- rep(c(15,16,17), length.out = studies)
 plot(pcs[,1],metaTest[,"recount_qc.star.%_of_reads_mapped_to_multiple_loci"], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
-plot(pcs[,1],pcs[,2], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
+plot(pcs[,1],pcs[,2], col = as.factor(tifssueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
 dev.off()
 
 

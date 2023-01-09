@@ -59,11 +59,6 @@ public class OptionsBase {
 
     public OptionsBase(String[] args) throws ParseException {
 
-        // If just want help, this avoids confusing errors
-        if (args[0].equals("-h") && args.length == 1|| args[0].equals("--help") && args.length == 1) {
-            throw new ParseException("-h provided");
-        }
-
         // Parse arguments
         final CommandLineParser parser = new RelaxedParser();
         final CommandLine commandLine = parser.parse(OPTIONS, args, false);
@@ -98,10 +93,23 @@ public class OptionsBase {
         logFile = new File(outputBasePath + ".log");
         debugFolder = new File(outputBasePath + "_debugFiles");
         debugMode = commandLine.hasOption('d');
-
+		LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
 
 
     }
+	
+	
+	public void printOptions() {
+
+		//TODO subclasses need to overwrite or extend or somthing to print all options relevant
+		LOGGER.info("Supplied options:");
+		LOGGER.info(" * Mode: " + mode.name());
+		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
+		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
+
+		
+		
+	}
 
     public static void printHelp() {
         HelpFormatter formatter = new HelpFormatter();

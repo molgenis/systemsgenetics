@@ -405,7 +405,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			}
 
 			if (fileBinary == null || !fileBinary.exists()) {
-				throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
+				throw new FileNotFoundException("File not found: " + fileName + ".datg or .dat or .dat.gz");
 			}
 
 			if (fileBinary.getName().endsWith(".dat.gz")) {
@@ -853,7 +853,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			}
 
 			if (fileBinary == null || !fileBinary.exists()) {
-				throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
+				throw new FileNotFoundException("File not found: " + fileName + ".datg or .dat or .dat.gz");
 			}
 
 			BufferedInputStream in;
