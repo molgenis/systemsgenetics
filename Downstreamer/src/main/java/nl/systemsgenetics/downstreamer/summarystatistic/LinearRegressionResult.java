@@ -7,6 +7,7 @@ import java.util.Collection;
 
 public class LinearRegressionResult {
 
+    private final String name;
     private final DoubleMatrixDataset<String, String> beta;
     private final DoubleMatrixDataset<String, String> standardError;
     private final DoubleMatrixDataset<String, String> explainedVariance;
@@ -15,23 +16,15 @@ public class LinearRegressionResult {
     private final DoubleMatrixDataset<String, String> tStatisticCache;
     private final DoubleMatrixDataset<String, String> pValueCache;
 
-    public LinearRegressionResult(Collection<String> rownames, Collection<String> colnames, int degreesOfFreedom) {
+    public LinearRegressionResult(Collection<String> rownames, Collection<String> colnames, int degreesOfFreedom, String name) {
         this.beta = new DoubleMatrixDataset<>(rownames, colnames);
         this.standardError = new DoubleMatrixDataset<>(rownames, colnames);
         this.explainedVariance = null;
         this.degreesOfFreedom = degreesOfFreedom;
-
+        this.name = name;
         this.tStatisticCache = null;
         this.pValueCache = null;
-    }
 
-    public LinearRegressionResult(DoubleMatrixDataset<String, String> beta, DoubleMatrixDataset<String, String> standardError, int degreesOfFreedom) {
-        this.beta = beta;
-        this.standardError = standardError;
-        this.degreesOfFreedom = degreesOfFreedom;
-        this.explainedVariance = null;
-        this.tStatisticCache = null;
-        this.pValueCache = null;
     }
 
     public DoubleMatrixDataset<String, String> getBeta() {
@@ -48,6 +41,10 @@ public class LinearRegressionResult {
 
     public int getDegreesOfFreedom() {
         return degreesOfFreedom;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public void appendBetas(int rowNumber, double[] betas) {
