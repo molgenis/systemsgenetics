@@ -17,12 +17,15 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  * @author patri
  */
 public class OptionsModeEnrichment extends OptionsBase {
+	private static final Logger LOGGER = LogManager.getLogger(OptionsBase.class);
 
 	private final File covariates;
 	private final List<PathwayDatabase> pathwayDatabases;
@@ -109,6 +112,8 @@ public class OptionsModeEnrichment extends OptionsBase {
 		geneInfoFile = new File(commandLine.getOptionValue("ge"));
 		gwasPvalueMatrixPath = new File(commandLine.getOptionValue('g'));
 
+		printOptions();
+
 	}
 
 	private static List<PathwayDatabase> parsePd(final CommandLine commandLine, String option, String optionLong) throws ParseException {
@@ -143,6 +148,27 @@ public class OptionsModeEnrichment extends OptionsBase {
 		}
 
 		return pathwayDatabasesTmp;
+	}
+
+	@Override
+	public void printOptions() {
+		super.printOptions();
+
+		LOGGER.info(" * geneInfoFile: " + gwasPvalueMatrixPath.getPath());
+
+		if (covariates != null) {
+			LOGGER.info(" * Covariates: " + covariates.getPath());
+		}
+
+		LOGGER.info(" * PathwayDatabases: ");
+		for (PathwayDatabase curDb : pathwayDatabases) {
+			 LOGGER.info(curDb.getName());
+		}
+
+		LOGGER.info(" * geneInfoFile: " + geneInfoFile.getPath());
+		LOGGER.info(" * forceNormalGenePvalues: " + forceNormalGenePvalues);
+		LOGGER.info(" * forceNormalGenePvalues: " + forceNormalPathwayPvalues);
+		LOGGER.info(" * regressGeneLengths: " + regressGeneLengths);
 	}
 
 	public boolean isForceNormalGenePvalues() {

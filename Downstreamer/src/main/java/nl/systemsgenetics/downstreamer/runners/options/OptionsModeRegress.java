@@ -1,10 +1,13 @@
 package nl.systemsgenetics.downstreamer.runners.options;
 
 import org.apache.commons.cli.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 
 public class OptionsModeRegress extends OptionsBase {
+    private static final Logger LOGGER = LogManager.getLogger(OptionsBase.class);
 
     private final File responseVariable;
     private final File explanatoryVariables;
@@ -218,6 +221,54 @@ public class OptionsModeRegress extends OptionsBase {
         inverseNormalX = commandLine.hasOption("int-x");
         inverseNormalC = commandLine.hasOption("int-c");
 
+        printOptions();
+    }
+
+    @Override
+    public void printOptions() {
+        super.printOptions();
+
+        LOGGER.info(" * responseVariable: " + responseVariable.getPath());
+        LOGGER.info(" * explanatoryVariables: " + explanatoryVariables.getPath());
+
+        if (covariates != null) {
+            LOGGER.info(" * covariates: " + covariates.getPath());
+        }
+
+        if (sigma != null) {
+            LOGGER.info(" * covariates: " + sigma.getPath());
+        }
+
+        if (eigenvectors != null) {
+            LOGGER.info(" * eigenvectors: " + eigenvectors.getPath());
+        }
+
+        if (eigenvalues != null) {
+            LOGGER.info(" * eigenvalues: " + eigenvalues.getPath());
+        }
+
+        if (columnIncludeFilter != null) {
+            LOGGER.info(" * columnIncludeFilter: " + columnIncludeFilter.getPath());
+        }
+
+        if (rowIncludeFilter != null) {
+            LOGGER.info(" * rowIncludeFilter: " + rowIncludeFilter.getPath());
+        }
+
+        if (genes != null) {
+            LOGGER.info(" * genes: " + genes.getPath());
+        }
+
+        LOGGER.info(" * percentageOfVariance: " + percentageOfVariance);
+        LOGGER.info(" * useJblas: " + useJblas);
+        LOGGER.info(" * fitIntercept: " + fitIntercept);
+        LOGGER.info(" * regressCovariates: " + regressCovariates);
+
+        LOGGER.info(" * centerAndScale: " + centerAndScale);
+        LOGGER.info(" * inverseNormalY: " + inverseNormalY);
+        LOGGER.info(" * inverseNormalX: " + inverseNormalX);
+        LOGGER.info(" * inverseNormalC: " + inverseNormalC);
+
     }
 
     public File getResponseVariable() {
@@ -264,7 +315,7 @@ public class OptionsModeRegress extends OptionsBase {
         return genes;
     }
 
-    public boolean useJblas(){
+    public boolean useJblas() {
         return useJblas;
     }
 
@@ -296,10 +347,16 @@ public class OptionsModeRegress extends OptionsBase {
         return sigma != null;
     }
 
-    public boolean hasColumnIncludeFilter (){return columnIncludeFilter !=null;}
+    public boolean hasColumnIncludeFilter() {
+        return columnIncludeFilter != null;
+    }
 
-    public boolean hasRowIncludeFilter (){return rowIncludeFilter !=null;}
+    public boolean hasRowIncludeFilter() {
+        return rowIncludeFilter != null;
+    }
 
-    public boolean hasGenes() {return genes != null;}
+    public boolean hasGenes() {
+        return genes != null;
+    }
 
 }
