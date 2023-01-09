@@ -93,10 +93,23 @@ public class OptionsBase {
         logFile = new File(outputBasePath + ".log");
         debugFolder = new File(outputBasePath + "_debugFiles");
         debugMode = commandLine.hasOption('d');
-
+		LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
 
 
     }
+	
+	
+	public void printOptions() {
+
+		//TODO subclasses need to overwrite or extend or somthing to print all options relevant
+		LOGGER.info("Supplied options:");
+		LOGGER.info(" * Mode: " + mode.name());
+		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
+		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
+
+		
+		
+	}
 
     public static void printHelp() {
         HelpFormatter formatter = new HelpFormatter();
