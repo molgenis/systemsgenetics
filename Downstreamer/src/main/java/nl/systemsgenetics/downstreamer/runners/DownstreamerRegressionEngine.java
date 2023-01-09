@@ -225,7 +225,7 @@ public class DownstreamerRegressionEngine {
     }
 
     /**
-     * Runs DS regression if U and L have been pre-filtered.
+     * Runs DS regression if U and L have been pre-filtered on only the eigenvectors to use.
      * See above for parameter descriptions as they are identical.
      */
     public static  List<LinearRegressionResult> performDownstreamerRegression(DoubleMatrixDataset<String, String> X,
