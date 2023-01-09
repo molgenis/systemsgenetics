@@ -159,46 +159,57 @@ public class DownstreamerRegressionEngine {
         }
 
         // Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
-        LinearRegressionResult output;
+        List<LinearRegressionResult> output;
         if (options.hasSigma()) {
             throw new Exception("Not supported atm. Please pre-calculate the eigen decomposition");
         } else {
             output = performDownstreamerRegression(X, Y, C, U, L,
                     blockDiagonalIndices,
-                    options);
+                    options.getPercentageOfVariance(),
+                    options.fitIntercept(),
+                    options.regressCovariates(),
+                    options.useJblas());
         }
 
         // Save linear regression results
-        output.save(options.getOutputBasePath(), false);
+        for (LinearRegressionResult curRes: output) {
+            curRes.save(options.getOutputBasePath() + "_" + curRes.getName(), false);
+        }
     }
 
 
     /**
      * Runs DS regression if eigendecompostion has been pre-computed. These are given by U and L. Expects that
-     * these still need to be filtered. If they are pre-selected make sure to set percentageOfVariance to 1.
+     * these still need to be filtered. If they are pre-selected make sure to set percentageOfVariance to 1 or call
+     * other implementation below.
      *
      * @param X pathway scores 
      * @param Y trait gene scores 
      * @param C covariates on columns genes on rows
      * @param U eigenvectors that describe gene-gene correlations
      * @param L single column with on each row the eigenvalue of a component
-     * @param percentageOfVariance
-     * @param fitIntercept
+     * @param percentageOfVariance determines the number of eigenvectors to use. Set to 1 if you want to use all
+     * @param fitIntercept  should an intercept term be fitted
+     * @param regressCovariates should covariates be regressed first instead of fit in the model with X
+     * @param useJblas use Jblas non-java matrix multiplications instead of Pcolt. Faster but may give system specific issues
      * @return
      */
-    public static LinearRegressionResult performDownstreamerRegression(DoubleMatrixDataset<String, String> X,
+    public static List<LinearRegressionResult> performDownstreamerRegression(DoubleMatrixDataset<String, String> X,
                                                                        DoubleMatrixDataset<String, String> Y,
                                                                        DoubleMatrixDataset<String, String> C,
                                                                        DoubleMatrixDataset<String, String> U,
                                                                        DoubleMatrixDataset<String, String> L,
                                                                        List<int[]> blockDiagonalIndices,
-                                                                       OptionsModeRegress options) {
+                                                                       double percentageOfVariance,
+                                                                       boolean fitIntercept,
+                                                                       boolean regressCovariates,
+                                                                       boolean useJblas) {
 
         DoubleMatrix1D varPerEigen = cumulativeSum(L.viewCol(0), true);
         List<String> colsToMaintain = new ArrayList<>();
 
         for (int i = 0; i < varPerEigen.size(); i++) {
-            if (options.getPercentageOfVariance() > varPerEigen.get(i)) {
+            if (percentageOfVariance > varPerEigen.get(i)) {
                 colsToMaintain.add(U.getColObjects().get(i));
             }
         }
@@ -210,6 +221,23 @@ public class DownstreamerRegressionEngine {
         U = U.viewColSelection(colsToMaintain);
         L = L.viewRowSelection(colsToMaintain);
 
+        return performDownstreamerRegression(X, Y, C, U, L, blockDiagonalIndices, fitIntercept, regressCovariates, useJblas);
+    }
+
+    /**
+     * Runs DS regression if U and L have been pre-filtered on only the eigenvectors to use.
+     * See above for parameter descriptions as they are identical.
+     */
+    public static  List<LinearRegressionResult> performDownstreamerRegression(DoubleMatrixDataset<String, String> X,
+                                                                       DoubleMatrixDataset<String, String> Y,
+                                                                       DoubleMatrixDataset<String, String> C,
+                                                                       DoubleMatrixDataset<String, String> U,
+                                                                       DoubleMatrixDataset<String, String> L,
+                                                                       List<int[]> blockDiagonalIndices,
+                                                                       boolean fitIntercept,
+                                                                       boolean regressCovariates,
+                                                                       boolean useJblas) {
+
         // Pre-transpose U as this can be re-used as well
         DoubleMatrix2D UHatT = transpose(U.getMatrix());
         //UHatT = DoubleFactory2D.sparse.make(UHatT.toArray());
@@ -218,18 +246,15 @@ public class DownstreamerRegressionEngine {
         DoubleMatrix1D LHatInv = L.viewCol(0).copy();
         LHatInv.assign(DoubleFunctions.inv);
 
-        // Pre-compute Y^ as this can be re-used
-        DoubleMatrix2D YHat = mult(UHatT, Y.getMatrix());
-
         logInfoMem("Starting regression for " + X.columns() + " pathways.");
 
         // Determine the degrees of freedom. -1 for main_effect
-        int degreesOfFreedom = numVectorsToMaintain - 1;
+        int degreesOfFreedom = U.columns() - 1;
 
         // Set the names of the predictors in the correct order
         // and determine the degrees of freedom
         List<String> predictorNames = new ArrayList<>();
-        if (options.fitIntercept()) {
+        if (fitIntercept) {
             predictorNames.add("intercept");
             degreesOfFreedom = degreesOfFreedom - 1;
         }
@@ -246,10 +271,10 @@ public class DownstreamerRegressionEngine {
         // Pre-calculate XHat and Xhat in a block diagonal way, or using full matrix mult.
         if (blockDiagonalIndices != null) {
             logInfoMem("Precomputing XHat and CHat");
-            XhatCache = multBlockDiagonalSubsetPerCol(UHatT, X.getMatrix(), blockDiagonalIndices, options.useJblas());
+            XhatCache = multBlockDiagonalSubsetPerCol(UHatT, X.getMatrix(), blockDiagonalIndices, useJblas);
 
             if (C != null) {
-                ChatCache = multBlockDiagonalSubsetPerCol(UHatT, C.getMatrix(), blockDiagonalIndices, options.useJblas());
+                ChatCache = multBlockDiagonalSubsetPerCol(UHatT, C.getMatrix(), blockDiagonalIndices, useJblas);
             }
             logInfoMem("Done");
         } else {
@@ -258,50 +283,70 @@ public class DownstreamerRegressionEngine {
             }
         }
 
-        // Instead of including covariates in the model, first regress their effects
-        if (options.regressCovariates()) {
-            logInfoMem("Regressing out effects of covariates before main regression.");
-            inplaceDownstreamerRegressionResidualsPrecomp(YHat, ChatCache, LHatInv);
+        ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns());
 
-            // Set covariates to null so they are not used for the rest of the regression
-            ChatCache = null;
-        }
+        // Store output
+        List<LinearRegressionResult> results = new ArrayList<>(Y.columns());
 
-        // Object to save output
-        LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(), predictorNames, degreesOfFreedom);
-        ProgressBar pb = new ProgressBar("Linear regressions", X.columns());
+        for (int curY = 0; curY < Y.columns(); curY++) {
 
-        // Calculate beta's and SE for each pathway
-        for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
+            // Keep track of current covariates, if these are used to regress need to keep ChatCache.
+            // but curCovariates can be set to null
+            DoubleMatrix2D curCovariates = ChatCache;
+            List<String> curPredictorNames = predictorNames;
 
-            // Get the current pathway, if not pre-multiplied by eigenvectors, do so now.
-            DoubleMatrix2D XCur;
-            if (XhatCache == null) {
-                XCur = mult(UHatT, X.viewColAsMmatrix(curPathway));
-            } else {
-                XCur = XhatCache.viewSelection(null, new int[]{curPathway});
+            // Pre-compute Y^ as this can be re-used
+            DoubleMatrix2D YHat = mult(UHatT, Y.viewColAsMmatrix(curY));
+
+            // Instead of including covariates in the model, first regress their effects
+            if (regressCovariates) {
+                inplaceDownstreamerRegressionResidualsPrecomp(YHat, ChatCache, LHatInv);
+
+                // Set covariates to null so they are not used for the rest of the regression
+                curCovariates = null;
+                curPredictorNames = predictorNames.subList(0, predictorNames.size()-C.columns());
             }
 
-            // If covariates are provided add them to the design matrix
-            if (ChatCache != null) {
-                XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache);
+            // Object to save output
+            LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(),
+                    curPredictorNames,
+                    degreesOfFreedom,
+                    Y.getColObjects().get(curY));
+
+            // Calculate beta's and SE for each pathway
+            for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
+
+                // Get the current pathway, if not pre-multiplied by eigenvectors, do so now.
+                DoubleMatrix2D XCur;
+                if (XhatCache == null) {
+                    XCur = mult(UHatT, X.viewColAsMmatrix(curPathway));
+                } else {
+                    XCur = XhatCache.viewSelection(null, new int[]{curPathway});
+                }
+
+                // If covariates are provided add them to the design matrix
+                if (curCovariates != null) {
+                    XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache);
+                }
+
+                double[] curRes = downstreamerRegressionPrecomp(XCur,
+                        YHat,
+                        LHatInv,
+                        fitIntercept);
+
+                result.appendBetas(curPathway, ArrayUtils.subarray(curRes, 0, curRes.length / 2));
+                result.appendSe(curPathway, ArrayUtils.subarray(curRes, curRes.length / 2, curRes.length));
+
+                pb.step();
             }
 
-            double[] curRes = downstreamerRegressionPrecomp(XCur,
-                    YHat,
-                    LHatInv,
-                    options.fitIntercept());
-
-            result.appendBetas(curPathway, ArrayUtils.subarray(curRes, 0, curRes.length / 2));
-            result.appendSe(curPathway, ArrayUtils.subarray(curRes, curRes.length / 2, curRes.length));
-
-            pb.step();
+            results.add(result);
         }
+
         pb.close();
+        logInfoMem("Done with regression for " + Y.columns() + " traits and " + X.columns() + " pathways.");
 
-        logInfoMem("Done with regression for " + X.columns() + " pathways.");
-
-        return result;
+        return results;
     }
 
 

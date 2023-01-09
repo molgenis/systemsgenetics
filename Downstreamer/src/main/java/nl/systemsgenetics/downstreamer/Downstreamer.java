@@ -75,7 +75,6 @@ public class Downstreamer {
         System.out.flush(); //flush to make sure header is before errors
         Thread.sleep(25); //Allows flush to complete
 
-
         OptionsBase options;
 
         // If no arguments are provided print help
