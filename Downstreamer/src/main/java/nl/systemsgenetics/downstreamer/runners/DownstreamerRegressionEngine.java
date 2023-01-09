@@ -313,7 +313,6 @@ public class DownstreamerRegressionEngine {
                     degreesOfFreedom,
                     Y.getColObjects().get(curY));
 
-
             // Calculate beta's and SE for each pathway
             for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
 
