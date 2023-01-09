@@ -440,10 +440,6 @@ public class DownstreamerRegressionEngine {
         }
     }
 
-
-
-
-
     /**
      * Checks for NA values, returns an index of which rows have NA.
      */
