@@ -157,12 +157,12 @@ public class OptionsModeEnrichment extends OptionsBase {
 		LOGGER.info(" * geneInfoFile: " + gwasPvalueMatrixPath.getPath());
 
 		if (covariates != null) {
-			LOGGER.info(" * Covariates: " + covariates.getPath());
+			LOGGER.info(" * covariates: " + covariates.getPath());
 		}
 
-		LOGGER.info(" * PathwayDatabases: ");
+		LOGGER.info(" * pathwayDatabases: ");
 		for (PathwayDatabase curDb : pathwayDatabases) {
-			 LOGGER.info(curDb.getName());
+			 LOGGER.info(" * - " + curDb.getName());
 		}
 
 		LOGGER.info(" * geneInfoFile: " + geneInfoFile.getPath());
