@@ -293,6 +293,7 @@ public class DownstreamerRegressionEngine {
             // Keep track of current covariates, if these are used to regress need to keep ChatCache.
             // but curCovariates can be set to null
             DoubleMatrix2D curCovariates = ChatCache;
+            List<String> curPredictorNames = predictorNames;
 
             // Pre-compute Y^ as this can be re-used
             DoubleMatrix2D YHat = mult(UHatT, Y.viewColAsMmatrix(curY));
@@ -303,11 +304,12 @@ public class DownstreamerRegressionEngine {
 
                 // Set covariates to null so they are not used for the rest of the regression
                 curCovariates = null;
+                curPredictorNames = predictorNames.subList(0, predictorNames.size()-C.columns());
             }
 
             // Object to save output
             LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(),
-                    predictorNames,
+                    curPredictorNames,
                     degreesOfFreedom,
                     Y.getColObjects().get(curY));
 
