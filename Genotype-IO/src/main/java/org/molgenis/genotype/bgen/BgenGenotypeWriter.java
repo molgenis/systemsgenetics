@@ -302,8 +302,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		byte[] firstBytes = new byte[1000];
 		randomAccessBgenFile.read(firstBytes, 0, 1000);
 
-		//Add current time in int.
-		System.out.println((System.currentTimeMillis() / 1000L));
+		// Add current time in int.
 		// Create and write new metadata.
 		BgenixMetadata m = new BgenixMetadata(
 				bgenFile.getName(),
