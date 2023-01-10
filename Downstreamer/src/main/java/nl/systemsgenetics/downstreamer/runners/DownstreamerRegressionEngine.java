@@ -249,7 +249,7 @@ public class DownstreamerRegressionEngine {
         logInfoMem("Starting regression for " + X.columns() + " pathways.");
 
         // Determine the degrees of freedom. -1 for main_effect
-        int degreesOfFreedom = U.columns() - 1;
+        int degreesOfFreedom = UHatT.columns() - 1;
 
         // Set the names of the predictors in the correct order
         // and determine the degrees of freedom
@@ -625,6 +625,11 @@ public class DownstreamerRegressionEngine {
      * and columns that are exactly zero. @param index gives the indices to multiply together.
      * JBlas is much quicker on larger matrices but has memory overhead compared to colt matrix mult.
      *
+     * Columns in A are first subset per block. The rows to keep in A are determined by removing rows that have only
+     * zero values in the  subset of A's columns.
+     *
+     * Indices provided in index should match the columns of A and the rows of B.
+     *
      * @param A
      * @param B
      * @param index
@@ -643,6 +648,11 @@ public class DownstreamerRegressionEngine {
      * Calculate A %*% B for a matrix A whose structure has some form of block diagonality. I.e. there are rows
      * and columns that are exactly zero. @param index gives the indices to multiply together.
      * Uses Jblas for matrix multiplications. This does give memory overhead but is much quciker.
+     *
+     * Columns in A are first subset per block. The rows to keep in A are determined by removing rows that have only
+     * zero values in the  subset of A's columns.
+     *
+     * Indices provided in index should match the columns of A and the rows of B.
      *
      * @param Ac
      * @param Bc
@@ -698,6 +708,11 @@ public class DownstreamerRegressionEngine {
     /**
      * Calculate A %*% B for a matrix A whose structure has some form of block diagonality. I.e. there are rows
      * and columns that are exactly zero. @param index gives the indices to multiply together.
+     *
+     * Columns in A are first subset per block. The rows to keep in A are determined by removing rows that have only
+     * zero values in the  subset of A's columns.
+     *
+     * Indices provided in index should match the columns of A and the rows of B.
      *
      * @param Ac
      * @param Bc
