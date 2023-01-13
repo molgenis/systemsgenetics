@@ -197,7 +197,7 @@ public class DownstreamerRegressionEngine {
 	 * fit in the model with X
 	 * @param useJblas use Jblas non-java matrix multiplications instead of
 	 * Pcolt. Faster but may give system specific issues
-	 * @return
+	 * @return Per trait (column in Y) a LinearRegressionResult.
 	 */
 	public static List<LinearRegressionResult> performDownstreamerRegression(DoubleMatrixDataset<String, String> X,
 			DoubleMatrixDataset<String, String> Y,

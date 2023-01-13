@@ -20,6 +20,7 @@ import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeEnrichment;
+import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -133,11 +134,13 @@ public class DownstreamerEnrichment {
 				}
 			}
 			
-			DoubleMatrixDataset<String, String> gwasDataOverlap = gwasData.viewRowSelection(genesOverlappingWithPathwayDatabase);
-			DoubleMatrixDataset<String, String> pathwayData = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(genesOverlappingWithPathwayDatabase);
+			final DoubleMatrixDataset<String, String> gwasDataOverlap = gwasData.viewRowSelection(genesOverlappingWithPathwayDatabase);
+			final DoubleMatrixDataset<String, String> pathwayData = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(genesOverlappingWithPathwayDatabase);
 			
-			DownstreamerRegressionEngine.createBlockDiagonalIndexFromGenes(chrArmGeneMap, genesOverlappingWithPathwayDatabase);
+			final List<int[]> blockDiagonalIndices = DownstreamerRegressionEngine.createBlockDiagonalIndexFromGenes(chrArmGeneMap, genesOverlappingWithPathwayDatabase);
 			
+			//TODO papamters
+			List<LinearRegressionResult> pathwayRegeressionResults = DownstreamerRegressionEngine.performDownstreamerRegression(gwasData, gwasData, gwasData, gwasData, gwasData, blockDiagonalIndices, true, true, true);
 			
 		}
 
