@@ -186,7 +186,7 @@ public class CoregulationUtilities {
 			} else {
 
 				DoubleMatrixDatasetFastSubsetLoader loader = new DoubleMatrixDatasetFastSubsetLoader(options.getGwasZscoreMatrixPath());
-				Set<String> rows = loader.getOriginalRowMap();
+				Set<String> rows = loader.getAllRowIdentifiers();
 
 				genes.retainAll(rows);
 

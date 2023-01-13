@@ -32,7 +32,7 @@ public class First1000qtl {
 		
 		ArrayList<String> rowsToOutput = new ArrayList<>();
 		
-		Set<String> rowMap = loader.getOriginalRowMap(); 
+		Set<String> rowMap = loader.getAllRowIdentifiers(); 
 		
 		int i = 0;
 		for(String row : rowMap){

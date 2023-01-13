@@ -59,20 +59,20 @@ public class PredictedPathwayAnnotations {
 			final ArrayList<String> overlappingGenes;
 			if (fromScratch) {
 				
-				overlappingGenes = new ArrayList<>(predictionMatrixLoader.getOriginalRowMap());
+				overlappingGenes = new ArrayList<>(predictionMatrixLoader.getAllRowIdentifiers());
 				overlappingGenes.retainAll(genes.keySet());
 				
-				pathwayMatrix = new DoubleMatrixDataset<>(overlappingGenes, predictionMatrixLoader.getOriginalColMap());
+				pathwayMatrix = new DoubleMatrixDataset<>(overlappingGenes, predictionMatrixLoader.getAllColumnIdentifiers());
 				pathwayMatrix2 = pathwayMatrix;
 				
 			} else {
 				DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pd.getLocation());
-				overlappingGenes = new ArrayList<>(pathwayMatrixLoader.getOriginalRowMap());
+				overlappingGenes = new ArrayList<>(pathwayMatrixLoader.getAllRowIdentifiers());
 				overlappingGenes.retainAll(genes.keySet());
 				//First load all genes in gene file so that they will be in output file
 				pathwayMatrix = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(overlappingGenes);
 
-				overlappingGenes.retainAll(predictionMatrixLoader.getOriginalRowMap());
+				overlappingGenes.retainAll(predictionMatrixLoader.getAllRowIdentifiers());
 
 				//subset pathways to overlap with predictions
 				pathwayMatrix2 = pathwayMatrix.viewRowSelection(overlappingGenes);

@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.downstreamer.runners.options;
 
+import htsjdk.tribble.SimpleFeature;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,6 +26,7 @@ import org.apache.logging.log4j.Logger;
  * @author patri
  */
 public class OptionsModeEnrichment extends OptionsBase {
+
 	private static final Logger LOGGER = LogManager.getLogger(OptionsBase.class);
 
 	private final File covariates;
@@ -33,7 +35,8 @@ public class OptionsModeEnrichment extends OptionsBase {
 	private final boolean forceNormalPathwayPvalues;
 	private final boolean regressGeneLengths;
 	private final File geneInfoFile;
-	private final File gwasPvalueMatrixPath;
+	private final File gwasPvalueMatrixFile;
+	private final boolean excludeHla;
 
 	static {
 
@@ -85,10 +88,15 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
-		OptionBuilder.withDescription("GWAS gene p-values. Rows genes, Cols phenotypes.");
+		OptionBuilder.withDescription("GWAS gene p-values. Rows genes, Cols: genes, pvalue, nSNPs, min SNP p-value. Tab seperated txt or txt.gz file or .dat / datg binary matrix format");
 		OptionBuilder.withLongOpt("gwas");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("g"));
+
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Exclude HLA locus during pathway enrichments (chr6 20mb - 40mb)");
+		OptionBuilder.withLongOpt("excludeHla");
+		OPTIONS.addOption(OptionBuilder.create("eh"));
 
 	}
 
@@ -110,7 +118,8 @@ public class OptionsModeEnrichment extends OptionsBase {
 		forceNormalPathwayPvalues = commandLine.hasOption("fnpp");
 		regressGeneLengths = commandLine.hasOption("rgl");
 		geneInfoFile = new File(commandLine.getOptionValue("ge"));
-		gwasPvalueMatrixPath = new File(commandLine.getOptionValue('g'));
+		gwasPvalueMatrixFile = new File(commandLine.getOptionValue('g'));
+		excludeHla = commandLine.hasOption("eh");
 
 		printOptions();
 
@@ -154,7 +163,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 	public void printOptions() {
 		super.printOptions();
 
-		LOGGER.info(" * geneInfoFile: " + gwasPvalueMatrixPath.getPath());
+		LOGGER.info(" * geneInfoFile: " + gwasPvalueMatrixFile.getPath());
 
 		if (covariates != null) {
 			LOGGER.info(" * covariates: " + covariates.getPath());
@@ -162,13 +171,15 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 		LOGGER.info(" * pathwayDatabases: ");
 		for (PathwayDatabase curDb : pathwayDatabases) {
-			 LOGGER.info(" * - " + curDb.getName());
+			LOGGER.info(" * - " + curDb.getName());
 		}
 
 		LOGGER.info(" * geneInfoFile: " + geneInfoFile.getPath());
 		LOGGER.info(" * forceNormalGenePvalues: " + forceNormalGenePvalues);
 		LOGGER.info(" * forceNormalGenePvalues: " + forceNormalPathwayPvalues);
 		LOGGER.info(" * regressGeneLengths: " + regressGeneLengths);
+		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
+
 	}
 
 	public boolean isForceNormalGenePvalues() {
@@ -196,8 +207,12 @@ public class OptionsModeEnrichment extends OptionsBase {
 	}
 
 	public File getGwasPvalueMatrixPath() {
-		return gwasPvalueMatrixPath;
+		return gwasPvalueMatrixFile;
 	}
 
+	public boolean isExcludeHla() {
+		return excludeHla;
+	}
+	
 
 }

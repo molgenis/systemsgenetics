@@ -1,5 +1,5 @@
 
-setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Height_test")
+setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\LudeEigen")
 
 library(readxl)
 
@@ -32,8 +32,12 @@ read.depict2 <- function(path, potential_traits=NULL) {
 }
 
 
-dsRes <- read.depict2("height_2018_30124842_hg19_enrichtments_9.xlsx")
-dsRes2 <- read.depict2("height_2018_30124842_hg19_enrichtments_10.xlsx")
+
+trait <- "inflammatory_bowel_disease_2017_29906448_hg19"
+trait_i <- "8"
+
+
+dsRes <- read.depict2(paste0(trait,"_enrichtments_",trait_i,".xlsx"))
 str(dsRes)
 
 
@@ -42,42 +46,20 @@ library(readr)
 
 
 colTypes <- cols( .default = col_double(),  `-` = col_character())
-table_tmp <- read_delim("Myotube_Enrichment_normalizedPathwayScores_ExHla.txt.gz", delim = "\t", quote = "", col_types = colTypes)
-myotubeEigen <- as.matrix(table_tmp[,-1])
-rownames(myotubeEigen) <- table_tmp[,1][[1]]
+table_tmp <- read_delim(paste0(trait,"_intermediates/EigenLude_Enrichment_normalizedPathwayScores_ExHla.txt.gz"), delim = "\t", quote = "", col_types = colTypes)
+eigenLude <- as.matrix(table_tmp[,-1])
+rownames(eigenLude) <- table_tmp[,1][[1]]
 
-myotubeBetas <- read.delim(gzfile("Myotube_Enrichment_betasExHla.txt.gz"))
-colnames(myotubeBetas)[2] <- "Beta"
-myotube <- merge(dsRes$Myotube, myotubeBetas, by.x = "Gene.set", by.y = "X.")
+betasLude <- read.delim(gzfile(paste0(trait,"_intermediates/EigenLude_Enrichment_betasExHla.txt.gz")))
+colnames(betasLude)[2] <- "Beta"
 
+lude <- merge(dsRes$EigenLude, betasLude, by.x = "Gene.set", by.y = "X.")
 
-myotubeSelected <- myotube[myotube$FDR.5..significant,c("Gene.set", "Beta")]
+ludeSelected <- lude[lude$FDR.5..significant,c("Gene.set", "Beta")]
 
-myotubeGenePrio <- (myotubeEigen[,myotubeSelected$Gene.set] %*% myotubeSelected$Beta)[,1]
-str(myotubeGenePrio)
+ludeGenePrio <- (eigenLude[,ludeSelected$Gene.set] %*% ludeSelected$Beta)[,1]
 
-hist(myotubeGenePrio)
-
-
-
-
-colTypes <- cols( .default = col_double(),  `-` = col_character())
-table_tmp <- read_delim("cartilage_tenosynovium_Enrichment_normalizedPathwayScores_ExHla.txt.gz", delim = "\t", quote = "", col_types = colTypes)
-cartilage_tenosynoviumEigen <- as.matrix(table_tmp[,-1])
-rownames(cartilage_tenosynoviumEigen) <- table_tmp[,1][[1]]
-
-cartilage_tenosynoviumBetas <- read.delim(gzfile("cartilage_tenosynovium_Enrichment_betasExHla.txt.gz"))
-colnames(cartilage_tenosynoviumBetas)[2] <- "Beta"
-cartilage_tenosynovium <- merge(dsRes$cartilage_tenosynovium, cartilage_tenosynoviumBetas, by.x = "Gene.set", by.y = "X.")
-
-
-cartilage_tenosynoviumSelected <- cartilage_tenosynovium[cartilage_tenosynovium$FDR.5..significant,c("Gene.set", "Beta")]
-
-cartilage_tenosynoviumGenePrio <- (cartilage_tenosynoviumEigen[,cartilage_tenosynoviumSelected$Gene.set] %*% cartilage_tenosynoviumSelected$Beta)[,1]
-str(cartilage_tenosynoviumGenePrio)
-
-hist(cartilage_tenosynoviumGenePrio)
-cat(tail(names(sort(cartilage_tenosynoviumGenePrio)), n = 100),sep = "\n")
+write.table(ludeGenePrio, file = gzfile(paste0(trait,"_ludeEigen.txt.gz")), sep = "\t", quote = F, col.names = F)
 
 
 
@@ -85,83 +67,19 @@ cat(tail(names(sort(cartilage_tenosynoviumGenePrio)), n = 100),sep = "\n")
 
 
 colTypes <- cols( .default = col_double(),  `-` = col_character())
-table_tmp <- read_delim("Fibro_Enrichment_normalizedPathwayScores_ExHla.txt.gz", delim = "\t", quote = "", col_types = colTypes)
-FibroEigen <- as.matrix(table_tmp[,-1])
-rownames(FibroEigen) <- table_tmp[,1][[1]]
+table_tmp <- read_delim(paste0(trait,"_intermediates/Full_Enrichment_normalizedPathwayScores_ExHla.txt.gz"), delim = "\t", quote = "", col_types = colTypes)
+eigenrecount3 <- as.matrix(table_tmp[,-1])
+rownames(eigenrecount3) <- table_tmp[,1][[1]]
 
-FibroBetas <- read.delim(gzfile("Fibro_Enrichment_betasExHla.txt.gz"))
-colnames(FibroBetas)[2] <- "Beta"
-Fibro <- merge(dsRes$Fibro, FibroBetas, by.x = "Gene.set", by.y = "X.")
+betasrecount3 <- read.delim(gzfile(paste0(trait,"_intermediates/Full_Enrichment_betasExHla.txt.gz")))
+colnames(betasrecount3)[2] <- "Beta"
 
+recount3 <- merge(dsRes$Full, betasrecount3, by.x = "Gene.set", by.y = "X.")
 
-FibroSelected <- Fibro[Fibro$FDR.5..significant,c("Gene.set", "Beta")]
+recount3Selected <- recount3[recount3$FDR.5..significant,c("Gene.set", "Beta")]
 
-FibroGenePrio <- (FibroEigen[,FibroSelected$Gene.set] %*% FibroSelected$Beta)[,1]
-str(FibroGenePrio)
+recount3GenePrio <- (eigenrecount3[,recount3Selected$Gene.set] %*% recount3Selected$Beta)[,1]
 
-hist(FibroGenePrio)
-cat(tail(names(sort(FibroGenePrio)), n = 100),sep = "\n")
+write.table(recount3GenePrio, file = gzfile(paste0(trait,"_recount3.txt.gz")), sep = "\t", quote = F, col.names = F)
 
-
-
-overlap <- intersect(names(FibroGenePrio), names(cartilage_tenosynoviumGenePrio))
-plot(FibroGenePrio[overlap], cartilage_tenosynoviumGenePrio[overlap],pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.5, xlab = "Fibroblast key gene scores", ylab = "Cartilage key gene scores")
-cor.test(FibroGenePrio[overlap], cartilage_tenosynoviumGenePrio[overlap])
-
-
-
-
-
-
-
-colTypes <- cols( .default = col_double(),  `-` = col_character())
-table_tmp <- read_delim("Prostate_Enrichment_normalizedPathwayScores_ExHla.txt.gz", delim = "\t", quote = "", col_types = colTypes)
-ProstateEigen <- as.matrix(table_tmp[,-1])
-rownames(ProstateEigen) <- table_tmp[,1][[1]]
-
-ProstateBetas <- read.delim(gzfile("Prostate_Enrichment_betasExHla.txt.gz"))
-colnames(ProstateBetas)[2] <- "Beta"
-Prostate <- merge(dsRes$Prostate, ProstateBetas, by.x = "Gene.set", by.y = "X.")
-
-
-ProstateSelected <- Prostate[Prostate$FDR.5..significant,c("Gene.set", "Beta")]
-
-ProstateGenePrio <- (ProstateEigen[,ProstateSelected$Gene.set] %*% ProstateSelected$Beta)[,1]
-str(ProstateGenePrio)
-
-hist(ProstateGenePrio)
-cat(tail(names(sort(ProstateGenePrio)), n = 100),sep = "\n")
-
-
-
-overlap <- intersect(names(ProstateGenePrio), names(cartilage_tenosynoviumGenePrio))
-plot(ProstateGenePrio[overlap], cartilage_tenosynoviumGenePrio[overlap],pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.5, xlab = "Prostateblast key gene scores", ylab = "Cartilage key gene scores")
-cor.test(ProstateGenePrio[overlap], cartilage_tenosynoviumGenePrio[overlap])
-
-
-
-
-colTypes <- cols( .default = col_double(),  `-` = col_character())
-table_tmp <- read_delim("Full_Enrichment_normalizedPathwayScores_ExHla.txt.gz", delim = "\t", quote = "", col_types = colTypes)
-FullEigen <- as.matrix(table_tmp[,-1])
-rownames(FullEigen) <- table_tmp[,1][[1]]
-
-FullBetas <- read.delim(gzfile("Full_Enrichment_betasExHla.txt.gz"))
-colnames(FullBetas)[2] <- "Beta"
-Full <- merge(dsRes2$Full, FullBetas, by.x = "Gene.set", by.y = "X.")
-
-
-FullSelected <- Full[Full$FDR.5..significant,c("Gene.set", "Beta")]
-
-FullGenePrio <- (FullEigen[,FullSelected$Gene.set] %*% FullSelected$Beta)[,1]
-str(FullGenePrio)
-
-hist(FullGenePrio)
-cat(tail(names(sort(FullGenePrio)), n = 100),sep = "\n")
-
-
-
-overlap <- intersect(names(FullGenePrio), names(cartilage_tenosynoviumGenePrio))
-plot(FullGenePrio[overlap], cartilage_tenosynoviumGenePrio[overlap],pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.5, xlab = "Fullblast key gene scores", ylab = "Cartilage key gene scores")
-cor.test(FullGenePrio[overlap], cartilage_tenosynoviumGenePrio[overlap])
-
+tail(sort(recount3GenePrio))
