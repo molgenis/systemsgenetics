@@ -38,6 +38,9 @@ public enum DownstreamerMode {
 	COREG_PCA("Run a PCA on a matrix. Matrix must be binary."),
 	COREG_INVESTIGATE_NETWORK("Calculate degree statistics on a co-regulation matrix. Expects Z-scores, so run -m COREG_RTOZSCORE first."),
 
+	// Testing modes
+	TEST_DECOMP("Test entrypoint for eigen decomposition. Remove upon release."),
+
 	// Runners that expect the old main workflow, use DownstreamerOptionsDeprecated
 	STEP1("[deprecated] Run the Downstreamer prioritization"),
 	STEP2("[deprecated] Run the Downstreamer prioritization starting at stage 2"),

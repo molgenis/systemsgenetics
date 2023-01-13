@@ -194,6 +194,9 @@ public class Downstreamer {
                 case COREG_REMOVE_CIS_COEXP: CoregulationUtilities.coregRemoveLocalGeneCorrelations(new OptionsModeCoreg(args));break;
                 case COREG_INVESTIGATE_NETWORK: CoregulationUtilities.coregInvestigateNetwork(new OptionsModeCoreg(args)); break;
 
+                // Testing utils
+                case TEST_DECOMP: DownstreamerUtilities.testEigenDecomposition(new OptionsTesting(args)); break;
+
                 // Legacy modes, These will be either replaced or substantially updated
                 case CREATE_EXCEL:
                     DownstreamerUtilities.generateExcelFromIntermediates(new DownstreamerOptionsDeprecated(args));
