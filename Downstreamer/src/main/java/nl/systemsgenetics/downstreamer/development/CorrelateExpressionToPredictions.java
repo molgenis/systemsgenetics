@@ -31,8 +31,8 @@ public class CorrelateExpressionToPredictions {
 		
 		DoubleMatrixDatasetFastSubsetLoader expressionDataLoader = new DoubleMatrixDatasetFastSubsetLoader(options.getY());
 		
-		Set<String> sharedGenes = new LinkedHashSet<>(corePredictionZscoresLoader.getOriginalRowMap());
-		sharedGenes.retainAll(expressionDataLoader.getOriginalRowMap());
+		Set<String> sharedGenes = new LinkedHashSet<>(corePredictionZscoresLoader.getAllRowIdentifiers());
+		sharedGenes.retainAll(expressionDataLoader.getAllRowIdentifiers());
 		
 		DoubleMatrixDataset<String, String> corePredictionZscores = corePredictionZscoresLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);
 		DoubleMatrixDataset<String, String> expressionData = expressionDataLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);

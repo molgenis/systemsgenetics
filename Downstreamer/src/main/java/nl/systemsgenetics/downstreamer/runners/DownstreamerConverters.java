@@ -799,12 +799,12 @@ public class DownstreamerConverters {
 		for (DoubleMatrixDatasetFastSubsetLoader datasetLoader : binMatrices) {
 			// Put the variant set in memory to avoid having to loop it later on
 			if (rowNameIntersection.isEmpty()) {
-				rowNameIntersection.addAll(datasetLoader.getOriginalRowMap());
+				rowNameIntersection.addAll(datasetLoader.getAllRowIdentifiers());
 			} else {
-				rowNameIntersection.retainAll(datasetLoader.getOriginalRowMap());
+				rowNameIntersection.retainAll(datasetLoader.getAllRowIdentifiers());
 			}
 
-			for (String newCol : datasetLoader.getOriginalColMap()) {
+			for (String newCol : datasetLoader.getAllColumnIdentifiers()) {
 
 				if (mergedColNames.contains(newCol)) {
 					int i = 1;
