@@ -50,7 +50,7 @@ public class DownstreamerUtilities {
 	private static HashMap<String, HashMap<String, NearestVariant>> traitGeneDist = null;
 
 	/**
-	 * Util to test the block diagonal eigen decomposition.
+	 * Util to test the block diagonal eigen decomposition. TODO Remove on release
 	 * @param options
 	 * @throws Exception
 	 */

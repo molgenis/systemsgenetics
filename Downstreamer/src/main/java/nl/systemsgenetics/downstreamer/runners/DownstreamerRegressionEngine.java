@@ -784,7 +784,7 @@ public class DownstreamerRegressionEngine {
         DoubleMatrix output = new DoubleMatrix(A.rows(), A.columns());
 
         for (int i=0; i< A.rows(); i++) {
-            for (int j = 0; j < A.columns(); i++) {
+            for (int j = 0; j < A.columns(); j++) {
                 output.put(i, j, A.getElementQuick(i, j));
             }
         }
@@ -800,7 +800,7 @@ public class DownstreamerRegressionEngine {
         DoubleMatrix output = new DoubleMatrix(A.rows(), A.columns());
 
         for (int i=0; i< A.rows(); i++) {
-            for (int j = 0; j < A.columns(); i++) {
+            for (int j = 0; j < A.columns(); j++) {
                 output.put(i, j, A.getQuick(i, j));
             }
         }
