@@ -4,7 +4,7 @@
 
 
 
-remoter::client("localhost", port = 55506)
+remoter::client("localhost", port = 55506)#55556
 
 library(DESeq2)
 library(parallel)
@@ -114,6 +114,7 @@ sink <- lapply(tissueClasses, function(tissue){
 })
 
 stopCluster(cl)
+
 
 
 cor.test(vstExpCovCor[,1], vstExp[,1])
@@ -404,3 +405,18 @@ pairs(expPcs[,1:10], col = breakCols[as.numeric(cut(tissueSamplesInfo$predictedT
   sum(expPcs[,2]>10)
 x <- cbind(expPcs, tissueSamplesInfo)
 View(x)
+
+
+
+
+tissue <- "Kidney"
+sink <- lapply(tissueClasses, function(tissue){
+  
+  
+  
+  load(file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
+  
+  corMatrix <- cor(t(vstExpCovCor))
+  write.table(corMatrix, file = gzfile(paste0("perTissueNormalization/dataForLude/",make.names(tissue),"_vstCovCor_coexp.txt.gz")), quote = F, sep = "\t", col.names = NA)
+  
+})
