@@ -2,11 +2,15 @@ package nl.systemsgenetics.downstreamer.runners;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import me.tongfei.progressbar.ProgressBar;
+import nl.systemsgenetics.downstreamer.gene.IndexedDouble;
+import nl.systemsgenetics.downstreamer.io.BlockDiagonalDoubleMatrixProvider;
+import nl.systemsgenetics.downstreamer.io.DoubleMatrixDatasetBlockDiagonalProvider;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
@@ -15,6 +19,8 @@ import nl.systemsgenetics.downstreamer.io.ExcelWriter;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeCoreg;
+import nl.systemsgenetics.downstreamer.runners.options.OptionsTesting;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
 import org.apache.logging.log4j.Logger;
@@ -42,6 +48,83 @@ public class DownstreamerUtilities {
 	private static final Logger LOGGER = LogManager.getLogger(DownstreamerUtilities.class);
 
 	private static HashMap<String, HashMap<String, NearestVariant>> traitGeneDist = null;
+
+	/**
+	 * Util to test the block diagonal eigen decomposition. TODO Remove on release
+	 * @param options
+	 * @throws Exception
+	 */
+	public static void testEigenDecomposition(OptionsTesting options) throws Exception {
+
+		DoubleMatrixDataset<String, String> sigma = DoubleMatrixDataset.loadDoubleData(options.getSigma().getCanonicalPath());
+
+		BlockDiagonalDoubleMatrixProvider provider = new DoubleMatrixDatasetBlockDiagonalProvider(sigma);
+
+		Map<String, List<Integer>> indexMap = new HashMap<>();
+		BufferedReader reader = new BufferedReader(new FileReader(options.getIndex()));
+
+		String line;
+		while ((line = reader.readLine()) != null) {
+			String[] cur = line.split("\t");
+
+			if (indexMap.containsKey(cur[0])) {
+				indexMap.get(cur[0]).add(Integer.parseInt(cur[1]));
+			} else {
+				List<Integer> tmp = new ArrayList<>();
+				tmp.add(Integer.parseInt(cur[1]));
+				indexMap.put(cur[0], tmp);
+			}
+		}
+
+		List<int[]> indices = new ArrayList<>(indexMap.size());
+		for (String key : indexMap.keySet()) {
+			List<Integer> list = indexMap.get(key);
+			int[] array = new int[list.size()];
+			for(int i = 0; i < list.size(); i++) array[i] = list.get(i);
+			indices.add(array);
+		}
+		//-----------------------------------------------------------------------------------------------
+
+		List<String> eigenvectorNames = new ArrayList<>(provider.columns());
+		for (int i = 0; i < provider.columns(); i++) {
+			eigenvectorNames.add("V" + i);
+		}
+		List<String> eigenvalueNames = new ArrayList<>(1);
+		eigenvalueNames.add("eigenvalues");
+
+		DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(provider.getRowNames(), eigenvectorNames);
+		DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
+
+		//-----------------------------------------------------------------------------------------------
+		// Full
+		DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(sigma.getMatrix());
+
+		U.setMatrix(eigen.getV());
+		L.setMatrix(eigen.getRealEigenvalues().reshape(L.rows(), L.columns()));
+
+		U.save(options.getOutputBasePath() + "_ds_eigenvectors.txt");
+		L.save(options.getOutputBasePath() + "_ds_eigenvalues.txt");
+
+		L.setMatrix(eigen.getImagEigenvalues().reshape(L.rows(), L.columns()));
+		L.save(options.getOutputBasePath() + "_ds_eigenvalues_imaginary.txt");
+
+		L.setMatrix(eigen.getRealEigenvalues().reshape(L.rows(), L.columns()));
+
+		//-----------------------------------------------------------------------------------------------
+		// Block diagonal
+		DoubleMatrixDataset<String, String>[] eigenBlock = DownstreamerRegressionEngine.blockDiagonalEigenDecomposition(provider,
+				indices,
+				options.useJblas());
+
+		U = eigenBlock[1];
+		L = eigenBlock[0];
+
+		U.save(options.getOutputBasePath() + "_ds_eigenvectors_blocked.txt");
+		L.save(options.getOutputBasePath() + "_ds_eigenvalues_blocked.txt");
+
+		//-----------------------------------------------------------------------------------------------
+
+	}
 
 
 	/**

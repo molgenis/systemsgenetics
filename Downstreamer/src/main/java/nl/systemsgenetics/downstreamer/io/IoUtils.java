@@ -510,6 +510,26 @@ public class IoUtils {
 	}
 
 
+	public static void writeBlockDiagonalIndices(List<int[]> blockDiagonalIndices, List<String> colObjects, String basePath) throws IOException {
+		File blockdiagonalFile =  new File(basePath);
+
+		BufferedWriter writer = new BufferedWriter(new FileWriter(blockdiagonalFile));
+		int curBlock = 0;
+		writer.write("block\tindex\tgene");
+		writer.newLine();
+		for (int[] cur :blockDiagonalIndices) {
+
+			for (int i : cur) {
+				writer.write(curBlock + "\t" + i + "\t" + colObjects.get(i));
+				writer.newLine();
+			}
+		}
+		writer.flush();
+		writer.close();
+
+	}
+
+
 
 
 

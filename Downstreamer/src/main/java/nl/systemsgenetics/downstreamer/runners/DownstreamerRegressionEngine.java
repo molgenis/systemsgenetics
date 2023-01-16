@@ -6,22 +6,30 @@ import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
+import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
 import gnu.trove.list.array.TIntArrayList;
 import me.tongfei.progressbar.ProgressBar;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
+import nl.systemsgenetics.downstreamer.gene.IndexedDouble;
+import nl.systemsgenetics.downstreamer.io.BlockDiagonalDoubleMatrixProvider;
+import nl.systemsgenetics.downstreamer.io.DoubleMatrixDatasetBlockDiagonalProvider;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeRegress;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.jblas.DoubleMatrix;
+import org.jblas.Eigen;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -60,11 +68,15 @@ public class DownstreamerRegressionEngine {
 		DoubleMatrixDataset<String, String> U = null;
 		DoubleMatrixDataset<String, String> L = null;
 
-		if (options.hasSigma()) {
-			throw new Exception("Eigen decomp of sigma is not yet supported here, please pre-compute and use -u -l");
-		} else {
-			U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
-			logInfoMem("Dim U:" + U.rows() + "x" + U.columns());
+        if (options.hasSigma()) {
+            //throw new Exception("Eigen decomp of sigma is not yet supported here, please pre-compute and use -u -l");
+            Sigma = DoubleMatrixDataset.loadDoubleData(options.getSigma().getPath());
+            logInfoMem("Dim S:" + Sigma.rows() + "x" + Sigma.columns());
+
+            overlappingRows.retainAll(Sigma.getRowObjects());
+        } else {
+            U = DoubleMatrixDataset.loadDoubleData(options.getEigenvectors().getPath());
+            logInfoMem("Dim U:" + U.rows() + "x" + U.columns());
 
 			L = DoubleMatrixDataset.loadDoubleData(options.getEigenvalues().getPath());
 			logInfoMem("Dim L:" + L.rows() + "x" + L.columns());
@@ -115,9 +127,15 @@ public class DownstreamerRegressionEngine {
 			C = C.viewRowSelection(finalRowSelection);
 		}
 
-		if (U != null) {
-			U = U.viewRowSelection(finalRowSelection);
-		}
+        if (U != null) {
+            U = U.viewRowSelection(finalRowSelection);
+
+            if (U.columns() > 1.1 * U.rows()) {
+                LOGGER.warn("!!!MORE THAN 10% DIFFERENCE BETWEEN THE NUMBER OF GENES AND NUMBER OF EIGENVECTORS!!!");
+                LOGGER.warn("This will lead to an overestimation of the degrees of freedom and produce invalid standard errors");
+                LOGGER.warn("We strongly advise to calculate the eigenvectors only on genes that overlap!");
+            }
+        }
 
 		if (Sigma != null) {
 			Sigma = Sigma.viewSelection(finalRowSelection, finalRowSelection);
@@ -155,28 +173,51 @@ public class DownstreamerRegressionEngine {
 		// the genes file (this is checked and error is thrown). If there are, users can use -ro
 		List<int[]> blockDiagonalIndices = null;
 
-		if (options.hasGenes()) {
-			blockDiagonalIndices = createBlockDiagonalIndexFromGenes(options.getGenes(), X.getRowObjects());
-		}
+        if (options.hasGenes()) {
+            blockDiagonalIndices = createBlockDiagonalIndexFromGenes(options.getGenes(), X.getRowObjects());
 
-		// Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
-		List<LinearRegressionResult> output;
-		if (options.hasSigma()) {
-			throw new Exception("Not supported atm. Please pre-calculate the eigen decomposition");
-		} else {
-			output = performDownstreamerRegression(X, Y, C, U, L,
-					blockDiagonalIndices,
-					options.getPercentageOfVariance(),
-					options.fitIntercept(),
-					options.regressCovariates(),
-					options.useJblas());
-		}
+            if (options.isDebugMode()) {
+                IoUtils.writeBlockDiagonalIndices(blockDiagonalIndices, X.getRowObjects(), options.getOutputBasePath());
+            }
+        }
 
-		// Save linear regression results
-		for (LinearRegressionResult curRes : output) {
-			curRes.save(options.getOutputBasePath() + "_" + curRes.getName(), false);
-		}
-	}
+        // Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
+        List<LinearRegressionResult> output;
+
+        // TODO: in future make sure this doesn't read the full matrix
+        BlockDiagonalDoubleMatrixProvider sigmaProvider = new DoubleMatrixDatasetBlockDiagonalProvider(Sigma);
+        DoubleMatrixDataset<String, String>[] eigen = null;
+
+        if (Sigma != null && blockDiagonalIndices != null) {
+            eigen = blockDiagonalEigenDecomposition(sigmaProvider, blockDiagonalIndices, options.useJblas());
+        } else if (Sigma != null) {
+            eigen = eigenDecomposition(Sigma, options.useJblas());
+        }
+
+        if (eigen != null) {
+            L = eigen[0];
+            U = eigen[1];
+
+            U = U.viewRowSelection(finalRowSelection);
+
+            if (options.isDebugMode()) {
+                U.save(options.getOutputBasePath() + "_genecor_eigenvectors.txt");
+                L.save(options.getOutputBasePath() + "_genecor_eigenvalues.txt");
+            }
+        }
+
+        output = performDownstreamerRegression(X, Y, C, U, L,
+                blockDiagonalIndices,
+                options.getPercentageOfVariance(),
+                options.fitIntercept(),
+                options.regressCovariates(),
+                options.useJblas());
+
+        // Save linear regression results
+        for (LinearRegressionResult curRes : output) {
+            curRes.save(options.getOutputBasePath() + "_" + curRes.getName(), false);
+        }
+    }
 
 	/**
 	 * Runs DS regression if eigendecompostion has been pre-computed.These are
@@ -254,8 +295,8 @@ public class DownstreamerRegressionEngine {
 
 		logInfoMem("Starting regression for " + X.columns() + " pathways.");
 
-		// Determine the degrees of freedom. -1 for main_effect
-		int degreesOfFreedom = U.columns() - 1;
+        // Determine the degrees of freedom. -1 for main_effect
+        int degreesOfFreedom = UHatT.rows() - 1;
 
 		// Set the names of the predictors in the correct order
 		// and determine the degrees of freedom
@@ -277,17 +318,17 @@ public class DownstreamerRegressionEngine {
 		// Pre-calculate XHat and Xhat in a block diagonal way, or using full matrix mult.
 		if (blockDiagonalIndices != null) {
 			logInfoMem("Precomputing XHat and CHat");
-			XhatCache = multBlockDiagonalSubsetPerCol(UHatT, X.getMatrix(), blockDiagonalIndices, useJblas);
+			XhatCache = blockDiagonalMult(UHatT, X.getMatrix(), blockDiagonalIndices, useJblas);
 
-			if (C != null) {
-				ChatCache = multBlockDiagonalSubsetPerCol(UHatT, C.getMatrix(), blockDiagonalIndices, useJblas);
-			}
-			logInfoMem("Done");
-		} else {
-			if (C != null) {
-				ChatCache = mult(UHatT, C.getMatrix());
-			}
-		}
+            if (C != null) {
+                ChatCache = blockDiagonalMult(UHatT, C.getMatrix(), blockDiagonalIndices, useJblas);
+            }
+            logInfoMem("Done");
+        } else {
+            if (C != null) {
+                ChatCache = mult(UHatT, C.getMatrix());
+            }
+        }
 
 		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns());
 
@@ -446,8 +487,8 @@ public class DownstreamerRegressionEngine {
 		// For docs on the stats see comments in downstreamerRegressionPrecomp() above
 		DoubleMatrix2D b = inverse(mult(transpose(multDiag(design, LHatInv)), design));
 
-		// Loop over columns in y
-		for (int col = 0; col < Y.columns(); col++) {
+        // Loop over columns in y
+        for (int col = 0; col < Y.columns(); col++) {
 
 			DoubleMatrix2D a = mult(transpose(multDiag(Y.viewColumn(col).reshape(Y.rows(), 1), LHatInv)), design);
 			DoubleMatrix2D betas = mult(a, b);
@@ -476,8 +517,8 @@ public class DownstreamerRegressionEngine {
 		// Pre compute this component as thsi is constant for the design matrix
 		DoubleMatrix2D XtXi = inverse(tMult(design, design));
 
-		// Loop over columns in y
-		for (int col = 0; col < Y.columns(); col++) {
+        // Loop over columns in y
+        for (int col = 0; col < Y.columns(); col++) {
 
 			// Beta
 			DoubleMatrix2D y = Y.viewCol(col).reshape(Y.rows(), 1);
@@ -538,7 +579,9 @@ public class DownstreamerRegressionEngine {
 		List<int[]> blockDiagonalIndices = new ArrayList<>();
 		Map<String, TIntArrayList> blockDiagonalIndicesTmp = new HashMap<>();
 
-		int totalCount = 0;
+        LOGGER.info("Read genes on " + genes.size() + " blocks");
+
+        int totalCount = 0;
 
 		for (String key : genes.keySet()) {
 			for (Gene curGene : genes.get(key)) {
@@ -563,112 +606,248 @@ public class DownstreamerRegressionEngine {
 			blockDiagonalIndices.add(curList.toArray());
 		}
 
-		return blockDiagonalIndices;
-	}
+        LOGGER.info("Created index for " + totalCount + " genes on " + blockDiagonalIndices.size() + " blocks");
 
-	// Arithmatic functions to make code more readable //
-	private static void centerAndScale(DoubleMatrixDataset matrix) {
-		centerAndScale(matrix.getMatrix());
-	}
+        return blockDiagonalIndices;
+    }
 
-	/**
-	 * Set mean to 0 and sd to 1 for each column in the data. Lifted from
-	 * DoubleMatrixDataset.normalizeColumns() Refactored to center and scale to
-	 * avoid confusion with DoubleMatrix2D.normalize() which normalizes the data
-	 * so their sum = 1
-	 *
-	 * @param matrix
-	 */
-	private static void centerAndScale(DoubleMatrix2D matrix) {
 
-		final int rows = matrix.rows();
+    /**
+     * Perform eigen decomposition of a block diagonal matrix. Will decompose each block seperately according to the
+     * blocks defined in index. Can use either Pcolt or Jblas for eigen decomposition.
+     * @param provider
+     * @param index
+     * @param useJblas
+     * @return
+     * @throws UnsatisfiedLinkError
+     */
+    public static DoubleMatrixDataset<String, String>[] blockDiagonalEigenDecomposition(BlockDiagonalDoubleMatrixProvider provider, List<int[]> index, boolean useJblas) throws UnsatisfiedLinkError, Exception {
 
-		for (int c = 0; c < matrix.columns(); ++c) {
+        List<IndexedDouble> eigenvalues = new ArrayList<>(provider.columns());
+        List<String> eigenvectorNames = new ArrayList<>(provider.columns());
+        for (int i = 0; i < provider.columns(); i++) {
+            eigenvectorNames.add("V" + i);
+        }
+        List<String> eigenvalueNames = new ArrayList<>(1);
+        eigenvalueNames.add("eigenvalues");
 
-			DoubleMatrix1D col = matrix.viewColumn(c);
+        DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(provider.getRowNames(), eigenvectorNames);
+        DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
 
-			double colSum = 0;
+        ProgressBar pb = new ProgressBar("Eigen decomposition per block", index.size());
 
-			for (int e = 0; e < rows; ++e) {
-				colSum += col.getQuick(e);
-			}
+        int masterIndex = 0;
 
-			final double mean = colSum / rows;
+        if (useJblas) {
+            // Use Jblas for eigen decompotision
+            try {
+                for (int curBlock = 0; curBlock < index.size(); curBlock++) {
+                    int[] curIndex = index.get(curBlock);
+                    //DoubleMatrix curMatrix = new DoubleMatrix(sigma.getMatrix().viewSelection(curIndex, curIndex).toArray());
+                    DoubleMatrix curMatrix = toJblasDoubleMatrix(provider.viewBlock(curIndex));
+                    DoubleMatrix[] eigen = Eigen.symmetricEigenvectors(curMatrix);
 
-			double varSum = 0;
-			for (int e = 0; e < rows; ++e) {
-				varSum += (col.getQuick(e) - mean) * (col.getQuick(e) - mean);
-			}
+                    for (int i = 0; i < curMatrix.rows; i++) {
+                        eigenvalues.add(new IndexedDouble(eigen[1].get(i, i), masterIndex));
+                        masterIndex++;
+                        for (int j = 0; j < curMatrix.columns; j++) {
+                            U.setElementQuick(curIndex[i], curIndex[j], eigen[0].get(i, j));
+                        }
+                    }
+                    pb.step();
+                }
 
-			double sd = FastMath.sqrt(varSum / (rows - 1));
+            } catch (UnsatisfiedLinkError e) {
+                pb.close();
+                throw e;
+            }
 
-			for (int e = 0; e < rows; ++e) {
-				col.setQuick(e, (col.getQuick(e) - mean) / sd);
-			}
+        } else {
+            // Use P-colt for eigen decomposition
+            for (int curBlock = 0; curBlock < index.size(); curBlock++) {
+                int[] curIndex = index.get(curBlock);
+                DoubleMatrix2D curMatrix = provider.viewBlock(curIndex);
+                DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(curMatrix);
 
-		}
+                for (int i = 0; i < curMatrix.rows(); i++) {
+                    eigenvalues.add(new IndexedDouble(eigen.getRealEigenvalues().get(i), masterIndex));
+                    masterIndex++;
+                    for (int j = 0; j < curMatrix.columns(); j++) {
+                        U.setElementQuick(curIndex[i], curIndex[j], eigen.getV().getQuick(i, j));
+                    }
+                }
 
-	}
+                pb.step();
+            }
+        }
 
-	/**
-	 * Calculate the cumlative sum of the elements in A.
-	 *
-	 * @param a Vector to calculate cumulative sum for
-	 * @param asPercentage Should results be returned as a proportion
-	 * @return
-	 */
-	private static DoubleMatrix1D cumulativeSum(DoubleMatrix1D a, boolean asPercentage) {
+        // Order according to eigenvalues, large to small
+        orderToEigenvalues(eigenvalues, U, L);
 
-		double totalSum = 1;
-		if (asPercentage) {
-			totalSum = a.zSum();
-		}
-		DoubleMatrix1D result = a.like();
-		double runningSum = 0;
-		for (int i = 0; i < a.size(); i++) {
-			runningSum = runningSum + a.get(i);
-			result.set(i, runningSum / totalSum);
-		}
+        pb.close();
 
-		return result;
-	}
+        DoubleMatrixDataset<String, String>[] output = new DoubleMatrixDataset[2];
+        output[0] = L;
+        output[1] = U;
+        return output;
+    }
 
-	/**
-	 * Calculate A %*% B for a matrix A whose structure has some form of block
-	 * diagonality. I.e. there are rows and columns that are exactly zero.
-	 *
-	 * @param index gives the indices to multiply together. JBlas is much
-	 * quicker on larger matrices but has memory overhead compared to colt
-	 * matrix mult.
-	 *
-	 * @param A
-	 * @param B
-	 * @param index
-	 * @param useJblas
-	 * @return
-	 */
-	private static DoubleMatrix2D multBlockDiagonalSubsetPerCol(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index, boolean useJblas) {
-		if (useJblas) {
-			return multBlockDiagonalSubsetPerColJblas(A, B, index);
-		} else {
-			return multBlockDiagonalSubsetPerColPcolt(A, B, index);
-		}
-	}
 
-	/**
-	 * Calculate A %*% B for a matrix A whose structure has some form of block
-	 * diagonality. I.e. there are rows and columns that are exactly zero.
-	 *
-	 * @param index gives the indices to multiply together. Uses Jblas for
-	 * matrix multiplications. This does give memory overhead but is much
-	 * quciker.
-	 *
-	 * @param Ac
-	 * @param Bc
-	 * @param index
-	 * @return
-	 */
-	private static DoubleMatrix2D multBlockDiagonalSubsetPerColJblas(DoubleMatrix2D Ac, DoubleMatrix2D Bc, List<int[]> index) {
+    /**
+     * Eigen decomposition of DoubleMatrixDataset. Ensures the order of eigenvalues and vectors is decreasing in value.
+     * @param Sigma
+     * @param useJblas
+     * @return
+     * @throws Exception
+     */
+    public static DoubleMatrixDataset<String, String>[] eigenDecomposition(DoubleMatrixDataset<String, String> Sigma, boolean useJblas) throws Exception {
+        LOGGER.warn("Performing eigen decomposition on full sigma matrix. Is this what you want?");
+
+        List<IndexedDouble> eigenvalues = new ArrayList<>(Sigma.columns());
+        List<String> eigenvectorNames = new ArrayList<>(Sigma.columns());
+        for (int i = 0; i < Sigma.columns(); i++) {
+            eigenvectorNames.add("V" + i);
+        }
+        List<String> eigenvalueNames = new ArrayList<>(1);
+        eigenvalueNames.add("eigenvalues");
+
+        DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(Sigma.getRowObjects(), eigenvectorNames);
+        DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
+
+        if (useJblas) {
+            DoubleMatrix curMatrix = toJblasDoubleMatrix(Sigma);
+            DoubleMatrix[] eigen = Eigen.symmetricEigenvectors(curMatrix);
+
+            for (int i = 0; i < curMatrix.rows; i++) {
+                eigenvalues.add(new IndexedDouble(eigen[1].get(i, i), i));
+                for (int j = 0; j < curMatrix.columns; j++) {
+                    U.setElementQuick(i, j, eigen[0].get(i, j));
+                }
+            }
+
+        } else {
+            DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(Sigma.getMatrix());
+            U.setMatrix(eigen.getV());
+            for (int i=0; i<eigen.getRealEigenvalues().size(); i++) {
+                eigenvalues.add(new IndexedDouble(eigen.getRealEigenvalues().get(i), i));
+            }
+        }
+
+        // Order according to eigenvalues, large to small
+        orderToEigenvalues(eigenvalues, U, L);
+
+        DoubleMatrixDataset<String, String>[] output = new DoubleMatrixDataset[2];
+        output[0] = L;
+        output[1] = U;
+
+        return output;
+    }
+
+
+    /**
+     * Orders a eigen decomposition to the eigenvalues in decreasing order.
+     * @param eigenvalues   List of eigenvalues as indexed doubles
+     * @param U
+     * @param L
+     * @throws Exception
+     */
+    private static void orderToEigenvalues(List<IndexedDouble> eigenvalues, DoubleMatrixDataset<String, String> U, DoubleMatrixDataset<String, String> L) throws Exception {
+
+        // Keep track of original eigenvector names
+        List<String> eigenvectorNames = new ArrayList<>(U.getColObjects());
+
+        // Order according to eigenvalues, large to small
+        eigenvalues.sort(Comparator.comparingDouble(IndexedDouble::getValue));
+        Collections.reverse(eigenvalues);
+
+        LinkedHashMap<String, Integer> eigenvectorOrder = new LinkedHashMap<>();
+        int i = 0;
+        for (IndexedDouble cur : eigenvalues) {
+            eigenvectorOrder.put(eigenvectorNames.get(cur.getIndex()), i);
+            L.setElementQuick(i, 0, cur.getValue());
+            i++;
+        }
+
+        U.reorderCols(eigenvectorOrder);
+
+        // Now that eigenvectors are properly ordered, reset the names.
+        U.setColObjects(eigenvectorNames);
+    }
+
+
+    /**
+     * Convert a DoubleMatrixDataset to Jblas DoubleMatrix
+     * @param A
+     * @return
+     */
+    private static DoubleMatrix toJblasDoubleMatrix(DoubleMatrixDataset A) {
+        DoubleMatrix output = new DoubleMatrix(A.rows(), A.columns());
+
+        for (int i=0; i< A.rows(); i++) {
+            for (int j = 0; j < A.columns(); j++) {
+                output.put(i, j, A.getElementQuick(i, j));
+            }
+        }
+        return output;
+    }
+
+    /**
+     * Convert a colt DoubleMatrix2d to Jblas DoubleMatrix
+     * @param A
+     * @return
+     */
+    private static DoubleMatrix toJblasDoubleMatrix(DoubleMatrix2D A) {
+        DoubleMatrix output = new DoubleMatrix(A.rows(), A.columns());
+
+        for (int i=0; i< A.rows(); i++) {
+            for (int j = 0; j < A.columns(); j++) {
+                output.put(i, j, A.getQuick(i, j));
+            }
+        }
+        return output;
+    }
+
+
+    /**
+     * Calculate A %*% B for a matrix A whose structure has some form of block diagonality. I.e. there are rows
+     * and columns that are exactly zero. @param index gives the indices to multiply together.
+     * JBlas is much quicker on larger matrices but has memory overhead compared to colt matrix mult.
+     * <p>
+     * Columns in A are first subset per block. The rows to keep in A are determined by removing rows that have only
+     * zero values in the  subset of A's columns.
+     * <p>
+     * Indices provided in index should match the columns of A and the rows of B.
+     *
+     * @param A
+     * @param B
+     * @param index
+     * @param useJblas
+     * @return
+     */
+    private static DoubleMatrix2D blockDiagonalMult(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index, boolean useJblas) {
+        if (useJblas) {
+            return multBlockDiagonalSubsetPerColJblas(A, B, index);
+        } else {
+            return multBlockDiagonalSubsetPerColPcolt(A, B, index);
+        }
+    }
+
+    /**
+     * Calculate A %*% B for a matrix A whose structure has some form of block diagonality. I.e. there are rows
+     * and columns that are exactly zero. @param index gives the indices to multiply together.
+     * Uses Jblas for matrix multiplications. This does give memory overhead but is much quciker.
+     * <p>
+     * Columns in A are first subset per block. The rows to keep in A are determined by removing rows that have only
+     * zero values in the  subset of A's columns.
+     * <p>
+     * Indices provided in index should match the columns of A and the rows of B.
+     *
+     * @param Ac
+     * @param Bc
+     * @param index
+     * @return
+     */
+    private static DoubleMatrix2D multBlockDiagonalSubsetPerColJblas(DoubleMatrix2D Ac, DoubleMatrix2D Bc, List<int[]> index) {
 
 		DoubleMatrix2D C = DoubleFactory2D.dense.make(Ac.rows(), Bc.columns());
 		ProgressBar pb = new ProgressBar("Multiplying per block", Bc.columns() * index.size());
@@ -678,16 +857,17 @@ public class DownstreamerRegressionEngine {
 
 		int[][] AcacheIndices = new int[index.size()][];
 
-		// Compile the subset caches. Precomputing saves overhead, but is more memory intense.
-		for (int i = 0; i < index.size(); i++) {
-			Acache[i] = new DoubleMatrix(Ac.viewSelection(null, index.get(i)).toArray());
-			DoubleMatrix tmp = Acache[i].rowSums();
-			ArrayList<Integer> tmpIndices = new ArrayList<>();
-			for (int j = 0; j < tmp.rows; j++) {
-				if (tmp.get(j, 0) != 0) {
-					tmpIndices.add(j);
-				}
-			}
+        // Compile the subset caches. Precomputing saves overhead, but is more memory intense.
+        for (int i = 0; i < index.size(); i++) {
+            //Acache[i] = new DoubleMatrix(Ac.viewSelection(null, index.get(i)).toArray());
+            Acache[i] = toJblasDoubleMatrix(Ac.viewSelection(null, index.get(i)));
+            DoubleMatrix tmp = Acache[i].rowSums();
+            ArrayList<Integer> tmpIndices = new ArrayList<>();
+            for (int j = 0; j < tmp.rows; j++) {
+                if (tmp.get(j, 0) != 0) {
+                    tmpIndices.add(j);
+                }
+            }
 
 			AcacheIndices[i] = tmpIndices.stream().mapToInt(p -> p).toArray();
 			Acache[i] = Acache[i].getRows(AcacheIndices[i]);
@@ -714,18 +894,21 @@ public class DownstreamerRegressionEngine {
 		return C;
 	}
 
-	/**
-	 * Calculate A %*% B for a matrix A whose structure has some form of block
-	 * diagonality. I.e. there are rows and columns that are exactly zero.
-	 *
-	 * @param index gives the indices to multiply together.
-	 *
-	 * @param Ac
-	 * @param Bc
-	 * @param index
-	 * @return
-	 */
-	private static DoubleMatrix2D multBlockDiagonalSubsetPerColPcolt(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index) {
+    /**
+     * Calculate A %*% B for a matrix A whose structure has some form of block diagonality. I.e. there are rows
+     * and columns that are exactly zero. @param index gives the indices to multiply together.
+     * <p>
+     * Columns in A are first subset per block. The rows to keep in A are determined by removing rows that have only
+     * zero values in the  subset of A's columns.
+     * <p>
+     * Indices provided in index should match the columns of A and the rows of B.
+     *
+     * @param Ac
+     * @param Bc
+     * @param index
+     * @return
+     */
+    private static DoubleMatrix2D multBlockDiagonalSubsetPerColPcolt(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index) {
 
 		DoubleMatrix2D C = DoubleFactory2D.dense.make(A.rows(), B.columns());
 
@@ -774,16 +957,89 @@ public class DownstreamerRegressionEngine {
 		return C;
 	}
 
-	/**
-	 * Shorthand for A * t(B)
-	 *
-	 * @param A A matrix
-	 * @param B A matrix
-	 * @return
-	 */
-	private static DoubleMatrix2D multT(DoubleMatrix2D A, DoubleMatrix2D B) {
-		return mult(A, B.viewDice());
-	}
+
+
+    // Arithmatic functions to make code more readable //
+
+    private static void centerAndScale(DoubleMatrixDataset matrix) {
+        centerAndScale(matrix.getMatrix());
+    }
+
+
+    /**
+     * Set mean to 0 and sd to 1 for each column in the data.
+     * Lifted from DoubleMatrixDataset.normalizeColumns()
+     * Refactored to center and scale to avoid confusion with DoubleMatrix2D.normalize()
+     * which normalizes the data so their sum = 1
+     *
+     * @param matrix
+     */
+    private static void centerAndScale(DoubleMatrix2D matrix) {
+
+        final int rows = matrix.rows();
+
+        for (int c = 0; c < matrix.columns(); ++c) {
+
+            DoubleMatrix1D col = matrix.viewColumn(c);
+
+            double colSum = 0;
+
+            for (int e = 0; e < rows; ++e) {
+                colSum += col.getQuick(e);
+            }
+
+            final double mean = colSum / rows;
+
+            double varSum = 0;
+            for (int e = 0; e < rows; ++e) {
+                varSum += (col.getQuick(e) - mean) * (col.getQuick(e) - mean);
+            }
+
+            double sd = FastMath.sqrt(varSum / (rows - 1));
+
+            for (int e = 0; e < rows; ++e) {
+                col.setQuick(e, (col.getQuick(e) - mean) / sd);
+            }
+
+        }
+
+    }
+
+
+    /**
+     * Calculate the cumlative sum of the elements in A.
+     *
+     * @param a            Vector to calculate cumulative sum for
+     * @param asPercentage Should results be returned as a proportion
+     * @return
+     */
+    private static DoubleMatrix1D cumulativeSum(DoubleMatrix1D a, boolean asPercentage) {
+
+        double totalSum = 1;
+        if (asPercentage) {
+            totalSum = a.zSum();
+        }
+        DoubleMatrix1D result = a.like();
+        double runningSum = 0;
+        for (int i = 0; i < a.size(); i++) {
+            runningSum = runningSum + a.get(i);
+            result.set(i, runningSum / totalSum);
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Shorthand for A * t(B)
+     *
+     * @param A A matrix
+     * @param B A matrix
+     * @return
+     */
+    private static DoubleMatrix2D multT(DoubleMatrix2D A, DoubleMatrix2D B) {
+        return mult(A, B.viewDice());
+    }
 
 	/**
 	 * Shorthand for t(A) * B
