@@ -159,9 +159,14 @@ public class DownstreamerEnrichment {
 				}
 			}
 
-			final DoubleMatrixDataset<String, String> gwasGenePvaluesSubset = gwasGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase);
-			final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesSubset = covariatesToCorrectGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase);
+			DoubleMatrixDataset<String, String> gwasGenePvaluesSubset;
+			final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesSubset = covariatesToCorrectGenePvalues == null ? null : covariatesToCorrectGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase);
 					
+			if(options.isForceNormalGenePvalues()){
+				gwasGenePvaluesSubset = gwasGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase).createColumnForceNormalDuplicate();
+			} else {
+				gwasGenePvaluesSubset = gwasGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase);
+			}
 					
 			final DoubleMatrixDataset<String, String> pathwayData = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(genesOverlappingWithPathwayDatabase);
 
@@ -172,6 +177,8 @@ public class DownstreamerEnrichment {
 			//TODO papamters
 			List<LinearRegressionResult> pathwayRegeressionResults = DownstreamerRegressionEngine.performDownstreamerRegression(null, null, null, null, null, blockDiagonalIndices, true, true, true);
 
+			
+			
 		}
 
 		return null;
