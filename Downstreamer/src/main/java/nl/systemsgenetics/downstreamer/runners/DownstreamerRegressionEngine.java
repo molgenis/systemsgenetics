@@ -36,6 +36,9 @@ import java.util.*;
 public class DownstreamerRegressionEngine {
 
 	private static final Logger LOGGER = LogManager.getLogger(DownstreamerRegressionEngine.class);
+	
+	public static final String MAIN_EFFECT_COL_NAME = "main_effect";
+	public static final String INTERCEPT_COL_NAME = "intercept";
 
 	// Vector functions
 	public static final DoubleDoubleFunction minus = (a, b) -> a - b;
@@ -302,10 +305,10 @@ public class DownstreamerRegressionEngine {
 		// and determine the degrees of freedom
 		List<String> predictorNames = new ArrayList<>();
 		if (fitIntercept) {
-			predictorNames.add("intercept");
+			predictorNames.add(INTERCEPT_COL_NAME);
 			degreesOfFreedom = degreesOfFreedom - 1;
 		}
-		predictorNames.add("main_effect");
+		predictorNames.add(MAIN_EFFECT_COL_NAME);
 		if (C != null) {
 			predictorNames.addAll(C.getColObjects());
 			degreesOfFreedom = degreesOfFreedom - C.columns();
