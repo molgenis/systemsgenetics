@@ -25,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.jblas.DoubleMatrix;
 import org.jblas.Eigen;
+import smile.stat.Hypothesis;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 import java.io.BufferedWriter;
@@ -177,10 +178,10 @@ public class DownstreamerRegressionEngine {
 		List<int[]> blockDiagonalIndices = null;
 
         if (options.hasGenes()) {
-            blockDiagonalIndices = createBlockDiagonalIndexFromGenes(options.getGenes(), X.getRowObjects());
+            blockDiagonalIndices = createBlockDiagonalIndexFromGenes(options.getGenes(), finalRowSelection);
 
             if (options.isDebugMode()) {
-                IoUtils.writeBlockDiagonalIndices(blockDiagonalIndices, X.getRowObjects(), options.getOutputBasePath());
+                IoUtils.writeBlockDiagonalIndices(blockDiagonalIndices, finalRowSelection, options.getDebugFolder() + "/block_diagonal_indices.txt");
             }
         }
 
@@ -204,8 +205,16 @@ public class DownstreamerRegressionEngine {
             U = U.viewRowSelection(finalRowSelection);
 
             if (options.isDebugMode()) {
-                U.save(options.getOutputBasePath() + "_genecor_eigenvectors.txt");
-                L.save(options.getOutputBasePath() + "_genecor_eigenvalues.txt");
+                U.save(options.getDebugFolder() + "/genecor_eigenvectors.txt");
+                L.save(options.getDebugFolder() + "/genecor_eigenvalues.txt");
+
+				BufferedWriter writer = new BufferedWriter(new FileWriter(options.getDebugFolder() + "/final_row_order.txt"));
+				for (String cur: finalRowSelection) {
+					writer.write(cur);
+					writer.newLine();
+				}
+				writer.flush();
+				writer.close();
             }
         }
 

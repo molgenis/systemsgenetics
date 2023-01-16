@@ -523,6 +523,7 @@ public class IoUtils {
 				writer.write(curBlock + "\t" + i + "\t" + colObjects.get(i));
 				writer.newLine();
 			}
+			curBlock++;
 		}
 		writer.flush();
 		writer.close();
