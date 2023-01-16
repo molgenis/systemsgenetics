@@ -35,8 +35,10 @@ public class OptionsModeEnrichment extends OptionsBase {
 	private final boolean forceNormalPathwayPvalues;
 	private final boolean regressGeneLengths;
 	private final File geneInfoFile;
-	private final File gwasPvalueMatrixFile;
+	private final File singleGwasFile;
+	private final String gwasPvalueMatrixPath;
 	private final boolean excludeHla;
+	private final boolean skipPvalueToZscore;
 
 	static {
 
@@ -90,13 +92,23 @@ public class OptionsModeEnrichment extends OptionsBase {
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("GWAS gene p-values. Rows genes, Cols: genes, pvalue, nSNPs, min SNP p-value. Tab seperated txt or txt.gz file or .dat / datg binary matrix format");
 		OptionBuilder.withLongOpt("gwas");
-		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("g"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Expects 3 files with equal and same ordered columns (traits) and rows (genes). <path>_pvalues with gene p-values; <path>_nvar number of variants per gene; <path>_minVarPvalue. Each file is Tab seperated txt/txt.gz file or .dat / datg binary matrix format. The number of variants per gene is assumed to be equal, it is allowed ot have only a single column in this file.");
+		OptionBuilder.withLongOpt("gwasMatrix");
+		OPTIONS.addOption(OptionBuilder.create("gm"));
 
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Exclude HLA locus during pathway enrichments (chr6 20mb - 40mb)");
 		OptionBuilder.withLongOpt("excludeHla");
 		OPTIONS.addOption(OptionBuilder.create("eh"));
+		
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Set true to skip converting gene p-values to z-scores. Only do this if the gene scores are already z-scores");
+		OptionBuilder.withLongOpt("noPvalueToZscore");
+		OPTIONS.addOption(OptionBuilder.create("nptz"));
 
 	}
 
@@ -117,8 +129,21 @@ public class OptionsModeEnrichment extends OptionsBase {
 		forceNormalGenePvalues = commandLine.hasOption("fngp");
 		forceNormalPathwayPvalues = commandLine.hasOption("fnpp");
 		regressGeneLengths = commandLine.hasOption("rgl");
+		skipPvalueToZscore = commandLine.hasOption("nptz");
 		geneInfoFile = new File(commandLine.getOptionValue("ge"));
-		gwasPvalueMatrixFile = new File(commandLine.getOptionValue('g'));
+		
+		if (commandLine.hasOption("g") && commandLine.hasOption("gm")) {
+			throw new ParseException("Provide either -g or -gm but not both");
+		} else if (commandLine.hasOption("g")) {
+			singleGwasFile = new File(commandLine.getOptionValue('g'));
+			gwasPvalueMatrixPath = null;
+		} else if (commandLine.hasOption("gm")) {
+			singleGwasFile = null;
+			gwasPvalueMatrixPath = commandLine.getOptionValue("gm");
+		} else {
+			throw new ParseException("Provide either -g or -gm");
+		}
+
 		excludeHla = commandLine.hasOption("eh");
 
 		printOptions();
@@ -163,8 +188,12 @@ public class OptionsModeEnrichment extends OptionsBase {
 	public void printOptions() {
 		super.printOptions();
 
-		LOGGER.info(" * geneInfoFile: " + gwasPvalueMatrixFile.getPath());
-
+		if(singleGwasFile != null){
+			LOGGER.info(" * GWAS gene p-value, variant count, min variant p-value file: " + singleGwasFile.getPath());
+		} else {
+			LOGGER.info(" * GWAS gene p-value matrix path: " + gwasPvalueMatrixPath);
+		}
+		
 		if (covariates != null) {
 			LOGGER.info(" * covariates: " + covariates.getPath());
 		}
@@ -206,13 +235,20 @@ public class OptionsModeEnrichment extends OptionsBase {
 		return geneInfoFile;
 	}
 
-	public File getGwasPvalueMatrixPath() {
-		return gwasPvalueMatrixFile;
+	public File getSingleGwasFile() {
+		return singleGwasFile;
 	}
 
+	public String getGwasPvalueMatrixPath() {
+		return gwasPvalueMatrixPath;
+	}
+	
 	public boolean isExcludeHla() {
 		return excludeHla;
 	}
-	
 
+	public boolean isSkipPvalueToZscore() {
+		return skipPvalueToZscore;
+	}
+	
 }

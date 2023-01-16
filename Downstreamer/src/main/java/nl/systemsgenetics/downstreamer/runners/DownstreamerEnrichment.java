@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.downstreamer.runners;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
@@ -50,8 +52,31 @@ public class DownstreamerEnrichment {
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
 		LOGGER.info("Loaded " + genes.size() + " genes");
 
-		// Load GWAS data Cols: genes, pvalue, nSNPs, min SNP p-value
-		DoubleMatrixDataset<String, String> gwasData = DoubleMatrixDataset.loadDoubleData(options.getGwasPvalueMatrixPath().getAbsolutePath());
+		DoubleMatrixDataset<String, String> gwasGenePvalues;
+		DoubleMatrixDataset<String, String> gwasGeneVarCount;
+		DoubleMatrixDataset<String, String> gwasGeneMinVarPvalue;
+
+		if (options.getSingleGwasFile() != null) {
+			// Load GWAS data Cols: genes, pvalue, nSNPs, min SNP p-value
+			DoubleMatrixDataset<String, String> gwasData = DoubleMatrixDataset.loadDoubleData(options.getSingleGwasFile().getAbsolutePath());
+
+			ArrayList<String> colNames = gwasData.getColObjects();
+
+			gwasGenePvalues = gwasData.viewColSelection(colNames.get(0));
+			gwasGeneVarCount = gwasData.viewColSelection(colNames.get(1));
+			gwasGeneMinVarPvalue = gwasData.viewColSelection(colNames.get(2));
+
+		} else {
+
+			gwasGenePvalues = DoubleMatrixDataset.loadDoubleData(options.getGwasPvalueMatrixPath() + "_pvalues");
+			gwasGeneVarCount = DoubleMatrixDataset.loadDoubleData(options.getGwasPvalueMatrixPath() + "_nvar");
+			gwasGeneMinVarPvalue = DoubleMatrixDataset.loadDoubleData(options.getGwasPvalueMatrixPath() + "_minVarPvalue");
+
+		}
+
+		if (!options.isSkipPvalueToZscore()) {
+			inplacePvalueToZscore(gwasGenePvalues);
+		}
 
 		final Set<String> hlaGenes;
 		if (options.isExcludeHla()) {
@@ -67,85 +92,109 @@ public class DownstreamerEnrichment {
 			hlaGenes = Collections.EMPTY_SET;
 		}
 
-		ArrayList<String> allGwasGenes = gwasData.getRowObjects();
+		ArrayList<String> allGwasGenes = gwasGenePvalues.getRowObjects();
 
 		LinkedHashSet<String> selectedGenes = new LinkedHashSet<>();
 
-		//This loop will convert gene p-values to Z-scores and will create a list of genes that should be selected
-		for (int g = 0; g < gwasData.rows(); ++g) {
+		//This loop will create a list of genes that should be selected
+		genes:
+		for (int g = 0; g < gwasGenePvalues.rows(); ++g) {
 
-			gwasData.setElementQuick(g, 0, -ZScores.pToZTwoTailed(gwasData.getElementQuick(g, 0)));
-			
+			gwasGenePvalues.setElementQuick(g, 0, -ZScores.pToZTwoTailed(gwasGenePvalues.getElementQuick(g, 0)));
+
 			String gene = allGwasGenes.get(g);
-			
-			if(hlaGenes.contains(gene)){
+
+			if (hlaGenes.contains(gene)) {
 				//is hla gene so don't add to selected
 				continue;
 			}
-			
-			if(gwasData.getElementQuick(g, 1) < 1){
+
+			if (gwasGeneVarCount.getElementQuick(g, 0) < 1) {
 				//if no SNPs are found around gene don't use
+				//Assuses this is equal for alle GWASes
 				continue;
 			}
-			
-			if(!genes.containsKey(gene)){
+
+			if (!genes.containsKey(gene)) {
 				//if gene is not in list of genes to use, skip
 				continue;
 			}
-			
-			if(Double.isNaN(gwasData.getElementQuick(g, 0))){
-				//gene did not have a valid p-value
-				continue;
+
+			for (int c = 0; c < gwasGenePvalues.columns(); ++g) {
+				if (Double.isNaN(gwasGenePvalues.getElementQuick(g, c))) {
+					//gene did not have a valid p-value
+					continue genes;
+				}
 			}
-			
+
 			selectedGenes.add(gene);
 
 		}
-		
-		gwasData = gwasData.viewRowSelection(selectedGenes);
 
 		// Load optinal covariates
 		final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvalues;
 		if (options.getCovariates() != null) {
-			DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesTmp = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getAbsolutePath());
-			
-			if(!covariatesToCorrectGenePvaluesTmp.getHashRows().keySet().containsAll(selectedGenes)){
+			covariatesToCorrectGenePvalues = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getAbsolutePath());
+
+			if (!covariatesToCorrectGenePvalues.getHashRows().keySet().containsAll(selectedGenes)) {
 				throw new Exception("Not all genes are found in the covariate file");
 			}
-			
-			covariatesToCorrectGenePvalues = covariatesToCorrectGenePvaluesTmp.viewRowSelection(selectedGenes);
-			
+
 		} else {
 			covariatesToCorrectGenePvalues = null;
 		}
-		
+
 		final Map<String, List<Gene>> chrArmGeneMap = IoUtils.readGenesAsChrArmMap(options.getGeneInfoFile());
-		
+
 		final ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
+		
 		for (PathwayDatabase pathwayDatabase : pathwayDatabases) {
-			
-			
+
 			final DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pathwayDatabase.getLocation());
 			ArrayList<String> genesOverlappingWithPathwayDatabase = new ArrayList<>(selectedGenes.size());
-			
-			for(String pathwayGene : pathwayMatrixLoader.getAllRowIdentifiers()){
-				if(selectedGenes.contains(pathwayGene)){
+
+			for (String pathwayGene : pathwayMatrixLoader.getAllRowIdentifiers()) {
+				if (selectedGenes.contains(pathwayGene)) {
 					genesOverlappingWithPathwayDatabase.add(pathwayGene);
 				}
 			}
-			
-			final DoubleMatrixDataset<String, String> gwasDataOverlap = gwasData.viewRowSelection(genesOverlappingWithPathwayDatabase);
+
+			DoubleMatrixDataset<String, String> gwasGenePvaluesSubset;
+			final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesSubset = covariatesToCorrectGenePvalues == null ? null : covariatesToCorrectGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase);
+					
+			if(options.isForceNormalGenePvalues()){
+				gwasGenePvaluesSubset = gwasGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase).createColumnForceNormalDuplicate();
+			} else {
+				gwasGenePvaluesSubset = gwasGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase);
+			}
+					
 			final DoubleMatrixDataset<String, String> pathwayData = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(genesOverlappingWithPathwayDatabase);
+
+			
 			
 			final List<int[]> blockDiagonalIndices = DownstreamerRegressionEngine.createBlockDiagonalIndexFromGenes(chrArmGeneMap, genesOverlappingWithPathwayDatabase);
-			
+
 			//TODO papamters
-			List<LinearRegressionResult> pathwayRegeressionResults = DownstreamerRegressionEngine.performDownstreamerRegression(gwasData, gwasData, gwasData, gwasData, gwasData, blockDiagonalIndices, true, true, true);
+			List<LinearRegressionResult> pathwayRegeressionResults = DownstreamerRegressionEngine.performDownstreamerRegression(null, null, null, null, null, blockDiagonalIndices, true, true, true);
+
+			final DoubleMatrixDataset<String, String> pathwayPvalues = new DoubleMatrixDataset<>(pathwayData.getColObjects(), )
+			
 			
 		}
 
 		return null;
 
+	}
+
+	private static void inplacePvalueToZscore(DoubleMatrixDataset dataset) {
+		final DoubleMatrix2D matrix = dataset.getMatrix();
+
+		// Inplace convert gene p-values to z-scores
+		IntStream.range(0, matrix.rows()).parallel().forEach(r -> {
+			for (int c = 0; c < matrix.columns(); ++c) {
+				matrix.setQuick(r, c, -ZScores.pToZTwoTailed(matrix.getQuick(r, c)));
+			}
+		});
 	}
 
 }
