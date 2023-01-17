@@ -659,13 +659,13 @@ public class DownstreamerRegressionEngine {
                     DoubleMatrix curMatrix = toJblasDoubleMatrix(provider.viewBlock(curIndex));
                     DoubleMatrix[] eigen = Eigen.symmetricEigenvectors(curMatrix);
 
-                    for (int i = 0; i < curMatrix.rows; i++) {
-                        eigenvalues.add(new IndexedDouble(eigen[1].get(i, i), masterIndex));
-                        masterIndex++;
-                        for (int j = 0; j < curMatrix.columns; j++) {
-                            U.setElementQuick(curIndex[i], curIndex[j], eigen[0].get(i, j));
+                    for (int j = 0; j < curMatrix.columns; j++) {
+                        eigenvalues.add(new IndexedDouble(eigen[1].get(j, j), masterIndex));
+                        for (int i = 0; i < curMatrix.rows; i++) {
+                            U.setElementQuick(curIndex[i], masterIndex, eigen[0].get(i, j));
                         }
-                    }
+						masterIndex++;
+					}
                     pb.step();
                 }
 
@@ -681,13 +681,13 @@ public class DownstreamerRegressionEngine {
                 DoubleMatrix2D curMatrix = provider.viewBlock(curIndex);
                 DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(curMatrix);
 
-                for (int i = 0; i < curMatrix.rows(); i++) {
-                    eigenvalues.add(new IndexedDouble(eigen.getRealEigenvalues().get(i), masterIndex));
-                    masterIndex++;
-                    for (int j = 0; j < curMatrix.columns(); j++) {
-                        U.setElementQuick(curIndex[i], curIndex[j], eigen.getV().getQuick(i, j));
-                    }
-                }
+				for (int j = 0; j < curMatrix.columns(); j++) {
+					eigenvalues.add(new IndexedDouble(eigen.getRealEigenvalues().get(j), masterIndex));
+					for (int i = 0; i < curMatrix.rows(); i++) {
+						U.setElementQuick(curIndex[i], masterIndex, eigen.getV().getQuick(i, j));
+					}
+					masterIndex++;
+				}
 
                 pb.step();
             }
