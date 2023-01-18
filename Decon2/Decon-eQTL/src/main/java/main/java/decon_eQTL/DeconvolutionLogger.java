@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 
 public class DeconvolutionLogger {
 	static private FileHandler outfilePath;
-	protected final static Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	protected final static Logger log = LogManager.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	static public void setup(String outputDir, Boolean noConsole) throws IOException {
 		// get the global logger to configure it
 		LogManager.getLogManager().reset();

@@ -1,8 +1,7 @@
 package umcg.genetica.math.stats;
 
 import JSci.maths.statistics.NormalDistribution;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.Level;
 import umontreal.iro.lecuyer.probdist.AndersonDarlingDist;
 
 /**
@@ -20,7 +19,7 @@ import umontreal.iro.lecuyer.probdist.AndersonDarlingDist;
  */
 public class AndersonDarling {
 
-    private static final Logger LOGGER = Logger.getLogger(AndersonDarling.class.getName());
+    private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(AndersonDarling.class);
     private static final NormalDistribution norm = new NormalDistribution();
 
     public static enum IS_DATA_NORMALIZED {

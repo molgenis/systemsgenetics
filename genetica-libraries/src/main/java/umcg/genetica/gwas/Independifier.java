@@ -4,7 +4,6 @@
  */
 package umcg.genetica.gwas;
 
-import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,8 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.Level;
+import umcg.genetica.graphics.ForestPlot;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.io.trityper.SNP;
 import umcg.genetica.io.trityper.SNPLoader;
@@ -29,7 +28,7 @@ import umcg.genetica.math.matrix.DoubleMatrixDataset;
  */
 public class Independifier {
 
-    private static final Logger LOGGER = Logger.getLogger(Independifier.class.getName());
+    private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(ForestPlot.class);
     TriTyperGenotypeData genotypeData;
     final SNPLoader snpLoader;
     Map<String, DoubleMatrixDataset<String, String>> permDatasets;

@@ -20,7 +20,8 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 
@@ -55,7 +56,7 @@ public class AseConfiguration {
 
 	static {
 
-		LOGGER = Logger.getLogger(AseConfiguration.class);
+		LOGGER = LogManager.getLogger(AseConfiguration.class);
 
 		OPTIONS = new Options();
 

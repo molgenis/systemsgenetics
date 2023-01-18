@@ -5,12 +5,14 @@ import cern.colt.list.tint.IntArrayList;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.io.IoUtils;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.io.PathwayDatabaseEnrichmentExcelWriter;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.FisherExactTest;
@@ -18,17 +20,16 @@ import umcg.genetica.math.stats.MannWhitneyUTest2;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.IntStream;
 
 public class PathwayDatabaseEnrichments {
-    private static final Logger LOGGER = Logger.getLogger(PathwayDatabaseEnrichments.class);
+    private static final Logger LOGGER = LogManager.getLogger(PathwayDatabaseEnrichments.class);
 
     private static final int minimalGeneCountInPathway = 10;
 
-    public static void testPredictionPerformance(DownstreamerOptions options) throws Exception {
+    public static void testPredictionPerformance(DownstreamerOptionsDeprecated options) throws Exception {
         PathwayDatabaseEnrichmentExcelWriter writer = new PathwayDatabaseEnrichmentExcelWriter(options);
-        DownstreamerStep2Results step2Results = DownstreamerUtilities.loadExistingStep2Results(options, true);
+        DownstreamerStep2Results step2Results = IoUtils.loadExistingStep2Results(options, true);
         List<PathwayDatabase> targetPathwayDatabases = options.getPathwayDatabases2();
 
         // Sheet for databases that have been enriched (most likely just GenePriortization)
@@ -65,7 +66,7 @@ public class PathwayDatabaseEnrichments {
 
             // Determine genes in the pathway
             DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(curTarget.getLocation());
-            Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap();
+            Set<String> pathwayGenes = pathwayMatrixLoader.getAllRowIdentifiers();
 
             // Determine the overlapping genes
             Set<String> overlappingGenes = new HashSet<>(queryGenes);

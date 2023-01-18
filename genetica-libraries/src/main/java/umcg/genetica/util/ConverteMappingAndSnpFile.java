@@ -161,7 +161,7 @@ public class ConverteMappingAndSnpFile {
             out.close();
             out2.close();
         } catch (IOException ex) {
-            Logger.getLogger(ConverteMappingAndSnpFile.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
     }

@@ -935,7 +935,7 @@ public class FinalReportToTriTyper {
         try {
             new FinalReportToTriTyper(inputFile, outputDir, isIlluminaFinalReportFile, delimiter, decimalSeparator);
         } catch (IOException ex) {
-            Logger.getLogger(FinalReportToTriTyper.class.getName()).log(Level.SEVERE, null, ex);
+            org.apache.logging.log4j.LogManager.getLogger(FinalReportToTriTyper.class).log(org.apache.logging.log4j.Level.FATAL, ex);
         }
     }
 }

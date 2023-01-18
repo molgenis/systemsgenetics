@@ -575,7 +575,7 @@ public class TestEQTLDatasetForInteractions {
 							System.out.println(task + 1 + " tasks processed");
 						}
 					} catch (ExecutionException ex) {
-						Logger.getLogger(PerformInteractionAnalysisPermutationTask.class.getName()).log(Level.SEVERE, null, ex);
+						throw new RuntimeException(ex);
 					}
 				}
 				/*} //If gene annotation not provided, use all gene pairs
@@ -602,7 +602,7 @@ public class TestEQTLDatasetForInteractions {
 				 System.out.println(task + 1 + " tasks processed");
 				 }
 				 } catch (ExecutionException ex) {
-				 Logger.getLogger(PerformInteractionAnalysisPermutationTask.class.getName()).log(Level.SEVERE, null, ex);
+				 LogManager.getLogger(PerformInteractionAnalysisPermutationTask.class.getName()).log(Level.SEVERE, null, ex);
 				 }
 				 }
 				 }*/

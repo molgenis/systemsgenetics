@@ -9,8 +9,9 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
-import org.apache.log4j.Logger;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 
@@ -20,18 +21,18 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
  */
 public class CorrelateExpressionToPredictions {
 
-		private static final Logger LOGGER = Logger.getLogger(CorrelateExpressionToPredictions.class);
+		private static final Logger LOGGER = LogManager.getLogger(CorrelateExpressionToPredictions.class);
 
 	
-	public static void run(DownstreamerOptions options) throws IOException, Exception{
+	public static void run(DownstreamerOptionsDeprecated options) throws IOException, Exception{
 		
 		DoubleMatrixDatasetFastSubsetLoader corePredictionZscoresLoader = new DoubleMatrixDatasetFastSubsetLoader(options.getIntermediateFolder() + "/" + options.getX() + "_Enrichment_zscoreExHla");
 		DoubleMatrixDataset<String, String> samplePredictionZscores = DoubleMatrixDataset.loadDoubleBinaryData(options.getIntermediateFolder() + "/expression_Enrichment_zscoreExHla");
 		
 		DoubleMatrixDatasetFastSubsetLoader expressionDataLoader = new DoubleMatrixDatasetFastSubsetLoader(options.getY());
 		
-		Set<String> sharedGenes = new LinkedHashSet<>(corePredictionZscoresLoader.getOriginalRowMap());
-		sharedGenes.retainAll(expressionDataLoader.getOriginalRowMap());
+		Set<String> sharedGenes = new LinkedHashSet<>(corePredictionZscoresLoader.getAllRowIdentifiers());
+		sharedGenes.retainAll(expressionDataLoader.getAllRowIdentifiers());
 		
 		DoubleMatrixDataset<String, String> corePredictionZscores = corePredictionZscoresLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);
 		DoubleMatrixDataset<String, String> expressionData = expressionDataLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes);

@@ -5,6 +5,7 @@
 package eqtlmappingpipeline.binarymeta.meta.cis;
 
 import com.itextpdf.text.DocumentException;
+import eqtlmappingpipeline.binarymeta.meta.MetaAnalysisCalculationThread;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
 import eqtlmappingpipeline.binarymeta.meta.MetaAnalyze;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.Gpio;
@@ -58,7 +60,7 @@ public class CisAnalysis extends MetaAnalyze {
                 CisAnalysis c = new CisAnalysis(config);
                 c.run();
             } catch (IOException ex) {
-                Logger.getLogger(CisAnalysis.class.getName()).log(Level.SEVERE, null, ex);
+                LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
             }
         }
     }
@@ -147,7 +149,7 @@ public class CisAnalysis extends MetaAnalyze {
                 try {
                     edp.draw(m_settings.getOutput() + "/eQTLsFDR" + m_settings.getFdrthreshold() + ".txt", m_settings.getOutput() + "/DotPlot-FDR" + m_settings.getFdrthreshold() + ".pdf", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"
                 } catch (DocumentException ex) {
-                    Logger.getLogger(CisAnalysis.class.getName()).log(Level.SEVERE, null, ex);
+                   LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
                 }
                 edp = null;
             }
@@ -289,7 +291,7 @@ public class CisAnalysis extends MetaAnalyze {
             // open binary file
             String filename = m_settings.getOutput() + m_settings.getDatasetnames().get(d) + "-eQTLs.dat";
             if (perm > 0) {
-                filename = m_settings.getOutput() + m_settings.getDatasetnames().get(d) + "-PermutedDataPermutationRound-" + perm + ".dat";;
+                filename = m_settings.getOutput() + m_settings.getDatasetnames().get(d) + "-PermutedDataPermutationRound-" + perm + ".dat";
             }
 
             System.out.println("Loading file: " + filename);

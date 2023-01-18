@@ -23,9 +23,9 @@ public class QTLDotPlotter {
             EQTLDotPlot edp = new EQTLDotPlot();
             edp.draw(file, file + "EQTLDotPlot.pdf", EQTLDotPlot.Output.PDF);
         } catch (IOException ex) {
-            Logger.getLogger(QTLDotPlotter.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         } catch (DocumentException ex) {
-            Logger.getLogger(QTLDotPlotter.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
 

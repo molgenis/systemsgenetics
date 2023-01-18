@@ -5,6 +5,7 @@
 package eqtlmappingpipeline.binarymeta.util;
 
 import com.itextpdf.text.DocumentException;
+import eqtlmappingpipeline.binarymeta.meta.MetaAnalysisCalculationThread;
 import eqtlmappingpipeline.metaqtl3.FDR;
 import eqtlmappingpipeline.metaqtl3.FDR.FDRMethod;
 import eqtlmappingpipeline.metaqtl3.graphics.EQTLDotPlot;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
 
@@ -84,7 +86,7 @@ public class Filter {
         try {
             edp.draw(outdir + "/eQTLsFDR" + 0.05 + ".txt", outdir + "/DotPlot-FDR" + 0.05 + ".png", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"
         } catch (DocumentException ex) {
-            Logger.getLogger(Filter.class.getName()).log(Level.SEVERE, null, ex);
+            LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
         }
 	edp = null;
 

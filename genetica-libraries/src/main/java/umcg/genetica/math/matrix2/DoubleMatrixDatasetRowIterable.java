@@ -65,7 +65,7 @@ public class DoubleMatrixDatasetRowIterable implements Iterable<double[]> {
 			}
 
 			if (fileBinary == null || !fileBinary.exists()) {
-				throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
+				throw new FileNotFoundException("File not found: " + fileName + ".datg or .dat or .dat.gz");
 			}
 
 			//Now load the row and column identifiers from files

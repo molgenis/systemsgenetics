@@ -20,7 +20,8 @@ import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
@@ -65,7 +66,7 @@ public class TriTyperGenotypeData extends AbstractRandomAccessGenotypeData imple
 	private final File snpMapFile;
 	private final File individualFile;
 	private final File phenotypeAnnotationFile;
-	private static final Logger LOG = Logger.getLogger(TriTyperGenotypeData.class);
+	private static final Logger LOG = LogManager.getLogger(TriTyperGenotypeData.class);
 	private final int cacheSize;
 	private final RandomAccessFile dosageHandle;
 	private final RandomAccessFile genotypeHandle;

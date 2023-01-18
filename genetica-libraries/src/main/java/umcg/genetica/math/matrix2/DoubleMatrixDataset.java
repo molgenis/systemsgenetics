@@ -46,7 +46,7 @@ import umcg.genetica.text.Strings;
  */
 public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
-	static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
+	private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(DoubleMatrixDataset.class);
 
 	protected DoubleMatrix2D matrix;
 	protected LinkedHashMap<R, Integer> hashRows;
@@ -405,7 +405,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			}
 
 			if (fileBinary == null || !fileBinary.exists()) {
-				throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
+				throw new FileNotFoundException("File not found: " + fileName + ".datg or .dat or .dat.gz");
 			}
 
 			if (fileBinary.getName().endsWith(".dat.gz")) {
@@ -663,7 +663,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 				desiredColIds.add(new Pair<>(s, storedCols));
 				storedCols++;
 			} else if (colMap.containsKey(colName)) {
-				LOGGER.warning("Duplicated column name!");
+				LOGGER.warn("Duplicated column name!");
 				throw new Exception("Duplicated column are not allowed. Tried to add: " + colName);
 			}
 		}
@@ -701,13 +701,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 					storingRow++;
 
 				} else if (rowMap.containsKey(data[0])) {
-					LOGGER.warning("Duplicated row name!");
 					throw new Exception("Duplicated row are not allowed. Tried to add: " + data[0]);
 				}
 			}
 		}
 		if (!correctData.get()) {
-			LOGGER.warning("Your data contains NaN/unparseable values!");
+			LOGGER.warn("Your data contains NaN/unparseable values!");
 		}
 		in.close();
 
@@ -853,7 +852,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			}
 
 			if (fileBinary == null || !fileBinary.exists()) {
-				throw new FileNotFoundException("File not found: " + fileName + ".dat or " + fileName + ".dat.gz");
+				throw new FileNotFoundException("File not found: " + fileName + ".datg or .dat or .dat.gz");
 			}
 
 			BufferedInputStream in;
@@ -1858,6 +1857,35 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		return newDataset;
 
 	}
+
+	/**
+	 * As createColumnForceNormalDuplicate() above, but instead of creating a copy, this modifies the matrix of the instance.
+	 */
+	public void createColumnForceNormalInplace() {
+
+		NaturalRanking ranking = new NaturalRanking(NaNStrategy.FAILED,
+				TiesStrategy.AVERAGE);
+
+		for (int c = 0; c < matrix.columns(); ++c) {
+
+			double[] col = matrix.viewColumn(c).toArray();
+
+			double mean = JSci.maths.ArrayMath.mean(col);
+			double stdev = JSci.maths.ArrayMath.standardDeviation(col);
+
+			double[] rankedValues = ranking.rank(col);
+
+			for (int s = 0; s < matrix.rows(); s++) {
+				double pValue = (0.5d + rankedValues[s] - 1d) / (double) (rankedValues.length);
+
+				matrix.setQuick(s, c, mean + cern.jet.stat.Probability.normalInverse(pValue) * stdev);
+			}
+
+		}
+
+	}
+
+
 
 	/**
 	 * In place normalization. Will set mean to 0 and sd to 1

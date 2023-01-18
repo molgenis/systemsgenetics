@@ -5,21 +5,25 @@
  */
 package nl.systemsgenetics.gadocommandline;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.ResourceBundle;
 import org.apache.commons.cli.ParseException;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
-import org.molgenis.genotype.tabix.TabixFileNotFoundException;
 
 /**
  *
@@ -29,7 +33,7 @@ public class GadoCommandline {
 
 	public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private static final Logger LOGGER = Logger.getLogger(GadoCommandline.class);
+	private static final Logger LOGGER = LogManager.getLogger(GadoCommandline.class);
 	private static final String HEADER
 			= "  /---------------------------------------\\\n"
 			+ "  |                 GADO                  |\n"
@@ -41,7 +45,7 @@ public class GadoCommandline {
 	 * @param args the command line arguments
 	 */
 	public static void main(String[] args) {
-		
+
 		System.out.println(HEADER);
 		System.out.println();
 		System.out.println("          --- Version: " + VERSION + " ---");
@@ -57,7 +61,8 @@ public class GadoCommandline {
 		System.out.flush(); //flush to make sure header is before errors
 		try {
 			Thread.sleep(25); //Allows flush to complete
-		} catch (InterruptedException ex) {}
+		} catch (InterruptedException ex) {
+		}
 
 		GadoOptions options;
 
@@ -80,24 +85,55 @@ public class GadoCommandline {
 				System.exit(1);
 			}
 		}
-		
+
 		try {
-			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), false);
-			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
-			Logger.getRootLogger().removeAllAppenders();
-			Logger.getRootLogger().addAppender(logFileAppender);
-
-			LOGGER.info("DEPICT" + VERSION);
-			LOGGER.info("Current date and time: " + startDateTime);
-
-			Logger.getRootLogger().addAppender(logConsoleInfoAppender);
 
 			if (options.isDebugMode()) {
-				Logger.getRootLogger().setLevel(Level.DEBUG);
+				Configurator.setRootLevel(Level.DEBUG);
 			} else {
-				Logger.getRootLogger().setLevel(Level.INFO);
+				Configurator.setRootLevel(Level.INFO);
+			}
+			LoggerContext context = LoggerContext.getContext(false);
+			Configuration config = context.getConfiguration();
+
+			PatternLayout loggingLayoutFull = PatternLayout.newBuilder()
+					.withPattern("[%level] %d{ABSOLUTE} - %c{1} - %msg%n")
+					.build();
+
+			PatternLayout loggingLayoutReduced = PatternLayout.newBuilder()
+					.withPattern("%msg%n")
+					.build();
+
+			// Stdout appender
+			ConsoleAppender stdOut = ConsoleAppender.newBuilder()
+					.setName("stdout")
+					.setLayout(loggingLayoutReduced)
+					.build();
+			stdOut.start();
+
+			// Log file appender
+			FileAppender file = FileAppender.newBuilder()
+					.setName("file")
+					.setLayout(loggingLayoutFull)
+					.withFileName(options.getLogFile().getCanonicalPath())
+					.build();
+			file.start();
+
+			// Make sure any existing loggers are removed
+			for (Appender appender : context.getRootLogger().getAppenders().values()) {
+				context.getRootLogger().removeAppender(appender);
 			}
 
+			// Add the appenders to the root logger
+			Logger rootLogger = context.getRootLogger();
+			LoggerConfig rootLoggerConfig = config.getRootLogger();
+
+			rootLoggerConfig.addAppender(stdOut, Level.INFO, null);
+			rootLoggerConfig.addAppender(file, options.isDebugMode() ? Level.DEBUG : Level.INFO, null);
+			config.addLogger(rootLogger.getName(), rootLoggerConfig);
+
+			context.updateLoggers(config);
+			
 		} catch (IOException e) {
 			System.err.println("Failed to create logger: " + e.getMessage());
 			System.exit(1);
@@ -145,9 +181,9 @@ public class GadoCommandline {
 			}
 			System.exit(1);
 		}
-		
+
 		LOGGER.info("Analysis completed");
-		
+
 	}
 
 }

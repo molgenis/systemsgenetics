@@ -1236,7 +1236,7 @@ public class MetaQTL3 {
                                 edp.draw(m_settings.outputReportsDir + "/eQTLsFDR" + m_settings.fdrCutOff + ".txt.gz", m_settings.outputReportsDir + "/DotPlot-FDR" + m_settings.fdrCutOff + ".pdf", EQTLDotPlot.Output.PDF); // "/eQTLsFDR" + fdrCutOff + ".txt", outputReportsDir + "/eQTLsFDR" + fdrCutOff + "DotPlot.png"
                             }
                         } catch (DocumentException ex) {
-                            Logger.getLogger(MetaQTL3.class.getName()).log(Level.SEVERE, null, ex);
+                            throw new RuntimeException(ex);
                         }
                         edp = null;
                     }

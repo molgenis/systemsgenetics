@@ -27,7 +27,7 @@ public class SummarizeQtlSummaries {
         try {
             processData(fileList, filenameContains);
         } catch (IOException ex) {
-            Logger.getLogger(SummarizeQtlSummaries.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
     }

@@ -168,7 +168,7 @@ public class NoLdSnpProbeListCreator {
 				logOutput += "Chr filter:\t" + chrF + "\n";
 			}
 		} catch (ParseException ex) {
-			Logger.getLogger(NoLdSnpProbeListCreator.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		}
 		
 		System.out.println(logOutput);

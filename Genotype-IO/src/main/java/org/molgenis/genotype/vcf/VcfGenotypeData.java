@@ -8,6 +8,8 @@ import java.util.*;
 import net.sf.samtools.util.BlockCompressedInputStream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -48,7 +50,7 @@ import org.molgenis.genotype.variant.sampleProvider.CachedSampleVariantProvider;
 
 public class VcfGenotypeData extends AbstractRandomAccessGenotypeData implements SampleVariantsProvider {
 
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(VcfGenotypeData.class);
+    private static final Logger LOG = LogManager.getLogger(VcfGenotypeData.class);
     private final File bzipVcfFile;
     private final TabixIndex tabixIndex;
     private final int sampleVariantProviderUniqueId;

@@ -71,7 +71,7 @@ public class InternalMetaAnalysis {
 		try {
 			run();
 		} catch (IOException ex) {
-			Logger.getLogger(InternalMetaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		}
 		//ToDo, check for non overlapping sites.
 		//Check allele assesed?

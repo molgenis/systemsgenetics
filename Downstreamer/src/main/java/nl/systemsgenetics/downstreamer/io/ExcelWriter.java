@@ -7,8 +7,8 @@ package nl.systemsgenetics.downstreamer.io;
 
 import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
-import nl.systemsgenetics.downstreamer.Downstreamer;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 
 import java.io.File;
@@ -26,7 +26,8 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
 import static nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities.getDistanceGeneToTopCisSnpPerTrait;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.*;
@@ -47,15 +48,15 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class ExcelWriter {
 
-	private static final Logger LOGGER = Logger.getLogger(ExcelWriter.class);
+	private static final Logger LOGGER = LogManager.getLogger(ExcelWriter.class);
 
 	private ExcelStyles styles;
 
 	private final String outputBasePath;
 	private final List<String> traits;
-	private final DownstreamerOptions options;
+	private final DownstreamerOptionsDeprecated options;
 
-	public ExcelWriter(List<String> traits, DownstreamerOptions options) {
+	public ExcelWriter(List<String> traits, DownstreamerOptionsDeprecated options) {
 		this.outputBasePath = options.getOutputBasePath();
 		this.traits = traits;
 		this.options = options;
@@ -438,7 +439,7 @@ public class ExcelWriter {
 
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Generated using Downstreamer " + Downstreamer.VERSION);
+		cell.setCellValue("Generated using Downstreamer " + DownstreamerDeprecated.VERSION);
 		cell.setCellStyle(styles.getBoldStyle());
 
 		overviewSheet.createRow(r++);

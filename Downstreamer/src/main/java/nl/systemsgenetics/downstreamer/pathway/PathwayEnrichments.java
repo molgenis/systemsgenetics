@@ -5,6 +5,7 @@
  */
 package nl.systemsgenetics.downstreamer.pathway;
 
+
 import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
@@ -24,8 +25,8 @@ import java.util.stream.IntStream;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.Downstreamer;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.containers.GwasLocus;
 import nl.systemsgenetics.downstreamer.containers.LeadVariant;
 import nl.systemsgenetics.downstreamer.gene.Gene;
@@ -38,7 +39,8 @@ import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.collections.ChrPosTreeMap;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
@@ -49,7 +51,7 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class PathwayEnrichments {
 
-	private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerDeprecated.class);
 
 	private final PathwayDatabase pathwayDatabase;
 	private final HashSet<String> hlaGenesToExclude;
@@ -156,7 +158,7 @@ public class PathwayEnrichments {
 		}
 
 		// Determine final set of genes to analyze and overlap with genes in pathway matrix
-		Set<String> pathwayGenes = pathwayMatrixLoader.getOriginalRowMap();
+		Set<String> pathwayGenes = pathwayMatrixLoader.getAllRowIdentifiers();
 		sharedGenes = new LinkedHashSet<>();
 
 		for (String gene : genesWithPvalue) {
@@ -272,6 +274,14 @@ public class PathwayEnrichments {
 			inplaceDetermineRegressionResiduals(geneZscoresNullGwasNullBetas, finalCovariates);
 
 			geneZscores.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_normalizedAdjustedGwasGeneScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz").getAbsolutePath());
+			
+			//TMP
+//			geneZscoresNullGwasCorrelation.viewDice().calculateCorrelationMatrix().save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_correlationMatrix" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz").getAbsolutePath());
+//			
+//			DoubleMatrixDataset<String, String> x = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(sharedGenes).createColumnForceNormalDuplicate();
+//			x.save(new File(intermediateFolder.getAbsolutePath() + "/", pathwayDatabase.getName() + "_Enrichment_pathwayScores" + (this.hlaGenesToExclude == null ? "" : "_ExHla") + ".txt.gz").getAbsolutePath());
+//			
+//			throw new RuntimeException("Testcode");
 		}
 
 		// Determine which genes will be merged to metagenes based on their genetic correlation
@@ -1343,7 +1353,7 @@ public class PathwayEnrichments {
 		return pValues;
 	}
 
-	public static PathwayEnrichments createPathwayEnrichmentsFromGenePvalues(DownstreamerOptions options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
+	public static PathwayEnrichments createPathwayEnrichmentsFromGenePvalues(DownstreamerOptionsDeprecated options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
 		DoubleMatrixDataset<String, String> geneQvalues;
 		DoubleMatrixDataset<String, String> geneBetas;
 
@@ -1358,7 +1368,7 @@ public class PathwayEnrichments {
 				geneQvalues);
 	}
 
-	public static PathwayEnrichments createPathwayEnrichmentsFromClosestGene(DownstreamerOptions options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
+	public static PathwayEnrichments createPathwayEnrichmentsFromClosestGene(DownstreamerOptionsDeprecated options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
 
 		ArrayList<String> traits = genePvalues.getColObjects();
 

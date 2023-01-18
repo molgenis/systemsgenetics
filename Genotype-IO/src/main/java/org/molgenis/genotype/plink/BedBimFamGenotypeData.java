@@ -20,6 +20,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
@@ -61,7 +64,7 @@ public class BedBimFamGenotypeData extends AbstractRandomAccessGenotypeData impl
 	private static final int HETEROZYGOTE = 2;
 	private static final int MISSING = 1;
 	private static final Alleles BI_ALLELIC_MISSING = Alleles.createAlleles(Allele.ZERO, Allele.ZERO);
-	private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(BedBimFamGenotypeWriter.class);
+	private static final Logger LOGGER = LogManager.getLogger(BedBimFamGenotypeWriter.class);
 	private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
 	private final ArrayList<Sample> samples;
 	private final Map<String, SampleAnnotation> sampleAnnotations;

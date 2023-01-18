@@ -8,7 +8,8 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.Iterator;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
@@ -21,7 +22,7 @@ import org.molgenis.genotype.variant.NotASnpException;
 
 public class PedMapGenotypeWriter implements GenotypeWriter {
 
-	private static Logger LOGGER = Logger.getLogger(PedMapGenotypeWriter.class);
+	private static Logger LOGGER = LogManager.getLogger(PedMapGenotypeWriter.class);
 	private final GenotypeData genotypeData;
 	private final char SEPARATOR = ' ';
 	private static final DecimalFormat PHENO_FORMATTER = new DecimalFormat("0.#####");

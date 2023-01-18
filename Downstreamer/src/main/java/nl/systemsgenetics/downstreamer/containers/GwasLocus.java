@@ -13,6 +13,7 @@ import nl.systemsgenetics.downstreamer.gene.Gene;
  *
  * @author patri
  */
+//TODO: integrate this with the SummaryStatistic objects, redundant with Locus
 public class GwasLocus implements Locatable {
 
 	private final LeadVariant leadVariant;

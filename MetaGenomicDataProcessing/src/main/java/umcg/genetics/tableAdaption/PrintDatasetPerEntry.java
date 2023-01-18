@@ -45,7 +45,7 @@ public class PrintDatasetPerEntry {
         try {
             bugMatrix = DoubleMatrixDataset.loadDoubleData(inputTable);
         } catch (IOException ex) {
-            Logger.getLogger(PrintDatasetPerEntry.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
         //Write matrix with direct filtering on X number of bugs in the individual cohort.
@@ -71,7 +71,7 @@ public class PrintDatasetPerEntry {
                 try {
                     relevantBugMatrix.save(outputFolder+"matrix_"+i+"_CuttOfNumber_"+cutOffNumber+"_incPercentage"+minPercentage+".tsv");
                 } catch (IOException ex) {
-                    Logger.getLogger(PrintDatasetPerEntry.class.getName()).log(Level.SEVERE, null, ex);
+                    throw new RuntimeException(ex);
                 }
             }
             i++;

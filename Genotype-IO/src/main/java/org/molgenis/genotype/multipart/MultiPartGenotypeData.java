@@ -16,7 +16,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.Sequence;
@@ -34,7 +35,7 @@ public class MultiPartGenotypeData extends AbstractRandomAccessGenotypeData
 	private static final Pattern VCF_PATTERN = Pattern.compile(".*vcf\\.gz$", Pattern.CASE_INSENSITIVE);
 	private final Map<String, Annotation> variantAnnotationsMap;
 	private final Map<String, SampleAnnotation> sampleAnnotationsMap;
-	private static final Logger LOGGER = Logger.getLogger(MultiPartGenotypeData.class);
+	private static final Logger LOGGER = LogManager.getLogger(MultiPartGenotypeData.class);
 
 	/**
 	 * Can map multiple times to same genotype dataset if a genotype dataset

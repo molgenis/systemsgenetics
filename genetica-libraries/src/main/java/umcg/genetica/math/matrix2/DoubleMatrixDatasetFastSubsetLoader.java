@@ -141,7 +141,7 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 
 	}
 
-	public Set<String> getOriginalRowMap() {
+	public Set<String> getAllRowIdentifiers() {
 		if (matrixReader == null) {
 			return Collections.unmodifiableSet(originalRowMap.keySet());
 		} else {
@@ -150,7 +150,7 @@ public class DoubleMatrixDatasetFastSubsetLoader {
 
 	}
 
-	public Set<String> getOriginalColMap() {
+	public Set<String> getAllColumnIdentifiers() {
 		if (matrixReader == null) {
 			return Collections.unmodifiableSet(originalColMap.keySet());
 		} else {

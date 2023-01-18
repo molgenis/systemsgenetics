@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.plink.BedBimFamGenotypeWriter;
 import org.molgenis.genotype.util.ChromosomeComparator;
@@ -16,7 +18,7 @@ import org.molgenis.genotype.variant.GeneticVariantChrPosComparator;
  */
 public class GeneticVariantRange implements Iterable<GeneticVariant> {
 
-	private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(GeneticVariantRange.class);
+	private static final Logger LOGGER = LogManager.getLogger(GeneticVariantRange.class);
 
 	public static GeneticVariantRangeCreate createRangeFactory() {
 		return new GeneticVariantRangeCreate();

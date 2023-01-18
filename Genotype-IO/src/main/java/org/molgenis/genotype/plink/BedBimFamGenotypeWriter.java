@@ -14,7 +14,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
@@ -44,7 +45,7 @@ public class BedBimFamGenotypeWriter implements GenotypeWriter {
     private int writtenSamplesCounter;
     private int writtenVariantsCounter;
     private int excludedVariantsCounter;
-    private static final Logger LOGGER = Logger.getLogger(BedBimFamGenotypeWriter.class);
+    private static final Logger LOGGER = LogManager.getLogger(BedBimFamGenotypeWriter.class);
 
     public BedBimFamGenotypeWriter(GenotypeData genotypeData) {
         this.genotypeData = genotypeData;

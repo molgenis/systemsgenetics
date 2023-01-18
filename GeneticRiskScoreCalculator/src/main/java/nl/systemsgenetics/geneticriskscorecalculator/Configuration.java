@@ -7,7 +7,8 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 
@@ -29,7 +30,7 @@ public class Configuration {
         
 	static {
 
-		LOGGER = Logger.getLogger(Configuration.class);
+		LOGGER = LogManager.getLogger(Configuration.class);
 
 		OPTIONS = new Options();
 

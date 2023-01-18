@@ -11,9 +11,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -27,14 +26,14 @@ public class SortIntraChrContacts {
         try {
             contacts = readRawIntraContactInformation(fileToReads);
         } catch (IOException ex) {
-            Logger.getLogger(SortIntraChrContacts.class.getName()).log(Level.SEVERE, null, ex);
+           LogManager.getLogger(SortInterChrContacts.class).log(org.apache.logging.log4j.Level.FATAL, ex);
         }
         Collections.sort(contacts);
         
         try {
             writeRawIntraContactInformation(contacts, fileToWrite);
         } catch (IOException ex) {
-            Logger.getLogger(SortIntraChrContacts.class.getName()).log(Level.SEVERE, null, ex);
+            LogManager.getLogger(SortInterChrContacts.class).log(org.apache.logging.log4j.Level.FATAL, ex);
         }
         contacts = null;
     }

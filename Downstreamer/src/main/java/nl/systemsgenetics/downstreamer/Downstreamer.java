@@ -1,30 +1,32 @@
 package nl.systemsgenetics.downstreamer;
 
+import nl.systemsgenetics.downstreamer.io.ExcelWriter;
+import nl.systemsgenetics.downstreamer.pathway.PredictedPathwayAnnotations;
+import nl.systemsgenetics.downstreamer.runners.options.*;
 import nl.systemsgenetics.downstreamer.runners.*;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.DurationFormatUtils;
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
-
-import nl.systemsgenetics.downstreamer.development.CorrelateExpressionToPredictions;
-import nl.systemsgenetics.downstreamer.development.First1000qtl;
-import nl.systemsgenetics.downstreamer.io.DatToDatg;
-import nl.systemsgenetics.downstreamer.io.ExcelWriter;
-import nl.systemsgenetics.downstreamer.pathway.PredictedPathwayAnnotations;
-
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang.time.DurationFormatUtils;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
-import org.molgenis.genotype.GenotypeDataException;
-import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
-import org.molgenis.genotype.tabix.TabixFileNotFoundException;
+import java.util.Date;
+import java.util.ResourceBundle;
 
 /**
  * Entry point and error handler for Downstreamer
@@ -33,284 +35,331 @@ import org.molgenis.genotype.tabix.TabixFileNotFoundException;
  */
 public class Downstreamer {
 
-	public static final DecimalFormat LARGE_INT_FORMAT = new DecimalFormat("###,###");
-	public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
-	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
-	private static final String HEADER
-			= "  /---------------------------------------\\\n"
-			+ "  |             Downstreamer              |\n"
-			+ "  |                                       |\n"
-			+ "  |  University Medical Center Groningen  |\n"
-			+ "  \\---------------------------------------/";
+    public static final DecimalFormat LARGE_INT_FORMAT = new DecimalFormat("###,###");
+    public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
+    public static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    public static final DateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
 
-	/**
-	 * Main function for Downstreamer analysis, specific tasks are implemented in
-	 * respective runner classes.
-	 *
-	 * @param args the command line arguments
-	 * @throws java.lang.InterruptedException
-	 */
-	public static void main(String[] args) throws InterruptedException {
+    private static final Logger LOGGER = LogManager.getLogger(Downstreamer.class);
+    private static final String HEADER
 
-		System.out.println(HEADER);
-		System.out.println();
-		System.out.println("       --- Version: " + VERSION + " ---");
-		System.out.println();
-		System.out.println("More information: https://github.com/molgenis/systemsgenetics/wiki/Downstreamer");
-		System.out.println();
 
-		Date currentDataTime = new Date();
-		String startDateTime = DATE_TIME_FORMAT.format(currentDataTime);
-		System.out.println("Current date and time: " + startDateTime);
-		System.out.println();
+            = "  /---------------------------------------\\\n"
+            + "  |             Downstreamer              |\n"
+            + "  |                                       |\n"
+            + "  |  University Medical Center Groningen  |\n"
+            + "  \\---------------------------------------/";
 
-		System.out.flush(); //flush to make sure header is before errors
-		Thread.sleep(25); //Allows flush to complete
+    /**
+     * Main function for Downstreamer analysis, specific tasks are implemented
+     * in respective runner classes.
+     *
+     * @param args the command line arguments
+     * @throws InterruptedException
+     */
+    public static void main(String[] args) throws InterruptedException {
 
-		DownstreamerOptions options;
+        System.out.println();
+        System.out.println(HEADER);
+        System.out.println();
+        System.out.println("       --- Version: " + VERSION + " ---");
+        System.out.println();
+        System.out.println("More information: https://github.com/molgenis/systemsgenetics/wiki/Downstreamer");
+        System.out.println();
 
-		if (args.length == 0) {
-			DownstreamerOptions.printHelp();
-			return;
-		}
+        Date currentDataTime = new Date();
+        String startDateTime = DATE_TIME_FORMAT.format(currentDataTime);
+        System.out.println("Current date and time: " + startDateTime);
+        System.out.println();
 
-		try {
-			options = new DownstreamerOptions(args);
-		} catch (ParseException ex) {
-			System.err.println("Error parsing commandline: " + ex.getMessage());
-			DownstreamerOptions.printHelp();
-			return;
-		}
+        System.out.flush(); //flush to make sure header is before errors
+        Thread.sleep(25); //Allows flush to complete
 
-		if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
-			if (!options.getLogFile().getParentFile().mkdirs()) {
-				System.err.println("Failed to create output folder: " + options.getLogFile().getParent());
-				System.exit(1);
-			}
-		}
+        OptionsBase options;
 
-		if (new File(options.getOutputBasePath()).isDirectory()) {
-			System.err.println("Specified output path is a directory. Please include a prefix for the output files.");
-			return;
-		}
+        // If no arguments are provided print help
+        if (args.length == 0 || args[0].equals("-h") && args.length == 1|| args[0].equals("--help") && args.length == 1) {
+            OptionsBase.printHelp();
+            return;
+        }
 
-		try {
-			FileAppender logFileAppender = new FileAppender(new SimpleLayout(), options.getLogFile().getCanonicalPath(), options.getMode() != DownstreamerMode.STEP1);
-			ConsoleAppender logConsoleInfoAppender = new ConsoleAppender(new InfoOnlyLogLayout());
-			Logger.getRootLogger().removeAllAppenders();
-			Logger.getRootLogger().addAppender(logFileAppender);
+        // Parse general options
+        try {
+            options = new OptionsBase(args);
+        } catch (ParseException ex) {
+            System.err.println("Error parsing commandline: " + ex.getMessage());
+            OptionsBase.printHelp();
+            return;
+        }
 
-			LOGGER.info("Downstreamer" + VERSION);
-			LOGGER.info("Current date and time: " + startDateTime);
+        // If the output folder does not exist, create it
+        if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
+            if (!options.getLogFile().getParentFile().mkdirs()) {
+                System.err.println("Failed to create output folder: " + options.getLogFile().getParent());
+                System.exit(1);
+            }
+        }
 
-			Logger.getRootLogger().addAppender(logConsoleInfoAppender);
+        // Initialize logfile
+        try {
 
-			if (options.isDebugMode()) {
-				Logger.getRootLogger().setLevel(Level.DEBUG);
-				options.getDebugFolder().mkdir();
-			} else {
-				Logger.getRootLogger().setLevel(Level.INFO);
-			}
+            Level loggingLevel = Level.INFO;
+            if (options.isDebugMode()) {
+                loggingLevel = Level.DEBUG;
+                options.getDebugFolder().mkdir();
+            }
 
-		} catch (IOException e) {
-			System.err.println("Failed to create logger: " + e.getMessage());
-			System.exit(1);
-		}
+            initializeLoggers(loggingLevel, options.getLogFile());
 
-		options.printOptions();
+            // Create a seperator in the log, so seperate runs are easier to spot
+            LOGGER.info("Downstreamer" + VERSION);
+            LOGGER.info("Current date and time: " + startDateTime);
 
-		try {
-			switch (options.getMode()) {
-				case CONVERT_EQTL:
-					DownstreamerConverters.convertEqtlToBin(options);
-					break;
-				case CONVERT_TXT:
-					DownstreamerConverters.convertTxtToBin(options);
-					break;
-				case SUBSET_MATRIX:
-					DownstreamerConverters.subsetMatrix(options);
-					break;
-				case CONVERT_BIN:
-					DownstreamerConverters.convertBinToTxt(options);
-					break;
-				case CONVERT_GTEX:
-					DownstreamerConverters.convertGct(options.getGwasZscoreMatrixPath(), options.getOutputBasePath());
-					break;
-				case CONVERT_EXP:
-					DownstreamerConverters.convertExpressionMatrixToBin(options);
-					break;
-				case CONVERT_TXT_MERGE:
-					DownstreamerConverters.mergeConvertTxt(options);
-					break;
-				case MERGE_BIN:
-					DownstreamerConverters.mergeBinMatrix(options);
-					break;
-				case FIRST1000:
-					First1000qtl.printFirst1000(options);
-					break;
-				case PTOZSCORE:
-					DownstreamerConverters.convertPvalueToZscore(options);
-					break;
-				case CREATE_EXCEL:
-					DownstreamerUtilities.generateExcelFromIntermediates(options);
-					break;
-				case GET_PATHWAY_LOADINGS:
-					DownstreamerUtilities.generatePathwayLoadingExcel(options);
-					break;
-				case TOP_HITS:
-					PruneToIndependentTopHits.prune(options);
-					break;
-				case STEP1:
+        } catch (IOException e) {
+            System.err.println("Failed to create logger: " + e.getMessage());
+            System.exit(1);
+        }
 
-					final DownstreamerStep1Results step1Res = DownstreamerMainAnalysis.step1(options);
-					final DownstreamerStep2Results step2Res;
+        // Run mode
+        // This allows for dynamic help messages so there is not a full dump of all possible options
+        // which I found really annoying when trying to run DS myself.
+        HelpProvider helpProvider = OptionsBase::printHelp;
 
-					if (options.getPathwayDatabases().isEmpty()) {
-						LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode STEP2 and exactly the same output path and genes file to continue");
-						break;
-					} else {
-						step2Res = DownstreamerMainAnalysis.step2(options, step1Res);
-					}
+        // For legacy modes
+        DownstreamerOptionsDeprecated optionsDeprecated;
+        try {
 
-					if (step2Res != null) {
-						ExcelWriter writer = null;
-						if (options.isSaveOuputAsExcelFiles()) {
-							writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), options);
-							writer.saveStep2Excel(step2Res);
-						}
-						if (options.isAssignPathwayGenesToCisWindow()) {
-							final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(options);
-							if (writer != null) {
-								writer.saveStep3Excel(step2Res, step3Res);
-							}
-						}
-					}
+            // Set the function that provides the help text
+            switch (options.getMode()) {
+                case REGRESS:
+                    helpProvider = OptionsModeRegress::printHelp;
+                    break;
+                case CONVERT_BIN:
+                case CONVERT_TXT:
+                case CONVERT_EQTL:
+                case CONVERT_GTEX:
+                case CONVERT_PTOZSCORE:
+                case CONVERT_MERGE_BIN:
+                case CONVERT_DAT_TO_DATG:
+                case CONVERT_EXP:
+                case PREPARE_GWAS:
+                case PREPARE_GWAS_MERGE:
+                case MATRIX_SUBSET:
+                case MATRIX_TRANSPOSE:
+                    helpProvider = OptionsModeConvert::printHelp;
+                    break;
+                case COREG_CORRELATE_GENES:
+                case COREG_RTOZSCORE:
+                case COREG_PCA:
+                case COREG_REMOVE_CIS_COEXP:
+                case COREG_INVESTIGATE_NETWORK:
+                    helpProvider = OptionsModeCoreg::printHelp;
+                    break;
+                // Legacy options to update
+                case CREATE_EXCEL:
+                case PRIO_GENE_ENRICH:
+                case EXPAND_PATHWAYS:
+                case STEP1:
+                case STEP2:
+                    helpProvider = DownstreamerOptionsDeprecated::printHelp;
+                    break;
+                default:
+                    helpProvider = OptionsBase::printHelp;
+                    break;
+            }
 
-					break;
+            // Execute the right mode
+            switch (options.getMode()) {
+                // New main analyses
+                case REGRESS: DownstreamerRegressionEngine.run(new OptionsModeRegress(args)); break;
 
-				case STEP2:
-					step2Res = DownstreamerMainAnalysis.step2(options, null);
+                // Converter utils that share OptionsModeConvert()
+                case CONVERT_TXT: DownstreamerConverters.convertTxtToBin(new OptionsModeConvert(args)); break;
+                case CONVERT_BIN: DownstreamerConverters.convertBinToTxt(new OptionsModeConvert(args)); break;
+                case CONVERT_MERGE_BIN: DownstreamerConverters.mergeBinMatrix(new OptionsModeConvert(args)); break;
+                case CONVERT_EXP: DownstreamerConverters.convertExpressionMatrixToBin(new OptionsModeConvert(args)); break;
+                case CONVERT_DAT_TO_DATG: DownstreamerConverters.convertDatToDatg(new OptionsModeConvert(args)); break;
+                case CONVERT_GTEX: DownstreamerConverters.convertGct(new OptionsModeConvert(args)); break;
+                case CONVERT_EQTL: DownstreamerConverters.convertEqtlToBin(new OptionsModeConvert(args)); break;
+                case CONVERT_PTOZSCORE: DownstreamerConverters.convertPvalueToZscore(new OptionsModeConvert(args)); break;
+                case PREPARE_GWAS: DownstreamerConverters.prepareGwasSummaryStatistics(new OptionsModeConvert(args)); break;
+                case PREPARE_GWAS_MERGE: DownstreamerConverters.prepareGwasSummaryStatisticsMerge(new OptionsModeConvert(args)); break;
+                case MATRIX_SUBSET: DownstreamerConverters.subsetMatrix(new OptionsModeConvert(args)); break;
+                case MATRIX_TRANSPOSE: DownstreamerConverters.tranposeBinMatrix(new OptionsModeConvert(args));break;
 
-					ExcelWriter writer = null;
-					if (options.isSaveOuputAsExcelFiles()) {
-						writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), options);
-						writer.saveStep2Excel(step2Res);
-					}
-					if (options.isAssignPathwayGenesToCisWindow()) {
-						final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(options);
-						if (writer != null) {
-							writer.saveStep3Excel(step2Res, step3Res);
-						}
-					}
-					break;
-				case CORRELATE_GENES:
-					DownstreamerUtilities.correlateGenes(options);
-					break;
-				case R_2_Z_SCORE:
-					DownstreamerUtilities.convertRtoZscore(options);
-					break;
-				case TRANSPOSE:
-					DownstreamerConverters.tranposeBinMatrix(options);
-					break;
-				case PCA:
-					DownstreamerUtilities.doPcaOnBinMatrix(options);
-					break;
-				case PRIO_GENE_ENRICH:
-					//TestCoregulationPerformance.testCoreGenePredictionPerformance(options);
-					PathwayDatabaseEnrichments.testPredictionPerformance(options);
-					break;
-				case INVESTIGATE_NETWORK:
-					NetworkProperties.investigateNetwork(options);
-					break;
-				case GET_NORMALIZED_GENEP:
-					DownstreamerUtilities.getNormalizedGwasGenePvalues(options);
-					break;
-				case REMOVE_CIS_COEXP:
-					DownstreamerUtilities.removeLocalGeneCorrelations(options);
-					break;
-				case EXPAND_PATHWAYS:
-					PredictedPathwayAnnotations.expandAnnotations(options);
-					break;
-				case GET_MARKER_GENES:
-					DownstreamerUtilities.generateMarkerGenes(options);
-					break;
-				case SPECIAL:
-					CorrelateExpressionToPredictions.run(options);
-					break;
-				case PREPARE_GENE_PVALUES:
-					PrepareExternalGenePvalues.prepare(options);
-					break;
-				case CONVERT_DAT_TO_DATG:
-					DatToDatg.convert(options);
-					break;
-			}
-		} catch (TabixFileNotFoundException e) {
-			System.err.println("Problem running mode: " + options.getMode());
-			System.err.println("Tabix file not found for input data at: " + e.getPath() + "\n"
-					+ "Please see README on how to create a tabix file");
-			LOGGER.fatal("Tabix file not found for input data at: " + e.getPath(), e);
-			System.exit(1);
-		} catch (IOException e) {
-			System.err.println("Problem running mode: " + options.getMode());
-			System.err.println("Error accessing input data: " + e.getMessage());
-			System.err.println("See log file for stack trace");
-			LOGGER.fatal("Error accessing input data: " + e.getMessage(), e);
-			System.exit(1);
-		} catch (IncompatibleMultiPartGenotypeDataException e) {
-			System.err.println("Problem running mode: " + options.getMode());
-			System.err.println("Error combining the impute genotype data files: " + e.getMessage());
-			System.err.println("See log file for stack trace");
-			LOGGER.fatal("Error combining the impute genotype data files: " + e.getMessage(), e);
-			System.exit(1);
-		} catch (GenotypeDataException e) {
-			System.err.println("Problem running mode: " + options.getMode());
-			System.err.println("Error reading genotype data: " + e.getMessage());
-			System.err.println("See log file for stack trace");
-			LOGGER.fatal("Error reading input data: " + e.getMessage(), e);
-			System.exit(1);
-		} catch (Exception e) {
-			System.err.println("Problem running mode: " + options.getMode());
-			System.err.println("Error message: " + e.getMessage());
-			System.err.println("See log file for stack trace");
-			LOGGER.fatal("Error: " + e.getMessage(), e);
-			if (LOGGER.isDebugEnabled()) {
-				e.printStackTrace();
-			}
-			System.exit(1);
-		}
-		LOGGER.info("Analysis completed");
+                // Utilities related to making the co-regulation network. Share OptionsModeCoreg()
+                case COREG_CORRELATE_GENES: CoregulationUtilities.coregCorrelateGenes(new OptionsModeCoreg(args)); break;
+                case COREG_RTOZSCORE: CoregulationUtilities.coregConvertRtoZscore(new OptionsModeCoreg(args)); break;
+                case COREG_PCA: CoregulationUtilities.coregDoPcaOnBinMatrix(new OptionsModeCoreg(args)); break;
+                case COREG_REMOVE_CIS_COEXP: CoregulationUtilities.coregRemoveLocalGeneCorrelations(new OptionsModeCoreg(args));break;
+                case COREG_INVESTIGATE_NETWORK: CoregulationUtilities.coregInvestigateNetwork(new OptionsModeCoreg(args)); break;
 
-		currentDataTime = new Date();
-		LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+                // Testing utils
+                case TEST_DECOMP: DownstreamerUtilities.testEigenDecomposition(new OptionsTesting(args)); break;
 
-	}
+                // Legacy modes, These will be either replaced or substantially updated
+                case CREATE_EXCEL:
+                    DownstreamerUtilities.generateExcelFromIntermediates(new DownstreamerOptionsDeprecated(args));
+                    break;
+                case PRIO_GENE_ENRICH:
+                    PathwayDatabaseEnrichments.testPredictionPerformance(new DownstreamerOptionsDeprecated(args));
+                    break;
+                case EXPAND_PATHWAYS:
+                    PredictedPathwayAnnotations.expandAnnotations(new DownstreamerOptionsDeprecated(args));
+                    break;
+                case STEP1:
+                    optionsDeprecated = new DownstreamerOptionsDeprecated(args);
+                    final DownstreamerStep1Results step1Res = DownstreamerMainAnalysis.step1(optionsDeprecated);
+                    final DownstreamerStep2Results step2Res;
 
-	public static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
+                    if (optionsDeprecated.getPathwayDatabases().isEmpty()) {
+                        LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode STEP2 and exactly the same output path and genes file to continue");
+                        break;
+                    } else {
+                        step2Res = DownstreamerMainAnalysis.step2(optionsDeprecated, step1Res);
+                    }
 
-		private final String errorSource;
+                    if (step2Res != null) {
+                        ExcelWriter writer = null;
+                        if (optionsDeprecated.isSaveOuputAsExcelFiles()) {
+                            writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), optionsDeprecated);
+                            writer.saveStep2Excel(step2Res);
+                        }
 
-		public ThreadErrorHandler(String errorSource) {
-			this.errorSource = errorSource;
-		}
+                        if (optionsDeprecated.isAssignPathwayGenesToCisWindow()) {
+                            final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(optionsDeprecated);
+                            if (writer != null) {
+                                writer.saveStep3Excel(step2Res, step3Res);
+                            }
+                        }
+                    }
 
-		@Override
-		public void uncaughtException(Thread t, Throwable e) {
+                    break;
 
-			System.err.println("Problem running: " + errorSource);
-			LOGGER.fatal("Error: " + e.getMessage(), e);
-			if (LOGGER.isDebugEnabled()) {
-				e.printStackTrace();
-			} else {
-				System.err.println("See log file for stack trace");
-			}
-			System.exit(1);
-		}
-	}
+                case STEP2:
+                    optionsDeprecated = new DownstreamerOptionsDeprecated(args);
+                    step2Res = DownstreamerMainAnalysis.step2(optionsDeprecated, null);
 
-	public static String formatMsForLog(long ms) {
-		//return LOG_TIME_FORMAT.format(new Date(ms));
-		return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
-	}
+                    ExcelWriter writer = null;
+                    if (optionsDeprecated.isSaveOuputAsExcelFiles()) {
+                        writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), optionsDeprecated);
+                        writer.saveStep2Excel(step2Res);
+                    }
+                    if (optionsDeprecated.isAssignPathwayGenesToCisWindow()) {
+                        final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(optionsDeprecated);
+                        if (writer != null) {
+                            writer.saveStep3Excel(step2Res, step3Res);
+                        }
+                    }
+                    break;
+                default:
+                    throw new Exception("Mode not yet converted or is deprecated.");
+            }
+        } catch (ParseException e) {
+            System.err.println("Problem running mode: " + options.getMode());
+            System.err.println("Error message: " + e.getMessage());
+            LOGGER.fatal("Error: " + e.getMessage(), e);
+            helpProvider.printHelp();
+            System.exit(1);
+        } catch (Exception e) {
+            System.err.println("Problem running mode: " + options.getMode());
+            System.err.println("Error message: " + e.getMessage());
+            System.err.println("See log file for stack trace");
+            LOGGER.fatal("Error: " + e.getMessage(), e);
+            if (LOGGER.isDebugEnabled()) {
+                e.printStackTrace();
+            }
+            System.exit(1);
+        }
+        LOGGER.info("Analysis completed");
+
+        currentDataTime = new Date();
+        LOGGER.info("Current date and time: " + DATE_TIME_FORMAT.format(currentDataTime));
+        LOGGER.info(StringUtils.repeat("-", 80));
+        LOGGER.info("");
+    }
+
+    public static void initializeLoggers(Level loggingLevel, File logFile) throws IOException {
+        Configurator.setRootLevel(loggingLevel);
+        LoggerContext context = LoggerContext.getContext(false);
+        Configuration config = context.getConfiguration();
+
+        PatternLayout loggingLayoutFull = PatternLayout.newBuilder()
+                .withPattern("[%level] %d{ABSOLUTE} - %c{1} - %msg%n")
+                .build();
+
+        PatternLayout loggingLayoutReduced = PatternLayout.newBuilder()
+                .withPattern("%msg%n")
+                .build();
+
+        // Stdout appender
+        ConsoleAppender stdOut = ConsoleAppender.newBuilder()
+                .setName("stdout")
+                .setLayout(loggingLayoutReduced)
+                .build();
+        stdOut.start();
+
+        // Log file appender
+        FileAppender file = FileAppender.newBuilder()
+                .setName("file")
+                .setLayout(loggingLayoutFull)
+                .withFileName(logFile.getCanonicalPath())
+                .build();
+        file.start();
+
+        // Make sure any existing loggers are removed
+        for (Appender appender : context.getRootLogger().getAppenders().values()) {
+            context.getRootLogger().removeAppender(appender);
+        }
+
+        // Add the appenders to the root logger
+        Logger rootLogger = context.getRootLogger();
+        LoggerConfig rootLoggerConfig = config.getRootLogger();
+
+        rootLoggerConfig.addAppender(stdOut, loggingLevel, null);
+        rootLoggerConfig.addAppender(file, loggingLevel, null);
+        config.addLogger(rootLogger.getName(), rootLoggerConfig);
+
+        context.updateLoggers(config);
+    }
+
+    public static double memUsage() {
+        Runtime rt = Runtime.getRuntime();
+        double used = (rt.totalMemory() - rt.freeMemory()) / 1024.0 / 1024 / 1024;
+        return used;
+    }
+
+    public static void logInfoMem(String message, Logger logger) {
+        logger.info("[mem: " + String.format("%,.2f", memUsage()) + "G] " + message);
+    }
+
+    public static String formatMsForLog(long ms) {
+        //return LOG_TIME_FORMAT.format(new Date(ms));
+        return DurationFormatUtils.formatDuration(ms, "H:mm:ss.S");
+    }
+
+
+    public static class ThreadErrorHandler implements Thread.UncaughtExceptionHandler {
+
+        private final String errorSource;
+
+        public ThreadErrorHandler(String errorSource) {
+            this.errorSource = errorSource;
+        }
+
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+
+            System.err.println("Problem running: " + errorSource);
+            LOGGER.fatal("Error: " + e.getMessage(), e);
+            if (LOGGER.isDebugEnabled()) {
+                e.printStackTrace();
+            } else {
+                System.err.println("See log file for stack trace");
+            }
+            System.exit(1);
+        }
+    }
+
 
 }
