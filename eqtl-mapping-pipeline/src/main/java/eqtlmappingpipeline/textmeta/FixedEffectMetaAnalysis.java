@@ -192,7 +192,7 @@ public class FixedEffectMetaAnalysis {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException ex) {
-				Logger.getLogger(FixedEffectMetaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
+				throw new RuntimeException(ex);
 			}
 			
 		}

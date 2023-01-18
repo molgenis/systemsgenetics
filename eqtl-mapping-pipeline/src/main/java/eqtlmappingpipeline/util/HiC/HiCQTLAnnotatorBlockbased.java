@@ -350,7 +350,7 @@ class HiCQTLAnnotatorBlockbased {
         try {
             qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile, renameSnpProxie);
         } catch (IOException ex) {
-            Logger.getLogger(HiCQTLAnnotatorBlockbased.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         HashMap<String, ArrayList<DesiredChrContact>> desiredContacts;
         HashSet<String> keysAdded = new HashSet<>();

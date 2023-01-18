@@ -16,7 +16,8 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.console.ProgressBar;
@@ -44,7 +45,7 @@ public class MetaQTL4 {
     private ArrayList<MetaQTL4MetaTrait> availableTraits;
     private TObjectIntHashMap<MetaQTL4MetaTrait> availableTraitsHash; //int as value
     private GeneticVariant[][] geneticVariantIndex;
-    private static final Logger LOG = Logger.getLogger(MetaQTL4.class);
+    private static final Logger LOG = LogManager.getLogger(MetaQTL4.class);
 
     public MetaQTL4(MetaQTL4Settings settings) throws IOException, Exception {
         LOG.info("WARNING: MetaQTL4 is experimental code!");

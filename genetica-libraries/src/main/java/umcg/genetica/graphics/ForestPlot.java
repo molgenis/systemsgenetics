@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import umcg.genetica.io.trityper.util.ChrAnnotation;
 
@@ -59,7 +58,7 @@ public class ForestPlot {
     private static final Color red2Color = new Color(242, 101, 94, 25);
     private static final Color gray1Color = new Color(237, 237, 237);
     private static final Color gray2Color = new Color(247, 247, 247);
-    private static final Logger LOGGER = Logger.getLogger(Heatmap.class.getName());
+    private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(ForestPlot.class);
     private static final Stroke dashed = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, new float[]{4}, 0);
     private static final Stroke line2pt = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
     private static final Stroke line = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);

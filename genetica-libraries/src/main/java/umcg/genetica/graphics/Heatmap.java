@@ -32,7 +32,7 @@ public class Heatmap {
     private static final int LEGEND_Y = 10;
     private static final int LEGEND_WIDTH = 200;
     private static final int LEGEND_HEIGHT = 100;
-    private static final Logger LOGGER = Logger.getLogger(Heatmap.class.getName());
+    private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(ForestPlot.class);
 
     public enum Output {
 

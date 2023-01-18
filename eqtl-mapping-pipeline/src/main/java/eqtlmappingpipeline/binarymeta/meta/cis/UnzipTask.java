@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.binarymeta.meta.cis;
 
+import eqtlmappingpipeline.binarymeta.meta.MetaAnalysisCalculationThread;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,6 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.io.trityper.bin.BinaryResultDataset;
 import umcg.genetica.io.trityper.bin.BinaryResultSNP;
@@ -67,7 +69,7 @@ public class UnzipTask implements Callable<Pair<BinaryResultSNP, HashMap<String,
 	    byte[] data = ds.getMatrix().readDeflated(pointer, nextpointer, ds.getNumProbes());
 	    zscores = inflate(data, ds.getNumProbes());
 	} catch (DataFormatException ex) {
-	    Logger.getLogger(CisAnalysis.class.getName()).log(Level.SEVERE, null, ex);
+	    LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
 	}
 
 	for (int probe = 0; probe < probes.size(); probe++) {

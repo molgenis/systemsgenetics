@@ -8,13 +8,11 @@ import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.apache.commons.lang.math.NumberUtils;
+import org.apache.logging.log4j.Level;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -26,7 +24,7 @@ public class ParseTextTable {
 
     private static Pattern SPLIT_ON_TAB = Pattern.compile("\\t");
     protected static final String ENCODING = "ISO-8859-1";
-    static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
+    private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(ParseTextTable.class);
 
     /**
      * Geo text tables for HT12 v3 / v4 data
@@ -79,7 +77,7 @@ public class ParseTextTable {
                     }
                 }
             } else if(colMap.containsKey(colName)) {
-                LOGGER.warning("Duplicated column name:" + colName + "! In file: " + fileInput);
+                LOGGER.warn("Duplicated column name:" + colName + "! In file: " + fileInput);
                 throw new IOException("Problem with parsing file");
             } 
             else if (debug) {
@@ -144,14 +142,14 @@ public class ParseTextTable {
                     }
                     row++;
                 } else {
-                    LOGGER.warning("Duplicated row name: "+data[columnOffset - 1]);
+                    LOGGER.warn("Duplicated row name: "+data[columnOffset - 1]);
                     System.out.println(str);
                     throw new IOException("Problem in reading file.");
                 }
             }
         }
         if (!correctData) {
-            LOGGER.warning("Your data contains NaN/unparseable values!");
+            LOGGER.warn("Your data contains NaN/unparseable values!");
         }
         in.close();
 

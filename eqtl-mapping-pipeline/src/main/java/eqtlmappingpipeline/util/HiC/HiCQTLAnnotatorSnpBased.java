@@ -365,7 +365,7 @@ class HiCQTLAnnotatorSnpBased {
         try {
             qtls = readInQtlInformation(in, inProxies, probeMap, snpMap, permutationFile, renameSnpProxie);
         } catch (IOException ex) {
-            Logger.getLogger(HiCQTLAnnotatorSnpBased.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
         HashMap<String, ArrayList<DesiredChrContact>> desiredContacts = new HashMap<String, ArrayList<DesiredChrContact>>();

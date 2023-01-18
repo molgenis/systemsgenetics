@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * @author harmjan
@@ -197,7 +198,7 @@ public class MetaAnalysisCalculationThread extends Thread {
 						zscores = inflate(data, ds[d].getNumProbes()); //
 						pack.setData(d, null);
 					} catch (DataFormatException ex) {
-						Logger.getLogger(MetaAnalysisCalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+						LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
 					}
 
 

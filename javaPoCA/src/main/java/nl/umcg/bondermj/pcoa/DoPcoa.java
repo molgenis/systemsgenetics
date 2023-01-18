@@ -126,10 +126,10 @@ public class DoPcoa {
         try {
             inputData = DoubleMatrixDataset.loadDoubleData(fileIn);
         } catch (IOException ex) {
-            Logger.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
+            
             throw new IOException("Problem reading data.");
         } catch (Exception ex) {
-            Logger.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
+            
             throw new IOException("Problem reading data.");
         }
       
@@ -305,7 +305,7 @@ public class DoPcoa {
             }
 
         } catch (IOException ex) {
-            Logger.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
+           throw new RuntimeException(ex);
         }
         matrix = null;
 
@@ -317,7 +317,7 @@ public class DoPcoa {
 //                try {
 //                    regressOutPCs(inputData, prefix, prefix + ".PCAOverSamplesPrincipalComponents.txt.gz" , prefix+ ".PCAOverSamplesEigenvectors.txt.gz", maxNrToRegres, stepsize);
 //                } catch (IOException ex) {
-//                    Logger.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
+//                    LogManager.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
 //                }
 //                
 //            } else {
@@ -328,13 +328,13 @@ public class DoPcoa {
 //                    try {
 //                        generatePcCorrectedDataWithSkipping(prefix, prefix + ".PCAOverSamplesPrincipalComponents.txt.gz" , prefix+ ".PCAOverSamplesEigenvectorsTransposed.txt.gz", startSize, maxNrToRegres, stepsize, compSkipList);
 //                    } catch (IOException ex) {
-//                        Logger.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
+//                        LogManager.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
 //                    }
 //                } else {
 //                    try {
 //                        generatePcCorrectedData(prefix, prefix + ".PCAOverSamplesPrincipalComponents.txt.gz" , prefix+ ".PCAOverSamplesEigenvectorsTransposed.txt.gz", startSize, maxNrToRegres, stepsize);
 //                    } catch (IOException ex) {
-//                        Logger.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
+//                        LogManager.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
 //                    }
 //                }
 //            } 
@@ -420,7 +420,7 @@ public class DoPcoa {
         try {
             evd.factor(new DenseMatrix(CorMatrix.toArray()));
         } catch (NotConvergedException ex) {
-            Logger.getLogger(DoPcoa.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
         //System.out.println(dataset.columns());

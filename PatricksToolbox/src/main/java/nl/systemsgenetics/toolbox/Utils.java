@@ -16,7 +16,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.sampleFilter.SampleFilter;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
@@ -32,7 +33,7 @@ import org.molgenis.genotype.variantFilter.VariantIdIncludeFilter;
  */
 public class Utils {
 
-	private static final Logger LOGGER = Logger.getLogger(Utils.class);
+	private static final Logger LOGGER = LogManager.getLogger(Utils.class);
 	
 	public static RandomAccessGenotypeData loadGenotypes(Options options, Collection<String> variantsToInclude) throws IOException {
 		final RandomAccessGenotypeData referenceGenotypeData;

@@ -51,21 +51,21 @@ public class WriteExtendedFastaOfInterestRegion {
                 interestStrings = readFileWithPositionsBed(fileWithPositions);
             }
         } catch (Exception ex) {
-            Logger.getLogger(WriteExtendedFastaOfInterestRegion.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         System.out.println(" done");
         try {
             System.out.print("Reading reference FASTA ......");
             refGen = new ReferenceGenomeFasta(new File(referenceFasta), ReferenceGenomeFasta.HUMAN_NORMAL_CHR);
         } catch (Exception ex) {
-            Logger.getLogger(WriteExtendedFastaOfInterestRegion.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         System.out.println(" done");
         if (refGen != null && interestStrings != null) {
             try {
                 writeFastaIncDirectionGuessing(refGen, interestStrings, outputFile, maxScore, minDiff);
             } catch (IOException ex) {
-                Logger.getLogger(WriteExtendedFastaOfInterestRegion.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
         }
 
@@ -180,7 +180,7 @@ public class WriteExtendedFastaOfInterestRegion {
                     }
 
                 } catch (Exception ex) {
-                    Logger.getLogger(WriteExtendedFastaOfInterestRegion.class.getName()).log(Level.SEVERE, null, ex);
+                    throw new RuntimeException(ex);
                 }
             }
         }

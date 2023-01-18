@@ -46,7 +46,7 @@ import umcg.genetica.text.Strings;
  */
 public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
-	static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
+	private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(DoubleMatrixDataset.class);
 
 	protected DoubleMatrix2D matrix;
 	protected LinkedHashMap<R, Integer> hashRows;
@@ -663,7 +663,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 				desiredColIds.add(new Pair<>(s, storedCols));
 				storedCols++;
 			} else if (colMap.containsKey(colName)) {
-				LOGGER.warning("Duplicated column name!");
+				LOGGER.warn("Duplicated column name!");
 				throw new Exception("Duplicated column are not allowed. Tried to add: " + colName);
 			}
 		}
@@ -701,13 +701,12 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 					storingRow++;
 
 				} else if (rowMap.containsKey(data[0])) {
-					LOGGER.warning("Duplicated row name!");
 					throw new Exception("Duplicated row are not allowed. Tried to add: " + data[0]);
 				}
 			}
 		}
 		if (!correctData.get()) {
-			LOGGER.warning("Your data contains NaN/unparseable values!");
+			LOGGER.warn("Your data contains NaN/unparseable values!");
 		}
 		in.close();
 

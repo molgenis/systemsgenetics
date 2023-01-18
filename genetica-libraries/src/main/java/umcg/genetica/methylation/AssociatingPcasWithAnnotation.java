@@ -182,7 +182,7 @@ public class AssociatingPcasWithAnnotation {
                 tmp = new DoubleMatrixDataset<String, String>(eigenVectorFile, null, rowsToInclude);//, "\t");
             }
         } catch (IOException ex) {
-            Logger.getLogger(AssociatingPcasWithAnnotation.class.getName()).log(Level.SEVERE, null, ex);
+            org.apache.logging.log4j.LogManager.getLogger(AssociatingPcasWithAnnotation.class).log(org.apache.logging.log4j.Level.FATAL, ex);
         }
 
         return (tmp);

@@ -89,7 +89,7 @@ public class BinaryMicrobePcaAnalysis {
 		try {
 			run((maxResults + tmpbuffersize));
 		} catch (IOException ex) {
-			Logger.getLogger(BinaryMicrobePcaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		}
 		
 	}

@@ -281,7 +281,7 @@ public class Downstreamer {
 
     public static void initializeLoggers(Level loggingLevel, File logFile) throws IOException {
         Configurator.setRootLevel(loggingLevel);
-        LoggerContext context  = LoggerContext.getContext(false);
+        LoggerContext context = LoggerContext.getContext(false);
         Configuration config = context.getConfiguration();
 
         PatternLayout loggingLayoutFull = PatternLayout.newBuilder()
@@ -289,7 +289,7 @@ public class Downstreamer {
                 .build();
 
         PatternLayout loggingLayoutReduced = PatternLayout.newBuilder()
-                .withPattern("[%level] %d{HH:mm:ss} - %msg%n")
+                .withPattern("%msg%n")
                 .build();
 
         // Stdout appender

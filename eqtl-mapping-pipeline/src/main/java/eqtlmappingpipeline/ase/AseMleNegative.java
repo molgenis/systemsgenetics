@@ -5,7 +5,8 @@ import cern.jet.stat.tdouble.Probability;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -25,7 +26,7 @@ public class AseMleNegative {
 	private static final double[] a = new double[171];
 	private static final int NTOP = 2000;
 	private static final double[] aa = new double[NTOP];
-	private static final Logger LOGGER = Logger.getLogger(AseMleNegative.class);
+	private static final Logger LOGGER = LogManager.getLogger(AseMleNegative.class);
 	private static final BigDecimal probabilityStep = new BigDecimal(0.001);
 	private static final MathContext mathContextProbability = new MathContext(3, RoundingMode.HALF_UP);//Must fit step percision
 	protected static final double[] probabilities;

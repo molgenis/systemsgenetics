@@ -673,7 +673,7 @@ public class BinaryMetaAnalysisSettings {
         try {
             config.save(output + "metasettings.xml");
         } catch (ConfigurationException ex) {
-            Logger.getLogger(BinaryMetaAnalysisSettings.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
     }

@@ -39,7 +39,7 @@ public class RoadMapCHmm {
             peakData = readCHmmInformation(inputFolderTfbsData);
 
         } catch (IOException ex) {
-            Logger.getLogger(EncodeTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
 //        writeContacts(qtlSnps, peakData, outputFile);
@@ -157,7 +157,7 @@ public class RoadMapCHmm {
             }
             outWriter.close();
         } catch (IOException ex) {
-            Logger.getLogger(EncodeTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -231,7 +231,7 @@ public class RoadMapCHmm {
             }
             outWriter.close();
         } catch (IOException ex) {
-            Logger.getLogger(EncodeTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
         try{
@@ -262,7 +262,7 @@ public class RoadMapCHmm {
                 outWriter.close();
             }
         } catch (IOException ex) {
-            Logger.getLogger(EncodeTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
     }
 

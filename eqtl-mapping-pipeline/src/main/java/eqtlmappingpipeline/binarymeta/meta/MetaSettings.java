@@ -10,6 +10,7 @@ import org.apache.commons.configuration.XMLConfiguration;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * @author harm-jan
@@ -502,7 +503,7 @@ public class MetaSettings {
 		try {
 			config.save(output + "metasettings.xml");
 		} catch (ConfigurationException ex) {
-			Logger.getLogger(MetaSettings.class.getName()).log(Level.SEVERE, null, ex);
+			LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
 		}
 
 	}

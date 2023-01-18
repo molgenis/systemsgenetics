@@ -11,6 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.io.trityper.bin.BinaryResultSNP;
 import umcg.genetica.math.stats.Descriptives;
 
@@ -119,7 +120,7 @@ public class MetaAnalysisPlotThread extends MetaAnalysisCalculationThread {
 			zscores = inflate(data, ds[d].getNumProbes()); //
 			pack.setData(d, null);
 		    } catch (DataFormatException ex) {
-			Logger.getLogger(MetaAnalysisCalculationThread.class.getName()).log(Level.SEVERE, null, ex);
+			LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
 		    }
 
 		    if (zscores != null) {

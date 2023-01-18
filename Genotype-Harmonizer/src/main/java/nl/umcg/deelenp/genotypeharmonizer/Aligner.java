@@ -18,7 +18,8 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.modifiable.ModifiableGeneticVariant;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
@@ -33,7 +34,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class Aligner {
 
-	private static Logger LOGGER = Logger.getLogger(GenotypeHarmonizer.class);
+	private static Logger LOGGER = LogManager.getLogger(GenotypeHarmonizer.class);
 
 	/**
 	 * @param study               data to align

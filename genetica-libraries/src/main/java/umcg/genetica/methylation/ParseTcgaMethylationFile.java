@@ -146,7 +146,7 @@ public class ParseTcgaMethylationFile {
             try {
                 dataset3.save(fileOutputFolder + "/TCGADataBeta.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
         }
         ArrayList<DoubleMatrixDataset<String, String>> tmp = new ArrayList<DoubleMatrixDataset<String, String>>(3);
@@ -280,7 +280,7 @@ public class ParseTcgaMethylationFile {
             try {
                 dataset3.save(fileOutputFolder + "TCGA_450K-27K_DataBeta.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
         }
         ArrayList<DoubleMatrixDataset<String, String>> tmp = new ArrayList<DoubleMatrixDataset<String, String>>(3);
@@ -416,17 +416,17 @@ public class ParseTcgaMethylationFile {
             try {
                 dataset1.save(fileOutputFolder + "/TCGADataM.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
             try {
                 dataset2.save(fileOutputFolder + "/TCGADataU.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
             try {
                 dataset3.save(fileOutputFolder + "/TCGADataBeta.txt");
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
         }
         ArrayList<DoubleMatrixDataset<String, String>> tmp = new ArrayList<DoubleMatrixDataset<String, String>>(3);
@@ -532,7 +532,7 @@ public class ParseTcgaMethylationFile {
             try {
                 dataset1.save(fileOut);
             } catch (IOException ex) {
-                Logger.getLogger(ParseTcgaMethylationFile.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
         }
         System.out.println(dataset1.colObjects.toString());

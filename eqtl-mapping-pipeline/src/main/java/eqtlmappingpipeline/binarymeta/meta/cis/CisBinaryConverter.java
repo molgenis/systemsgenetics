@@ -4,6 +4,7 @@
  */
 package eqtlmappingpipeline.binarymeta.meta.cis;
 
+import eqtlmappingpipeline.binarymeta.meta.MetaAnalysisCalculationThread;
 import eqtlmappingpipeline.binarymeta.meta.MetaSettings;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -12,6 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.bin.BinaryFile;
@@ -39,7 +41,7 @@ public class CisBinaryConverter {
 	try {
 	    c.run();
 	} catch (IOException ex) {
-	    Logger.getLogger(CisBinaryConverter.class.getName()).log(Level.SEVERE, null, ex);
+	    LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
 	}
     }
     private final MetaSettings m_settings;
@@ -160,7 +162,7 @@ public class CisBinaryConverter {
 			//		    pb.iterate();
 			//                    snp++;
 		    } catch (DataFormatException ex) {
-			Logger.getLogger(CisBinaryConverter.class.getName()).log(Level.SEVERE, null, ex);
+			LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
 		    }
 		    pb.iterate();
 		}
@@ -172,7 +174,7 @@ public class CisBinaryConverter {
 //		    System.out.println("Waiting for result thread...");
 //		    completor.join();
 //		} catch (InterruptedException ex) {
-//		    Logger.getLogger(CisBinaryConverter.class.getName()).log(Level.SEVERE, null, ex);
+//		    LogManager.getLogger(CisBinaryConverter.class.getName()).log(Level.SEVERE, null, ex);
 //		}
 		dataset.close();
 		dataset = null;

@@ -22,11 +22,11 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.apache.logging.log4j.Level;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Triple;
+import umcg.genetica.graphics.ForestPlot;
 import umcg.genetica.io.concurrent.DoubleParseTask;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix.DoubleMatrixDatasetAC.LoadLabels;
@@ -43,7 +43,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
 //        LOAD_BOTH, LOAD_ROWS, LOAD_COLUMNS, DONT_LOAD
 //    };
 
-    private static final Logger LOGGER = Logger.getLogger(DoubleMatrixDataset.class.getName());
+    private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(ForestPlot.class);
     public double[][] rawData = null;
     //public int nrRows = 0;
     //public int nrCols = 0;
@@ -347,7 +347,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
         }
         pb.close();
         if (!correctData) {
-            LOGGER.warning("Your data contains NaN/unparseable values!");
+            LOGGER.warn("Your data contains NaN/unparseable values!");
         }
         in.close();
         recalculateHashMaps();
@@ -597,7 +597,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
                 rowObjects.add((T) ois.readObject());
             }
         } catch (ClassNotFoundException ex) {
-            Logger.getLogger(DoubleMatrixDataset.class.getName()).log(Level.SEVERE, "Error with row objects", ex);
+			System.err.println("Error with row objects");
             ex.printStackTrace();
         }
         bis.close();
@@ -660,7 +660,7 @@ public class DoubleMatrixDataset<T, U> extends DoubleMatrixDatasetAC<T, U> {
                 colObjects.add((U) ois.readObject());
             }
         } catch (ClassNotFoundException ex) {
-            Logger.getLogger(DoubleMatrixDataset.class.getName()).log(Level.SEVERE, "Error with column objects", ex);
+			System.err.println("Error with column objects");
             ex.printStackTrace();
         }
         bis.close();

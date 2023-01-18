@@ -76,7 +76,7 @@ public class EncodeMultipleTfbsOverlap {
             peakData = readMultipleTfbsInformation(inputFolderTfbsData);
 
         } catch (IOException ex) {
-            Logger.getLogger(EncodeMultipleTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
         try {
@@ -96,7 +96,7 @@ public class EncodeMultipleTfbsOverlap {
             }
             outWriter.close();
         } catch (IOException ex) {
-            Logger.getLogger(EncodeMultipleTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
     }

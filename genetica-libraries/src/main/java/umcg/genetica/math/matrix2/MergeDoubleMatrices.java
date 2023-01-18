@@ -10,8 +10,6 @@ import cern.colt.matrix.tdouble.impl.DenseLargeDoubleMatrix2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import umcg.genetica.console.ProgressBar;
 
 /**
@@ -208,7 +206,7 @@ public class MergeDoubleMatrices {
                 try {
                     newMatrix = mergeMatrixBasedOnRows(newMatrix, datasets.get(i), false);
                 } catch (Exception ex) {
-                    Logger.getLogger(MergeDoubleMatrices.class.getName()).log(Level.SEVERE, null, ex);
+                    org.apache.logging.log4j.LogManager.getLogger(MergeDoubleMatrices.class).log(org.apache.logging.log4j.Level.FATAL, ex);
                 }
                 datasets.set(i, null);
                 pb.iterate();
@@ -236,7 +234,7 @@ public class MergeDoubleMatrices {
                 try {
                     newMatrix = mergeMatrixBasedOnColumns(newMatrix, datasets.get(i), false);
                 } catch (Exception ex) {
-                    Logger.getLogger(MergeDoubleMatrices.class.getName()).log(Level.SEVERE, null, ex);
+                    org.apache.logging.log4j.LogManager.getLogger(MergeDoubleMatrices.class).log(org.apache.logging.log4j.Level.FATAL, ex);
                 }
             }
         }

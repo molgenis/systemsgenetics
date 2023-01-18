@@ -177,7 +177,7 @@ public class DownstreamerEnrichment {
 			//TODO papamters
 			List<LinearRegressionResult> pathwayRegeressionResults = DownstreamerRegressionEngine.performDownstreamerRegression(null, null, null, null, null, blockDiagonalIndices, true, true, true);
 
-			final DoubleMatrixDataset<String, String> pathwayPvalues = new DoubleMatrixDataset<>(pathwayData.getColObjects(), )
+			final DoubleMatrixDataset<String, String> pathwayPvalues = new DoubleMatrixDataset<>(pathwayData.getColObjects(), gwasGenePvalues.getColObjects());
 			
 			
 		}

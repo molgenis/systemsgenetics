@@ -30,7 +30,8 @@ import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.RankingAlgorithm;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -60,7 +61,7 @@ public class InteractionAnalysisDetermineDirection {
 
 	static {
 
-		LOGGER = Logger.getLogger(GenotypeInfo.class);
+		LOGGER = LogManager.getLogger(GenotypeInfo.class);
 
 		OPTIONS = new Options();
 
