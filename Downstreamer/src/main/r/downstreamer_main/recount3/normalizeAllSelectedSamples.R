@@ -4,7 +4,7 @@
 
 
 
-remoter::client("localhost", port = 55506)#55501  55556
+remoter::client("localhost", port = 55556)#55501  55556
 
 library("havok")
 library(parallel)
@@ -125,6 +125,9 @@ setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 #save(recountHealthyExpNorm, file = paste0("CombinedHealthyTissue/combinedHealthyTissue_TPM_Log2_QQ_CovCor_Exp.RData"))
 load(file = paste0("CombinedHealthyTissue/combinedHealthyTissue_TPM_Log2_QQ_CovCor_Exp.RData"), verbose = T)
 
+
+
+
 #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
 expScale = recountHealthyExpNorm - rowMeans(recountHealthyExpNorm);
 # Standardize each variable
@@ -163,6 +166,11 @@ combinedHealtyTissuePca <- list(eigenVectors = eigenVectors, eigenValues = eigen
 str(combinedHealtyTissuePca)
 #save(combinedHealtyTissuePca, file = paste0("CombinedHealthyTissue/combinedHealthyTissue_PCA.RData"))
 load(paste0("CombinedHealthyTissue/combinedHealthyTissue_PCA.RData"))
+
+write.table(recountHealthyExpNorm, file = gzfile("CombinedHealthyTissue/combinedHealthyTissue_PCA.txt.gz"), sep = "\t", quote = F, col.names = NA)
+
+
+
 
 ncol(expScale)
 head(colnames(expScale))

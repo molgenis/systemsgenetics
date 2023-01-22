@@ -25,7 +25,6 @@ import java.util.stream.IntStream;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.containers.GwasLocus;
 import nl.systemsgenetics.downstreamer.containers.LeadVariant;
@@ -49,9 +48,10 @@ import umcg.genetica.math.stats.ZScores;
 /**
  * @author patri
  */
+@Deprecated
 public class PathwayEnrichments {
 
-	private static final Logger LOGGER = LogManager.getLogger(DownstreamerDeprecated.class);
+	private static final Logger LOGGER = LogManager.getLogger(PathwayEnrichments.class);
 
 	private final PathwayDatabase pathwayDatabase;
 	private final HashSet<String> hlaGenesToExclude;
