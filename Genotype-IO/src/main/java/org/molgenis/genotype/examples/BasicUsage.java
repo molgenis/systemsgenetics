@@ -6,7 +6,8 @@ package org.molgenis.genotype.examples;
 
 import java.io.IOException;
 import java.util.HashMap;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
@@ -27,7 +28,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
 @edu.umd.cs.findbugs.annotations.SuppressWarnings(value="UCF_USELESS_CONTROL_FLOW_NEXT_LINE", justification="It is just an example")
 public class BasicUsage {
 
-	private static Logger LOGGER = Logger.getLogger(BasicUsage.class);
+	private static Logger LOGGER = LogManager.getLogger(BasicUsage.class);
 	
 	/**
 	 * @param args the command line arguments

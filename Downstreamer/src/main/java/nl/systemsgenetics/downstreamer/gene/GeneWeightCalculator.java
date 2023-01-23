@@ -18,11 +18,12 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import static nl.systemsgenetics.downstreamer.gene.JamaHelperFunctions.eigenValueDecomposition;
 
-import nl.systemsgenetics.downstreamer.Downstreamer;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import static nl.systemsgenetics.downstreamer.gene.GenePvalueCalculator.createHashColsFromList;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -30,7 +31,7 @@ import org.apache.log4j.Logger;
  */
 public class GeneWeightCalculator {
 
-	private static final Logger LOGGER = Logger.getLogger(Downstreamer.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerDeprecated.class);
 
 	/**
 	 * Code from lude to get weights for genes
@@ -39,7 +40,7 @@ public class GeneWeightCalculator {
 	 * @param genes
 	 * @return
 	 */
-	public static DoubleMatrixDataset<String, String> calculateGeneWeights(final DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DownstreamerOptions options) {
+	public static DoubleMatrixDataset<String, String> calculateGeneWeights(final DoubleMatrixDataset<String, String> genePvaluesNullGwas, List<Gene> genes, DownstreamerOptionsDeprecated options) {
 
 		Map<String, ArrayList<String>> chrArmToGeneMapping = createChrArmGeneMapping(genes, genePvaluesNullGwas.getHashRows());
 
@@ -108,6 +109,7 @@ public class GeneWeightCalculator {
 
 	}
 
+	// TODO: DUPLICATED
 	private static Map<String, ArrayList<String>> createChrArmGeneMapping(List<Gene> genes, LinkedHashMap<String, Integer> hashRows) {
 		Map<String, ArrayList<String>> chrArmToGeneMapping = new HashMap<>(25);
 		for (Gene gene : genes) {

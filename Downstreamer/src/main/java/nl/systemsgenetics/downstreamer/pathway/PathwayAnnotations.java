@@ -15,9 +15,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.zip.GZIPInputStream;
 
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
-import org.apache.log4j.Logger;
-import umcg.genetica.io.text.TextFile;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * @author patri
@@ -28,7 +28,7 @@ public class PathwayAnnotations {
 	private final ArrayList<String> annotationHeaders;
 	private final String setName;
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerOptions.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerOptionsDeprecated.class);
 
 	public PathwayAnnotations(final File annotationFile) throws FileNotFoundException, IOException {
 

@@ -20,6 +20,9 @@ import static org.molgenis.genotype.GenotypeData.DOUBLE_PHENOTYPE_SAMPLE_ANNOTAT
 import static org.molgenis.genotype.GenotypeData.FATHER_SAMPLE_ANNOTATION_NAME;
 import static org.molgenis.genotype.GenotypeData.MOTHER_SAMPLE_ANNOTATION_NAME;
 import static org.molgenis.genotype.GenotypeData.SEX_SAMPLE_ANNOTATION_NAME;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.annotation.SexAnnotation;
 
@@ -31,7 +34,7 @@ public class FamFileReader {
     
     private static final Charset FILE_ENCODING = Charset.forName("UTF-8");
     private static final Pattern SEPARATOR_PATTERN = Pattern.compile("[ \\t]+");
-    private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(FamFileReader.class);
+    private static final Logger LOGGER = LogManager.getLogger(FamFileReader.class);
 
     public static ArrayList<Sample> readFamFile(String famFilePath) throws FileNotFoundException, IOException {
         return readFamFile(new File(famFilePath));

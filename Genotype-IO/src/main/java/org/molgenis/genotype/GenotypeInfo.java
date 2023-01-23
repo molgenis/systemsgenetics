@@ -20,7 +20,8 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
 import org.molgenis.genotype.sampleFilter.SampleIdIncludeFilter;
 import org.molgenis.genotype.tabix.TabixFileNotFoundException;
@@ -42,7 +43,7 @@ public class GenotypeInfo {
 
 	static {
 
-		LOGGER = Logger.getLogger(GenotypeInfo.class);
+		LOGGER = LogManager.getLogger(GenotypeInfo.class);
 
 		OPTIONS = new Options();
 

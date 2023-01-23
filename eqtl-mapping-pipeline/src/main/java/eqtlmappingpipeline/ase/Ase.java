@@ -27,12 +27,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.LogManager;
 import java.util.regex.Pattern;
 import org.apache.commons.cli.ParseException;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
@@ -49,8 +54,8 @@ import umcg.genetica.io.gtf.GtfReader;
 public class Ase {
 
 	private static final String VERSION = Main.VERSION;
-	private static final String HEADER =
-			"  /---------------------------------------\\\n"
+	private static final String HEADER
+			= "  /---------------------------------------\\\n"
 			+ "  |  Allele Specific Expression Mapper    |\n"
 			+ "  |                                       |\n"
 			+ "  |             Patrick Deelen            |\n"
@@ -64,7 +69,7 @@ public class Ase {
 			+ "  |        Department of Genetics         |\n"
 			+ "  |  University Medical Center Groningen  |\n"
 			+ "  \\---------------------------------------/";
-	private static final Logger LOGGER = Logger.getLogger(Ase.class);
+	private static final Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger(Ase.class);
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Date currentDataTime = new Date();
 	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
@@ -194,7 +199,6 @@ public class Ase {
 
 				//We have reference genotypes. This means a lot of random access to this single genotype data which slowed down the analyis a lot. 
 				//Chucking the analysis will be used so that we can efficiently cache the reference genotypes.
-
 				final int chunkSize = configuration.getChunkSize();
 
 				for (String chr : referenceGenotypes.getSeqNames()) {
@@ -225,7 +229,6 @@ public class Ase {
 
 				}
 
-
 			}
 
 			final boolean encounteredBaseQuality = aseResults.isEncounteredBaseQuality();
@@ -236,7 +239,7 @@ public class Ase {
 			if (configuration.isMappabilityTrackSet()) {
 
 				System.out.println("Start loading mappability track");
-				
+
 				int removeNoMappabilityInfo = 0;
 				int removeLowMappability = 0;
 
@@ -262,7 +265,6 @@ public class Ase {
 					System.exit(1);
 					return;
 				}
-
 
 				for (Iterator<AseVariantAppendable> aseIterator = aseResults.iterator(); aseIterator.hasNext();) {
 					AseVariantAppendable ase = aseIterator.next();
@@ -293,7 +295,6 @@ public class Ase {
 
 			}
 
-
 			AseVariantAppendable[] aseVariants = new AseVariantAppendable[aseResults.getCount()];
 			{
 				int i = 0;
@@ -302,17 +303,15 @@ public class Ase {
 					++i;
 				}
 			}
-			
+
 			AseCalculator.startAseCalculators(aseVariants, configuration.getThreads());
 
 			System.out.println("Completed ASE calculations");
-			
+
 			//int numberOfTests = aseVariants.length;
 			//double bonferroniCutoff = 0.05 / numberOfTests;
 			//System.out.println("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
 			//LOGGER.info("Performed " + DEFAULT_NUMBER_FORMATTER.format(numberOfTests) + " tests. Bonferroni FWER 0.05 cut-off: " + bonferroniCutoff);
-
-
 			Arrays.sort(aseVariants);
 
 			final PerChrIntervalTree<GffElement> gtfAnnotations;
@@ -337,7 +336,6 @@ public class Ase {
 				gtfAnnotations = null;
 			}
 
-
 			for (MultipleTestingCorrectionMethod correctionMethod : EnumSet.of(MultipleTestingCorrectionMethod.NONE, MultipleTestingCorrectionMethod.BONFERRONI, MultipleTestingCorrectionMethod.HOLM, MultipleTestingCorrectionMethod.BH)) {
 
 				File outputFileBonferroni = new File(configuration.getOutputFolder(), correctionMethod == MultipleTestingCorrectionMethod.NONE ? "ase.txt" : "ase_" + correctionMethod.toString().toLowerCase() + ".txt");
@@ -352,7 +350,6 @@ public class Ase {
 						System.out.println("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " " + correctionMethod.toString().toLowerCase() + " significant ASE variants");
 						LOGGER.info("Completed writing " + DEFAULT_NUMBER_FORMATTER.format(writtenResults) + " " + correctionMethod.toString().toLowerCase() + " significant ASE variants");
 					}
-
 
 				} catch (UnsupportedEncodingException ex) {
 					throw new RuntimeException(ex);
@@ -386,19 +383,25 @@ public class Ase {
 
 	private static void startLogging(File logFile, boolean debugMode) {
 
-		try {
-			FileAppender logAppender = new FileAppender(new SimpleLayout(), logFile.getCanonicalPath(), false);
-			Logger.getRootLogger().removeAllAppenders();
-			Logger.getRootLogger().addAppender(logAppender);
-			if (debugMode) {
-				LOGGER.setLevel(Level.DEBUG);
-			} else {
-				LOGGER.setLevel(Level.INFO);
-			}
-		} catch (IOException e) {
-			System.err.println("Failed to create logger: " + e.getMessage());
-			System.exit(1);
+		if (debugMode) {
+			Configurator.setRootLevel(Level.DEBUG);
+		} else {
+			Configurator.setRootLevel(Level.INFO);
 		}
+
+		LoggerContext context = LoggerContext.getContext(false);
+		Configuration config = context.getConfiguration();
+
+		PatternLayout loggingLayoutReduced = PatternLayout.newBuilder()
+				.withPattern("[%level] %d{HH:mm:ss} - %msg%n")
+				.build();
+
+		// Stdout appender
+		ConsoleAppender stdOut = ConsoleAppender.newBuilder()
+				.setName("stdout")
+				.setLayout(loggingLayoutReduced)
+				.build();
+		stdOut.start();
 
 		LOGGER.info(
 				"\n" + HEADER);
@@ -494,7 +497,6 @@ public class Ase {
 
 			++counter;
 
-
 			outputWriter.append(String.valueOf(aseVariant.getMle().getRatioP()));
 			outputWriter.append('\t');
 			outputWriter.append(String.valueOf(aseVariant.getMle().getRatioD()));
@@ -528,7 +530,6 @@ public class Ase {
 				genesPrinted.clear();
 
 				List<GffElement> elements = gtfAnnotations.searchPosition(aseVariant.getChr(), aseVariant.getPos());
-
 
 				boolean first = true;
 				for (GffElement element : elements) {
@@ -613,13 +614,9 @@ public class Ase {
 //				outputWriter.append(altMeanBaseQualities);
 //
 //			}
-
-
-
 			outputWriter.append('\n');
 
 		}
-
 
 		outputWriter.close();
 		return counter;
@@ -657,15 +654,14 @@ public class Ase {
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
 
-			if(e instanceof OutOfMemoryError){
+			if (e instanceof OutOfMemoryError) {
 				System.err.println("Error: out of memory, use -Xmx##g -Xms##g to reserve more memory, see manual for more information.");
 				LOGGER.fatal("Out of memory, use -Xmx##g -Xms##g to reserve more memory, see manual for more information.", e);
 			} else {
 				System.err.println("Fatal error: " + e.getMessage());
 				LOGGER.fatal("Fatal error: ", e);
 			}
-			
-			
+
 			System.exit(1);
 		}
 	}
@@ -707,7 +703,7 @@ public class Ase {
 			}
 
 			if (showFileProgress) {
-				
+
 				int currentCount = fileCounter.get();
 
 				if (currentCount > nextReport) {
@@ -720,7 +716,5 @@ public class Ase {
 		} while (running);
 
 	}
-	
-	
-	
+
 }

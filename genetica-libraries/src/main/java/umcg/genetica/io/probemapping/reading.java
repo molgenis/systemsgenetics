@@ -5,7 +5,6 @@
 package umcg.genetica.io.probemapping;
 
 import gnu.trove.map.hash.THashMap;
-import java.awt.TextField;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,11 +17,12 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
+import umcg.genetica.io.chrContacts.SortInterChrContacts;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.matrix.DoubleMatrixDataset;
 
@@ -1030,7 +1030,7 @@ public class reading {
                 tmp = new DoubleMatrixDataset<String, String>(eigenVectorFile, null, rowsToInclude);
             }
         } catch (IOException ex) {
-            Logger.getLogger(reading.class.getName()).log(Level.SEVERE, null, ex);
+            LogManager.getLogger(SortInterChrContacts.class).log(Level.FATAL, ex);
         }
 
         return (tmp);

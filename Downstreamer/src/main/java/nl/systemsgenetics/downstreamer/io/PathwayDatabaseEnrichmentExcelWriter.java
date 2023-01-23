@@ -1,12 +1,12 @@
 package nl.systemsgenetics.downstreamer.io;
 
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
-import nl.systemsgenetics.downstreamer.runners.PathwayDatabaseEnrichments;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.CellType;
@@ -17,8 +17,6 @@ import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.usermodel.*;
-import sun.swing.StringUIClientPropertyKey;
-import umcg.genetica.math.matrix2.DoubleMatrix1dOrder;
 import nl.systemsgenetics.downstreamer.runners.PathwayDatabaseEnrichments.PathwayDatabaseEnrichmentRecord;
 
 import java.io.File;
@@ -28,10 +26,10 @@ import java.util.*;
 
 public class PathwayDatabaseEnrichmentExcelWriter {
 
-    private static final Logger LOGGER = Logger.getLogger(PathwayDatabaseEnrichmentExcelWriter.class);
-    private DownstreamerOptions options;
+    private static final Logger LOGGER = LogManager.getLogger(PathwayDatabaseEnrichmentExcelWriter.class);
+    private DownstreamerOptionsDeprecated options;
 
-    public PathwayDatabaseEnrichmentExcelWriter(DownstreamerOptions options) {
+    public PathwayDatabaseEnrichmentExcelWriter(DownstreamerOptionsDeprecated options) {
         this.options = options;
     }
 

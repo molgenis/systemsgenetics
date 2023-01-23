@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.log4j.Logger;
 import umcg.genetica.variantAnnotator.GenomicRange;
 
 /**
@@ -15,7 +14,6 @@ public class PerChrIntervalTree<E extends Range> {
 
 	private final Class<E> classE;
 	private final HashMap<String, IntervalTree<E>> perChrIntervalTree;
-	private static final Logger LOGGER = Logger.getLogger(PerChrIntervalTree.class);
 
 	public PerChrIntervalTree(Class<E> classE) {
 		this.classE = classE;

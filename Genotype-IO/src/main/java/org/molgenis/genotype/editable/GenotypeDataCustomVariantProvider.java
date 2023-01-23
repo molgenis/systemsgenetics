@@ -11,7 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.Sample;
@@ -31,7 +32,7 @@ public class GenotypeDataCustomVariantProvider<S extends EditableSampleVariantsP
 
 	private final GeneticVariantRange variants;
 	private final List samples;
-	private static final Logger LOGGER = Logger.getLogger(GenotypeDataCustomVariantProvider.class);	
+	private static final Logger LOGGER = LogManager.getLogger(GenotypeDataCustomVariantProvider.class);	
 	private final LinkedHashSet<String> sequenceNames;
 	private final S sampleVariantProvider;
 

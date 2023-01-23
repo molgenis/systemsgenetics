@@ -13,7 +13,8 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -22,7 +23,7 @@ import org.apache.log4j.Logger;
 public class GadoOptions {
 
 	private static final Options OPTIONS;
-	private static final Logger LOGGER = Logger.getLogger(GadoOptions.class);
+	private static final Logger LOGGER = LogManager.getLogger(GadoOptions.class);
 
 	private final GadoMode mode;
 

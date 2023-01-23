@@ -164,7 +164,7 @@ class CalculateSimpleGeneticRiskScore {
                                                         excludeList.add(riskE2.getRsName());
                                                     }
                                                 } catch (LdCalculatorException ex) {
-                                                    Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
+                                                    throw new RuntimeException(ex);
                                                 }
 
                                             }
@@ -178,7 +178,7 @@ class CalculateSimpleGeneticRiskScore {
                             out.close();
                         }
                     } catch (IOException ex) {
-                        Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
+                        throw new RuntimeException(ex);
                     }
                 }
                 p.iterate();
@@ -266,7 +266,7 @@ class CalculateSimpleGeneticRiskScore {
                                                         excludeList.add(riskE2.getRsName());
                                                     }
                                                 } catch (LdCalculatorException ex) {
-                                                    Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
+                                                    throw new RuntimeException(ex);
                                                 }
                                             }
                                         }
@@ -349,7 +349,7 @@ class CalculateSimpleGeneticRiskScore {
                                                         excludeList.add(riskE2.getRsName());
                                                     }
                                                 } catch (LdCalculatorException ex) {
-                                                    Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
+                                                    throw new RuntimeException(ex);
                                                 }
                                             }
                                         }
@@ -362,7 +362,7 @@ class CalculateSimpleGeneticRiskScore {
                             out.close();
                         }
                     } catch (IOException ex) {
-                        Logger.getLogger(CalculateSimpleGeneticRiskScore.class.getName()).log(Level.SEVERE, null, ex);
+                        throw new RuntimeException(ex);
                     }
                 }
                 p.iterate();

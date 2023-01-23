@@ -155,7 +155,7 @@ public class Main {
 			sumRisks = cmd.hasOption('s');
 
 		} catch (ParseException ex) {
-			Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		}
 
 		try {
@@ -176,7 +176,7 @@ public class Main {
 			}
 
 		} catch (IOException ex) {
-			Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		}
 	}
 
@@ -308,7 +308,7 @@ public class Main {
 				}
 				readFiles.close();
 			} catch (IOException ex) {
-				Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+				throw new RuntimeException(ex);
 			}
 
 		});

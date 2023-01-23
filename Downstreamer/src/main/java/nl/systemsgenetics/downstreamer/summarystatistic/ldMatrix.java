@@ -1,6 +1,7 @@
 package nl.systemsgenetics.downstreamer.summarystatistic;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.util.LdCalculatorException;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -13,9 +14,10 @@ import java.util.Set;
 /**
  * The type Ld matrix.
  */
+// TODO: update this, must be better way
 public class ldMatrix {
 
-    private static Logger LOGGER = Logger.getLogger(ldMatrix.class);
+    private static Logger LOGGER = LogManager.getLogger(ldMatrix.class);
     private double[][] r2matrix;
     private String[] dimnames;
     private Map<String, Integer> index;

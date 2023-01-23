@@ -8,15 +8,16 @@ package nl.systemsgenetics.downstreamer.runners;
 import cern.colt.GenericPermuting;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
+
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
@@ -25,16 +26,15 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
  */
 public class PrepareExternalGenePvalues {
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerUtilities.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerUtilities.class);
 
-	public static void prepare(DownstreamerOptions options) throws Exception {
+	public static void prepare(DownstreamerOptionsDeprecated options) throws Exception {
 
 		LOGGER.info("This function will convert gene p-values from forinstance"
 				+ " a rare variant burden test to files that can be used by step2"
 				+ " of Downstreamer. The input file must be a matrix with ensg ids on rows"
 				+ " and trait name as single column.");
 
-		
 		DoubleMatrixDataset<String, String> genePvalues = DoubleMatrixDataset.loadDoubleTextData(options.getGwasZscoreMatrixPath(), '\t');
 		
 		List<Gene> genes = IoUtils.readGenes(options.getGeneInfoFile());
@@ -46,10 +46,7 @@ public class PrepareExternalGenePvalues {
         }
 		
 		genePvalues = genePvalues.viewRowSelection(geneIds);
-		
-		
-		
-		
+
 		final int numberOfPermutations = options.getPermutationGeneCorrelations() + options.getPermutationPathwayEnrichment() + options.getPermutationFDR();
 		final int numberOfGenes = genePvalues.rows();
 		
@@ -69,10 +66,8 @@ public class PrepareExternalGenePvalues {
 			
 			int[] shuffle = GenericPermuting.permutation(i+2, numberOfGenes);
 			DoubleMatrix1D copyGenePvalues = genePvaluesVector.copy();
-			
-		
+
 			genePvaluesNullGwasMatrix.viewColumn(i).assign(copyGenePvalues.viewSelection(shuffle));
-			
 		}
 		
 		DoubleMatrixDataset<String, String> geneVariantCount = genePvalues.duplicate();
@@ -89,7 +84,6 @@ public class PrepareExternalGenePvalues {
 		geneVariantCount.save(options.getOutputBasePath() + "_geneVariantCount.txt.gz");
 		geneMaxSnpZscore.saveBinary(options.getOutputBasePath() + "_geneMaxSnpScores");
 		geneMaxSnpZscoreNullGwas.saveBinary(options.getOutputBasePath() + "_geneMaxSnpZscoresNullGwas");
-
 	}
 
 }

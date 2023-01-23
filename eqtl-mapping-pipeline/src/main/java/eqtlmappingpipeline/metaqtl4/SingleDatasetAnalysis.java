@@ -16,7 +16,8 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.variant.GeneticVariant;
 import umcg.genetica.console.ProgressBar;
 import umcg.genetica.containers.Pair;
@@ -40,7 +41,7 @@ public class SingleDatasetAnalysis {
     private MetaQTL4Dataset dataset;
     private ArrayList<MetaQTL4MetaTrait> availableTraits;
     private TObjectIntHashMap<MetaQTL4MetaTrait> availableTraitsHash; //int as value
-    private static final Logger LOG = Logger.getLogger(SingleDatasetAnalysis.class);
+    private static final Logger LOG = LogManager.getLogger(SingleDatasetAnalysis.class);
     private Integer[] traitIndex;
 
     public SingleDatasetAnalysis(MetaQTL4Settings settings) throws IOException, Exception {

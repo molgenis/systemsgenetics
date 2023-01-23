@@ -1,6 +1,7 @@
 package eqtlmappingpipeline.metaqtl4;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * An awesome MetaQTL4
@@ -8,7 +9,7 @@ import org.apache.log4j.Logger;
  */
 public class MetaQTL4ConsoleUI {
 
-    private static final Logger logger = Logger.getLogger(MetaQTL4ConsoleUI.class);
+    private static final Logger logger = LogManager.getLogger(MetaQTL4ConsoleUI.class);
 
     public MetaQTL4ConsoleUI(String[] args) {
         if (args.length < 1) {

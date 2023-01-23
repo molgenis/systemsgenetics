@@ -10,10 +10,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
@@ -27,9 +28,9 @@ import umcg.genetica.math.stats.ZScores;
  */
 public class PredictedPathwayAnnotations {
 
-	private static final Logger LOGGER = Logger.getLogger(PredictedPathwayAnnotations.class);
+	private static final Logger LOGGER = LogManager.getLogger(PredictedPathwayAnnotations.class);
 
-	public static void expandAnnotations(DownstreamerOptions options) throws Exception {
+	public static void expandAnnotations(DownstreamerOptionsDeprecated options) throws Exception {
 
 		List<PathwayDatabase> pathwayAnnotations = options.getPathwayDatabases();
 		List<PathwayDatabase> gnPredictions = options.getPathwayDatabases2();
@@ -58,20 +59,20 @@ public class PredictedPathwayAnnotations {
 			final ArrayList<String> overlappingGenes;
 			if (fromScratch) {
 				
-				overlappingGenes = new ArrayList<>(predictionMatrixLoader.getOriginalRowMap());
+				overlappingGenes = new ArrayList<>(predictionMatrixLoader.getAllRowIdentifiers());
 				overlappingGenes.retainAll(genes.keySet());
 				
-				pathwayMatrix = new DoubleMatrixDataset<>(overlappingGenes, predictionMatrixLoader.getOriginalColMap());
+				pathwayMatrix = new DoubleMatrixDataset<>(overlappingGenes, predictionMatrixLoader.getAllColumnIdentifiers());
 				pathwayMatrix2 = pathwayMatrix;
 				
 			} else {
 				DoubleMatrixDatasetFastSubsetLoader pathwayMatrixLoader = new DoubleMatrixDatasetFastSubsetLoader(pd.getLocation());
-				overlappingGenes = new ArrayList<>(pathwayMatrixLoader.getOriginalRowMap());
+				overlappingGenes = new ArrayList<>(pathwayMatrixLoader.getAllRowIdentifiers());
 				overlappingGenes.retainAll(genes.keySet());
 				//First load all genes in gene file so that they will be in output file
 				pathwayMatrix = pathwayMatrixLoader.loadSubsetOfRowsBinaryDoubleData(overlappingGenes);
 
-				overlappingGenes.retainAll(predictionMatrixLoader.getOriginalRowMap());
+				overlappingGenes.retainAll(predictionMatrixLoader.getAllRowIdentifiers());
 
 				//subset pathways to overlap with predictions
 				pathwayMatrix2 = pathwayMatrix.viewRowSelection(overlappingGenes);

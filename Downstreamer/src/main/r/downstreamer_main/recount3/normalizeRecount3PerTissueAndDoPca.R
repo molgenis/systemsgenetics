@@ -4,22 +4,23 @@
 
 
 
-remoter::client("localhost", port = 55506)
+remoter::client("localhost", port = 55506)#55556
 
 library(DESeq2)
 library(parallel)
 library(viridisLite, lib.loc = .libPaths()[2])
+library("havok")
 
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
 
-load(file = "perTissueNormalization/selectedSamplesRawExpression.RData", verbose = T)
+#load(file = "perTissueNormalization/selectedSamplesRawExpression.RData", verbose = T)
 load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
 
 
 sort(table(samplesWithPredictionNoOutliers$predictedTissue))
 tissueClasses <- unique(samplesWithPredictionNoOutliers$predictedTissue)
-
+sort(tissueClasses)
 
 #tissueClasses <- tissueClasses[1:29]
 #tissueClasses <- tissueClasses[30:57]
@@ -85,11 +86,10 @@ table(combinedMeta[,"sra.library_layout"],useNA = "a")
 
 cl <- makeCluster(20)
 
-tissue <- "Salivary Gland-Minor Salivary Gland"
+tissue <- "Microglia"
 
 sink <- lapply(tissueClasses, function(tissue){
   cat(tissue, "\n")
-  
   
   load(file = paste0("perTissueNormalization/vstExp/",make.names(tissue),".RData"))
 
@@ -98,24 +98,42 @@ sink <- lapply(tissueClasses, function(tissue){
     combinedMetaTissue <- combinedMetaTissue[,-match("sra.library_layout",colnames(combinedMetaTissue))]
   }
   
+  geneMean <- rowMeans(vstExp)
+  
   vstExpCovCor <- parApply(cl, vstExp, 1 ,function(geneExp, combinedMetaTissue){
     return(residuals(lm(geneExp ~ . ,data = combinedMetaTissue)))
   }, combinedMetaTissue = combinedMetaTissue)
   vstExpCovCor <- t(vstExpCovCor)
   
+  vstExpCovCor <- vstExpCovCor + geneMean
   
   save(vstExpCovCor, file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
+  write.table(vstExpCovCor, file = gzfile(paste0("perTissueNormalization/dataForLude/",make.names(tissue),"_vstCovCor.txt.gz")), quote = F, sep = "\t", col.names = NA)
+  
 
 })
 
 stopCluster(cl)
 
 
-sink <- lapply(tissueClasses, function(tissue){
-  cat(tissue, "\n")
+
+cor.test(vstExpCovCor[,1], vstExp[,1])
+cor.test(vstExpCovCorOld[,1], vstExp[,1])
+
+cor.test(vstExpCovCor[,1], vstExpCovCorOld[,1])
+
+plot(vstExpCovCor[,1], vstExpCovCorOld[,1])
+dev.off()
+
+#vstExpCovCorOld <- vstExpCovCor
+sort(tissueClasses)
+tissue <- "Prostate"
+
+numberOfComps <- lapply(tissueClasses, function(tissue){
 
   
-  load(file = paste0("perTissueNormalization/vstExp/",make.names(tissue),".RData"))
+  
+  load(file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
   
   #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892
   expScale = vstExpCovCor - rowMeans(vstExpCovCor);
@@ -136,9 +154,11 @@ sink <- lapply(tissueClasses, function(tissue){
   
   nrSamples <- ncol(expScale)
   
-  expSvd <- svd(expScale, nu = ifelse(nrSamples < 500, nrSamples, 500), nv = ifelse(nrSamples < 50, nrSamples, 50))
-  
 
+  
+  expSvd <- svd(expScale, nu = nrSamples, nv = min(nrSamples, 50))
+  
+  
   eigenValues <- expSvd$d^2
   eigenVectors <- expSvd$u
   colnames(eigenVectors) <- paste0("Comp_",1:ncol(eigenVectors))
@@ -151,11 +171,90 @@ sink <- lapply(tissueClasses, function(tissue){
   explainedVariance <- eigenValues * 100 / sum(eigenValues)
   
   
+  numberGenes <- nrow(expScale)
+  
+  
+  numberComponentsToInclude <- which.max(cumsum(explainedVariance) >= 80)
+  #cumsum(explainedVariance)[numberComponentsToInclude]
+    
+  #   
+  # cronbachAlpha <- lapply(as.list(1:min(2000, nrSamples)), function(comp,numberGenes, expScale,eigenVectors){
+  #   
+  #   geneVariance <- sapply(1:nrow(expScale), function(r){
+  #     var(expScale[r,] * eigenVectors[r,comp])
+  #   })
+  #   return((numberGenes / (numberGenes - 1))*(1 - (sum(geneVariance) / var(t(expScale) %*% eigenVectors[,comp]))))
+  # }, numberGenes = numberGenes, expScale = expScale,eigenVectors = eigenVectors)
+  # #,  mc.cores = 20
+  # cronbachAlpha <- unlist(cronbachAlpha)
+  # 
+  # cronbachAlpha <- cronbachAlpha[cronbachAlpha>0]
+  # 
+  # (numberComponentsToInclude <- min(which(cronbachAlpha < 0.7))-1)
+  
+  
+  #medianSingularValue <- median(expSvd$d)
+  
+  #omega <- optimal_SVHT_coef(ncol(expScale) / nrow(expScale), sigma_known = F)
+  #threshold <- omega * medianSingularValue
+  #numberComponentsToInclude <- sum(expSvd$d > threshold )
+  
+  cat(paste0(tissue," ",numberComponentsToInclude) , "\n")
+  h <- cumsum(explainedVariance)[numberComponentsToInclude ]
+
+  #rpng(width = 1000, height = 1000)
+  png(paste0("perTissueNormalization/vstCovCorPca/plots/",make.names(tissue),"_explainedVar.png"),width = 1000, height = 1000)
+  plot(cumsum(explainedVariance), pch = 16, cex = 0.5, xlab = "Component", ylab = "Cumulative explained %", main = tissue)
+  abline(h = h, lwd = 2, col = "darkred")
+  text(0,h+1,numberComponentsToInclude, adj = 0)
+  dev.off()
+
+  #rpng(width = 1000, height = 1000)
+  png(paste0("perTissueNormalization/vstCovCorPca/plots/",make.names(tissue),"_eigenvalues.png"),width = 1000, height = 1000)
+  plot(eigenValues, log = "y", ylab = "Eigenvalues")
+  abline(v = numberComponentsToInclude, lwd = 2, col = "darkred")
+  dev.off()
+  
+  
+  write.table(eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),"_eigenVec.txt.gz")), sep = "\t", quote = F, col.names = NA)
+  
+  
   tissueVstPca <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)
-  str(tissueVstPca)
-  save(tissueVstPca, file = paste0("perTissueNormalization/vstPca/",make.names(tissue),".RData"))
+  
+  save(tissueVstPca, file = paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),".RData"))
+  return(numberComponentsToInclude)
+})
+
+numberOfComps <- do.call("c", numberOfComps)
+names(numberOfComps) <- tissueClasses
+#as.data.frame(numberOfComps)
+
+nrSamplesCombined <- nrow(samplesWithPredictionNoOutliers)
+nrComponentsCominbedNetwork <- 848
+
+sampleCounts <- table(samplesWithPredictionNoOutliers$predictedTissue)
+
+rpng(width = 1000, height = 1000)
+plot(as.numeric(sampleCounts[names(numberOfComps)]), numberOfComps, 
+     xlim = c(min(sampleCounts),nrSamplesCombined), 
+     ylim = c(min(numberOfComps,nrComponentsCominbedNetwork),max(numberOfComps, nrComponentsCominbedNetwork)), 
+     log = "xy", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.7) ,
+     xlab = "Number of samples", ylab = "Number of components")
+points(nrSamplesCombined, nrComponentsCominbedNetwork, pch = 16, col=adjustcolor("magenta1", alpha.f = 0.5))
+dev.off()
+
+write.table(as.data.frame(numberOfComps), file = "perTissueNormalization/vstCovCorPca/compsPerTissue.txt", col.names = NA, quote = F, sep = "\t")
+
+sink <- lapply(tissueClasses, function(tissue){
+  cat(tissue, "\n")
+  
+  load(file = paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),".RData"))
+  
+  write.table(tissueVstPca$eigenVectors, file = gzfile(paste0("perTissueNormalization/dataForLude/",make.names(tissue),"_eigenVec.txt.gz")))
+  
   
 })
+
 
 str(vstExp)
 rownames(vstExp) <- (gsub("\\..+", "", rownames(vstExp)))
@@ -229,7 +328,7 @@ rpng(width = 1500, height = 1500)
 palette(adjustcolor(viridis(studies, option = "H"), alpha.f = 0.5))
 pchMap <- rep(c(15,16,17), length.out = studies)
 plot(pcs[,1],metaTest[,"recount_qc.star.%_of_reads_mapped_to_multiple_loci"], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
-plot(pcs[,1],pcs[,2], col = as.factor(tissueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
+plot(pcs[,1],pcs[,2], col = as.factor(tifssueSamplesInfo$study), pch = pchMap[as.factor(tissueSamplesInfo$study)], cex = 2, main = paste0("Studies (", studies,")"), xlab = paste0("Comp 1 (", round(explainedVariance[1],2) ,"%)"), ylab = "Percentage read map multiple loci", bty = "n")
 dev.off()
 
 
@@ -306,3 +405,18 @@ pairs(expPcs[,1:10], col = breakCols[as.numeric(cut(tissueSamplesInfo$predictedT
   sum(expPcs[,2]>10)
 x <- cbind(expPcs, tissueSamplesInfo)
 View(x)
+
+
+
+
+tissue <- "Kidney"
+sink <- lapply(tissueClasses, function(tissue){
+  
+  
+  
+  load(file = paste0("perTissueNormalization/vstExpCovCor/",make.names(tissue),".RData"))
+  
+  corMatrix <- cor(t(vstExpCovCor))
+  write.table(corMatrix, file = gzfile(paste0("perTissueNormalization/dataForLude/",make.names(tissue),"_vstCovCor_coexp.txt.gz")), quote = F, sep = "\t", col.names = NA)
+  
+})

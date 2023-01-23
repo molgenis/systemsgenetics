@@ -12,7 +12,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.AbstractRandomAccessGenotypeData;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -49,7 +50,7 @@ public class GenotypeDataEditableProbabilities extends AbstractRandomAccessGenot
 	private final GeneticVariantRange variants;
 	private final HashMap<VariantInformation, Integer> variantAllelesIndex;
 	private final LinkedHashMap<Sample, Integer> samples;
-	private static final Logger LOGGER = Logger.getLogger(GenotypeDataEditableProbabilities.class);
+	private static final Logger LOGGER = LogManager.getLogger(GenotypeDataEditableProbabilities.class);
 	private final double minimumPosteriorProbabilityToCall;
 	private final List<Boolean> phasing;
 	private final LinkedHashSet<String> sequenceNames;

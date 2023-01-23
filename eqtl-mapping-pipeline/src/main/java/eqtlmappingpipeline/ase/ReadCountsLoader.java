@@ -11,7 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -41,7 +42,7 @@ public class ReadCountsLoader implements Runnable {
 	private final String chr;
 	private final int start;
 	private final int stop;
-	private static final Logger LOGGER = Logger.getLogger(ReadCountsLoader.class);
+	private static final Logger LOGGER = LogManager.getLogger(ReadCountsLoader.class);
 
 	public ReadCountsLoader(Iterator<File> inputFileIterator, AseResults aseResults, Set<String> detectedSampleSet, AtomicInteger fileCounter, AseConfiguration configuration) {
 		this(inputFileIterator, aseResults, detectedSampleSet, fileCounter, configuration, null);

@@ -55,7 +55,7 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 	}
 	
 	private void openrowdata() throws IOException {
-		String rowfile = loc.replaceAll("-data.dat", "-combos.txt.gz");
+		String rowfile = loc.getAbsolutePath().replaceAll("-data.dat", "-combos.txt.gz");
 		rowdata = new TextFile(rowfile, TextFile.R);
 		
 		availableGenes = new LinkedHashMap<>();
@@ -157,7 +157,7 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 			}
 			
 			is.close();
-			FileChannel ch = FileChannel.open(Paths.get(loc), StandardOpenOption.READ);
+			FileChannel ch = FileChannel.open(Paths.get(loc.getAbsolutePath()), StandardOpenOption.READ);
 			is = new DataInputStream(Channels.newInputStream(ch.position(lookuppositioninbinaryfile)));
 
 
@@ -183,7 +183,7 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 			rowdata.close();
 		} else {
 			super.close();
-			File f = new File(this.loc);
+			File f = this.loc;
 			
 			long length = f.length();
 			System.out.println(length + " bytes (" + Gpio.humanizeFileSize(length) + ") written to " + f.getAbsolutePath());
@@ -195,7 +195,7 @@ public class SortedBinaryZScoreFile extends BinaryFile {
 	}
 	
 	public String getName() {
-		File f = new File(this.loc);
+		File f = this.loc;
 		String name = f.getName().replaceAll("-data.dat", "");
 		return name;
 	}

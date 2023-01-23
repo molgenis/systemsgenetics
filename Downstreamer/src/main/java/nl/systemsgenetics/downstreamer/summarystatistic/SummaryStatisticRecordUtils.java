@@ -1,14 +1,15 @@
 package nl.systemsgenetics.downstreamer.summarystatistic;
 
 import nl.systemsgenetics.downstreamer.summarystatistic.filters.SummaryStatisticsRecordFilter;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.IOException;
 import java.util.*;
 
 public class SummaryStatisticRecordUtils {
 
-    private static final Logger LOGGER = Logger.getLogger(SummaryStatisticRecordUtils.class);
+    private static final Logger LOGGER = LogManager.getLogger(SummaryStatisticRecordUtils.class);
 
     /**
      * Filter summary statistics.

@@ -2,10 +2,10 @@ package nl.systemsgenetics.downstreamer.runners;
 
 import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
-import nl.systemsgenetics.downstreamer.DownstreamerMode;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerMode;
 import nl.systemsgenetics.downstreamer.DownstreamerStep1Results;
-import nl.systemsgenetics.downstreamer.Downstreamer;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import htsjdk.samtools.util.IntervalTreeMap;
 import nl.systemsgenetics.downstreamer.gene.Gene;
@@ -13,7 +13,8 @@ import nl.systemsgenetics.downstreamer.gene.GenePvalueCalculator;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.stats.ZScores;
@@ -32,7 +33,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
  */
 public class DownstreamerMainAnalysis {
 
-	private static final Logger LOGGER = Logger.getLogger(DownstreamerMainAnalysis.class);
+	private static final Logger LOGGER = LogManager.getLogger(DownstreamerMainAnalysis.class);
 
 	/**
 	 * Calculate the real gene p-values from GWAS z-scores as well as those for
@@ -43,7 +44,7 @@ public class DownstreamerMainAnalysis {
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	public static DownstreamerStep1Results step1(DownstreamerOptions options) throws IOException, Exception {
+	public static DownstreamerStep1Results step1(DownstreamerOptionsDeprecated options) throws IOException, Exception {
 
 		//Test here to prevent chrash after running for a while
 		if (!new File(options.getGwasZscoreMatrixPath() + ".dat").exists()) {
@@ -59,7 +60,7 @@ public class DownstreamerMainAnalysis {
 		// TODO: is it correct here that getNumberOfPermutationsRescue() is used?
 		double[] randomChi2 = generateRandomChi2(options.getNumberOfPermutationsRescue(), 500);
 
-		LOGGER.info("Prepared reference null distribution with " + Downstreamer.LARGE_INT_FORMAT.format(randomChi2.length) + " values");
+		LOGGER.info("Prepared reference null distribution with " + DownstreamerDeprecated.LARGE_INT_FORMAT.format(randomChi2.length) + " values");
 
 		File usedVariantsPerGeneFile = null;
 		if(options.isSaveUsedVariantsPerGene()){
@@ -122,7 +123,7 @@ public class DownstreamerMainAnalysis {
 	 * @throws IOException
 	 * @throws Exception
 	 */
-	public static DownstreamerStep2Results step2(DownstreamerOptions options, DownstreamerStep1Results step1Res) throws IOException, Exception {
+	public static DownstreamerStep2Results step2(DownstreamerOptionsDeprecated options, DownstreamerStep1Results step1Res) throws IOException, Exception {
 
 		options.getIntermediateFolder().mkdir();
 
@@ -130,7 +131,7 @@ public class DownstreamerMainAnalysis {
 
 		for (PathwayDatabase pd : pathwayDatabases) {
 			if (!pd.exist()) {
-				throw new FileNotFoundException("Could not read: " + pd.getLocation() + ".dat");
+				throw new FileNotFoundException("Could not read: " + pd.getLocation() + ".dat or .datg");
 			}
 		}
 
@@ -187,7 +188,7 @@ public class DownstreamerMainAnalysis {
 			}
 		});
 
-		LOGGER.info("Number of genes with atleast one variant in specified window: " + Downstreamer.LARGE_INT_FORMAT.format(selectedGenes.size()));
+		LOGGER.info("Number of genes with atleast one variant in specified window: " + DownstreamerDeprecated.LARGE_INT_FORMAT.format(selectedGenes.size()));
 		final HashSet<String> hlaGenes;
 		if (options.isExcludeHla()) {
 			hlaGenes = new HashSet<>();
@@ -272,11 +273,11 @@ public class DownstreamerMainAnalysis {
 	 * @return DownstreamerStep3Results
 	 * @throws Exception
 	 */
-	public static DownstreamerStep3Results step3(DownstreamerOptions options) throws Exception {
+	public static DownstreamerStep3Results step3(DownstreamerOptionsDeprecated options) throws Exception {
 
 		// GWAS pvalues
 		//DoubleMatrixDataset<String, String> gwasSnpZscores = DoubleMatrixDataset.loadDoubleBinaryData(options.getGwasZscoreMatrixPath());
-		Set<String> traits = new DoubleMatrixDatasetFastSubsetLoader(options.getOutputBasePath() + "_genePvalues").getOriginalColMap();
+		Set<String> traits = new DoubleMatrixDatasetFastSubsetLoader(options.getOutputBasePath() + "_genePvalues").getAllColumnIdentifiers();
 		
 		// Gene info
 		IntervalTreeMap<Gene> genes = IoUtils.readGenesAsIntervalTree(options.getGeneInfoFile());
@@ -328,7 +329,7 @@ public class DownstreamerMainAnalysis {
 		}
 
 		final int randomChi2Size = randomChi2.length;
-		final int nrThreads = DownstreamerOptions.getNumberOfThreadsToUse();
+		final int nrThreads = DownstreamerOptionsDeprecated.getNumberOfThreadsToUse();
 		final int permPerThread = randomChi2Size / nrThreads;
 		final int leftoverPerm = randomChi2Size % nrThreads;
 

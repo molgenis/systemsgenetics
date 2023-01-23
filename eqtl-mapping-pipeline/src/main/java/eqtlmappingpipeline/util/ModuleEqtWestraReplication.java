@@ -24,7 +24,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeDataException;
@@ -75,7 +76,7 @@ public class ModuleEqtWestraReplication {
 		}
 		EXTRA_COL_FROM_REPLICATION[12] = 0;
 
-		LOGGER = Logger.getLogger(GenotypeInfo.class);
+		LOGGER = LogManager.getLogger(GenotypeInfo.class);
 
 		OPTIONS = new Options();
 

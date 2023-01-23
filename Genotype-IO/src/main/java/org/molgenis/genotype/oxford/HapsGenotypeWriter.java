@@ -8,7 +8,8 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.Allele;
 import org.molgenis.genotype.Alleles;
 import org.molgenis.genotype.GenotypeData;
@@ -33,7 +34,7 @@ public class HapsGenotypeWriter implements GenotypeWriter {
 	private static final char SEPARATOR = ' ';
 	private static final char UNPHASED_INDICATOR = '*';
 	private static final char MISSING_INDICATOR = '?';
-	private static final Logger LOG = Logger.getLogger(HapsGenotypeWriter.class);
+	private static final Logger LOG = LogManager.getLogger(HapsGenotypeWriter.class);
 	private GenotypeData genotypeData;
 
 	public HapsGenotypeWriter(GenotypeData genotypeData) {

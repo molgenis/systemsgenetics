@@ -14,7 +14,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.lang3.EnumUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.GenotypedDataWriterFormats;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
@@ -86,7 +87,7 @@ public class GenotypeHarmonizerParamaters {
 
     static {
 
-        LOGGER = Logger.getLogger(GenotypeHarmonizerParamaters.class);
+        LOGGER = LogManager.getLogger(GenotypeHarmonizerParamaters.class);
 
         OPTIONS = new Options();
 

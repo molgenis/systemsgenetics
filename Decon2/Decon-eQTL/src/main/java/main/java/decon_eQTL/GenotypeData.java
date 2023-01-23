@@ -11,7 +11,7 @@ import org.apache.commons.io.LineIterator;
 
 public class GenotypeData {
 	private ArrayList<String> sampleNames;
-	private HashMap<String, double[]> genotypes = new HashMap<String, double[]>();;
+	private HashMap<String, double[]> genotypes = new HashMap<String, double[]>();
 	
 	public GenotypeData(){};
 	public GenotypeData(String genotypeFile) throws IOException{

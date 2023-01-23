@@ -13,10 +13,17 @@ import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 
 import org.apache.commons.cli.ParseException;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.molgenis.genotype.*;
 import org.molgenis.genotype.modifiable.ModifiableGenotypeData;
 import org.molgenis.genotype.multipart.IncompatibleMultiPartGenotypeDataException;
@@ -53,7 +60,7 @@ class GenotypeHarmonizer {
 			+ "  |     Genomics Coordination Center      |\n"
 			+ "  |  University Medical Center Groningen  |\n"
 			+ "  \\---------------------------------------/";
-	private static final Logger LOGGER = Logger.getLogger(GenotypeHarmonizer.class);
+	private static final Logger LOGGER = LogManager.getLogger(GenotypeHarmonizer.class);
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	/**
 	 * The lowest allowed minimum for the number of SNPs needed to align on
@@ -108,14 +115,46 @@ class GenotypeHarmonizer {
 		}
 
 		try {
-			FileAppender logAppender = new FileAppender(new SimpleLayout(), parameters.getLogFile().getCanonicalPath(), false);
-			LOGGER.getRootLogger().removeAllAppenders();
-			LOGGER.getRootLogger().addAppender(logAppender);
+
 			if (parameters.isDebugMode()) {
-				LOGGER.setLevel(Level.DEBUG);
+				Configurator.setRootLevel(Level.DEBUG);
 			} else {
-				LOGGER.setLevel(Level.INFO);
+				Configurator.setRootLevel(Level.INFO);
 			}
+			LoggerContext context = LoggerContext.getContext(false);
+			Configuration config = context.getConfiguration();
+
+			PatternLayout loggingLayoutFull = PatternLayout.newBuilder()
+					.withPattern("[%level] %d{ABSOLUTE} - %c{1} - %msg%n")
+					.build();
+
+			PatternLayout loggingLayoutReduced = PatternLayout.newBuilder()
+					.withPattern("%msg%n")
+					.build();
+
+
+			// Log file appender
+			FileAppender file = FileAppender.newBuilder()
+					.setName("file")
+					.setLayout(loggingLayoutFull)
+					.withFileName(parameters.getLogFile().getCanonicalPath())
+					.build();
+			file.start();
+
+			// Make sure any existing loggers are removed
+			for (Appender appender : context.getRootLogger().getAppenders().values()) {
+				context.getRootLogger().removeAppender(appender);
+			}
+
+			// Add the appenders to the root logger
+			Logger rootLogger = context.getRootLogger();
+			LoggerConfig rootLoggerConfig = config.getRootLogger();
+
+			rootLoggerConfig.addAppender(file, Level.INFO, null);
+			config.addLogger(rootLogger.getName(), rootLoggerConfig);
+
+			context.updateLoggers(config);
+			
 		} catch (IOException e) {
 			System.err.println("Failed to create logger: " + e.getMessage());
 			System.exit(1);

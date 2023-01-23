@@ -152,7 +152,7 @@ public class InternalMetaAnalysisSettings {
         try {
             config.save(output + "metasettings.xml");
         } catch (ConfigurationException ex) {
-            Logger.getLogger(InternalMetaAnalysisSettings.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
     }

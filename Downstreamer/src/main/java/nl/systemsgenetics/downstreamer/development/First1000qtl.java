@@ -8,7 +8,7 @@ package nl.systemsgenetics.downstreamer.development;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 
@@ -22,7 +22,7 @@ public class First1000qtl {
 	 * @param options
 	 * @throws java.io.IOException
 	 */
-	public static void printFirst1000(DownstreamerOptions options) throws IOException, Exception {
+	public static void printFirst1000(DownstreamerOptionsDeprecated options) throws IOException, Exception {
 		
 		System.out.println("");
 		System.out.println("WARNING: This is an undocumented function used during development");
@@ -32,7 +32,7 @@ public class First1000qtl {
 		
 		ArrayList<String> rowsToOutput = new ArrayList<>();
 		
-		Set<String> rowMap = loader.getOriginalRowMap(); 
+		Set<String> rowMap = loader.getAllRowIdentifiers(); 
 		
 		int i = 0;
 		for(String row : rowMap){

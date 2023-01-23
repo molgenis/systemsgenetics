@@ -14,7 +14,10 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.log4j.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.Sample;
 import org.molgenis.genotype.annotation.SampleAnnotation;
@@ -30,7 +33,7 @@ public class OxfordSampleFileWriter {
 	public static final Charset FILE_ENCODING = Charset.forName("UTF-8");
 	public static final String LINE_ENDING = "\n";
 	private static final char SEPARATOR = ' ';
-	private static final Logger LOG = Logger.getLogger(OxfordSampleFileWriter.class);
+	private static final Logger LOG = LogManager.getLogger(OxfordSampleFileWriter.class);
 
 	public static void writeSampleFile(File sampleFile, GenotypeData genotypeData, HashMap<Sample, Float> sampleMissingness) throws IOException {
 

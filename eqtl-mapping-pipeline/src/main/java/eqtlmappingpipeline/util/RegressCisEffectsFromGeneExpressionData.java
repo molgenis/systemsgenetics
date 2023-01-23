@@ -166,9 +166,9 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
 		try {
 			m_settings.load(settingsFile);
 		} catch (IOException ex) {
-			Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		} catch (ConfigurationException ex) {
-			Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		}
 		
 		int numDatasets = m_settings.datasetSettings.size();
@@ -183,9 +183,9 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
 			try {
 				m_gg[i] = new TriTyperGeneticalGenomicsDataset(m_settings.datasetSettings.get(i), null);
 			} catch (IOException ex) {
-				Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+				throw new RuntimeException(ex);
 			} catch (Exception ex) {
-				Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+				throw new RuntimeException(ex);
 			}
 			
 			if (m_gg[i].isExpressionDataLoadedCorrectly()) {
@@ -209,9 +209,9 @@ public class RegressCisEffectsFromGeneExpressionData extends MetaQTL3 {
 		try {
 			eqr.regressOutEQTLEffects(eQTLFile, true, m_gg);
 		} catch (IOException ex) {
-			Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		} catch (Exception e) {
-			Logger.getLogger(RegressCisEffectsFromGeneExpressionData.class.getName()).log(Level.SEVERE, null, e);
+			throw new RuntimeException(e);
 		}
 	}
 	

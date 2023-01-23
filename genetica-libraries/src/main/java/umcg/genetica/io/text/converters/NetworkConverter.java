@@ -12,8 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.Level;
 import umcg.genetica.io.text.TextFile;
 
 /**
@@ -22,7 +21,7 @@ import umcg.genetica.io.text.TextFile;
  */
 public class NetworkConverter {
 
-    private static final Logger LOGGER = Logger.getLogger(NetworkConverter.class.getName());
+    private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(NetworkConverter.class);
 
     // prevent instantiation, only static factory methods
     private NetworkConverter() {
@@ -34,7 +33,7 @@ public class NetworkConverter {
         String line = in.readLine();
         String[] split = line.split(infileDelimiter);
         String[] nodes = Arrays.copyOfRange(split, 1, split.length);
-        LOGGER.log(Level.FINE, "{0} nodes in {1}", new Object[]{nodes.length, matrixfile});
+        LOGGER.log(Level.DEBUG, "{0} nodes in {1}", new Object[]{nodes.length, matrixfile});
 
         TextFile out = new TextFile(outfile, TextFile.W);
         int lineNr = 1;
@@ -63,7 +62,7 @@ public class NetworkConverter {
         }
         in.close();
         out.close();
-        LOGGER.log(Level.FINE, "{0} edges from {1} written to ''{2}''", new Object[]{nrEdges, matrixfile, outfile});
+        LOGGER.log(Level.DEBUG, "{0} edges from {1} written to ''{2}''", new Object[]{nrEdges, matrixfile, outfile});
     }
 
     public static void writeGMTFileBasedOnGeneSetFileAndMappingFileRemovingDuplicateGeneSets(String genesetfile, String mappingfile, String mappingdelimiter, String gmtfile) throws IOException {
@@ -91,7 +90,7 @@ public class NetworkConverter {
             String code = split[0].trim();
             String name = code2name.get(code);
             if (name == null) {
-                LOGGER.log(Level.WARNING, "No annotation for gene set ''{0}''", code);
+                LOGGER.log(Level.WARN, "No annotation for gene set ''{0}''", code);
             } else {
                 String genes = Arrays.asList(Arrays.copyOfRange(split, 1, split.length)).toString();
                 System.out.println(genes);

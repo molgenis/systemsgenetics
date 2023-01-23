@@ -13,7 +13,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 
@@ -24,7 +25,7 @@ import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
 public class Options {
 
 	private static final org.apache.commons.cli.Options OPTIONS;
-	private static final Logger LOGGER = Logger.getLogger(Options.class);
+	private static final Logger LOGGER = LogManager.getLogger(Options.class);
 	private static final SimpleFeature HLA = new SimpleFeature("6", 20000000, 40000000);
 
 	private final Mode mode;

@@ -14,12 +14,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import nl.systemsgenetics.downstreamer.Downstreamer;
-import nl.systemsgenetics.downstreamer.DownstreamerOptions;
+import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
+import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.CellType;
@@ -44,10 +45,10 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 @Deprecated
 public class CoregeneEnrichmentExcelWriter {
 
-	private static final Logger LOGGER = Logger.getLogger(CoregeneEnrichmentExcelWriter.class);
+	private static final Logger LOGGER = LogManager.getLogger(CoregeneEnrichmentExcelWriter.class);
 
 	public static void write(
-			final DownstreamerOptions options,
+			final DownstreamerOptionsDeprecated options,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2Auc,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2Utest,
 			final HashMap<String, DoubleMatrixDataset<String, String>> pathwayDatabase2BonfOverlap,
@@ -283,7 +284,7 @@ public class CoregeneEnrichmentExcelWriter {
 
 	}
 
-	private static void populateOverviewSheet(final Workbook wb, String trait, final List<PathwayDatabase> geneAnnotationDatabases, final CreationHelper createHelper, final DownstreamerOptions options, final ExcelStyles styles, String predictionSource) {
+	private static void populateOverviewSheet(final Workbook wb, String trait, final List<PathwayDatabase> geneAnnotationDatabases, final CreationHelper createHelper, final DownstreamerOptionsDeprecated options, final ExcelStyles styles, String predictionSource) {
 		// -----------------------------------------------------------------------
 		// Create overview sheet
 		// -----------------------------------------------------------------------
@@ -297,7 +298,7 @@ public class CoregeneEnrichmentExcelWriter {
 
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Generated using Downstreamer " + Downstreamer.VERSION);
+		cell.setCellValue("Generated using Downstreamer " + DownstreamerDeprecated.VERSION);
 		cell.setCellStyle(styles.getBoldStyle());
 
 		overviewSheet.createRow(r++);

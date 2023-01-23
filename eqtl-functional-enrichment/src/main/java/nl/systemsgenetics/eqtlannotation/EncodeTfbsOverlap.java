@@ -44,7 +44,7 @@ public class EncodeTfbsOverlap {
             peakData = readTfbsInformation(inputFolderTfbsData);
 
         } catch (IOException ex) {
-            Logger.getLogger(EncodeTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
         try {
@@ -58,7 +58,7 @@ public class EncodeTfbsOverlap {
             }
             outWriter.close();
         } catch (IOException ex) {
-            Logger.getLogger(EncodeTfbsOverlap.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
     }

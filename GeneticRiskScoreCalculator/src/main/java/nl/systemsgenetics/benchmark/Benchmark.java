@@ -113,7 +113,7 @@ public class Benchmark {
 			}
 			
 		} catch (ParseException ex) {
-			Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -526,13 +526,13 @@ public class UtilConsoleGUI {
                         try {
                             NoLdSnpProbeListCreator.main(Arrays.copyOfRange(args, 2, args.length));
                         } catch (UnsupportedEncodingException ex) {
-                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                            throw new RuntimeException(ex);
                         } catch (FileNotFoundException ex) {
-                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                            throw new RuntimeException(ex);
                         } catch (IOException ex) {
-                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                            throw new RuntimeException(ex);
                         } catch (Exception ex) {
-                            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                            throw new RuntimeException(ex);
                         }
 
                         break;
@@ -555,9 +555,9 @@ public class UtilConsoleGUI {
                                 p.alternativeInitialize(settingsfile, in, inexp, null, annot, gte, out, true, true, perm, snpfile, threads, sortsnps);
                                 p.performeQTLMappingOverEigenvectorMatrixAndReNormalize(out, stepSize, max, nreqtls);
                             } catch (IOException ex) {
-                                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                                throw new RuntimeException(ex);
                             } catch (Exception ex) {
-                                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                                throw new RuntimeException(ex);
                             }
 
                         }
