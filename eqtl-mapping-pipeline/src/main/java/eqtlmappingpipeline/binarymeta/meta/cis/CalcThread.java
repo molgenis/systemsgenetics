@@ -4,10 +4,10 @@
  */
 package eqtlmappingpipeline.binarymeta.meta.cis;
 
+import eqtlmappingpipeline.binarymeta.meta.MetaAnalysisCalculationThread;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
 import umcg.genetica.containers.Pair;
 
 /**
@@ -38,9 +38,9 @@ public class CalcThread extends Thread {
                     output.offer(result);
                 }
             } catch (InterruptedException ex) {
-                Logger.getLogger(CalcThread.class.getName()).log(Level.SEVERE, null, ex);
+                LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
             } catch (Exception ex) {
-                Logger.getLogger(CalcThread.class.getName()).log(Level.SEVERE, null, ex);
+                LogManager.getLogger(MetaAnalysisCalculationThread.class.getName()).log(org.apache.logging.log4j.Level.FATAL, ex);
             }
 
         }

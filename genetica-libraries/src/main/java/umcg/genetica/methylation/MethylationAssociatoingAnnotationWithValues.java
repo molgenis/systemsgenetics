@@ -191,7 +191,7 @@ public class MethylationAssociatoingAnnotationWithValues {
 		try {
 			tmp = new DoubleMatrixDataset<String, String>(eigenVectorFile, "\t");
 		} catch (IOException ex) {
-			Logger.getLogger(MethylationAssociatoingAnnotationWithValues.class.getName()).log(Level.SEVERE, null, ex);
+			org.apache.logging.log4j.LogManager.getLogger(MethylationAssociatoingAnnotationWithValues.class).log(org.apache.logging.log4j.Level.FATAL, ex);
 		}
 		
 		return (tmp);
@@ -606,7 +606,7 @@ public class MethylationAssociatoingAnnotationWithValues {
 			try {
 				pValue = anova.anovaPValue(valueSets);
 			} catch (IllegalArgumentException ex) {
-				Logger.getLogger(MethylationAssociatoingAnnotationWithValues.class.getName()).log(Level.SEVERE, null, ex);
+				org.apache.logging.log4j.LogManager.getLogger(MethylationAssociatoingAnnotationWithValues.class).log(org.apache.logging.log4j.Level.FATAL, ex);
 			}
 			
 			System.out.println("Component: " + doubleMatrix.colObjects.get(i) + " capable of discriminating between the sets, with p-value: " + pValue);

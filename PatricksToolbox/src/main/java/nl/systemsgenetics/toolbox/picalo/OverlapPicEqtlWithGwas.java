@@ -25,7 +25,8 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import nl.systemsgenetics.toolbox.Options;
 import nl.systemsgenetics.toolbox.Utils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.util.LdCalculator;
 import org.molgenis.genotype.variant.GeneticVariant;
@@ -40,7 +41,7 @@ import umcg.genetica.math.stats.FisherExactTest;
  */
 public class OverlapPicEqtlWithGwas {
 
-	private static final Logger LOGGER = Logger.getLogger(OverlapPicEqtlWithGwas.class);
+	private static final Logger LOGGER = LogManager.getLogger(OverlapPicEqtlWithGwas.class);
 
 	public static void overlap(Options options) throws IOException, Exception {
 

@@ -105,9 +105,9 @@ public class QTLFileCompare {
                     compareOverlapAndZScoreDirectionTwoEQTLFilesMj(file1, file2, out, pCut, pCut2, matchOnGeneName, matchSnpOnPos, splitGeneNames);
                 }
             } catch (IOException ex) {
-                Logger.getLogger(QTLFileCompare.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             } catch (Exception ex) {
-                Logger.getLogger(QTLFileCompare.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
 
         } else {

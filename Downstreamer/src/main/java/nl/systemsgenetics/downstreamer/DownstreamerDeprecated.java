@@ -103,7 +103,7 @@ public class DownstreamerDeprecated {
 				options.getDebugFolder().mkdir();
 			}
 
-			Downstreamer.initializeLoggers(loggingLevel, options.getLogFile());
+			Downstreamer.initializeLoggers(loggingLevel, options.getLogFile(),startDateTime);
 			LOGGER.info("Downstreamer" + VERSION);
 			LOGGER.info("Current date and time: " + startDateTime);
 

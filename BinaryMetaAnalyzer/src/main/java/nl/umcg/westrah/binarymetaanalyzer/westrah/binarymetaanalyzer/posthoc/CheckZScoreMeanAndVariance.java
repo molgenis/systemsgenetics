@@ -43,7 +43,7 @@ public class CheckZScoreMeanAndVariance {
 			runPerDataset();
 		} catch (IOException ex) {
 			ex.printStackTrace();
-			Logger.getLogger(BinaryMetaAnalysis.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RuntimeException(ex);
 		}
 		
 	}

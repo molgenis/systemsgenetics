@@ -30,20 +30,20 @@ public class PrintTablePerLevel {
         try {
             metaphlanMatrix = DoubleMatrixDataset.loadDoubleData(fileNameMetaphlanTable);
         } catch (IOException ex) {
-            Logger.getLogger(PrintTablePerLevel.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
         if (kraken) {
             try {
                 writeMatrixPerLevelKraken(metaphlanMatrix, fileNameMetaphlanTable);
             } catch (IOException ex) {
-                Logger.getLogger(PrintTablePerLevel.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
         } else {
             try {
                 writeMatrixPerLevelMetaphlan(metaphlanMatrix, fileNameMetaphlanTable);
             } catch (IOException ex) {
-                Logger.getLogger(PrintTablePerLevel.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
         }
 

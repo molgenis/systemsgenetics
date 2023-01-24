@@ -31,13 +31,13 @@ public class ExtendSnpProbeCombinationsFile {
         try {
             initialPairs = readInitialPairs(initialReplicationList);
         } catch (IOException ex) {
-            Logger.getLogger(ExtendSnpProbeCombinationsFile.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
         try {
             metaphlanMatrix = DoubleMatrixDataset.loadDoubleData(fileNameMetaphlanTable);
         } catch (IOException ex) {
-            Logger.getLogger(PrintTablePerLevel.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         if(metaphlanMatrix!=null && initialPairs!=null){
             ArrayList<String> rows = metaphlanMatrix.getRowObjects();
@@ -45,7 +45,7 @@ public class ExtendSnpProbeCombinationsFile {
             try {
                 writeFullReplicationList(rows, initialPairs, fullReplicationList);
             } catch (IOException ex) {
-                Logger.getLogger(ExtendSnpProbeCombinationsFile.class.getName()).log(Level.SEVERE, null, ex);
+               throw new RuntimeException(ex);
             }
         }
 

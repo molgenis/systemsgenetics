@@ -47,21 +47,21 @@ public class WriteFastaOfInterestRegion {
                 interestStrings = readBedFileWithPositions(fileWithPositions);
             }
         } catch (Exception ex) {
-            Logger.getLogger(WriteFastaOfInterestRegion.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
         try {
             System.out.println("Reading reference FASTA.");
             refGen = new ReferenceGenomeFasta(new File(referenceFasta), ReferenceGenomeFasta.HUMAN_NORMAL_CHR);
         } catch (Exception ex) {
-            Logger.getLogger(WriteFastaOfInterestRegion.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
 
         if (refGen != null && interestStrings != null) {
             try {
                 writeFasta(refGen, interestStrings, outputFile);
             } catch (IOException ex) {
-                Logger.getLogger(WriteFastaOfInterestRegion.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
         }
 
@@ -149,7 +149,7 @@ public class WriteFastaOfInterestRegion {
                     }
 
                 } catch (Exception ex) {
-                    Logger.getLogger(WriteFastaOfInterestRegion.class.getName()).log(Level.SEVERE, null, ex);
+                    throw new RuntimeException(ex);
                 }
             }
         }

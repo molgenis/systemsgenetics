@@ -35,7 +35,7 @@ public class NormalizeAndFilter {
         try {
             metaphlanMatrix = DoubleMatrixDataset.loadDoubleData(fileNameMetaphlanTable);
         } catch (IOException ex) {
-            Logger.getLogger(PrintTablePerLevel.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
         if(scaleToPercent){
@@ -56,7 +56,7 @@ public class NormalizeAndFilter {
         try {
             metaphlanMatrix.save(fileNameMetaphlanTable+additionToFileName+".tsv");
         } catch (IOException ex) {
-            Logger.getLogger(PrintTablePerLevel.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
     }

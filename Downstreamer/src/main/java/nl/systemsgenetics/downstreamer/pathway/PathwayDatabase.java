@@ -15,10 +15,18 @@ public class PathwayDatabase {
 
 	private final String name;
 	private final String location;
+	private final boolean eigenvectors;
 
 	public PathwayDatabase(String name, String location) {
 		this.name = name;
 		this.location = location;
+		this.eigenvectors = false;
+	}
+
+	public PathwayDatabase(String name, String location, boolean eigenvectors) {
+		this.name = name;
+		this.location = location;
+		this.eigenvectors = eigenvectors;
 	}
 
 	public String getName() {
@@ -27,6 +35,10 @@ public class PathwayDatabase {
 
 	public String getLocation() {
 		return location;
+	}
+
+	public boolean isEigenvectors() {
+		return eigenvectors;
 	}
 
 	@Override
@@ -48,6 +60,9 @@ public class PathwayDatabase {
 			return false;
 		}
 		final PathwayDatabase other = (PathwayDatabase) obj;
+		if (this.eigenvectors != other.eigenvectors) {
+			return false;
+		}
 		if (!Objects.equals(this.name, other.name)) {
 			return false;
 		}

@@ -12,7 +12,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.molgenis.genotype.GenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeData;
 import org.molgenis.genotype.RandomAccessGenotypeDataReaderFormats;
@@ -38,7 +39,7 @@ public class MetaQTL4Dataset {
     private final HashMap<String, String> genotypeToTraitCoupling;
     private int[] intGenotypeToTraitCoupling;
     private final String genotypeDataLocation;
-    private static final Logger LOG = Logger.getLogger(MetaQTL4Dataset.class);
+    private static final Logger LOG = LogManager.getLogger(MetaQTL4Dataset.class);
 
     public MetaQTL4Dataset(MetaQTL4DatasetSettings settings) throws IOException {
         this(settings.getTraitDataLocation(), null, settings.getGenotypeLocation(), settings.getGenotypeFormat(), null, settings.getGenotypeToTraitCoupling());

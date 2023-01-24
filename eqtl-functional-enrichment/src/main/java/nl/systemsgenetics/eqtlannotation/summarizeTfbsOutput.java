@@ -31,7 +31,7 @@ public class summarizeTfbsOutput {
         try {
             summarize(inputFile, outputFile);
         } catch (IOException ex) {
-            Logger.getLogger(summarizeTfbsOutput.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
     }
 

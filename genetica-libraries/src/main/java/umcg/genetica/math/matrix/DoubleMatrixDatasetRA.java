@@ -6,9 +6,8 @@ package umcg.genetica.math.matrix;
 
 import java.io.*;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import org.apache.logging.log4j.Level;
+import umcg.genetica.graphics.ForestPlot;
 /**
  *
  * @author lude, juha
@@ -16,7 +15,7 @@ import java.util.logging.Logger;
 @Deprecated
 public class DoubleMatrixDatasetRA<T, U> extends DoubleMatrixDatasetAC {
 
-    private static final Logger LOGGER = Logger.getLogger(DoubleMatrixDatasetRA.class.getName());
+    private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(ForestPlot.class);
     public int nrColsTotal = 0;
     public Set<T> rowsToInclude = null;
     public Set<U> colsToInclude = null;

@@ -58,7 +58,7 @@ public class PrintPerDatasetCuttOff {
         try {
             bugMatrix = DoubleMatrixDataset.loadDoubleData(inputTable);
         } catch (IOException ex) {
-            Logger.getLogger(PrintPerDatasetCuttOff.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
         //Write matrix with direct filtering on X number of bugs in the individual cohort.
@@ -78,7 +78,7 @@ public class PrintPerDatasetCuttOff {
             try {
                 informationPerDataset.put(F.getName().split("_")[0], readFileSample(F));
             } catch (IOException ex) {
-                Logger.getLogger(PrintPerDatasetCuttOff.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
             
             
@@ -113,7 +113,7 @@ public class PrintPerDatasetCuttOff {
             try {
                 relevantBugMatrix.save(outputFolder+"matrix_"+dataset.getKey()+"_CuttOfNumber_"+cutOffNumber+"_incPercentage"+minPercentage+".tsv");
             } catch (IOException ex) {
-                Logger.getLogger(PrintPerDatasetCuttOff.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
         }
     }

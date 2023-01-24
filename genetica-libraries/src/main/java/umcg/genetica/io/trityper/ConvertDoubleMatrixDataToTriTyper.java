@@ -20,8 +20,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
@@ -79,7 +77,7 @@ public class ConvertDoubleMatrixDataToTriTyper {
 			removeNanRow = cmd.hasOption("R");
 
 		} catch (org.apache.commons.cli.ParseException ex) {
-			Logger.getLogger(ConvertDoubleMatrixDataToTriTyper.class.getName()).log(Level.SEVERE, null, ex);
+			org.apache.logging.log4j.LogManager.getLogger(ConvertDoubleMatrixDataToTriTyper.class).log(org.apache.logging.log4j.Level.FATAL, ex);
 		}
 
 

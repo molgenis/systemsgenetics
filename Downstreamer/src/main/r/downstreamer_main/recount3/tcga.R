@@ -2,7 +2,7 @@
 #remoter::server(verbose = T, port = 55556, password = "laberkak", sync = T)
 
 
-remoter::client("localhost", port = 55507, password = "laberkak")
+remoter::client("localhost", port = 55556)#55556  55507
 
 library(havok)
 
@@ -165,16 +165,18 @@ abline(h = 90, lwd = 2, col = "darkred")
 text(0,91,sum(cumsum(explainedVariance)<=90), adj = 0)
 dev.off()
 
+(numberComponentsToInclude <- which.max(cumsum(explainedVariance) >= 85))
 
 
 
-library("havok")
 
-medianSingularValue <- median(expSvd$d)
-
-omega <- optimal_SVHT_coef(ncol(tcgaExpVstCovCor2) / nrow(tcgaExpVstCovCor2), sigma_known = F)
-threshold <- omega * medianSingularValue
-(numberComponentsToInclude <- sum(expSvd$d > threshold ))
+# library("havok")
+# 
+# medianSingularValue <- median(expSvd$d)
+# 
+# omega <- optimal_SVHT_coef(ncol(tcgaExpVstCovCor2) / nrow(tcgaExpVstCovCor2), sigma_known = F)
+# threshold <- omega * medianSingularValue
+# (numberComponentsToInclude <- sum(expSvd$d > threshold ))
 
 
 
@@ -243,16 +245,18 @@ numberOfComps <- lapply(tissues, function(tissue){
   
   explainedVariance <- eigenValues * 100 / sum(eigenValues)
   
+  (numberComponentsToInclude <- which.max(cumsum(explainedVariance) >= 80))
   
   
   
-  medianSingularValue <- median(expSvd$d)
-  
-  omega <- optimal_SVHT_coef(ncol(expScale) / nrow(expScale), sigma_known = F)
-  threshold <- omega * medianSingularValue
-  numberComponentsToInclude <- sum(expSvd$d > threshold )
-  
-  cat(paste0(tissue," ",numberComponentsToInclude) , "\n")
+  # 
+  # medianSingularValue <- median(expSvd$d)
+  # 
+  # omega <- optimal_SVHT_coef(ncol(expScale) / nrow(expScale), sigma_known = F)
+  # threshold <- omega * medianSingularValue
+  # numberComponentsToInclude <- sum(expSvd$d > threshold )
+  # 
+  # cat(paste0(tissue," ",numberComponentsToInclude) , "\n")
   h <- cumsum(explainedVariance)[numberComponentsToInclude ]
   
   #rpng(width = 1000, height = 1000)

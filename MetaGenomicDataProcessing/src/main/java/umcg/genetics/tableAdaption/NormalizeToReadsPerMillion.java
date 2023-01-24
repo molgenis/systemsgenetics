@@ -34,14 +34,14 @@ public class NormalizeToReadsPerMillion {
         try {
             readStats = readReadStatsFile(fileNameReadStatistics);
         } catch (IOException ex) {
-            Logger.getLogger(PrintTablePerLevel.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
         DoubleMatrixDataset<String,String> metaphlanMatrix = null;
         try {
             metaphlanMatrix = DoubleMatrixDataset.loadDoubleData(fileNameMetaphlanTable);
         } catch (IOException ex) {
-            Logger.getLogger(PrintTablePerLevel.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
         if(cladeNormalization){
@@ -49,7 +49,7 @@ public class NormalizeToReadsPerMillion {
             try {
                 cladeSizeInformation = readCladeSizeInfo(cladeInformationFile);
             } catch (IOException ex) {
-                Logger.getLogger(NormalizeToReadsPerMillion.class.getName()).log(Level.SEVERE, null, ex);
+                throw new RuntimeException(ex);
             }
             metaphlanMatrix = normalizeWithCladeSize(metaphlanMatrix, cladeSizeInformation);
         }
@@ -63,7 +63,7 @@ public class NormalizeToReadsPerMillion {
         try {
             metaphlanMatrix.save(fileNameMetaphlanTable+".cladeNorm.normalized.tsv");
         } catch (IOException ex) {
-            Logger.getLogger(PrintTablePerLevel.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
     }

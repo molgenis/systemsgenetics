@@ -25,7 +25,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.biojava.nbio.ontology.Term;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
@@ -35,7 +36,7 @@ import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 public class HpoGenePrioritisation {
 
 	private static final NumberFormat Z_FORMAT = new DecimalFormat("#0.0##");
-	private static final Logger LOGGER = Logger.getLogger(HpoGenePrioritisation.class);
+	private static final Logger LOGGER = LogManager.getLogger(HpoGenePrioritisation.class);
 
 	public static void prioritize(GadoOptions options) throws IOException, ParseException, Exception {
 

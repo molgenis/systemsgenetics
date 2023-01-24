@@ -32,14 +32,14 @@ public class GetStatistics {
         try {
             informationPerEntry = readAndProcessPermutation(inputFilePermutation);
         } catch (IOException ex) {
-            Logger.getLogger(GetStatistics.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
         
         try {
 //            processRealData(inputFileReal, informationPerEntry, outputFile);
             processRealData2(readAndProcessPermutation(inputFileReal), informationPerEntry, outputFile);
         } catch (IOException ex) {
-            Logger.getLogger(GetStatistics.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
     }
 
