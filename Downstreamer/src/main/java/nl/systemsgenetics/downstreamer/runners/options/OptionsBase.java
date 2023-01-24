@@ -56,6 +56,13 @@ public class OptionsBase {
 		OptionBuilder.withDescription("Print help message. Combine with -m for viewing tool specific arguments.");
 		OptionBuilder.withLongOpt("help");
 		OPTIONS.addOption(OptionBuilder.create("h"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Maximum number of calculation threads");
+		OptionBuilder.withLongOpt("threads");
+		OPTIONS.addOption(OptionBuilder.create("t"));
+
 	}
 
 	public OptionsBase(String[] args) throws ParseException {

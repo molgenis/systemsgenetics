@@ -14,6 +14,7 @@ public enum DownstreamerMode {
 	// Runners for the updated workflow
 	REGRESS("Run the Downstreamer regression model without any pre-proccessing using preformatted data"),
 	ENRICH("Perform the main Downstreamer analysis doing pathway enrichments and gene prioritizations."),
+	PREPARE_PERMUTATIONS("Used to pre process the pascalX permutation results"),
 
 	// Converters, use OptionsModeConverters
 	CONVERT_TXT("Convert a txt z-score matrix to binary. Use --gwas, --output"),
