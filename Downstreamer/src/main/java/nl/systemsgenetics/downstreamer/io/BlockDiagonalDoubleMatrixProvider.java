@@ -1,15 +1,13 @@
 package nl.systemsgenetics.downstreamer.io;
 
-import cern.colt.matrix.tdouble.DoubleMatrix2D;
-import umcg.genetica.math.matrix2.DoubleMatrixDataset;
+import java.util.Collection;
 
 import java.util.List;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 public interface BlockDiagonalDoubleMatrixProvider {
 
-    DoubleMatrix2D viewBlock(int[] indices);
-    DoubleMatrixDataset<String, String> viewBlock(List<String> items);
-    DoubleMatrixDataset<String, String> getAsFullMatrix();
+    DoubleMatrixDataset<String, String> viewBlock(String block, Collection<String> identifiers);
 
     List<String> getRowNames();
     List<String> getCollumnNames();
