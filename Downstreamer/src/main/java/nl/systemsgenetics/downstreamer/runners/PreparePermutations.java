@@ -146,6 +146,7 @@ public class PreparePermutations {
 					
 					if(armSet.getValue().isEmpty()){
 						LOGGER.info("No genes in: " + armSet.getKey());
+						continue;
 					}
 					
 					DoubleMatrixDataset<String, String> chrGenePvaluesArm = chrGenePvalues.viewColSelection(armSet.getValue());
@@ -163,7 +164,7 @@ public class PreparePermutations {
 							chrCorrelationMatrix,
 							"Gene-Gene correlation matrix of chr " + armSet.getKey(), "Genes", "Genes");
 					
-					LOGGER.info("Done calculating correlation and writing restuls for " + armSet.getValue().size() + " genes of " + armSet.getKey());
+					LOGGER.info("Done calculating correlation and writing results for " + armSet.getValue().size() + " genes of " + armSet.getKey());
 				}
 
 			} catch (Exception ex) {

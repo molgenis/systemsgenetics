@@ -701,9 +701,9 @@ public class DownstreamerRegressionEngine {
 	 */
 	public static DoubleMatrixDataset<String, String>[] blockDiagonalEigenDecomposition(List<String> allGenes, BlockDiagonalDoubleMatrixProvider provider, LinkedHashMap<String, ArrayList<String>> index, boolean useJblas) throws UnsatisfiedLinkError, Exception {
 
-		List<IndexedDouble> eigenvalues = new ArrayList<>(provider.columns());
-		List<String> eigenvectorNames = new ArrayList<>(provider.columns());
-		for (int i = 0; i < provider.columns(); i++) {
+		List<IndexedDouble> eigenvalues = new ArrayList<>(allGenes.size());
+		List<String> eigenvectorNames = new ArrayList<>(allGenes.size());
+		for (int i = 0; i < allGenes.size(); i++) {
 			eigenvectorNames.add("V" + i);
 		}
 		List<String> eigenvalueNames = new ArrayList<>(1);
