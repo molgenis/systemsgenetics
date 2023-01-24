@@ -50,7 +50,9 @@ public class DownstreamerUtilities {
 	private static HashMap<String, HashMap<String, NearestVariant>> traitGeneDist = null;
 
 	/**
-	 * Util to test the block diagonal eigen decomposition. TODO Remove on release
+	 * Util to test the block diagonal eigen decomposition. TODO Remove on
+	 * release
+	 *
 	 * @param options
 	 * @throws Exception
 	 */
@@ -80,7 +82,9 @@ public class DownstreamerUtilities {
 		for (String key : indexMap.keySet()) {
 			List<Integer> list = indexMap.get(key);
 			int[] array = new int[list.size()];
-			for(int i = 0; i < list.size(); i++) array[i] = list.get(i);
+			for (int i = 0; i < list.size(); i++) {
+				array[i] = list.get(i);
+			}
 			indices.add(array);
 		}
 		//-----------------------------------------------------------------------------------------------
@@ -123,9 +127,7 @@ public class DownstreamerUtilities {
 		L.save(options.getOutputBasePath() + "_ds_eigenvalues_blocked.txt");
 
 		//-----------------------------------------------------------------------------------------------
-
 	}
-
 
 	/**
 	 * Utility to get the force normalized gene pvalues with tie resolving.
@@ -517,7 +519,6 @@ public class DownstreamerUtilities {
 
 	}
 
-
 	/**
 	 * Calculate the benjamini hochberg adjusted p-values form a
 	 * doublematrixdataset. Preserves the order of the orginal input. Adapted
@@ -618,9 +619,9 @@ public class DownstreamerUtilities {
 		}
 	}
 
-
 	/**
-	 * Trims the ENSG00000000.X from ensembl gene names. Made this a seperate function as code was duplicated 3 times
+	 * Trims the ENSG00000000.X from ensembl gene names. Made this a seperate
+	 * function as code was duplicated 3 times
 	 *
 	 * @param matrix
 	 * @throws Exception

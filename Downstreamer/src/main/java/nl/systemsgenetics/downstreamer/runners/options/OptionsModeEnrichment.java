@@ -38,6 +38,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 	private final String gwasPvalueMatrixPath;
 	private final boolean excludeHla;
 	private final boolean skipPvalueToZscore;
+	private final String geneGeneCorrelationPrefix;
 
 	static {
 
@@ -55,7 +56,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 		OptionBuilder.withDescription("Force normal pathway scores / eigen vectors before pathway enrichtment");
 		OptionBuilder.withLongOpt("forceNormalPathwayPvalues");
 		OPTIONS.addOption(OptionBuilder.create("fnpp"));
-		
+
 		OptionBuilder.withArgName("name=path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
@@ -76,6 +77,13 @@ public class OptionsModeEnrichment extends OptionsBase {
 		OptionBuilder.withLongOpt("genes");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("ge"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Path to files with gene-gene corelations. Specify character until 'chr_arm'.");
+		OptionBuilder.withLongOpt("geneCorrelations");
+		OptionBuilder.isRequired();
+		OPTIONS.addOption(OptionBuilder.create("gc"));
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
@@ -126,6 +134,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 		regressGeneLengths = commandLine.hasOption("rgl");
 		skipPvalueToZscore = commandLine.hasOption("nptz");
 		geneInfoFile = new File(commandLine.getOptionValue("ge"));
+		geneGeneCorrelationPrefix = commandLine.getOptionValue("gc");
 
 		if (commandLine.hasOption("g") && commandLine.hasOption("gm")) {
 			throw new ParseException("Provide either -g or -gm but not both");
@@ -220,10 +229,11 @@ public class OptionsModeEnrichment extends OptionsBase {
 			LOGGER.info(" * - " + curDb.getName());
 		}
 
-		LOGGER.info(" * geneInfoFile: " + geneInfoFile.getPath());
-		LOGGER.info(" * forceNormalGenePvalues: " + forceNormalGenePvalues);
-		LOGGER.info(" * forceNormalGenePvalues: " + forceNormalPathwayPvalues);
-		LOGGER.info(" * regressGeneLengths: " + regressGeneLengths);
+		LOGGER.info(" * Gene info file: " + geneInfoFile.getPath());
+		LOGGER.info(" * Path to gene-gene correlation files: " + geneGeneCorrelationPrefix);
+		LOGGER.info(" * Do inverse force normal of gene p-values: " + forceNormalGenePvalues);
+		LOGGER.info(" * Do inverse force normal of pathway scores: " + forceNormalPathwayPvalues);
+		LOGGER.info(" * Correct gene p-values for gene length: " + regressGeneLengths);
 		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
 
 	}
@@ -266,6 +276,10 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 	public boolean isSkipPvalueToZscore() {
 		return skipPvalueToZscore;
+	}
+
+	public String getGeneGeneCorrelationPrefix() {
+		return geneGeneCorrelationPrefix;
 	}
 
 }
