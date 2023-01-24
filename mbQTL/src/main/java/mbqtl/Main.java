@@ -10,6 +10,7 @@ public class Main {
 	public static void main(String[] args) {
 
 		Options options = new Options();
+
 		options.addOption(OptionBuilder.withLongOpt("mode")
 				.withDescription("Mode: [metaqtl|mbqtl|mbqtlsingleds|mbqtlplot|regressqtl|sortfile|determineld|determineldgwas|concatconditional]")
 				.isRequired()

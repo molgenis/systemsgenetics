@@ -1,11 +1,12 @@
 package mbqtl;
 
-import mbqtl.data.Dataset;
+import mbqtl.datastructures.Dataset;
 import mbqtl.vcf.VCFTabix;
 import mbqtl.vcf.VCFVariant;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.enums.Chromosome;
 import umcg.genetica.features.Feature;
+import umcg.genetica.features.Gene;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.ZScores;
@@ -62,8 +63,8 @@ public class EMPValidator extends QTLAnalysis {
 		for (int g = 0; g < expressionData.genes.length; g++) {
 			String gene = expressionData.genes[g];
 
-			Integer geneAnnotationId = geneAnnotation.getGeneId(gene);
-			if (geneAnnotationId != null) {
+			Gene geneAnnotationObj = geneAnnotation.getGene(gene);
+			if (geneAnnotationObj != null) {
 				double[] expData = expressionData.data[g];
 
 				// rank once, then center+scale
@@ -78,7 +79,7 @@ public class EMPValidator extends QTLAnalysis {
 				}
 
 				// get variants, 1mb up and downstream
-				int pos = geneAnnotation.getStartPos(geneAnnotationId);
+				int pos = geneAnnotationObj.getStart();
 				int start = pos - 1000001;
 				if (start < 0) {
 					start = 0;

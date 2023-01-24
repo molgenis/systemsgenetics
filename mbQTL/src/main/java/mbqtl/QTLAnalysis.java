@@ -1,9 +1,9 @@
 package mbqtl;
 
-import mbqtl.data.Dataset;
-import mbqtl.data.GeneAnnotation;
-import mbqtl.data.GeneExpressionData;
-import mbqtl.data.SNPAnnotation;
+import mbqtl.datastructures.Dataset;
+import mbqtl.datastructures.GeneAnnotation;
+import mbqtl.datastructures.GeneExpressionData;
+import mbqtl.datastructures.SNPAnnotation;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.io.Gpio;
 import umcg.genetica.io.text.TextFile;
@@ -340,7 +340,7 @@ public class QTLAnalysis {
 		System.out.println("Available datasets: " + datasets.size());
 		for (Dataset d : output) {
 			System.out.println(d.name + "\t" + d.RNAIds.size() + " samples.");
-			d.toArr();
+			d.toStr();
 		}
 		return output;
 	}
@@ -404,7 +404,7 @@ public class QTLAnalysis {
 				}
 			}
 		}
-		dataset.toArr();
+		dataset.toStr();
 		return dataset;
 	}
 
@@ -510,7 +510,7 @@ public class QTLAnalysis {
 		return genotypes;
 	}
 
-
+// TODO: merge group annotation with gene annotation object.
 	public void loadExpGroupAnnotation(String expgroups) throws IOException {
 		System.out.println("Loading gene groupings from: " + expgroups);
 		geneGroups = new HashMap<>();
