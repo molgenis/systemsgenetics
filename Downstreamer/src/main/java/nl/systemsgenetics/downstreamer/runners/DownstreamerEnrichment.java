@@ -200,6 +200,8 @@ public class DownstreamerEnrichment {
 					genesOverlappingWithPathwayDatabase.add(pathwayGene);
 				}
 			}
+			
+			LOGGER.info("Working on: " + pathwayDatabase.getName() + " with " + genesOverlappingWithPathwayDatabase.size() + " genes.");
 
 			final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesSubset = covariatesToCorrectGenePvalues == null ? null : covariatesToCorrectGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase);
 
@@ -221,7 +223,7 @@ public class DownstreamerEnrichment {
 			//Do eigen decompose on the gene-gene correlation matrices
 			//eigen[0] L = eigen values
 			//eigen[1] U = eigen vectors
-			DoubleMatrixDataset<String, String>[] eigen = blockDiagonalEigenDecomposition(genesOverlappingWithPathwayDatabase, geneCorLoader, blockDiagonalIndicesForEigen, false);
+			DoubleMatrixDataset<String, String>[] eigen = blockDiagonalEigenDecomposition(genesOverlappingWithPathwayDatabase, geneCorLoader, blockDiagonalIndicesForEigen, true);
 
 			//list contains traits
 			List<LinearRegressionResult> pathwayRegeressionResults = DownstreamerRegressionEngine.performDownstreamerRegression(

@@ -722,6 +722,8 @@ public class DownstreamerRegressionEngine {
 			columnIndexStartOfBlock.put(block.getKey(), masterIndex);
 			masterIndex += block.getValue().size();
 		}
+		
+		//still used by jblas
 		masterIndex = 0;
 		
 
