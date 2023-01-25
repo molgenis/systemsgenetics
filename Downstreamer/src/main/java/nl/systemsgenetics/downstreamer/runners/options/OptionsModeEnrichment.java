@@ -226,7 +226,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 		LOGGER.info(" * pathwayDatabases: ");
 		for (PathwayDatabase curDb : pathwayDatabases) {
-			LOGGER.info(" * - " + curDb.getName());
+			LOGGER.info(" * - " + curDb.getName() + "\t");
 		}
 
 		LOGGER.info(" * Gene info file: " + geneInfoFile.getPath());
