@@ -498,6 +498,10 @@ public class DownstreamerRegressionEngine {
 	 */
 	private static void inplaceDownstreamerRegressionResidualsPrecomp(DoubleMatrix2D Y, DoubleMatrix2D X, DoubleMatrix1D LHatInv) {
 
+		LOGGER.debug("Y " + Y.toString() );
+		LOGGER.debug("X " + X.toString() );
+		LOGGER.debug("LHatInv " + LHatInv.toString() );
+		
 		DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X);
 
 		// For docs on the stats see comments in downstreamerRegressionPrecomp() above
@@ -711,8 +715,8 @@ public class DownstreamerRegressionEngine {
 		List<String> eigenvalueNames = new ArrayList<>(1);
 		eigenvalueNames.add("eigenvalues");
 
-		DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(allGenes, eigenvectorNames);
-		DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
+		final DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(allGenes, eigenvectorNames);
+		final DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
 
 		ProgressBar pb = new ProgressBar("Eigen decomposition per chromosome arm", index.size());
 		
@@ -789,13 +793,13 @@ public class DownstreamerRegressionEngine {
 		}
 
 		// Order according to eigenvalues, large to small
-		orderToEigenvalues(eigenvalues, U, L);
+		DoubleMatrixDataset<String, String> U2 = orderToEigenvalues(eigenvalues, U, L);
 
 		pb.close();
 
 		DoubleMatrixDataset<String, String>[] output = new DoubleMatrixDataset[2];
 		output[0] = L;
-		output[1] = U;
+		output[1] = U2;
 		return output;
 	}
 
@@ -859,7 +863,7 @@ public class DownstreamerRegressionEngine {
 	 * @param L
 	 * @throws Exception
 	 */
-	private static void orderToEigenvalues(List<IndexedDouble> eigenvalues, DoubleMatrixDataset<String, String> U, DoubleMatrixDataset<String, String> L) throws Exception {
+	private static DoubleMatrixDataset<String, String> orderToEigenvalues(List<IndexedDouble> eigenvalues, DoubleMatrixDataset<String, String> U, DoubleMatrixDataset<String, String> L) throws Exception {
 
 		// Keep track of original eigenvector names
 		List<String> eigenvectorNames = new ArrayList<>(U.getColObjects());
@@ -868,18 +872,15 @@ public class DownstreamerRegressionEngine {
 		eigenvalues.sort(Comparator.comparingDouble(IndexedDouble::getValue));
 		Collections.reverse(eigenvalues);
 
-		LinkedHashMap<String, Integer> eigenvectorOrder = new LinkedHashMap<>();
+		ArrayList<String> eigenvectorOrder = new ArrayList<>(eigenvalues.size());
 		int i = 0;
 		for (IndexedDouble cur : eigenvalues) {
-			eigenvectorOrder.put(eigenvectorNames.get(cur.getIndex()), i);
+			eigenvectorOrder.add(eigenvectorNames.get(cur.getIndex()));
 			L.setElementQuick(i, 0, cur.getValue());
 			i++;
 		}
 
-		U.reorderCols(eigenvectorOrder);
-
-		// Now that eigenvectors are properly ordered, reset the names.
-		U.setColObjects(eigenvectorNames);
+		return U.viewColSelection(eigenvectorOrder);
 	}
 
 	/**

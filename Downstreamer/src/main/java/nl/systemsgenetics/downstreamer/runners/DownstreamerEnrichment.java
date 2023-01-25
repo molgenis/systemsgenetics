@@ -223,14 +223,14 @@ public class DownstreamerEnrichment {
 			//Do eigen decompose on the gene-gene correlation matrices
 			//eigen[0] L = eigen values
 			//eigen[1] U = eigen vectors
-			DoubleMatrixDataset<String, String>[] eigen = blockDiagonalEigenDecomposition(genesOverlappingWithPathwayDatabase, geneCorLoader, blockDiagonalIndicesForEigen, true);
+			DoubleMatrixDataset<String, String>[] eigen = blockDiagonalEigenDecomposition(genesOverlappingWithPathwayDatabase, geneCorLoader, blockDiagonalIndicesForEigen, false);
 
 			//list contains traits
 			List<LinearRegressionResult> pathwayRegeressionResults = DownstreamerRegressionEngine.performDownstreamerRegression(
 					pathwayData,
 					gwasGeneZscoreSubset,
 					covariatesToCorrectGenePvaluesSubset,
-					eigen[1], eigen[0], blockDiagonalIndices, true, true, true);
+					eigen[1], eigen[0], blockDiagonalIndices, true, covariatesToCorrectGenePvalues != null, false);
 
 			final DoubleMatrixDataset<String, String> pathwayPvalues;
 			final DoubleMatrixDataset<String, String> pathwayQvalues;
