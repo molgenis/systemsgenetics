@@ -72,6 +72,10 @@ public class LinearRegressionResult {
 		throw new NotImplementedException("Not yet implemented");
 	}
 
+	public DoubleMatrix1D getBetaForMainEffect() {
+		return beta.getCol(DownstreamerRegressionEngine.MAIN_EFFECT_COL_NAME);	
+	}
+	
 	public DoubleMatrix1D getPvalueForMainEffect() {
 
 		final DoubleMatrix1D mainBeta = beta.getCol(DownstreamerRegressionEngine.MAIN_EFFECT_COL_NAME);

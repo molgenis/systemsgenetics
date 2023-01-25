@@ -1,6 +1,5 @@
 package nl.systemsgenetics.downstreamer.runners;
 
-
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -14,9 +13,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
@@ -43,7 +44,7 @@ public class PreparePermutations {
 
 		// Load the genes to run the analysis on
 		final LinkedHashMap<String, List<Gene>> genes = IoUtils.readGenesAsChrMap(options.getGeneInfoFile());
-		
+
 		final File permutationFolder = options.getPermutationFolder();
 
 		final TObjectIntHashMap<String> chunkInfo = readChunks(options.getChunkFile());
@@ -52,106 +53,123 @@ public class PreparePermutations {
 		final int nrPermutations = permutationNames.size();
 
 		//gwasVariants.values().parallelStream().forEach((HashSet<String> variants) -> {
-		 chunkInfo.keySet().parallelStream().forEach((String chr) -> {
-		//for (String chr : chunkInfo.keySet()) {
+		chunkInfo.keySet().parallelStream().forEach((String chr) -> {
+			//for (String chr : chunkInfo.keySet()) {
 
-		try{
-		
-			LinkedHashSet<String> chrGeneNames = new LinkedHashSet<>();
-			ArrayList<String> nonNanGenes = new ArrayList<>();
+			try {
 
-			for (Gene gene : genes.get(chr)) {
-				chrGeneNames.add(gene.getGene());
-			}
+				LinkedHashSet<String> chrGeneNames = new LinkedHashSet<>();
+				int nonNanGeneCount = 0;
+				HashMap<String, ArrayList<String>> nonNanGenesPerArm = new HashMap<>();
+				HashMap<String, String> geneArmMap = new HashMap<>();
 
-			int totalGenes = chrGeneNames.size();
-			
-			DoubleMatrixDataset<String, String> chrGenePvalues = new DoubleMatrixDataset<>(permutationNames, chrGeneNames);
-
-			final int nrChunks = chunkInfo.get(chr);
-
-			for (int c = 1; c <= nrChunks; ++c) {
-
-				final List<String> chunkGenes = readRowColNames(new File(permutationFolder, "NullGwasX_" + chr + "_" + String.valueOf(c) + ".rows.txt"));
-
-				if (!chrGeneNames.containsAll(chunkGenes)) {
-					for(String gene : chunkGenes){
-						if(!chrGeneNames.contains(gene)){
-							System.out.println(gene);
-						}
+				for (Gene gene : genes.get(chr)) {
+					chrGeneNames.add(gene.getGene());
+					String arm = gene.getChrAndArm();
+					if (!nonNanGenesPerArm.containsKey(arm)) {
+						nonNanGenesPerArm.put(arm, new ArrayList<>());
 					}
-					throw new RuntimeException("Found genes in permutation not in gene file");
+					geneArmMap.put(gene.getGene(), gene.getChrAndArm());
 				}
 
-				chrGeneNames.removeAll(chunkGenes);
+				int totalGenes = chrGeneNames.size();
 
-				DoubleMatrix2D chunkGenePvalues = chrGenePvalues.viewColSelection(chunkGenes).getMatrix();
+				DoubleMatrixDataset<String, String> chrGenePvalues = new DoubleMatrixDataset<>(permutationNames, chrGeneNames);
 
-				File chunkPvalueFile = new File(permutationFolder, "genePvaluesNullGwasX_" + chr + "_" + String.valueOf(c) + ".tsv");
+				final int nrChunks = chunkInfo.get(chr);
 
-				final CSVReader reader
-						= new CSVReaderBuilder((new BufferedReader(
-								chunkPvalueFile.getName().endsWith(".gz")
-								? new InputStreamReader(new GZIPInputStream(new FileInputStream(chunkPvalueFile)))
-								: new FileReader(chunkPvalueFile)
-						))).withSkipLines(0).withCSVParser(
-								new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build()
-						).build();
+				for (int c = 1; c <= nrChunks; ++c) {
 
-				String[] nextLine;
-				genes:
-				for (int g = 0; g < chunkGenes.size(); ++g) {
+					final List<String> chunkGenes = readRowColNames(new File(permutationFolder, "NullGwasX_" + chr + "_" + String.valueOf(c) + ".rows.txt"));
 
-					if ((nextLine = reader.readNext()) == null) {
-						throw new RuntimeException("Not enough lines in: " + chunkPvalueFile.getAbsolutePath());
-					}
-					if (nextLine.length != nrPermutations) {
-						throw new RuntimeException("Not enough columns in: " + chunkPvalueFile.getAbsolutePath());
-					}
-
-					for (int p = 0; p < nrPermutations; ++p) {
-						
-						if(nextLine[p].equalsIgnoreCase("nan")){
-							continue genes;
+					if (!chrGeneNames.containsAll(chunkGenes)) {
+						for (String gene : chunkGenes) {
+							if (!chrGeneNames.contains(gene)) {
+								System.out.println(gene);
+							}
 						}
-						
-						chunkGenePvalues.setQuick(p, g, Double.parseDouble(nextLine[p]));
+						throw new RuntimeException("Found genes in permutation not in gene file");
 					}
-					
-					//if here there are no nan values
-					nonNanGenes.add(chunkGenes.get(g));
-					
+
+					chrGeneNames.removeAll(chunkGenes);
+
+					DoubleMatrix2D chunkGenePvalues = chrGenePvalues.viewColSelection(chunkGenes).getMatrix();
+
+					File chunkPvalueFile = new File(permutationFolder, "genePvaluesNullGwasX_" + chr + "_" + String.valueOf(c) + ".tsv");
+
+					final CSVReader reader
+							= new CSVReaderBuilder((new BufferedReader(
+									chunkPvalueFile.getName().endsWith(".gz")
+									? new InputStreamReader(new GZIPInputStream(new FileInputStream(chunkPvalueFile)))
+									: new FileReader(chunkPvalueFile)
+							))).withSkipLines(0).withCSVParser(
+									new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build()
+							).build();
+
+					String[] nextLine;
+					genes:
+					for (int g = 0; g < chunkGenes.size(); ++g) {
+
+						if ((nextLine = reader.readNext()) == null) {
+							throw new RuntimeException("Not enough lines in: " + chunkPvalueFile.getAbsolutePath());
+						}
+						if (nextLine.length != nrPermutations) {
+							throw new RuntimeException("Not enough columns in: " + chunkPvalueFile.getAbsolutePath());
+						}
+
+						for (int p = 0; p < nrPermutations; ++p) {
+
+							if (nextLine[p].equalsIgnoreCase("nan")) {
+								continue genes;
+							}
+
+							chunkGenePvalues.setQuick(p, g, Double.parseDouble(nextLine[p]));
+						}
+
+						//if here there are no nan values
+						String arm = geneArmMap.get(chunkGenes.get(g));
+						nonNanGenesPerArm.get(arm).add(chunkGenes.get(g));
+
+						nonNanGeneCount++;
+
+					}
+
 				}
 
-			}
+				if (!chrGeneNames.isEmpty()) {
+					throw new RuntimeException("Not all genes of chr " + chr + " are found in the permuation files");
+				}
 
-			if (!chrGeneNames.isEmpty()) {
-				throw new RuntimeException("Not all genes of chr " + chr + " are found in the permuation files");
+				LOGGER.info("Chr " + chr + " total genes: " + totalGenes + " genes without NaN values: " + nonNanGeneCount);
+
+				for (Map.Entry<String, ArrayList<String>> armSet : nonNanGenesPerArm.entrySet()) {
+					
+					if(armSet.getValue().isEmpty()){
+						LOGGER.info("No genes in: " + armSet.getKey());
+						continue;
+					}
+					
+					DoubleMatrixDataset<String, String> chrGenePvaluesArm = chrGenePvalues.viewColSelection(armSet.getValue());
+
+					if (options.isForceNormalGenePvalues()) {
+						chrGenePvaluesArm.createColumnForceNormalInplace();
+					}
+
+					chrGenePvaluesArm.normalizeColumns();
+
+					DoubleMatrixDataset<String, String> chrCorrelationMatrix = chrGenePvaluesArm.calculateCorrelationMatrixOnNormalizedColumns();
+
+					DoubleMatrixDatasetRowCompressedWriter.saveDataset(
+							options.getOutputBasePath() + "chr_" + armSet.getKey() + "_correlations",
+							chrCorrelationMatrix,
+							"Gene-Gene correlation matrix of chr " + armSet.getKey(), "Genes", "Genes");
+					
+					LOGGER.info("Done calculating correlation and writing results for " + armSet.getValue().size() + " genes of " + armSet.getKey());
+				}
+
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
 			}
-			
-			LOGGER.info("Chr " + chr + " total genes: " + totalGenes + " genes without NaN values: " + nonNanGenes.size());
-			
-			
-			
-			chrGenePvalues = chrGenePvalues.viewColSelection(nonNanGenes);
-			
-			if(options.isForceNormalGenePvalues()){
-				chrGenePvalues.createColumnForceNormalInplace();
-			}
-			
-			chrGenePvalues.normalizeColumns();
-			
-			DoubleMatrixDataset<String, String> chrCorrelationMatrix = chrGenePvalues.calculateCorrelationMatrixOnNormalizedColumns();
-			
-			DoubleMatrixDatasetRowCompressedWriter.saveDataset(
-					options.getOutputBasePath() + "chr_" + chr + "_correlations", 
-					chrCorrelationMatrix, 
-					"Gene-Gene correlation matrix of chr " + chr, "Genes", "Genes");
-			
-			
-		} catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
 
 		});
 

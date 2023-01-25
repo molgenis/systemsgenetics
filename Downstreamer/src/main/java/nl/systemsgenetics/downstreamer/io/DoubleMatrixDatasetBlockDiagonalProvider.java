@@ -18,22 +18,18 @@ public class DoubleMatrixDatasetBlockDiagonalProvider implements  BlockDiagonalD
         return data.viewSelection(items, items);
     }
 
-    @Override
     public List<String> getRowNames() {
         return data.getRowObjects();
     }
 
-    @Override
     public List<String> getCollumnNames() {
         return data.getColObjects();
     }
 
-    @Override
     public int rows() {
         return data.rows();
     }
 
-    @Override
     public int columns() {
         return data.columns();
     }

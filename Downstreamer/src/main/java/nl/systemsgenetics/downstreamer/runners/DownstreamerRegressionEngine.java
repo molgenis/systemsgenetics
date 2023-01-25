@@ -9,6 +9,8 @@ import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
 import cern.jet.math.tdouble.DoubleFunctions;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import me.tongfei.progressbar.ProgressBar;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
@@ -593,7 +595,7 @@ public class DownstreamerRegressionEngine {
 		List<int[]> blockDiagonalIndices = new ArrayList<>();
 		Map<String, TIntArrayList> blockDiagonalIndicesTmp = new LinkedHashMap<>();
 
-		LOGGER.info("Read genes on " + genes.size() + " blocks");
+		LOGGER.debug("Read genes on " + genes.size() + " blocks");
 
 		int totalCount = 0;
 
@@ -620,7 +622,7 @@ public class DownstreamerRegressionEngine {
 			blockDiagonalIndices.add(curList.toArray());
 		}
 
-		LOGGER.info("Created index for " + totalCount + " genes on " + blockDiagonalIndices.size() + " blocks");
+		LOGGER.debug("Created index for " + totalCount + " genes on " + blockDiagonalIndices.size() + " blocks");
 
 		return blockDiagonalIndices;
 	}
@@ -652,26 +654,26 @@ public class DownstreamerRegressionEngine {
 
 		LinkedHashMap<String, ArrayList<String>> blockDiagonalIndices2 = new LinkedHashMap<>();
 
-		LOGGER.info("Read genes on " + genes.size() + " blocks");
+		LOGGER.debug("Read genes on " + genes.size() + " blocks");
 
 		int totalCount = 0;
 
 		for (String key : genes.keySet()) {
-			
+
 			HashSet<String> armGeneSet = new HashSet<>();
-			for(Gene curGene : genes.get(key)){
+			for (Gene curGene : genes.get(key)) {
 				armGeneSet.add(curGene.getGene());
 			}
-			
-			for(String geneName : rowOrder){
-				if(armGeneSet.contains(geneName)){
-					
+
+			for (String geneName : rowOrder) {
+				if (armGeneSet.contains(geneName)) {
+
 					if (!blockDiagonalIndices2.containsKey(key)) {
 						blockDiagonalIndices2.put(key, new ArrayList<String>());
 					}
 					blockDiagonalIndices2.get(key).add(geneName);
 					totalCount++;
-					
+
 				}
 			}
 
@@ -682,7 +684,7 @@ public class DownstreamerRegressionEngine {
 					+ "Please make sure all genes are available in --genes or use -ro to make select a subset.");
 		}
 
-		LOGGER.info("Created index for " + totalCount + " genes on " + blockDiagonalIndices2.size() + " blocks");
+		LOGGER.debug("Created index for " + totalCount + " genes on " + blockDiagonalIndices2.size() + " blocks");
 
 		return blockDiagonalIndices2;
 	}
@@ -701,9 +703,9 @@ public class DownstreamerRegressionEngine {
 	 */
 	public static DoubleMatrixDataset<String, String>[] blockDiagonalEigenDecomposition(List<String> allGenes, BlockDiagonalDoubleMatrixProvider provider, LinkedHashMap<String, ArrayList<String>> index, boolean useJblas) throws UnsatisfiedLinkError, Exception {
 
-		List<IndexedDouble> eigenvalues = new ArrayList<>(provider.columns());
-		List<String> eigenvectorNames = new ArrayList<>(provider.columns());
-		for (int i = 0; i < provider.columns(); i++) {
+		final List<IndexedDouble> eigenvalues = new ArrayList<>(allGenes.size());
+		List<String> eigenvectorNames = new ArrayList<>(allGenes.size());
+		for (int i = 0; i < allGenes.size(); i++) {
 			eigenvectorNames.add("V" + i);
 		}
 		List<String> eigenvalueNames = new ArrayList<>(1);
@@ -712,9 +714,16 @@ public class DownstreamerRegressionEngine {
 		DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(allGenes, eigenvectorNames);
 		DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
 
-		ProgressBar pb = new ProgressBar("Eigen decomposition per block", index.size());
-
+		ProgressBar pb = new ProgressBar("Eigen decomposition per chromosome arm", index.size());
+		
+		TObjectIntMap<String> columnIndexStartOfBlock = new TObjectIntHashMap<>(index.size());
 		int masterIndex = 0;
+		for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
+			columnIndexStartOfBlock.put(block.getKey(), masterIndex);
+			masterIndex += block.getValue().size();
+		}
+		masterIndex = 0;
+		
 
 		if (useJblas) {
 			// Use Jblas for eigen decompotision
@@ -744,25 +753,37 @@ public class DownstreamerRegressionEngine {
 
 		} else {
 			// Use P-colt for eigen decomposition
-			for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
-				//for (int curBlock = 0; curBlock < index.size(); curBlock++) {
 
-				DoubleMatrix2D curMatrix = provider.viewBlock(block.getKey(), block.getValue()).getMatrix();
-				DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(curMatrix);
+			index.entrySet().parallelStream().forEach((Map.Entry<String, ArrayList<String>> block) -> {
+				try {
+					
+					int colIndex = columnIndexStartOfBlock.get(block.getKey());
+					
+					//for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
+					//for (int curBlock = 0; curBlock < index.size(); curBlock++) {
 
-				//get U in the same order 
-				DoubleMatrixDataset<String, String> UBlock = U.viewRowSelection(block.getValue());
+					final DoubleMatrix2D curMatrix = provider.viewBlock(block.getKey(), block.getValue()).getMatrix();
+					
+					//this functions seems to not contain multithreading
+					final DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(curMatrix);
 
-				for (int j = 0; j < curMatrix.columns(); j++) {
-					eigenvalues.add(new IndexedDouble(eigen.getRealEigenvalues().get(j), masterIndex));
-					for (int i = 0; i < curMatrix.rows(); i++) {
-						UBlock.setElementQuick(i, masterIndex, eigen.getV().getQuick(i, j));
+					//get U in the same order 
+					DoubleMatrixDataset<String, String> UBlock = U.viewRowSelection(block.getValue());
+
+					for (int j = 0; j < curMatrix.columns(); j++) {
+						eigenvalues.add(new IndexedDouble(eigen.getRealEigenvalues().get(j), colIndex));
+						for (int i = 0; i < curMatrix.rows(); i++) {
+							UBlock.setElementQuick(i, colIndex, eigen.getV().getQuick(i, j));
+						}
+						colIndex++;
 					}
-					masterIndex++;
-				}
 
-				pb.step();
-			}
+					pb.step();
+				} catch (Exception ex) {
+					pb.close();
+					throw (new RuntimeException(ex));
+				}
+			});
 		}
 
 		// Order according to eigenvalues, large to small
