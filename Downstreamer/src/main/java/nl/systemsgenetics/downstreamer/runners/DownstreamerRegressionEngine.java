@@ -733,7 +733,6 @@ public class DownstreamerRegressionEngine {
 				for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
 
 					DoubleMatrix curMatrix = toJblasDoubleMatrix(provider.viewBlock(block.getKey(), block.getValue()).getMatrix());
-
 					DoubleMatrix[] eigen = Eigen.symmetricEigenvectors(curMatrix);
 
 					//get U in the same order 

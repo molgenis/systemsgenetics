@@ -222,7 +222,6 @@ public class CoregulationUtilities {
 
 		// Normalize the input data
 		if (options.isNormalizeEigenvectors()) {
-			// TODO: Why normalize by row, is this valid??? Won't this in some cased ruin the ordering of the eigenvectors if the variance between rows is different.
 			expressionMatrix.normalizeRows();
 			expressionMatrix.normalizeColumns();
 			LOGGER.info("Data row normalized and then column normalized");
