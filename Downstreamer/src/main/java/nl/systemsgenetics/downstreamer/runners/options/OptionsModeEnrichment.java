@@ -68,7 +68,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 		OptionBuilder.hasArgs();
 		OptionBuilder.withValueSeparator();
 		OptionBuilder.withDescription("Expression eigen vectors for gene prioritizaion. In .dat or .datg foramat");
-		OptionBuilder.withLongOpt("ExpressionEigenVectors");
+		OptionBuilder.withLongOpt("expressionEigenVectors");
 		OPTIONS.addOption(OptionBuilder.create("eev"));
 
 		OptionBuilder.withArgName("path");

@@ -25,6 +25,7 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
 import static nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities.getDistanceGeneToTopCisSnpPerTrait;
+import nl.systemsgenetics.downstreamer.runners.options.OptionsModeEnrichment;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -54,9 +55,9 @@ public class ExcelWriter {
 
 	private final String outputBasePath;
 	private final List<String> traits;
-	private final DownstreamerOptionsDeprecated options;
+	private final OptionsModeEnrichment options;
 
-	public ExcelWriter(List<String> traits, DownstreamerOptionsDeprecated options) {
+	public ExcelWriter(List<String> traits, OptionsModeEnrichment options) {
 		this.outputBasePath = options.getOutputBasePath();
 		this.traits = traits;
 		this.options = options;
@@ -100,55 +101,56 @@ public class ExcelWriter {
 	}
 
 	public void saveStep3Excel(DownstreamerStep2Results step2, DownstreamerStep3Results step3) throws IOException {
-
-		Map<String, List<GwasLocus>> lociPerTrait = step3.getLoci();
-		System.setProperty("java.awt.headless", "true");
-
-		String pathwayDatabaseToScore = options.getPathwayDatabasesToAnnotateWithGwas().get(0);
-
-		PathwayEnrichments pathwayEnrichments = null;
-		for (PathwayEnrichments pathway : step2.getPathwayEnrichments()) {
-			if (pathway.getPathwayDatabase().getName().equals(pathwayDatabaseToScore)) {
-				pathwayEnrichments = pathway;
-			}
-		}
-
-		if (pathwayEnrichments == null) {
-			throw new IllegalArgumentException("Provided pathway database name not found. Please check if the pathway database names are correct in -pd and --annotDb");
-		}
-
-		// Each trait gets its own sheet
-		for (String trait : traits) {
-
-			Workbook enrichmentWorkbook = new XSSFWorkbook();
-			styles = new ExcelStyles(enrichmentWorkbook);
-			//CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
-			List<GwasLocus> allLoci = lociPerTrait.get(trait);
-			
-			List<GwasLocus> hlaLoci = new ArrayList<>();
-			List<GwasLocus> nonHlaLoci = new ArrayList<>();
-			
-			for(GwasLocus locus : allLoci){
-				if(locus.overlaps(options.getHla())){
-					hlaLoci.add(locus);
-				} else {
-					nonHlaLoci.add(locus);
-				}
-			}
-			
-			populateCisPrioSheet(enrichmentWorkbook, trait, nonHlaLoci, pathwayEnrichments, "LocusOverview");
-			if(!hlaLoci.isEmpty()){
-				populateCisPrioSheet(enrichmentWorkbook, trait, hlaLoci, pathwayEnrichments, "HlaLocusOverview");
-			}
-			// Save the file
-			File excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
-			int nr = 1;
-			while (excelFile.exists()) {
-				excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
-				nr++;
-			}
-			enrichmentWorkbook.write(new FileOutputStream(excelFile));
-		}
+		throw new RuntimeException("not implemented");
+//
+//		Map<String, List<GwasLocus>> lociPerTrait = step3.getLoci();
+//		System.setProperty("java.awt.headless", "true");
+//
+//		String pathwayDatabaseToScore = options.getPathwayDatabasesToAnnotateWithGwas().get(0);
+//
+//		PathwayEnrichments pathwayEnrichments = null;
+//		for (PathwayEnrichments pathway : step2.getPathwayEnrichments()) {
+//			if (pathway.getPathwayDatabase().getName().equals(pathwayDatabaseToScore)) {
+//				pathwayEnrichments = pathway;
+//			}
+//		}
+//
+//		if (pathwayEnrichments == null) {
+//			throw new IllegalArgumentException("Provided pathway database name not found. Please check if the pathway database names are correct in -pd and --annotDb");
+//		}
+//
+//		// Each trait gets its own sheet
+//		for (String trait : traits) {
+//
+//			Workbook enrichmentWorkbook = new XSSFWorkbook();
+//			styles = new ExcelStyles(enrichmentWorkbook);
+//			//CreationHelper createHelper = enrichmentWorkbook.getCreationHelper();
+//			List<GwasLocus> allLoci = lociPerTrait.get(trait);
+//			
+//			List<GwasLocus> hlaLoci = new ArrayList<>();
+//			List<GwasLocus> nonHlaLoci = new ArrayList<>();
+//			
+//			for(GwasLocus locus : allLoci){
+//				if(locus.overlaps(options.getHla())){
+//					hlaLoci.add(locus);
+//				} else {
+//					nonHlaLoci.add(locus);
+//				}
+//			}
+//			
+//			populateCisPrioSheet(enrichmentWorkbook, trait, nonHlaLoci, pathwayEnrichments, "LocusOverview");
+//			if(!hlaLoci.isEmpty()){
+//				populateCisPrioSheet(enrichmentWorkbook, trait, hlaLoci, pathwayEnrichments, "HlaLocusOverview");
+//			}
+//			// Save the file
+//			File excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + ".xlsx");
+//			int nr = 1;
+//			while (excelFile.exists()) {
+//				excelFile = new File(outputBasePath + "_cisPrio" + (traits.size() > 1 ? "_" + trait : "") + "_" + nr + ".xlsx");
+//				nr++;
+//			}
+//			enrichmentWorkbook.write(new FileOutputStream(excelFile));
+//		}
 	}
 
 	public void saveGenePvalueExcel(DoubleMatrixDataset<String, String> genePvalues) throws IOException {
@@ -486,14 +488,14 @@ public class ExcelWriter {
 		cell.setCellValue("Used settings");
 		cell.setCellStyle(styles.getBoldStyle());
 
-		row = overviewSheet.createRow(r++);
-		cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Number of permutations used for p-values: " + options.getPermutationPathwayEnrichment());
-
-		row = overviewSheet.createRow(r++);
-		cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Number of permutations used for FDR: " + options.getPermutationFDR());
-
+//		row = overviewSheet.createRow(r++);
+//		cell = row.createCell(0, CellType.STRING);
+//		cell.setCellValue("Number of permutations used for p-values: " + options.getPermutationPathwayEnrichment());
+//
+//		row = overviewSheet.createRow(r++);
+//		cell = row.createCell(0, CellType.STRING);
+//		cell.setCellValue("Number of permutations used for FDR: " + options.getPermutationFDR());
+//
 		row = overviewSheet.createRow(r++);
 		cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Force normal pathway scores: " + options.isForceNormalPathwayPvalues());
@@ -506,15 +508,15 @@ public class ExcelWriter {
 		cell = row.createCell(0, CellType.STRING);
 		cell.setCellValue("Regress out gene lengths from GWAS gene z-scores: " + options.isRegressGeneLengths());
 
-		row = overviewSheet.createRow(r++);
-		cell = row.createCell(0, CellType.STRING);
-		cell.setCellValue("Cis window definition: " + options.getCisWindowExtend());
-
-		if (options.isIgnoreGeneCorrelations()) {
-			row = overviewSheet.createRow(r++);
-			cell = row.createCell(0, CellType.STRING);
-			cell.setCellValue("Ignoring gene correlations: " + options.isRegressGeneLengths());
-		}
+//		row = overviewSheet.createRow(r++);
+//		cell = row.createCell(0, CellType.STRING);
+//		cell.setCellValue("Cis window definition: " + options.getCisWindowExtend());
+//
+//		if (options.isIgnoreGeneCorrelations()) {
+//			row = overviewSheet.createRow(r++);
+//			cell = row.createCell(0, CellType.STRING);
+//			cell.setCellValue("Ignoring gene correlations: " + options.isRegressGeneLengths());
+//		}
 	}
 
 	private void populatePathwaySheet(Workbook enrichmentWorkbook, PathwayEnrichments pathwayEnrichment, String trait, CreationHelper createHelper, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
@@ -540,9 +542,9 @@ public class ExcelWriter {
 		DoubleMatrix1D traitEnrichment = databaseEnrichmentZscores.getCol(trait);
 		DoubleMatrix1D traitQvalue = databaseEnrichmentQvalues.getCol(trait);
 		int[] order = DoubleMatrix1dOrder.sortIndexReverse(traitEnrichment);
-		final boolean annotateWithGwasData = options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
+		final boolean annotateWithGwasData = false ;//options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
 		int gwasAnnotations = 0;
-		final int windowExtend = options.getCisWindowExtend();
+		final int windowExtend = 0;//options.getCisWindowExtend();
 		final String transLabel = "Trans (>" + (windowExtend >= 1000 ? ((windowExtend / 1000) + " k") : (windowExtend + " ")) + "b)";
 
 		if (annotateWithGwasData) {
@@ -556,9 +558,10 @@ public class ExcelWriter {
 		//Map<String, Gene> genes = null;
 
 		if (annotateWithGwasData) {
-			HashMap<String, HashMap<String, DownstreamerUtilities.NearestVariant>> distanceGeneToTopCisSnpPerTrait = getDistanceGeneToTopCisSnpPerTrait(options);
-			distanceGeneToTopCisSnp = distanceGeneToTopCisSnpPerTrait.get(trait);
-			//genes = IoUtils.readGenesMap(options.getGeneInfoFile());
+			throw new RuntimeException("not implemented");
+//			HashMap<String, HashMap<String, DownstreamerUtilities.NearestVariant>> distanceGeneToTopCisSnpPerTrait = getDistanceGeneToTopCisSnpPerTrait(options);
+//			distanceGeneToTopCisSnp = distanceGeneToTopCisSnpPerTrait.get(trait);
+
 		} else {
 			distanceGeneToTopCisSnp = null;
 		}

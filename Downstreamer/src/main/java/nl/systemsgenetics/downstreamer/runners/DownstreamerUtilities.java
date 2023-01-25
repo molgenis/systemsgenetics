@@ -58,75 +58,76 @@ public class DownstreamerUtilities {
 	 */
 	public static void testEigenDecomposition(OptionsTesting options) throws Exception {
 
-		DoubleMatrixDataset<String, String> sigma = DoubleMatrixDataset.loadDoubleData(options.getSigma().getCanonicalPath());
-
-		BlockDiagonalDoubleMatrixProvider provider = new DoubleMatrixDatasetBlockDiagonalProvider(sigma);
-
-		Map<String, List<Integer>> indexMap = new HashMap<>();
-		BufferedReader reader = new BufferedReader(new FileReader(options.getIndex()));
-
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String[] cur = line.split("\t");
-
-			if (indexMap.containsKey(cur[0])) {
-				indexMap.get(cur[0]).add(Integer.parseInt(cur[1]));
-			} else {
-				List<Integer> tmp = new ArrayList<>();
-				tmp.add(Integer.parseInt(cur[1]));
-				indexMap.put(cur[0], tmp);
-			}
-		}
-
-		List<int[]> indices = new ArrayList<>(indexMap.size());
-		for (String key : indexMap.keySet()) {
-			List<Integer> list = indexMap.get(key);
-			int[] array = new int[list.size()];
-			for (int i = 0; i < list.size(); i++) {
-				array[i] = list.get(i);
-			}
-			indices.add(array);
-		}
-		//-----------------------------------------------------------------------------------------------
-
-		List<String> eigenvectorNames = new ArrayList<>(provider.columns());
-		for (int i = 0; i < provider.columns(); i++) {
-			eigenvectorNames.add("V" + i);
-		}
-		List<String> eigenvalueNames = new ArrayList<>(1);
-		eigenvalueNames.add("eigenvalues");
-
-		DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(provider.getRowNames(), eigenvectorNames);
-		DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
-
-		//-----------------------------------------------------------------------------------------------
-		// Full
-		DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(sigma.getMatrix());
-
-		U.setMatrix(eigen.getV());
-		L.setMatrix(eigen.getRealEigenvalues().reshape(L.rows(), L.columns()));
-
-		U.save(options.getOutputBasePath() + "_ds_eigenvectors.txt");
-		L.save(options.getOutputBasePath() + "_ds_eigenvalues.txt");
-
-		L.setMatrix(eigen.getImagEigenvalues().reshape(L.rows(), L.columns()));
-		L.save(options.getOutputBasePath() + "_ds_eigenvalues_imaginary.txt");
-
-		L.setMatrix(eigen.getRealEigenvalues().reshape(L.rows(), L.columns()));
-
-		//-----------------------------------------------------------------------------------------------
-		// Block diagonal
-		DoubleMatrixDataset<String, String>[] eigenBlock = DownstreamerRegressionEngine.blockDiagonalEigenDecomposition(provider,
-				indices,
-				options.useJblas());
-
-		U = eigenBlock[1];
-		L = eigenBlock[0];
-
-		U.save(options.getOutputBasePath() + "_ds_eigenvectors_blocked.txt");
-		L.save(options.getOutputBasePath() + "_ds_eigenvalues_blocked.txt");
-
-		//-----------------------------------------------------------------------------------------------
+		throw new RuntimeException("Compile error");
+//		DoubleMatrixDataset<String, String> sigma = DoubleMatrixDataset.loadDoubleData(options.getSigma().getCanonicalPath());
+//
+//		BlockDiagonalDoubleMatrixProvider provider = new DoubleMatrixDatasetBlockDiagonalProvider(sigma);
+//
+//		Map<String, List<Integer>> indexMap = new HashMap<>();
+//		BufferedReader reader = new BufferedReader(new FileReader(options.getIndex()));
+//
+//		String line;
+//		while ((line = reader.readLine()) != null) {
+//			String[] cur = line.split("\t");
+//
+//			if (indexMap.containsKey(cur[0])) {
+//				indexMap.get(cur[0]).add(Integer.parseInt(cur[1]));
+//			} else {
+//				List<Integer> tmp = new ArrayList<>();
+//				tmp.add(Integer.parseInt(cur[1]));
+//				indexMap.put(cur[0], tmp);
+//			}
+//		}
+//
+//		List<int[]> indices = new ArrayList<>(indexMap.size());
+//		for (String key : indexMap.keySet()) {
+//			List<Integer> list = indexMap.get(key);
+//			int[] array = new int[list.size()];
+//			for (int i = 0; i < list.size(); i++) {
+//				array[i] = list.get(i);
+//			}
+//			indices.add(array);
+//		}
+//		//-----------------------------------------------------------------------------------------------
+//
+//		List<String> eigenvectorNames = new ArrayList<>(provider.columns());
+//		for (int i = 0; i < provider.columns(); i++) {
+//			eigenvectorNames.add("V" + i);
+//		}
+//		List<String> eigenvalueNames = new ArrayList<>(1);
+//		eigenvalueNames.add("eigenvalues");
+//
+//		DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(provider.getRowNames(), eigenvectorNames);
+//		DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
+//
+//		//-----------------------------------------------------------------------------------------------
+//		// Full
+//		DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(sigma.getMatrix());
+//
+//		U.setMatrix(eigen.getV());
+//		L.setMatrix(eigen.getRealEigenvalues().reshape(L.rows(), L.columns()));
+//
+//		U.save(options.getOutputBasePath() + "_ds_eigenvectors.txt");
+//		L.save(options.getOutputBasePath() + "_ds_eigenvalues.txt");
+//
+//		L.setMatrix(eigen.getImagEigenvalues().reshape(L.rows(), L.columns()));
+//		L.save(options.getOutputBasePath() + "_ds_eigenvalues_imaginary.txt");
+//
+//		L.setMatrix(eigen.getRealEigenvalues().reshape(L.rows(), L.columns()));
+//
+//		//-----------------------------------------------------------------------------------------------
+//		// Block diagonal
+//		DoubleMatrixDataset<String, String>[] eigenBlock = DownstreamerRegressionEngine.blockDiagonalEigenDecomposition(provider,
+//				indices,
+//				options.useJblas());
+//
+//		U = eigenBlock[1];
+//		L = eigenBlock[0];
+//
+//		U.save(options.getOutputBasePath() + "_ds_eigenvectors_blocked.txt");
+//		L.save(options.getOutputBasePath() + "_ds_eigenvalues_blocked.txt");
+//
+//		//-----------------------------------------------------------------------------------------------
 	}
 
 	/**
@@ -220,17 +221,17 @@ public class DownstreamerUtilities {
 	 * @throws Exception
 	 */
 	public static void generateExcelFromIntermediates(DownstreamerOptionsDeprecated options) throws Exception {
-
-		DownstreamerStep2Results step2 = IoUtils.loadExistingStep2Results(options);
-		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
-
-		writer.saveStep2Excel(step2);
-		//writer.saveGenePvalueExcel(step2.getGenePvalues());
-
-		if (options.getPathwayDatabasesToAnnotateWithGwas().size() >= 1) {
-			DownstreamerStep3Results step3 = DownstreamerMainAnalysis.step3(options);
-			writer.saveStep3Excel(step2, step3);
-		}
+throw new RuntimeException("not implemented");
+//		DownstreamerStep2Results step2 = IoUtils.loadExistingStep2Results(options);
+//		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
+//
+//		writer.saveStep2Excel(step2);
+//		//writer.saveGenePvalueExcel(step2.getGenePvalues());
+//
+//		if (options.getPathwayDatabasesToAnnotateWithGwas().size() >= 1) {
+//			DownstreamerStep3Results step3 = DownstreamerMainAnalysis.step3(options);
+//			writer.saveStep3Excel(step2, step3);
+//		}
 
 	}
 
@@ -242,10 +243,11 @@ public class DownstreamerUtilities {
 	 * @throws Exception
 	 */
 	public static void generatePathwayLoadingExcel(DownstreamerOptionsDeprecated options) throws Exception {
-		DownstreamerStep2Results step2 = IoUtils.loadExistingStep2Results(options);
-
-		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
-		writer.savePathwayLoadings(step2);
+		throw new RuntimeException("Not implemented");
+//		DownstreamerStep2Results step2 = IoUtils.loadExistingStep2Results(options);
+//
+//		ExcelWriter writer = new ExcelWriter(step2.getGenePvalues().getColObjects(), options);
+//		writer.savePathwayLoadings(step2);
 	}
 
 	/**

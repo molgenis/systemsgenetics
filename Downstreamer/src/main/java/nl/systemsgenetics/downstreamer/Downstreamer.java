@@ -176,8 +176,12 @@ public class Downstreamer {
 					DownstreamerRegressionEngine.run(new OptionsModeRegress(args));
 					break;
 				case ENRICH:
-					DownstreamerEnrichment.enrichmentAnalysis(new OptionsModeEnrichment(args));
+					OptionsModeEnrichment optionsRegress = new OptionsModeEnrichment(args);
+					DownstreamerStep2Results results = DownstreamerEnrichment.enrichmentAnalysis(optionsRegress);
+					ExcelWriter writer = new ExcelWriter(results.getGenePvalues().getColObjects(), optionsRegress);
+					writer.saveStep2Excel(results);
 					break;
+
 				case PREPARE_PERMUTATIONS:
 					PreparePermutations.run(new OptionsModePerparePermutations(args));
 					break;
@@ -253,50 +257,50 @@ public class Downstreamer {
 					PredictedPathwayAnnotations.expandAnnotations(new DownstreamerOptionsDeprecated(args));
 					break;
 				case STEP1:
-					optionsDeprecated = new DownstreamerOptionsDeprecated(args);
-					final DownstreamerStep1Results step1Res = DownstreamerMainAnalysis.step1(optionsDeprecated);
-					final DownstreamerStep2Results step2Res;
-
-					if (optionsDeprecated.getPathwayDatabases().isEmpty()) {
-						LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode STEP2 and exactly the same output path and genes file to continue");
-						break;
-					} else {
-						step2Res = DownstreamerMainAnalysis.step2(optionsDeprecated, step1Res);
-					}
-
-					if (step2Res != null) {
-						ExcelWriter writer = null;
-						if (optionsDeprecated.isSaveOuputAsExcelFiles()) {
-							writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), optionsDeprecated);
-							writer.saveStep2Excel(step2Res);
-						}
-
-						if (optionsDeprecated.isAssignPathwayGenesToCisWindow()) {
-							final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(optionsDeprecated);
-							if (writer != null) {
-								writer.saveStep3Excel(step2Res, step3Res);
-							}
-						}
-					}
-
-					break;
+//					optionsDeprecated = new DownstreamerOptionsDeprecated(args);
+//					final DownstreamerStep1Results step1Res = DownstreamerMainAnalysis.step1(optionsDeprecated);
+//					final DownstreamerStep2Results step2Res;
+//
+//					if (optionsDeprecated.getPathwayDatabases().isEmpty()) {
+//						LOGGER.info("The analysis will now stop since no pathway databases are provided. Use --mode STEP2 and exactly the same output path and genes file to continue");
+//						break;
+//					} else {
+//						step2Res = DownstreamerMainAnalysis.step2(optionsDeprecated, step1Res);
+//					}
+//
+//					if (step2Res != null) {
+//						ExcelWriter writer = null;
+//						if (optionsDeprecated.isSaveOuputAsExcelFiles()) {
+//							writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), optionsDeprecated);
+//							writer.saveStep2Excel(step2Res);
+//						}
+//
+//						if (optionsDeprecated.isAssignPathwayGenesToCisWindow()) {
+//							final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(optionsDeprecated);
+//							if (writer != null) {
+//								writer.saveStep3Excel(step2Res, step3Res);
+//							}
+//						}
+//					}
+//
+//					break;
 
 				case STEP2:
-					optionsDeprecated = new DownstreamerOptionsDeprecated(args);
-					step2Res = DownstreamerMainAnalysis.step2(optionsDeprecated, null);
-
-					ExcelWriter writer = null;
-					if (optionsDeprecated.isSaveOuputAsExcelFiles()) {
-						writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), optionsDeprecated);
-						writer.saveStep2Excel(step2Res);
-					}
-					if (optionsDeprecated.isAssignPathwayGenesToCisWindow()) {
-						final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(optionsDeprecated);
-						if (writer != null) {
-							writer.saveStep3Excel(step2Res, step3Res);
-						}
-					}
-					break;
+//					optionsDeprecated = new DownstreamerOptionsDeprecated(args);
+//					step2Res = DownstreamerMainAnalysis.step2(optionsDeprecated, null);
+//
+//					ExcelWriter writer = null;
+//					if (optionsDeprecated.isSaveOuputAsExcelFiles()) {
+//						writer = new ExcelWriter(step2Res.getGenePvalues().getColObjects(), optionsDeprecated);
+//						writer.saveStep2Excel(step2Res);
+//					}
+//					if (optionsDeprecated.isAssignPathwayGenesToCisWindow()) {
+//						final DownstreamerStep3Results step3Res = DownstreamerMainAnalysis.step3(optionsDeprecated);
+//						if (writer != null) {
+//							writer.saveStep3Excel(step2Res, step3Res);
+//						}
+//					}
+//					break;
 				default:
 					throw new Exception("Mode not yet converted or is deprecated.");
 			}
