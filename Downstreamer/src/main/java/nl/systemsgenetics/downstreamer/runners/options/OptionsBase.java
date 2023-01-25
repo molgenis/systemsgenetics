@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.File;
+import java.util.concurrent.ForkJoinPool;
 
 public class OptionsBase {
 
@@ -86,6 +87,7 @@ public class OptionsBase {
 			try {
 				numberOfThreadsToUse = Integer.parseInt(commandLine.getOptionValue('t'));
 				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism", commandLine.getOptionValue('t'));
+				System.out.println("getParallelism=" + ForkJoinPool.commonPool().getParallelism());
 				ConcurrencyUtils.setNumberOfThreads(numberOfThreadsToUse);
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");

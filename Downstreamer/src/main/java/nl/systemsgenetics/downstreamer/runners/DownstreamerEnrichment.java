@@ -131,7 +131,7 @@ public class DownstreamerEnrichment {
 				continue;
 			}
 
-			for (int c = 0; c < gwasGeneZscores.columns(); ++g) {
+			for (int c = 0; c < gwasGeneZscores.columns(); ++c) {
 				if (Double.isNaN(gwasGeneZscores.getElementQuick(g, c))) {
 					//gene did not have a valid p-value
 					continue genes;
@@ -186,7 +186,7 @@ public class DownstreamerEnrichment {
 		}
 
 		final Map<String, List<Gene>> chrArmGeneMap = IoUtils.readGenesAsChrArmMap(options.getGeneInfoFile());
-		final BlockPerFileDiagonalDoubleMatrixProvider geneCorLoader = new BlockPerFileDiagonalDoubleMatrixProvider(options.getGeneGeneCorrelationPrefix(), "_correlations.rows.txt.gz");
+		final BlockPerFileDiagonalDoubleMatrixProvider geneCorLoader = new BlockPerFileDiagonalDoubleMatrixProvider(options.getGeneGeneCorrelationPrefix(), "_correlations");
 
 		final ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 
