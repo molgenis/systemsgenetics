@@ -445,6 +445,17 @@ public class DownstreamerRegressionEngine {
 		//DoubleMatrix2D b = inverse(mult(tmult(XHat, LHatInv), XHat));
 		// Alternative for YHat %*% LHatInv, bit quicker
 		DoubleMatrix2D a = mult(transpose(multDiag(YHat, LHatInv)), XHat);
+//		
+//		LOGGER.debug("XHat " + XHat.toStringShort());
+//		LOGGER.debug(XHat.toString());
+//		LOGGER.debug("LHatInv " + LHatInv.toStringShort());
+//		
+//		
+//		LOGGER.debug("Test");
+//		DoubleMatrix2D test = mult(transpose(multDiag(XHat, LHatInv)), XHat);
+//		LOGGER.debug(test.toString());
+//		
+		
 		DoubleMatrix2D b = inverse(mult(transpose(multDiag(XHat, LHatInv)), XHat));
 		DoubleMatrix2D beta = mult(a, b);
 
@@ -724,7 +735,9 @@ public class DownstreamerRegressionEngine {
 		int masterIndex = 0;
 		for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
 			columnIndexStartOfBlock.put(block.getKey(), masterIndex);
+			LOGGER.debug("block" + block.getKey() + " genes: " + block.getValue().size() + " index: " + masterIndex);
 			masterIndex += block.getValue().size();
+			
 		}
 		
 		//still used by jblas
@@ -770,6 +783,7 @@ public class DownstreamerRegressionEngine {
 
 					final DoubleMatrix2D curMatrix = provider.viewBlock(block.getKey(), block.getValue()).getMatrix();
 					
+					
 					//this functions seems to not contain multithreading
 					final DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(curMatrix);
 
@@ -791,8 +805,10 @@ public class DownstreamerRegressionEngine {
 				}
 			});
 		}
+		
+		//U.printMatrix();
 
-		// Order according to eigenvalues, large to small
+		// Order according to eigenvalues, large to small. eignevalues and L are inplace U is returned as a view
 		DoubleMatrixDataset<String, String> U2 = orderToEigenvalues(eigenvalues, U, L);
 
 		pb.close();
@@ -865,6 +881,13 @@ public class DownstreamerRegressionEngine {
 	 */
 	private static DoubleMatrixDataset<String, String> orderToEigenvalues(List<IndexedDouble> eigenvalues, DoubleMatrixDataset<String, String> U, DoubleMatrixDataset<String, String> L) throws Exception {
 
+//		System.out.println("Ü");
+//		U.printSummary();
+//		
+//		System.out.println("L");
+//		L.printSummary();
+//		
+		
 		// Keep track of original eigenvector names
 		List<String> eigenvectorNames = new ArrayList<>(U.getColObjects());
 
@@ -880,7 +903,20 @@ public class DownstreamerRegressionEngine {
 			i++;
 		}
 
-		return U.viewColSelection(eigenvectorOrder);
+		DoubleMatrixDataset<String, String> U2 = U.viewColSelection(eigenvectorOrder);
+		U2.setColObjects(eigenvectorNames);
+		
+		
+//		System.out.println("Ü2");
+//		U2.printSummary();
+//		
+//		
+//		System.out.println("L2");
+//		L.printSummary();
+//		
+		return U2;
+		
+		
 	}
 
 	/**

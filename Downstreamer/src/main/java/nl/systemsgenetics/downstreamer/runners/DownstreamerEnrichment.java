@@ -277,7 +277,7 @@ public class DownstreamerEnrichment {
 
 					final DoubleMatrix1D reconstructedScore = traitSignificantBetas.like();
 
-					significantEigenvectorsThisTrait.zMult(traitSignificantBetas, reconstructedScore);
+					significantEigenvectorsThisTrait.viewDice().zMult(traitSignificantBetas, reconstructedScore);
 					
 					pathwayPvalues.getCol(trait).assign(reconstructedScore);
 					pathwayBetas.getCol(trait).assign(reconstructedScore);
