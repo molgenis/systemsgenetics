@@ -73,23 +73,44 @@ public class LinearRegressionResult {
 	}
 
 	public DoubleMatrix1D getBetaForMainEffect() {
-		return beta.getCol(DownstreamerRegressionEngine.MAIN_EFFECT_COL_NAME);	
+		return beta.getCol(DownstreamerRegressionEngine.MAIN_EFFECT_COL_NAME);
 	}
 	
+	public DoubleMatrix1D getSeForMainEffect() {
+		return standardError.getCol(DownstreamerRegressionEngine.MAIN_EFFECT_COL_NAME);
+	}
+
 	public DoubleMatrix1D getPvalueForMainEffect() {
 
 		final DoubleMatrix1D mainBeta = beta.getCol(DownstreamerRegressionEngine.MAIN_EFFECT_COL_NAME);
 		final DoubleMatrix1D mainSe = standardError.getCol(DownstreamerRegressionEngine.MAIN_EFFECT_COL_NAME);
 		final DoubleMatrix1D mainPvalues = mainBeta.like();
-		
+
 		final int numberPathways = beta.rows();
 
+		TDistribution tdist = new TDistribution(degreesOfFreedom);
 		for (int i = 0; i < numberPathways; ++i) {
-			mainPvalues.setQuick(i, new TDistribution(degreesOfFreedom).cumulativeProbability(-Math.abs(mainBeta.getQuick(i) / mainSe.getQuick(i))) * 2);
+			mainPvalues.setQuick(i, tdist.cumulativeProbability(-Math.abs(mainBeta.getQuick(i) / mainSe.getQuick(i))) * 2);
 		}
 
 		return mainPvalues;
-		
+
+	}
+
+	public DoubleMatrix1D getTstatForMainEffect() {
+
+		final DoubleMatrix1D mainBeta = beta.getCol(DownstreamerRegressionEngine.MAIN_EFFECT_COL_NAME);
+		final DoubleMatrix1D mainSe = standardError.getCol(DownstreamerRegressionEngine.MAIN_EFFECT_COL_NAME);
+		final DoubleMatrix1D mainTstat = mainBeta.like();
+
+		final int numberPathways = beta.rows();
+
+		for (int i = 0; i < numberPathways; ++i) {
+			mainTstat.setQuick(i, mainBeta.getQuick(i) / mainSe.getQuick(i));
+		}
+
+		return mainTstat;
+
 	}
 
 	public void save(String basePath, boolean isBinary) throws Exception {

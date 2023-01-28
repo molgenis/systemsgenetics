@@ -15,7 +15,7 @@ public class OptionsBase {
 	protected static final Options OPTIONS;
 
 	// Common static variables
-	private static int numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();
+	private final int numberOfThreadsToUse;
 	private static final SimpleFeature HLA = new SimpleFeature("6", 20000000, 40000000);
 
 	// Common final variables
@@ -26,6 +26,7 @@ public class OptionsBase {
 	private DownstreamerMode mode;
 	private boolean debugMode;
 	private File debugFolder;
+	private boolean jblas;
 
 	static {
 		OPTIONS = new Options();
@@ -63,6 +64,13 @@ public class OptionsBase {
 		OptionBuilder.withDescription("Maximum number of calculation threads");
 		OptionBuilder.withLongOpt("threads");
 		OPTIONS.addOption(OptionBuilder.create("t"));
+		
+		// debugMode
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Use jblas for matrix algebra. NOTE: this does require native system libraries.");
+		OptionBuilder.withLongOpt("jblas");
+		OPTIONS.addOption(OptionBuilder.create("jb"));
+		
 
 	}
 
@@ -87,11 +95,12 @@ public class OptionsBase {
 			try {
 				numberOfThreadsToUse = Integer.parseInt(commandLine.getOptionValue('t'));
 				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism", commandLine.getOptionValue('t'));
-				System.out.println("getParallelism=" + ForkJoinPool.commonPool().getParallelism());
 				ConcurrencyUtils.setNumberOfThreads(numberOfThreadsToUse);
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");
 			}
+		} else {
+			numberOfThreadsToUse = Runtime.getRuntime().availableProcessors();
 		}
 
 		outputBasePath = new File(commandLine.getOptionValue('o'));
@@ -103,6 +112,7 @@ public class OptionsBase {
 		logFile = new File(outputBasePath + ".log");
 		debugFolder = new File(outputBasePath + "_debugFiles");
 		debugMode = commandLine.hasOption('d');
+		jblas = commandLine.hasOption("jb");
 	}
 
 	public void printOptions() {
@@ -113,6 +123,7 @@ public class OptionsBase {
 		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
 		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
 		LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
+		LOGGER.info(" * Use jblas for matrix algebra: " + (jblas ? "yes" : "no"));
 
 	}
 
@@ -122,7 +133,7 @@ public class OptionsBase {
 		formatter.printHelp(" ", OPTIONS);
 	}
 
-	public static int getNumberOfThreadsToUse() {
+	public  int getNumberOfThreadsToUse() {
 		return numberOfThreadsToUse;
 	}
 
@@ -148,5 +159,9 @@ public class OptionsBase {
 
 	public SimpleFeature getHla() {
 		return HLA;
+	}
+
+	public boolean isJblas() {
+		return jblas;
 	}
 }
