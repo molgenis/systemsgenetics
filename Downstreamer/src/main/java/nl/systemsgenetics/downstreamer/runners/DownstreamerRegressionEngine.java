@@ -455,7 +455,7 @@ public class DownstreamerRegressionEngine {
 //		DoubleMatrix2D test = mult(transpose(multDiag(XHat, LHatInv)), XHat);
 //		LOGGER.debug(test.toString());
 //		
-		
+
 		DoubleMatrix2D b = inverse(mult(transpose(multDiag(XHat, LHatInv)), XHat));
 		DoubleMatrix2D beta = mult(a, b);
 
@@ -509,10 +509,10 @@ public class DownstreamerRegressionEngine {
 	 */
 	private static void inplaceDownstreamerRegressionResidualsPrecomp(DoubleMatrix2D Y, DoubleMatrix2D X, DoubleMatrix1D LHatInv) {
 
-		LOGGER.debug("Y " + Y.toString() );
-		LOGGER.debug("X " + X.toString() );
-		LOGGER.debug("LHatInv " + LHatInv.toString() );
-		
+		LOGGER.debug("Y " + Y.toString());
+		LOGGER.debug("X " + X.toString());
+		LOGGER.debug("LHatInv " + LHatInv.toString());
+
 		DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X);
 
 		// For docs on the stats see comments in downstreamerRegressionPrecomp() above
@@ -713,7 +713,7 @@ public class DownstreamerRegressionEngine {
 	 * @param provider
 	 * @param index
 	 * @param useJblas
-	 * @return
+	 * @return [0] eigenvalues [1] eigenvectors
 	 * @throws UnsatisfiedLinkError
 	 */
 	public static DoubleMatrixDataset<String, String>[] blockDiagonalEigenDecomposition(List<String> allGenes, BlockDiagonalDoubleMatrixProvider provider, LinkedHashMap<String, ArrayList<String>> index, boolean useJblas) throws UnsatisfiedLinkError, Exception {
@@ -730,19 +730,18 @@ public class DownstreamerRegressionEngine {
 		final DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
 
 		ProgressBar pb = new ProgressBar("Eigen decomposition per chromosome arm", index.size());
-		
+
 		TObjectIntMap<String> columnIndexStartOfBlock = new TObjectIntHashMap<>(index.size());
 		int masterIndex = 0;
 		for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
 			columnIndexStartOfBlock.put(block.getKey(), masterIndex);
 			LOGGER.debug("block" + block.getKey() + " genes: " + block.getValue().size() + " index: " + masterIndex);
 			masterIndex += block.getValue().size();
-			
+
 		}
-		
+
 		//still used by jblas
 		masterIndex = 0;
-		
 
 		if (useJblas) {
 			// Use Jblas for eigen decompotision
@@ -775,15 +774,13 @@ public class DownstreamerRegressionEngine {
 
 			index.entrySet().parallelStream().forEach((Map.Entry<String, ArrayList<String>> block) -> {
 				try {
-					
+
 					int colIndex = columnIndexStartOfBlock.get(block.getKey());
-					
+
 					//for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
 					//for (int curBlock = 0; curBlock < index.size(); curBlock++) {
-
 					final DoubleMatrix2D curMatrix = provider.viewBlock(block.getKey(), block.getValue()).getMatrix();
-					
-					
+
 					//this functions seems to not contain multithreading
 					final DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(curMatrix);
 
@@ -805,9 +802,8 @@ public class DownstreamerRegressionEngine {
 				}
 			});
 		}
-		
-		//U.printMatrix();
 
+		//U.printMatrix();
 		// Order according to eigenvalues, large to small. eignevalues and L are inplace U is returned as a view
 		DoubleMatrixDataset<String, String> U2 = orderToEigenvalues(eigenvalues, U, L);
 
@@ -887,7 +883,6 @@ public class DownstreamerRegressionEngine {
 //		System.out.println("L");
 //		L.printSummary();
 //		
-		
 		// Keep track of original eigenvector names
 		List<String> eigenvectorNames = new ArrayList<>(U.getColObjects());
 
@@ -905,8 +900,7 @@ public class DownstreamerRegressionEngine {
 
 		DoubleMatrixDataset<String, String> U2 = U.viewColSelection(eigenvectorOrder);
 		U2.setColObjects(eigenvectorNames);
-		
-		
+
 //		System.out.println("Ü2");
 //		U2.printSummary();
 //		
@@ -915,8 +909,7 @@ public class DownstreamerRegressionEngine {
 //		L.printSummary();
 //		
 		return U2;
-		
-		
+
 	}
 
 	/**
