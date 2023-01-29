@@ -300,7 +300,34 @@ public class DownstreamerRegressionEngine {
 			boolean fitIntercept,
 			boolean regressCovariates,
 			boolean useJblas) {
-
+		
+		
+		if(X.rows() != Y.rows()){
+			throw new RuntimeException("Internal error: X and Y should contain equal number of rows");
+		} 
+		if(C != null && C.rows() != Y.rows()){
+			throw new RuntimeException("Internal error: C and Y should contain equal number of rows");
+		}
+		if(U.rows() != Y.rows()){
+			throw new RuntimeException("Internal error: U and Y should contain equal number of rows");
+		}
+		if(U.columns() != L.rows()){
+			throw new RuntimeException("Internal error: U columns and L rows should be equal");
+		}
+		
+		if(!X.getHashRows().keySet().equals(Y.getHashRows().keySet())){
+			throw new RuntimeException("Internal error: X and Y should contain row elements in same order");
+		}
+		if(!X.getHashRows().keySet().equals(Y.getHashRows().keySet())){
+			throw new RuntimeException("Internal error: C and Y should contain row elements in same order");
+		}
+		if(!U.getHashRows().keySet().equals(Y.getHashRows().keySet())){
+			throw new RuntimeException("Internal error: U and Y should contain row elements in same order");
+		}
+		if(!U.getHashCols().keySet().equals(L.getHashRows().keySet())){
+			throw new RuntimeException("Internal error: U columns and L rows should contain elements in same order");
+		}
+		
 		// Pre-transpose U as this can be re-used as well
 		DoubleMatrix2D UHatT = transpose(U.getMatrix());
 		//UHatT = DoubleFactory2D.sparse.make(UHatT.toArray());

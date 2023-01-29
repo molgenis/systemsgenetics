@@ -181,6 +181,7 @@ public class DownstreamerEnrichment {
 			allCovariates.add(GENE_LENGTH_COL_NAME);
 
 			covariatesToCorrectGenePvalues = new DoubleMatrixDataset<>(selectedGenes, allCovariates);
+			covariatesToCorrectGenePvalues.viewCol(GENE_LENGTH_COL_NAME).assign(geneLengths);
 		} else {
 			covariatesToCorrectGenePvalues = null;
 		}
@@ -265,6 +266,10 @@ public class DownstreamerEnrichment {
 				//Enrichment on eigenvectors with intent to gene reconstruction using significant eigen vectors
 				//Note these are not the eigen vectors of the gene-gene correlations but of the co-expression data
 
+				pathwayData.viewColSelection("Comp_1", "Comp_2", "Comp_7").save(options.getOutputBasePath() + "eigenVec.txt");
+				gwasGeneZscoreSubset.save(options.getOutputBasePath() + "geneZ.txt");
+				
+				
 				pathwayPvalues = new DoubleMatrixDataset<>(pathwayData.getRowObjects(), gwasGeneZscores.getColObjects());
 				pathwayQvalues = new DoubleMatrixDataset<>(pathwayData.getRowObjects(), gwasGeneZscores.getColObjects());
 				pathwayBetas = new DoubleMatrixDataset<>(pathwayData.getRowObjects(), gwasGeneZscores.getColObjects());

@@ -115,6 +115,42 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 	}
 
+	/**
+	 * Constructor used for the unit testing
+	 * 
+	 * @param covariates
+	 * @param pathwayDatabases
+	 * @param forceNormalGenePvalues
+	 * @param forceNormalPathwayPvalues
+	 * @param regressGeneLengths
+	 * @param geneInfoFile
+	 * @param singleGwasFile
+	 * @param gwasPvalueMatrixPath
+	 * @param excludeHla
+	 * @param skipPvalueToZscore
+	 * @param geneGeneCorrelationPrefix
+	 * @param numberOfThreadsToUse
+	 * @param outputBasePath
+	 * @param logFile
+	 * @param mode
+	 * @param debugMode
+	 * @param jblas 
+	 */
+	public OptionsModeEnrichment(File covariates, List<PathwayDatabase> pathwayDatabases, boolean forceNormalGenePvalues, boolean forceNormalPathwayPvalues, boolean regressGeneLengths, File geneInfoFile, File singleGwasFile, String gwasPvalueMatrixPath, boolean excludeHla, boolean skipPvalueToZscore, String geneGeneCorrelationPrefix, int numberOfThreadsToUse, File outputBasePath, File logFile, DownstreamerMode mode, boolean debugMode, boolean jblas) {
+		super(numberOfThreadsToUse, outputBasePath, logFile, mode, debugMode, jblas);
+		this.covariates = covariates;
+		this.pathwayDatabases = pathwayDatabases;
+		this.forceNormalGenePvalues = forceNormalGenePvalues;
+		this.forceNormalPathwayPvalues = forceNormalPathwayPvalues;
+		this.regressGeneLengths = regressGeneLengths;
+		this.geneInfoFile = geneInfoFile;
+		this.singleGwasFile = singleGwasFile;
+		this.gwasPvalueMatrixPath = gwasPvalueMatrixPath;
+		this.excludeHla = excludeHla;
+		this.skipPvalueToZscore = skipPvalueToZscore;
+		this.geneGeneCorrelationPrefix = geneGeneCorrelationPrefix;
+	}
+
 	public OptionsModeEnrichment(String[] args) throws ParseException {
 		super(args);
 
@@ -221,12 +257,20 @@ public class OptionsModeEnrichment extends OptionsBase {
 		}
 
 		if (covariates != null) {
-			LOGGER.info(" * covariates: " + covariates.getPath());
+			LOGGER.info(" * Covariates: " + covariates.getPath());
 		}
 
-		LOGGER.info(" * pathwayDatabases: ");
+		LOGGER.info(" * Pathway databases: ");
 		for (PathwayDatabase curDb : pathwayDatabases) {
-			LOGGER.info(" * - " + curDb.getName() + "\t");
+			if (!curDb.isEigenvectors()) {
+				LOGGER.info(" * - " + curDb.getName() + "\t" + curDb.getLocation());
+			}
+		}
+		LOGGER.info(" * Expression eigenvectors: ");
+		for (PathwayDatabase curDb : pathwayDatabases) {
+			if (curDb.isEigenvectors()) {
+				LOGGER.info(" * - " + curDb.getName() + "\t" + curDb.getLocation());
+			}
 		}
 
 		LOGGER.info(" * Gene info file: " + geneInfoFile.getPath());

@@ -74,6 +74,15 @@ public class OptionsBase {
 
 	}
 
+	public OptionsBase(int numberOfThreadsToUse, File outputBasePath, File logFile, DownstreamerMode mode, boolean debugMode, boolean jblas) {
+		this.numberOfThreadsToUse = numberOfThreadsToUse;
+		this.outputBasePath = outputBasePath;
+		this.logFile = logFile;
+		this.mode = mode;
+		this.debugMode = debugMode;
+		this.jblas = jblas;
+	}
+	
 	public OptionsBase(String[] args) throws ParseException {
 
 		// Parse arguments
