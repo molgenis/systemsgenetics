@@ -1328,21 +1328,24 @@ public class PathwayEnrichments {
 
 	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() {
 
-		DoubleMatrixDataset<String, String> zscores = pValues.duplicate();
-
-		for (int r = 0; r < zscores.rows(); r++) {
-			for (int c = 0; c < zscores.columns(); c++) {
-				double zscore = ZScores.pToZTwoTailed(pValues.getElementQuick(r, c));
-
-				// The zscore returned by pToZTwoTailed is always negative, therefore, match direction on beta
-				if (betas.getElementQuick(r, c) > 0) {
-					zscore = -zscore;
-				}
-				zscores.setElementQuick(r, c, zscore);
-			}
-		}
-
-		return zscores;
+		LOGGER.warn("!!!!!!!!!! p to z overwriten by debug code");
+		return pValues;
+		
+//		DoubleMatrixDataset<String, String> zscores = pValues.duplicate();
+//
+//		for (int r = 0; r < zscores.rows(); r++) {
+//			for (int c = 0; c < zscores.columns(); c++) {
+//				double zscore = ZScores.pToZTwoTailed(pValues.getElementQuick(r, c));
+//
+//				// The zscore returned by pToZTwoTailed is always negative, therefore, match direction on beta
+//				if (betas.getElementQuick(r, c) > 0) {
+//					zscore = -zscore;
+//				}
+//				zscores.setElementQuick(r, c, zscore);
+//			}
+//		}
+//
+//		return zscores;
 	}
 
 	public DoubleMatrixDataset<String, String> getqValues() {

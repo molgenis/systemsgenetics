@@ -35,6 +35,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
+import me.tongfei.progressbar.ProgressBarStyle;
+import nl.systemsgenetics.downstreamer.runners.options.OptionsBase;
 
 public class DownstreamerRegressionEngine {
 
@@ -300,34 +303,47 @@ public class DownstreamerRegressionEngine {
 			boolean fitIntercept,
 			boolean regressCovariates,
 			boolean useJblas) {
-		
-		
-		if(X.rows() != Y.rows()){
+
+		File debugFolder = OptionsBase.getDebugFolder();
+
+		try {
+			X.save(new File(debugFolder, "X.txt"));
+			Y.save(new File(debugFolder, "Y.txt"));
+			if (C != null) {
+				C.save(new File(debugFolder, "C.txt"));
+			}
+			U.save(new File(debugFolder, "U.txt"));
+			L.save(new File(debugFolder, "L.txt"));
+		} catch (IOException ex) {
+			throw new RuntimeException();
+		}
+
+		if (X.rows() != Y.rows()) {
 			throw new RuntimeException("Internal error: X and Y should contain equal number of rows");
-		} 
-		if(C != null && C.rows() != Y.rows()){
+		}
+		if (C != null && C.rows() != Y.rows()) {
 			throw new RuntimeException("Internal error: C and Y should contain equal number of rows");
 		}
-		if(U.rows() != Y.rows()){
+		if (U.rows() != Y.rows()) {
 			throw new RuntimeException("Internal error: U and Y should contain equal number of rows");
 		}
-		if(U.columns() != L.rows()){
+		if (U.columns() != L.rows()) {
 			throw new RuntimeException("Internal error: U columns and L rows should be equal");
 		}
-		
-		if(!X.getHashRows().keySet().equals(Y.getHashRows().keySet())){
+
+		if (!X.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
 			throw new RuntimeException("Internal error: X and Y should contain row elements in same order");
 		}
-		if(!X.getHashRows().keySet().equals(Y.getHashRows().keySet())){
+		if (!X.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
 			throw new RuntimeException("Internal error: C and Y should contain row elements in same order");
 		}
-		if(!U.getHashRows().keySet().equals(Y.getHashRows().keySet())){
+		if (!U.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
 			throw new RuntimeException("Internal error: U and Y should contain row elements in same order");
 		}
-		if(!U.getHashCols().keySet().equals(L.getHashRows().keySet())){
+		if (!U.getHashCols().keySet().equals(L.getHashRows().keySet())) {
 			throw new RuntimeException("Internal error: U columns and L rows should contain elements in same order");
 		}
-		
+
 		// Pre-transpose U as this can be re-used as well
 		DoubleMatrix2D UHatT = transpose(U.getMatrix());
 		//UHatT = DoubleFactory2D.sparse.make(UHatT.toArray());
@@ -373,7 +389,7 @@ public class DownstreamerRegressionEngine {
 			}
 		}
 
-		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns());
+		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns(), ProgressBarStyle.ASCII);
 
 		// Store output
 		List<LinearRegressionResult> results = new ArrayList<>(Y.columns());
@@ -428,6 +444,13 @@ public class DownstreamerRegressionEngine {
 				result.appendSe(curPathway, ArrayUtils.subarray(curRes, curRes.length / 2, curRes.length));
 
 				pb.step();
+			}
+
+			try {
+				result.getBeta().save(new File(debugFolder, "res_beta.txt"));
+				result.getStandardError().save(new File(debugFolder, "res_se.txt"));
+			} catch (IOException ex) {
+				throw new RuntimeException();
 			}
 
 			results.add(result);
@@ -756,7 +779,7 @@ public class DownstreamerRegressionEngine {
 		final DoubleMatrixDataset<String, String> U = new DoubleMatrixDataset<>(allGenes, eigenvectorNames);
 		final DoubleMatrixDataset<String, String> L = new DoubleMatrixDataset<>(eigenvectorNames, eigenvalueNames);
 
-		ProgressBar pb = new ProgressBar("Eigen decomposition per chromosome arm", index.size());
+		ProgressBar pb = new ProgressBar("Eigen decomposition per chromosome arm", index.size(), ProgressBarStyle.ASCII);
 
 		TObjectIntMap<String> columnIndexStartOfBlock = new TObjectIntHashMap<>(index.size());
 		int masterIndex = 0;
@@ -1025,7 +1048,7 @@ public class DownstreamerRegressionEngine {
 	private static DoubleMatrix2D multBlockDiagonalSubsetPerColJblas(DoubleMatrix2D Ac, DoubleMatrix2D Bc, List<int[]> index) {
 
 		DoubleMatrix2D C = DoubleFactory2D.dense.make(Ac.rows(), Bc.columns());
-		ProgressBar pb = new ProgressBar("Multiplying per block", Bc.columns() * index.size());
+		ProgressBar pb = new ProgressBar("Multiplying per block", Bc.columns() * index.size(), ProgressBarStyle.ASCII);
 
 		DoubleMatrix[] Acache = new DoubleMatrix[index.size()];
 		DoubleMatrix[] Bcache = new DoubleMatrix[index.size()];
@@ -1091,7 +1114,7 @@ public class DownstreamerRegressionEngine {
 
 		DoubleMatrix2D C = DoubleFactory2D.dense.make(A.rows(), B.columns());
 
-		ProgressBar pb = new ProgressBar("Multiplying per block", B.columns() * index.size());
+		ProgressBar pb = new ProgressBar("Multiplying per block", B.columns() * index.size(), ProgressBarStyle.ASCII);
 
 		DoubleMatrix2D[] Acache = new DoubleMatrix2D[index.size()];
 		DoubleMatrix2D[] Bcache = new DoubleMatrix2D[index.size()];

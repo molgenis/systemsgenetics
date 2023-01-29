@@ -256,7 +256,7 @@ public class DownstreamerEnrichment {
 					pathwayData,
 					gwasGeneZscoreSubset,
 					covariatesToCorrectGenePvaluesSubset,
-					eigen[1], eigen[0], blockDiagonalIndices, true, covariatesToCorrectGenePvalues != null, options.isJblas());
+					eigen[1], eigen[0], blockDiagonalIndices, 0.9, true, covariatesToCorrectGenePvalues != null, options.isJblas());
 
 			final DoubleMatrixDataset<String, String> pathwayPvalues;
 			final DoubleMatrixDataset<String, String> pathwayQvalues;
@@ -324,11 +324,8 @@ public class DownstreamerEnrichment {
 						final DoubleMatrix1D traitSignificantBetas = pathwayBetasIntermediates.viewRowSelection(significantEigenvectorsIdThisTrait).getCol(trait);
 						final DoubleMatrix1D traitSignificantTstats = pathwayTstatsIntermediates.viewRowSelection(significantEigenvectorsIdThisTrait).getCol(trait);
 
-						final DoubleMatrix1D reconstructedScore = traitSignificantBetas.like();
-						final DoubleMatrix1D reconstructedScore2 = traitSignificantBetas.like();
-
-						significantEigenvectorsThisTrait.viewDice().zMult(traitSignificantBetas, reconstructedScore);
-						significantEigenvectorsThisTrait.viewDice().zMult(traitSignificantTstats, reconstructedScore2);
+						final DoubleMatrix1D reconstructedScore = significantEigenvectorsThisTrait.zMult(traitSignificantBetas, null);
+						final DoubleMatrix1D reconstructedScore2 = significantEigenvectorsThisTrait.zMult(traitSignificantTstats, null);
 
 						pathwayPvalues.getCol(trait).assign(reconstructedScore);
 						pathwayBetas.getCol(trait).assign(reconstructedScore2);

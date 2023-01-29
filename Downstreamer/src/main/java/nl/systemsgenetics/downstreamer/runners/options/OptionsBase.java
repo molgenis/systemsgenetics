@@ -25,7 +25,7 @@ public class OptionsBase {
 	// Common options for all DS modes
 	private DownstreamerMode mode;
 	private boolean debugMode;
-	private File debugFolder;
+	private static File debugFolder;
 	private boolean jblas;
 
 	static {
@@ -162,7 +162,8 @@ public class OptionsBase {
 		return debugMode;
 	}
 
-	public File getDebugFolder() {
+	public static File getDebugFolder() {
+		debugFolder.mkdirs();
 		return debugFolder;
 	}
 
