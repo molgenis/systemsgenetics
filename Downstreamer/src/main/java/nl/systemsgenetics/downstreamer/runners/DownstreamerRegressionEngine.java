@@ -778,7 +778,7 @@ public class DownstreamerRegressionEngine {
 	 */
 	public static DoubleMatrixDataset<String, String>[] blockDiagonalEigenDecomposition(List<String> allGenes, BlockDiagonalDoubleMatrixProvider provider, LinkedHashMap<String, ArrayList<String>> index, boolean useJblas) throws UnsatisfiedLinkError, Exception {
 
-		final List<IndexedDouble> eigenvalues = new ArrayList<>(allGenes.size());
+		final IndexedDouble[] eigenvalues = new IndexedDouble[allGenes.size()];
 		List<String> eigenvectorNames = new ArrayList<>(allGenes.size());
 		for (int i = 0; i < allGenes.size(); i++) {
 			eigenvectorNames.add("V" + i);
@@ -800,27 +800,27 @@ public class DownstreamerRegressionEngine {
 
 		}
 
-		//still used by jblas
-		masterIndex = 0;
-
 		if (useJblas) {
 			// Use Jblas for eigen decompotision
 			try {
 				for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
 
-					DoubleMatrix curMatrix = toJblasDoubleMatrix(provider.viewBlock(block.getKey(), block.getValue()).getMatrix());
-					DoubleMatrix[] eigen = Eigen.symmetricEigenvectors(curMatrix);
+					int colIndex = columnIndexStartOfBlock.get(block.getKey());
+					
+					final DoubleMatrix curMatrix = toJblasDoubleMatrix(provider.viewBlock(block.getKey(), block.getValue()).getMatrix());
+					final DoubleMatrix[] eigen = Eigen.symmetricEigenvectors(curMatrix);
 
 					//get U in the same order 
-					DoubleMatrixDataset<String, String> UBlock = U.viewRowSelection(block.getValue());
+					final DoubleMatrixDataset<String, String> UBlock = U.viewRowSelection(block.getValue());
 
 					for (int j = 0; j < curMatrix.columns; j++) {
-						eigenvalues.add(new IndexedDouble(eigen[1].get(j, j), masterIndex));
+						eigenvalues[colIndex] = new IndexedDouble(eigen[1].get(j, j), colIndex);
 						for (int i = 0; i < curMatrix.rows; i++) {
-							UBlock.setElementQuick(i, masterIndex, eigen[0].get(i, j));
+							UBlock.setElementQuick(i, colIndex, eigen[0].get(i, j));
 						}
-						masterIndex++;
+						colIndex++;
 					}
+					
 					pb.step();
 				}
 
@@ -848,7 +848,7 @@ public class DownstreamerRegressionEngine {
 					DoubleMatrixDataset<String, String> UBlock = U.viewRowSelection(block.getValue());
 
 					for (int j = 0; j < curMatrix.columns(); j++) {
-						eigenvalues.add(new IndexedDouble(eigen.getRealEigenvalues().get(j), colIndex));
+						eigenvalues[colIndex] = new IndexedDouble(eigen.getRealEigenvalues().get(j), colIndex);
 						for (int i = 0; i < curMatrix.rows(); i++) {
 							UBlock.setElementQuick(i, colIndex, eigen.getV().getQuick(i, j));
 						}
@@ -865,7 +865,7 @@ public class DownstreamerRegressionEngine {
 
 		//U.printMatrix();
 		// Order according to eigenvalues, large to small. eignevalues and L are inplace U is returned as a view
-		DoubleMatrixDataset<String, String> U2 = orderToEigenvalues(eigenvalues, U, L);
+		DoubleMatrixDataset<String, String> U2 = orderToEigenvalues(Arrays.asList(eigenvalues), U, L);
 
 		pb.close();
 

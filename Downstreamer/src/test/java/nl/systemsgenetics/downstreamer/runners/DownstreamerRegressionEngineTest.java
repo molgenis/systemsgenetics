@@ -112,28 +112,28 @@ public class DownstreamerRegressionEngineTest {
 		
 		
 		
-//		useJblas = false;
-//
-//		result = DownstreamerRegressionEngine.blockDiagonalEigenDecomposition(allGenes, provider, index, useJblas);
-//
-//		eigenVectors = result[1];
-//
-//		columns:
-//		for (int c = 0; c < eigenVectors.columns(); ++c) {
-//			for (int r = 0; r < eigenVectors.rows(); ++r) {
-//				if (eigenVectors.getElementQuick(r, c) != 0) {
-//					if (eigenVectors.getElementQuick(r, c) * expectedEigenVectors.getElementQuick(r, c) < 0) {
-//						eigenVectors.getCol(c).assign(DoubleFunctions.neg);
-//					}
-//					continue columns;
-//				}
-//			}
-//
-//		}
-//
-//		compareTwoMatrices(result[0], expectedEigenvalues, 0.1);
-//		compareTwoMatrices(eigenVectors, expectedEigenVectors, 0.1);
-//		
+		useJblas = false;
+
+		result = DownstreamerRegressionEngine.blockDiagonalEigenDecomposition(allGenes, provider, index, useJblas);
+
+		eigenVectors = result[1];
+
+		columns:
+		for (int c = 0; c < eigenVectors.columns(); ++c) {
+			for (int r = 0; r < eigenVectors.rows(); ++r) {
+				if (eigenVectors.getElementQuick(r, c) != 0) {
+					if (eigenVectors.getElementQuick(r, c) * expectedEigenVectors.getElementQuick(r, c) < 0) {
+						eigenVectors.getCol(c).assign(DoubleFunctions.neg);
+					}
+					continue columns;
+				}
+			}
+
+		}
+
+		compareTwoMatrices(result[0], expectedEigenvalues, 0.000001);
+		compareTwoMatrices(eigenVectors, expectedEigenVectors, 0.0000001);
+		
 
 	}
 
