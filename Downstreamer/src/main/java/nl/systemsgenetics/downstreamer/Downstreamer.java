@@ -1,5 +1,8 @@
 package nl.systemsgenetics.downstreamer;
 
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.colt.matrix.tdouble.algo.DoubleSorting;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import nl.systemsgenetics.downstreamer.runners.PreparePermutations;
 import nl.systemsgenetics.downstreamer.io.ExcelWriter;
 import nl.systemsgenetics.downstreamer.pathway.PredictedPathwayAnnotations;
@@ -28,6 +31,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.ResourceBundle;
+import org.apache.mahout.math.Arrays;
 
 /**
  * Entry point and error handler for Downstreamer
@@ -58,6 +62,12 @@ public class Downstreamer {
 	 */
 	public static void main(String[] args) throws InterruptedException {
 
+		DoubleMatrix1D x = new DenseDoubleMatrix1D(new double[]{1,3,2,0});
+		
+		int[] y = DoubleSorting.quickSort.sortIndex(x);
+		System.out.println(Arrays.toString(y));
+		
+		
 		System.out.println();
 		System.out.println(HEADER);
 		System.out.println();
