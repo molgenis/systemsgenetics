@@ -344,9 +344,7 @@ public class DownstreamerEnrichment {
 						for (int p = 0; p < nrPermutations; p++) {
 							permutationMatrix.getCol(p).assign(originalZscores.viewSelection(GenericPermuting.permutation(Math.abs(r.nextInt())+1, geneCount)));
 						}
-
-						
-						
+		
 						final List<LinearRegressionResult> pathwayRegeressionResultsPermutations = DownstreamerRegressionEngine.performDownstreamerRegression(
 								pathwayData,
 								permutationMatrix,
