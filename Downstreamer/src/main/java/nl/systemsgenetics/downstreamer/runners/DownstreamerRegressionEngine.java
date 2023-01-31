@@ -36,6 +36,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
+import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsBase;
 
@@ -355,24 +356,26 @@ public class DownstreamerRegressionEngine {
 		logInfoMem("Starting regression for " + X.columns() + " pathways.");
 
 		// Determine the degrees of freedom. -1 for main_effect
-		int degreesOfFreedom = UHatT.rows() - 1;
+		int degreesOfFreedomTmp = UHatT.rows() - 1;
 
 		// Set the names of the predictors in the correct order
 		// and determine the degrees of freedom
 		List<String> predictorNames = new ArrayList<>();
 		if (fitIntercept) {
 			predictorNames.add(INTERCEPT_COL_NAME);
-			degreesOfFreedom = degreesOfFreedom - 1;
+			degreesOfFreedomTmp = degreesOfFreedomTmp - 1;
 		}
 		predictorNames.add(MAIN_EFFECT_COL_NAME);
 		if (C != null) {
 			predictorNames.addAll(C.getColObjects());
-			degreesOfFreedom = degreesOfFreedom - C.columns();
+			degreesOfFreedomTmp = degreesOfFreedomTmp - C.columns();
 		}
 
+		final int degreesOfFreedom = degreesOfFreedomTmp;
+
 		// Pre calculate predictors and covariates in eigenvectors space.
-		DoubleMatrix2D XhatCache = null;
-		DoubleMatrix2D ChatCache = null;
+		final DoubleMatrix2D XhatCache;
+		final DoubleMatrix2D ChatCache;
 
 		// Pre-calculate XHat and Xhat in a block diagonal way, or using full matrix mult.
 		if (blockDiagonalIndices != null) {
@@ -381,20 +384,26 @@ public class DownstreamerRegressionEngine {
 
 			if (C != null) {
 				ChatCache = blockDiagonalMult(UHatT, C.getMatrix(), blockDiagonalIndices, useJblas);
+			} else {
+				ChatCache = null;
 			}
 			logInfoMem("Done");
 		} else {
+			XhatCache = null;
 			if (C != null) {
 				ChatCache = mult(UHatT, C.getMatrix());
+			} else {
+				ChatCache = null;
 			}
 		}
 
 		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns(), ProgressBarStyle.ASCII);
 
 		// Store output
-		List<LinearRegressionResult> results = new ArrayList<>(Y.columns());
+		final LinearRegressionResult[] resultsArray = new LinearRegressionResult[Y.columns()];
 
-		for (int curY = 0; curY < Y.columns(); curY++) {
+		IntStream.range(0, Y.columns()).parallel().forEach(curY -> {
+			//for (int curY = 0; curY < Y.columns(); curY++) {
 
 			// Keep track of current covariates, if these are used to regress need to keep ChatCache.
 			// but curCovariates can be set to null
@@ -453,13 +462,14 @@ public class DownstreamerRegressionEngine {
 				throw new RuntimeException();
 			}
 
-			results.add(result);
-		}
+			resultsArray[curY] = result;
+			//results.add(result);
+		});
 
 		pb.close();
 		logInfoMem("Done with regression for " + Y.columns() + " traits and " + X.columns() + " pathways.");
 
-		return results;
+		return Arrays.asList(resultsArray);
 	}
 
 	/**
