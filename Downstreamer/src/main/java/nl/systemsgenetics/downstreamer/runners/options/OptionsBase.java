@@ -104,6 +104,7 @@ public class OptionsBase {
 			try {
 				numberOfThreadsToUse = Integer.parseInt(commandLine.getOptionValue('t'));
 				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism", commandLine.getOptionValue('t'));
+				System.out.println("getParallelism=" +ForkJoinPool.commonPool().getParallelism());
 				ConcurrencyUtils.setNumberOfThreads(numberOfThreadsToUse);
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");
@@ -132,6 +133,7 @@ public class OptionsBase {
 		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
 		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
 		LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
+		System.out.println("getParallelism=" +ForkJoinPool.commonPool().getParallelism());
 		LOGGER.info(" * Use jblas for matrix algebra: " + (jblas ? "yes" : "no"));
 
 	}

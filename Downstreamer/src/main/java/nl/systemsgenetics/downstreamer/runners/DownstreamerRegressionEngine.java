@@ -295,15 +295,15 @@ public class DownstreamerRegressionEngine {
 	 * eigenvectors to use. See above for parameter descriptions as they are
 	 * identical.
 	 */
-	public static List<LinearRegressionResult> performDownstreamerRegression(DoubleMatrixDataset<String, String> X,
-			DoubleMatrixDataset<String, String> Y,
-			DoubleMatrixDataset<String, String> C,
-			DoubleMatrixDataset<String, String> U,
-			DoubleMatrixDataset<String, String> L,
-			List<int[]> blockDiagonalIndices,
-			boolean fitIntercept,
-			boolean regressCovariates,
-			boolean useJblas) {
+	public static List<LinearRegressionResult> performDownstreamerRegression(final DoubleMatrixDataset<String, String> X,
+			final DoubleMatrixDataset<String, String> Y,
+			final DoubleMatrixDataset<String, String> C,
+			final DoubleMatrixDataset<String, String> U,
+			final DoubleMatrixDataset<String, String> L,
+			final List<int[]> blockDiagonalIndices,
+			final boolean fitIntercept,
+			final boolean regressCovariates,
+			final boolean useJblas) {
 
 		File debugFolder = OptionsBase.getDebugFolder();
 
@@ -396,13 +396,21 @@ public class DownstreamerRegressionEngine {
 				ChatCache = null;
 			}
 		}
+		
+		try {
+			new DoubleMatrixDataset<String, String>(XhatCache, U.getHashCols(), X.getHashColsCopy()).save(new File(debugFolder, "XhatCache.txt"));
+		} catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
+		
 
 		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns(), ProgressBarStyle.ASCII);
 
 		// Store output
 		final LinearRegressionResult[] resultsArray = new LinearRegressionResult[Y.columns()];
 
-		IntStream.range(0, Y.columns()).parallel().forEach(curY -> {
+		final int nrTraits = Y.columns();
+		IntStream.range(0, nrTraits).parallel().forEach(curY -> {
 			//for (int curY = 0; curY < Y.columns(); curY++) {
 
 			// Keep track of current covariates, if these are used to regress need to keep ChatCache.
@@ -411,7 +419,15 @@ public class DownstreamerRegressionEngine {
 			List<String> curPredictorNames = predictorNames;
 
 			// Pre-compute Y^ as this can be re-used
-			DoubleMatrix2D YHat = mult(UHatT, Y.viewColAsMmatrix(curY));
+			final DoubleMatrix2D YHat = mult(UHatT, Y.viewColAsMmatrix(curY));
+			
+			if(curY == 0){
+			try {
+				new DoubleMatrixDataset<String, String>(YHat).save(new File(debugFolder, "YHat.txt"));
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+			}
 
 			// Instead of including covariates in the model, first regress their effects
 			if (regressCovariates) {
@@ -423,7 +439,7 @@ public class DownstreamerRegressionEngine {
 			}
 
 			// Object to save output
-			LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(),
+			final LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(),
 					curPredictorNames,
 					degreesOfFreedom,
 					Y.getColObjects().get(curY));
@@ -803,6 +819,7 @@ public class DownstreamerRegressionEngine {
 		if (useJblas) {
 			// Use Jblas for eigen decompotision
 			try {
+				//NOTE: this can't be done parralel because Eigen.symmetricEigenvectors uses shared static variables
 				for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
 
 					int colIndex = columnIndexStartOfBlock.get(block.getKey());

@@ -61,12 +61,8 @@ public class Downstreamer {
 	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) throws InterruptedException {
-
-		DoubleMatrix1D x = new DenseDoubleMatrix1D(new double[]{1,3,2,0});
 		
-		int[] y = DoubleSorting.quickSort.sortIndex(x);
-		System.out.println(Arrays.toString(y));
-		
+		System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism", "20");
 		
 		System.out.println();
 		System.out.println(HEADER);

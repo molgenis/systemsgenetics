@@ -46,7 +46,7 @@ import umcg.genetica.text.Strings;
  */
 public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
-	private static final org.apache.logging.log4j.Logger LOGGER =  org.apache.logging.log4j.LogManager.getLogger(DoubleMatrixDataset.class);
+	private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger(DoubleMatrixDataset.class);
 
 	protected DoubleMatrix2D matrix;
 	protected LinkedHashMap<R, Integer> hashRows;
@@ -89,6 +89,22 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 		this.hashRows = hashRows;
 		this.hashCols = hashCols;
+		this.matrix = matrix;
+	}
+
+	public DoubleMatrixDataset(DoubleMatrix2D matrix) {
+		
+		hashRows = new LinkedHashMap<>(matrix.rows());
+		hashCols = new LinkedHashMap<C, Integer>(matrix.columns());
+
+		for(int r = 0 ; r < matrix.rows() ; ++r){
+			hashRows.put((R)("R" + r), r);
+		}
+
+		for(int c = 0 ; c < matrix.columns() ; ++c){
+			hashCols.put((C)("C" + c), c);
+		}
+		
 		this.matrix = matrix;
 	}
 
@@ -932,22 +948,22 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 	}
 
-	public void saveBinary(final String path) throws IOException{
+	public void saveBinary(final String path) throws IOException {
 		DoubleMatrixDatasetRowCompressedWriter.saveDataset(path, this);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param path
 	 * @param datasetName will be saved as metadata in binary file
 	 * @param dataOnRows will be saved as metadata in binary file
 	 * @param dataOnCols will be saved as metadata in binary file
-	 * @throws IOException 
+	 * @throws IOException
 	 */
-	public void saveBinary(final String path, final String datasetName, final String dataOnRows, final String dataOnCols) throws IOException{
+	public void saveBinary(final String path, final String datasetName, final String dataOnRows, final String dataOnCols) throws IOException {
 		DoubleMatrixDatasetRowCompressedWriter.saveDataset(path, this, datasetName, dataOnRows, dataOnCols);
 	}
-	
+
 	public void saveBinaryOldFormat(String path) throws IOException {
 
 		final File matrixFile = new File(path + ".dat.gz");
@@ -1859,7 +1875,8 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	/**
-	 * As createColumnForceNormalDuplicate() above, but instead of creating a copy, this modifies the matrix of the instance.
+	 * As createColumnForceNormalDuplicate() above, but instead of creating a
+	 * copy, this modifies the matrix of the instance.
 	 */
 	public void createColumnForceNormalInplace() {
 
@@ -1884,8 +1901,6 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		}
 
 	}
-
-
 
 	/**
 	 * In place normalization. Will set mean to 0 and sd to 1

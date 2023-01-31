@@ -330,7 +330,7 @@ public class DownstreamerEnrichment {
 						final int nrPermutations = 100;
 						List<String> permutationNames = new ArrayList<>(nrPermutations);
 						for (int p = 0; p < nrPermutations; p++) {
-							permutationNames.add("V" + p);
+							permutationNames.add("P" + p);
 						}
 
 						//First permutaiton matrix will contain permuted gwas gene p-values, later will contain the gene reconstructed scores
@@ -361,9 +361,21 @@ public class DownstreamerEnrichment {
 							int[] permEigenTopIndex = Arrays.copyOfRange(
 									DoubleSorting.quickSort.sortIndex(permRes.getPvalueForMainEffect())
 									,0,numberEigenvectors);
-							
+											
 							final DoubleMatrix2D permTopEigen = pathwayData.getMatrix().viewSelection(null, permEigenTopIndex);
-							final DoubleMatrix1D permSignificantBetas = permRes.getTstatForMainEffect().viewSelection(permEigenTopIndex);
+							final DoubleMatrix1D permSignificantBetas = permRes.getBetaForMainEffect().viewSelection(permEigenTopIndex);
+							
+							
+							double minP =  permRes.getPvalueForMainEffect().aggregate( DoubleFunctions.min, DoubleFunctions.identity);
+							double maxP =  permRes.getPvalueForMainEffect().aggregate( DoubleFunctions.max, DoubleFunctions.identity);
+							
+							double minB =  permRes.getBetaForMainEffect().aggregate( DoubleFunctions.min, DoubleFunctions.identity);
+							double maxB =  permRes.getBetaForMainEffect().aggregate( DoubleFunctions.max, DoubleFunctions.identity);
+							
+							double meanB = permRes.getBetaForMainEffect().zSum() / permRes.getBetaForMainEffect().size();
+							
+							LOGGER.info("Perm " + p + " minP " + minP + " maxP" + maxP + " minB " + minB + " maxB " + maxB + " meanB " + meanB + " minIndex " + permEigenTopIndex[0] + " minP2 " + permRes.getPvalueForMainEffect().getQuick(permEigenTopIndex[0]));
+							
 							
 							//overwrite permutation matrix
 							permTopEigen.zMult(permSignificantBetas, permutationMatrix.viewCol(p));

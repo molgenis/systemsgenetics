@@ -3,7 +3,6 @@ package nl.systemsgenetics.downstreamer.io;
 import java.io.IOException;
 import java.util.Collection;
 
-import java.util.List;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 public interface BlockDiagonalDoubleMatrixProvider {
