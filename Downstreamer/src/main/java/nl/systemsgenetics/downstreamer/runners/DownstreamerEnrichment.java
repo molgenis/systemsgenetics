@@ -109,9 +109,12 @@ public class DownstreamerEnrichment {
 		}
 
 		ArrayList<String> allGwasGenes = gwasGeneZscores.getRowObjects();
+		LOGGER.info("Genes in GWAS data: " + allGwasGenes.size());
 
 		LinkedHashSet<String> selectedGenes = new LinkedHashSet<>();
 
+		final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesTmp = options.getCovariates() == null ? null : DoubleMatrixDataset.loadDoubleData(options.getCovariates().getAbsolutePath());
+		
 		//This loop will create a list of genes that should be selected
 		genes:
 		for (int g = 0; g < gwasGeneZscores.rows(); ++g) {
@@ -133,6 +136,11 @@ public class DownstreamerEnrichment {
 				//if gene is not in list of genes to use, skip
 				continue;
 			}
+			
+			if (covariatesToCorrectGenePvaluesTmp != null && !covariatesToCorrectGenePvaluesTmp.containsRow(gene)){
+				//gene not in covariats so skip
+				continue;
+			}
 
 			for (int c = 0; c < gwasGeneZscores.columns(); ++c) {
 				if (Double.isNaN(gwasGeneZscores.getElementQuick(g, c))) {
@@ -144,6 +152,10 @@ public class DownstreamerEnrichment {
 			selectedGenes.add(gene);
 
 		}
+		
+		
+		
+		LOGGER.info("GWAS gene found in gene info file and covariate file if provided: " + selectedGenes.size());
 
 		final double[] geneLengths = new double[selectedGenes.size()];
 		int geneIndex = 0;
@@ -157,8 +169,7 @@ public class DownstreamerEnrichment {
 		// Load optinal covariates
 		final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvalues;
 		if (options.getCovariates() != null) {
-			DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesTmp = DoubleMatrixDataset.loadDoubleData(options.getCovariates().getAbsolutePath());
-
+			
 			if (!covariatesToCorrectGenePvaluesTmp.getHashRows().keySet().containsAll(selectedGenes)) {
 				throw new Exception("Not all genes are found in the covariate file");
 			}

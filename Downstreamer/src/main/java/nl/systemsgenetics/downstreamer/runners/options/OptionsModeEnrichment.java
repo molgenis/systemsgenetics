@@ -5,11 +5,23 @@
  */
 package nl.systemsgenetics.downstreamer.runners.options;
 
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
+import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import static nl.systemsgenetics.downstreamer.runners.options.OptionsBase.OPTIONS;
 import org.apache.commons.cli.CommandLine;
@@ -73,6 +85,12 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Instead of name=path for pathways or expession eigenvectors use file with 3 columns (no header): name<tab>path<tab>true/false. Use true in the last column to indicate if eigenvectors instead of pathways.");
+		OptionBuilder.withLongOpt("pathwayEigenFile");
+		OPTIONS.addOption(OptionBuilder.create("pef"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("File with gene info. col1: geneName (ensg) col2: chr col3: startPos col4: stopPos col5: geneType col6: chrArm");
 		OptionBuilder.withLongOpt("genes");
 		OptionBuilder.isRequired();
@@ -117,7 +135,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 	/**
 	 * Constructor used for the unit testing
-	 * 
+	 *
 	 * @param covariates
 	 * @param pathwayDatabases
 	 * @param forceNormalGenePvalues
@@ -134,7 +152,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 	 * @param logFile
 	 * @param mode
 	 * @param debugMode
-	 * @param jblas 
+	 * @param jblas
 	 */
 	public OptionsModeEnrichment(File covariates, List<PathwayDatabase> pathwayDatabases, boolean forceNormalGenePvalues, boolean forceNormalPathwayPvalues, boolean regressGeneLengths, File geneInfoFile, File singleGwasFile, String gwasPvalueMatrixPath, boolean excludeHla, boolean skipPvalueToZscore, String geneGeneCorrelationPrefix, int numberOfThreadsToUse, File outputBasePath, File logFile, DownstreamerMode mode, boolean debugMode, boolean jblas) {
 		super(numberOfThreadsToUse, outputBasePath, logFile, mode, debugMode, jblas);
@@ -151,7 +169,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 		this.geneGeneCorrelationPrefix = geneGeneCorrelationPrefix;
 	}
 
-	public OptionsModeEnrichment(String[] args) throws ParseException {
+	public OptionsModeEnrichment(String[] args) throws ParseException, IOException {
 		super(args);
 
 		// Parse arguments
@@ -190,7 +208,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 	}
 
-	private static List<PathwayDatabase> parsePathwaysAndExpressionEigenVectors(final CommandLine commandLine) throws ParseException {
+	private static List<PathwayDatabase> parsePathwaysAndExpressionEigenVectors(final CommandLine commandLine) throws ParseException, FileNotFoundException, IOException {
 
 		final List<PathwayDatabase> pathwayDatabases = new ArrayList<>();
 		final HashSet<String> duplicateChecker = new HashSet<>();
@@ -226,7 +244,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 			for (int i = 0; i < pdValues.length; i += 2) {
 
 				if (!duplicateChecker.add(pdValues[i])) {
-					throw new ParseException("Error parsing --ExpressionEigenVectors. Duplicate database name found, note must also be unique ");
+					throw new ParseException("Error parsing --ExpressionEigenVectors. Duplicate database name found, note must also be unique with --pathwayDatabase");
 				}
 
 				pathwayDatabases.add(new PathwayDatabase(pdValues[i], pdValues[i + 1], true));
@@ -235,12 +253,36 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 		}
 
-		if (commandLine.hasOption("eez")) {
-			if (duplicateChecker.isEmpty()) {
+		if (commandLine.hasOption("pef")) {
 
-				throw new ParseException("Mode ENRICH requirers either --ExpressionEigenVectors or --pathwayDatabase");
+			File pathwayFile = new File(commandLine.getOptionValue("pef"));
+
+			final CSVReader reader
+					= new CSVReaderBuilder((new BufferedReader(
+							pathwayFile.getName().endsWith(".gz")
+							? new InputStreamReader(new GZIPInputStream(new FileInputStream(pathwayFile)))
+							: new FileReader(pathwayFile)
+					))).withSkipLines(0).withCSVParser(
+							new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build()
+					).build();
+
+			String[] nextLine;
+			while ((nextLine = reader.readNext()) != null) {
+
+				if (!duplicateChecker.add(nextLine[0])) {
+					throw new ParseException("Error parsing --pathwayEigenFile. Duplicate database name found, note must also be unique with --pathwayDatabase --ExpressionEigenVectors ");
+				}
+
+				pathwayDatabases.add(new PathwayDatabase(nextLine[0], nextLine[1], Boolean.parseBoolean(nextLine[2])));
 
 			}
+
+		}
+
+		if (duplicateChecker.isEmpty()) {
+
+			throw new ParseException("Mode ENRICH requirers either --ExpressionEigenVectors or --pathwayDatabase");
+
 		}
 
 		return Collections.unmodifiableList(pathwayDatabases);
@@ -263,13 +305,13 @@ public class OptionsModeEnrichment extends OptionsBase {
 		LOGGER.info(" * Pathway databases: ");
 		for (PathwayDatabase curDb : pathwayDatabases) {
 			if (!curDb.isEigenvectors()) {
-				LOGGER.info(" * - " + curDb.getName() + "\t" + curDb.getLocation());
+				LOGGER.info("    - " + curDb.getName() + "\t" + curDb.getLocation());
 			}
 		}
 		LOGGER.info(" * Expression eigenvectors: ");
 		for (PathwayDatabase curDb : pathwayDatabases) {
 			if (curDb.isEigenvectors()) {
-				LOGGER.info(" * - " + curDb.getName() + "\t" + curDb.getLocation());
+				LOGGER.info("    - " + curDb.getName() + "\t" + curDb.getLocation());
 			}
 		}
 
@@ -277,7 +319,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 		LOGGER.info(" * Path to gene-gene correlation files: " + geneGeneCorrelationPrefix);
 		LOGGER.info(" * Do inverse force normal of gene p-values: " + forceNormalGenePvalues);
 		LOGGER.info(" * Do inverse force normal of pathway scores: " + forceNormalPathwayPvalues);
-		LOGGER.info(" * Convert gene p-values to Z-score (should only be disabled if already z-score per gene): " + skipPvalueToZscore);
+		LOGGER.info(" * Skip gene p-values to Z-score (should only be disabled if already z-score per gene): " + skipPvalueToZscore);
 		LOGGER.info(" * Correct gene p-values for gene length: " + regressGeneLengths);
 		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
 
