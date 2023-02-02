@@ -277,6 +277,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 		LOGGER.info(" * Path to gene-gene correlation files: " + geneGeneCorrelationPrefix);
 		LOGGER.info(" * Do inverse force normal of gene p-values: " + forceNormalGenePvalues);
 		LOGGER.info(" * Do inverse force normal of pathway scores: " + forceNormalPathwayPvalues);
+		LOGGER.info(" * Convert gene p-values to Z-score (should only be disabled if already z-score per gene): " + skipPvalueToZscore);
 		LOGGER.info(" * Correct gene p-values for gene length: " + regressGeneLengths);
 		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
 
