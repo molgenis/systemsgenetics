@@ -18,6 +18,8 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetRowCompressedWriter;
 
 /**
  *
+ * This class is only used to preprocces the test gen-gen correlation matrix
+ * 
  * @author patri
  */
 public class PrepareRandomCorrelationsPerChunk {
@@ -59,7 +61,7 @@ public class PrepareRandomCorrelationsPerChunk {
 			DoubleMatrixDataset<String, String> armCorMatrix = fullCorMatrix.viewColSelection(genesWithCor).viewRowSelection(genesWithCor);
 			
 			DoubleMatrixDatasetRowCompressedWriter.saveDataset(
-							outputFolder.getAbsolutePath() + "genecor_chr_" + arm + "_correlations",
+							outputFolder.getAbsolutePath() + "/genecor_chr_" + arm + "_correlations",
 							armCorMatrix,
 							"Gene-Gene correlation matrix of chr " + arm, "Genes", "Genes");
 					
