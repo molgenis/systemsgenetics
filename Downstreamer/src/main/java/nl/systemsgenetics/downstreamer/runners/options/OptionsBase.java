@@ -81,6 +81,7 @@ public class OptionsBase {
 		this.mode = mode;
 		this.debugMode = debugMode;
 		this.jblas = jblas;
+		this.debugFolder = new File(outputBasePath + "_debugFiles");
 	}
 	
 	public OptionsBase(String[] args) throws ParseException {

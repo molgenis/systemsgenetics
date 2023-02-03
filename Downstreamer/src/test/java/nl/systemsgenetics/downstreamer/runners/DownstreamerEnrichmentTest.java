@@ -11,16 +11,21 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import static nl.systemsgenetics.downstreamer.Downstreamer.DATE_TIME_FORMAT;
+import static nl.systemsgenetics.downstreamer.Downstreamer.initializeLoggers;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
+import nl.systemsgenetics.downstreamer.io.ExcelWriter;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerMode;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeEnrichment;
+import org.apache.logging.log4j.Level;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
 /**
  *
@@ -53,26 +58,37 @@ public class DownstreamerEnrichmentTest {
 	@Test
 	public void testEnrichmentAnalysis() throws Exception {
 
-		File pathwayFile = new File(this.getClass().getResource("/random/random_pathways.tsv.gz").toURI());
+		File pathwayFile = new File(this.getClass().getResource("/random/random_pathways.datg").toURI());
 		File genesFile = new File(this.getClass().getResource("/random/genes.txt").toURI());
 		File gwasFile = new File(this.getClass().getResource("/random/random_gwas_incSnpMinP.tsv").toURI());
 		String geneGeneCorrelationPrefix = new File(gwasFile.getParentFile(), "corPerArm").getAbsolutePath() + "/genecor_chr_";
 
 		File outdir = getTmpDir();
 		
-		File outputBasePath = new File(outdir.getAbsolutePath() + "testRun");
-		
+		System.out.println("TMPdir: " + outdir);
+
+		File outputBasePath = new File(outdir.getAbsolutePath() + "/testRun");
+
 		File logFile = new File(outputBasePath.getAbsolutePath() + ".log");
+
+		String startDateTime = DATE_TIME_FORMAT.format(new Date());
+		initializeLoggers(Level.INFO, logFile, startDateTime);
 
 		List<PathwayDatabase> pathwayDatabases = new ArrayList<>();
 		pathwayDatabases.add(new PathwayDatabase("test", pathwayFile.getAbsolutePath(), false));
 
-		OptionsModeEnrichment options = new OptionsModeEnrichment(null, pathwayDatabases, false, false, false, genesFile, gwasFile, null, true, false, geneGeneCorrelationPrefix, 0, outputBasePath, logFile, DownstreamerMode.STEP1, true, true);
-		DownstreamerStep2Results expResult = null;
-		DownstreamerStep2Results result = DownstreamerEnrichment.enrichmentAnalysis(options);
-		assertEquals(result, expResult);
-		// TODO review the generated test code and remove the default call to fail.
-		fail("The test case is a prototype.");
+		OptionsModeEnrichment options = new OptionsModeEnrichment(null, pathwayDatabases, false, false, false, genesFile, gwasFile, null, true, false, geneGeneCorrelationPrefix, 1, outputBasePath, logFile, DownstreamerMode.STEP1, true, true);
+		
+		options.printOptions();
+		
+		DownstreamerStep2Results results = DownstreamerEnrichment.enrichmentAnalysis(options);
+		
+		DoubleMatrixDataset<String, String> betas = results.getPathwayEnrichments().get(0).getBetas();
+		betas.save(outputBasePath + "_betas.txt");
+		
+		ExcelWriter writer = new ExcelWriter(results.getGenePvalues().getColObjects(), options);
+		writer.saveStep2Excel(results);
+		
 	}
 
 	private File getTmpDir() {
@@ -81,26 +97,26 @@ public class DownstreamerEnrichmentTest {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		Date date = new Date();
 
-		File tmpOutputFolder = new File(tmpDir, "DoubleMatrixDatasetTest" + dateFormat.format(date));
+		File tmpOutputFolder = new File(tmpDir, "DownstreamerTest" + dateFormat.format(date));
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				if (tmpOutputFolder.isDirectory()) {
-					System.out.println("Removing tmp dir and files");
-					for (File file : tmpOutputFolder.listFiles()) {
-						System.out.println(" - Deleting: " + file.getAbsolutePath());
-						file.delete();
-					}
-					System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-					tmpOutputFolder.delete();
-				}
-			}
-		});
+//		Runtime.getRuntime().addShutdownHook(new Thread() {
+//			@Override
+//			public void run() {
+//				if (tmpOutputFolder.isDirectory()) {
+//					System.out.println("Removing tmp dir and files");
+//					for (File file : tmpOutputFolder.listFiles()) {
+//						System.out.println(" - Deleting: " + file.getAbsolutePath());
+//						file.delete();
+//					}
+//					System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
+//					tmpOutputFolder.delete();
+//				}
+//			}
+//		});
 
 		tmpOutputFolder.mkdir();
 
-		return tmpDir;
+		return tmpOutputFolder;
 	}
 
 }

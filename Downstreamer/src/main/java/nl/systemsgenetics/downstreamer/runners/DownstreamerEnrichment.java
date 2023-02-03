@@ -224,6 +224,7 @@ public class DownstreamerEnrichment {
 			} else {
 				gwasGeneZscoreSubset = gwasGeneZscores.viewRowSelection(genesOverlappingWithPathwayDatabase).duplicate();
 			}
+			
 
 			final DoubleMatrixDataset<String, String> pathwayData;
 
@@ -250,7 +251,7 @@ public class DownstreamerEnrichment {
 				}
 
 			}
-
+			
 			final int geneCount = genesOverlappingWithPathwayDatabase.size();
 
 			LOGGER.info("Working on: " + pathwayDatabase.getName() + " with " + geneCount + " genes and " + pathwayData.columns() + " features.");

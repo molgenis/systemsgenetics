@@ -1356,6 +1356,10 @@ public class PathwayEnrichments {
 		return pValues;
 	}
 
+	public DoubleMatrixDataset<String, String> getBetas() {
+		return betas;
+	}
+
 	public static PathwayEnrichments createPathwayEnrichmentsFromGenePvalues(DownstreamerOptionsDeprecated options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
 		DoubleMatrixDataset<String, String> geneQvalues;
 		DoubleMatrixDataset<String, String> geneBetas;
