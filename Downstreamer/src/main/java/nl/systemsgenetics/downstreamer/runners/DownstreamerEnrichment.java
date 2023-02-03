@@ -260,8 +260,8 @@ public class DownstreamerEnrichment {
 				pathwayData.createColumnForceNormalInplace();
 			}
 
-			final List<int[]> blockDiagonalIndices = DownstreamerRegressionEngine.createBlockDiagonalIndexFromGenes(chrArmGeneMap, genesOverlappingWithPathwayDatabase);
-			LinkedHashMap<String, ArrayList<String>> blockDiagonalIndicesForEigen = createBlockDiagonalIndexFromGenes2(chrArmGeneMap, genesOverlappingWithPathwayDatabase);
+			//final List<int[]> blockDiagonalIndices = DownstreamerRegressionEngine.createBlockDiagonalIndexFromGenes(chrArmGeneMap, genesOverlappingWithPathwayDatabase);
+			final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndicesForEigen = createBlockDiagonalIndexFromGenes2(chrArmGeneMap, genesOverlappingWithPathwayDatabase);
 
 			//Do eigen decompose on the gene-gene correlation matrices
 			//eigen[0] L = eigen values
@@ -273,7 +273,7 @@ public class DownstreamerEnrichment {
 					pathwayData,
 					gwasGeneZscoreSubset,
 					covariatesToCorrectGenePvaluesSubset,
-					eigen[1], eigen[0], blockDiagonalIndices, 0.9, true, covariatesToCorrectGenePvalues != null, options.isJblas());
+					eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, true, covariatesToCorrectGenePvalues != null, options.isJblas());
 
 			final DoubleMatrixDataset<String, String> pathwayPvalues;
 			final DoubleMatrixDataset<String, String> pathwayQvalues;
@@ -361,7 +361,7 @@ public class DownstreamerEnrichment {
 								pathwayData,
 								permutationMatrix,
 								covariatesToCorrectGenePvaluesSubset,
-								eigen[1], eigen[0], blockDiagonalIndices, 0.9, true, covariatesToCorrectGenePvalues != null, options.isJblas());
+								eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, true, covariatesToCorrectGenePvalues != null, options.isJblas());
 
 						//do permuations
 						for (int p = 0; p < nrPermutations; ++p) {

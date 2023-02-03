@@ -77,7 +77,7 @@ public class DownstreamerEnrichmentTest {
 		List<PathwayDatabase> pathwayDatabases = new ArrayList<>();
 		pathwayDatabases.add(new PathwayDatabase("test", pathwayFile.getAbsolutePath(), false));
 
-		OptionsModeEnrichment options = new OptionsModeEnrichment(null, pathwayDatabases, false, false, false, genesFile, gwasFile, null, true, false, geneGeneCorrelationPrefix, 1, outputBasePath, logFile, DownstreamerMode.STEP1, true, true);
+		OptionsModeEnrichment options = new OptionsModeEnrichment(null, pathwayDatabases, false, false, false, genesFile, gwasFile, null, false, false, geneGeneCorrelationPrefix, 1, outputBasePath, logFile, DownstreamerMode.STEP1, true, true);
 		
 		options.printOptions();
 		

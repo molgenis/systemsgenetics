@@ -226,17 +226,17 @@ public class DownstreamerRegressionEngine {
 			}
 		}
 
-		output = performDownstreamerRegression(X, Y, C, U, L,
-				blockDiagonalIndices,
-				options.getPercentageOfVariance(),
-				options.fitIntercept(),
-				options.regressCovariates(),
-				options.useJblas());
-
-		// Save linear regression results
-		for (LinearRegressionResult curRes : output) {
-			curRes.save(options.getOutputBasePath() + "_" + curRes.getName(), false);
-		}
+//		output = performDownstreamerRegression(X, Y, C, U, L,
+//				blockDiagonalIndices,
+//				options.getPercentageOfVariance(),
+//				options.fitIntercept(),
+//				options.regressCovariates(),
+//				options.useJblas());
+//
+//		// Save linear regression results
+//		for (LinearRegressionResult curRes : output) {
+//			curRes.save(options.getOutputBasePath() + "_" + curRes.getName(), false);
+//		}
 	}
 
 	/**
@@ -265,7 +265,7 @@ public class DownstreamerRegressionEngine {
 			DoubleMatrixDataset<String, String> C,
 			DoubleMatrixDataset<String, String> U,
 			DoubleMatrixDataset<String, String> L,
-			List<int[]> blockDiagonalIndices,
+			final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndices,
 			double percentageOfVariance,
 			boolean fitIntercept,
 			boolean regressCovariates,
@@ -300,7 +300,7 @@ public class DownstreamerRegressionEngine {
 			final DoubleMatrixDataset<String, String> C,
 			final DoubleMatrixDataset<String, String> U,
 			final DoubleMatrixDataset<String, String> L,
-			final List<int[]> blockDiagonalIndices,
+			final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndices,
 			final boolean fitIntercept,
 			final boolean regressCovariates,
 			final boolean useJblas) {
@@ -346,7 +346,7 @@ public class DownstreamerRegressionEngine {
 		}
 
 		// Pre-transpose U as this can be re-used as well
-		DoubleMatrix2D UHatT = transpose(U.getMatrix());
+		DoubleMatrixDataset<String, String> UHatT = U.viewDice();
 		//UHatT = DoubleFactory2D.sparse.make(UHatT.toArray());
 
 		// Calculate inverse of eigenvalues
@@ -374,16 +374,16 @@ public class DownstreamerRegressionEngine {
 		final int degreesOfFreedom = degreesOfFreedomTmp;
 
 		// Pre calculate predictors and covariates in eigenvectors space.
-		final DoubleMatrix2D XhatCache;
-		final DoubleMatrix2D ChatCache;
+		final DoubleMatrixDataset XhatCache;
+		final DoubleMatrixDataset ChatCache;
 
 		// Pre-calculate XHat and Xhat in a block diagonal way, or using full matrix mult.
 		if (blockDiagonalIndices != null) {
 			logInfoMem("Precomputing XHat and CHat");
-			XhatCache = blockDiagonalMult(UHatT, X.getMatrix(), blockDiagonalIndices, useJblas);
+			XhatCache = blockDiagonalMult(UHatT, X, blockDiagonalIndices, useJblas);
 
 			if (C != null) {
-				ChatCache = blockDiagonalMult(UHatT, C.getMatrix(), blockDiagonalIndices, useJblas);
+				ChatCache = blockDiagonalMult(UHatT, C, blockDiagonalIndices, useJblas);
 			} else {
 				ChatCache = null;
 			}
@@ -391,14 +391,14 @@ public class DownstreamerRegressionEngine {
 		} else {
 			XhatCache = null;
 			if (C != null) {
-				ChatCache = mult(UHatT, C.getMatrix());
+				ChatCache = new DoubleMatrixDataset(mult(UHatT.getMatrix(), C.getMatrix()));
 			} else {
 				ChatCache = null;
 			}
 		}
 		
 		try {
-			new DoubleMatrixDataset<String, String>(XhatCache, U.getHashCols(), X.getHashColsCopy()).save(new File(debugFolder, "XhatCache.txt"));
+			XhatCache.save(new File(debugFolder, "XhatCache.txt"));
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -415,11 +415,11 @@ public class DownstreamerRegressionEngine {
 
 			// Keep track of current covariates, if these are used to regress need to keep ChatCache.
 			// but curCovariates can be set to null
-			DoubleMatrix2D curCovariates = ChatCache;
+			DoubleMatrixDataset<String, String> curCovariates = ChatCache;
 			List<String> curPredictorNames = predictorNames;
 
 			// Pre-compute Y^ as this can be re-used
-			final DoubleMatrix2D YHat = mult(UHatT, Y.viewColAsMmatrix(curY));
+			final DoubleMatrix2D YHat = mult(UHatT.getMatrix(), Y.viewColAsMmatrix(curY));
 			
 			if(curY == 0){
 			try {
@@ -431,7 +431,7 @@ public class DownstreamerRegressionEngine {
 
 			// Instead of including covariates in the model, first regress their effects
 			if (regressCovariates) {
-				inplaceDownstreamerRegressionResidualsPrecomp(YHat, ChatCache, LHatInv);
+				inplaceDownstreamerRegressionResidualsPrecomp(YHat, ChatCache.getMatrix(), LHatInv);
 
 				// Set covariates to null so they are not used for the rest of the regression
 				curCovariates = null;
@@ -450,14 +450,14 @@ public class DownstreamerRegressionEngine {
 				// Get the current pathway, if not pre-multiplied by eigenvectors, do so now.
 				DoubleMatrix2D XCur;
 				if (XhatCache == null) {
-					XCur = mult(UHatT, X.viewColAsMmatrix(curPathway));
+					XCur = mult(UHatT.getMatrix(), X.viewColAsMmatrix(curPathway));
 				} else {
-					XCur = XhatCache.viewSelection(null, new int[]{curPathway});
+					XCur = XhatCache.getMatrix().viewSelection(null, new int[]{curPathway});
 				}
 
 				// If covariates are provided add them to the design matrix
 				if (curCovariates != null) {
-					XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache);
+					XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache.getMatrix());
 				}
 
 				double[] curRes = downstreamerRegressionPrecomp(XCur,
@@ -996,14 +996,7 @@ public class DownstreamerRegressionEngine {
 	 * @return
 	 */
 	private static DoubleMatrix toJblasDoubleMatrix(DoubleMatrixDataset A) {
-		DoubleMatrix output = new DoubleMatrix(A.rows(), A.columns());
-
-		for (int i = 0; i < A.rows(); i++) {
-			for (int j = 0; j < A.columns(); j++) {
-				output.put(i, j, A.getElementQuick(i, j));
-			}
-		}
-		return output;
+		return(toJblasDoubleMatrix(A.getMatrix()));
 	}
 
 	/**
@@ -1044,11 +1037,11 @@ public class DownstreamerRegressionEngine {
 	 * @param useJblas
 	 * @return
 	 */
-	private static DoubleMatrix2D blockDiagonalMult(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index, boolean useJblas) {
+	private static DoubleMatrixDataset<String, String> blockDiagonalMult(DoubleMatrixDataset<String, String> A, DoubleMatrixDataset<String, String> B, final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndices, boolean useJblas) {
 		if (useJblas) {
-			return multBlockDiagonalSubsetPerColJblas(A, B, index);
+			return multBlockDiagonalSubsetPerColJblas(A, B, blockDiagonalIndices);
 		} else {
-			return multBlockDiagonalSubsetPerColPcolt(A, B, index);
+			return multBlockDiagonalSubsetPerColPcolt(A, B, blockDiagonalIndices);
 		}
 	}
 
@@ -1072,20 +1065,28 @@ public class DownstreamerRegressionEngine {
 	 * @param index
 	 * @return
 	 */
-	private static DoubleMatrix2D multBlockDiagonalSubsetPerColJblas(DoubleMatrix2D Ac, DoubleMatrix2D Bc, List<int[]> index) {
+	private static DoubleMatrixDataset<String, String> multBlockDiagonalSubsetPerColJblas(final DoubleMatrixDataset<String, String> Ac, final DoubleMatrixDataset<String, String> Bc, final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndices) {
 
-		DoubleMatrix2D C = DoubleFactory2D.dense.make(Ac.rows(), Bc.columns());
-		ProgressBar pb = new ProgressBar("Multiplying per block", Bc.columns() * index.size(), ProgressBarStyle.ASCII);
+		final DoubleMatrixDataset C = new DoubleMatrixDataset(Ac.getRowObjects(), Bc.getColObjects());//DoubleFactory2D.dense.make(Ac.rows(), Bc.columns());
+		
+		final int nrBlocks = blockDiagonalIndices.size();
+		ProgressBar pb = new ProgressBar("Multiplying per block", Bc.columns() * nrBlocks, ProgressBarStyle.ASCII);
 
-		DoubleMatrix[] Acache = new DoubleMatrix[index.size()];
-		DoubleMatrix[] Bcache = new DoubleMatrix[index.size()];
+		
+		final DoubleMatrix[] Acache = new DoubleMatrix[nrBlocks];
+		final DoubleMatrix[] Bcache = new DoubleMatrix[nrBlocks];
 
-		int[][] AcacheIndices = new int[index.size()][];
+		int[][] AcacheIndices = new int[nrBlocks][];
 
+		final ArrayList<String> blocks = new ArrayList(blockDiagonalIndices.keySet());
+		
 		// Compile the subset caches. Precomputing saves overhead, but is more memory intense.
-		for (int i = 0; i < index.size(); i++) {
+		for (int i = 0; i < nrBlocks; i++) {
+			
+			final ArrayList<String> blockGenes = blockDiagonalIndices.get(blocks.get(i));
+			
 			//Acache[i] = new DoubleMatrix(Ac.viewSelection(null, index.get(i)).toArray());
-			Acache[i] = toJblasDoubleMatrix(Ac.viewSelection(null, index.get(i)));
+			Acache[i] = toJblasDoubleMatrix(Ac.viewColSelection(blockGenes));
 			DoubleMatrix tmp = Acache[i].rowSums();
 			ArrayList<Integer> tmpIndices = new ArrayList<>();
 			for (int j = 0; j < tmp.rows; j++) {
@@ -1096,20 +1097,20 @@ public class DownstreamerRegressionEngine {
 
 			AcacheIndices[i] = tmpIndices.stream().mapToInt(p -> p).toArray();
 			Acache[i] = Acache[i].getRows(AcacheIndices[i]);
-			Bcache[i] = new DoubleMatrix(Bc.viewSelection(index.get(i), null).toArray());
+			Bcache[i] = new DoubleMatrix(Bc.viewRowSelection(blockGenes).getMatrix().toArray());
 		}
 
 		// Perform per block multiplication
-		for (int i = 0; i < index.size(); i++) {
+		for (int i = 0; i < nrBlocks; i++) {
 			// Re-cyle temorary results matrix
 			DoubleMatrix Ctmp = new DoubleMatrix(Acache[i].rows, 1);
-
+			int[] AcacheIndicesBlock = AcacheIndices[i];
 			for (int col = 0; col < Bc.columns(); col++) {
 				// Jblas multiplication
 				Acache[i].mmuli(Bcache[i].getColumn(col), Ctmp);
 				for (int j = 0; j < Ctmp.rows; j++) {
-					int idx = AcacheIndices[i][j];
-					C.setQuick(idx, col, C.getQuick(idx, col) + Ctmp.get(j, 0));
+					int idx = AcacheIndicesBlock[j];
+					C.setElementQuick(idx, col, C.getElementQuick(idx, col) + Ctmp.get(j, 0));
 				}
 				pb.step();
 			}
@@ -1137,20 +1138,27 @@ public class DownstreamerRegressionEngine {
 	 * @param index
 	 * @return
 	 */
-	private static DoubleMatrix2D multBlockDiagonalSubsetPerColPcolt(DoubleMatrix2D A, DoubleMatrix2D B, List<int[]> index) {
+	private static DoubleMatrixDataset<String, String> multBlockDiagonalSubsetPerColPcolt(final DoubleMatrixDataset<String, String> A, final DoubleMatrixDataset<String, String> B, final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndices) {
 
-		DoubleMatrix2D C = DoubleFactory2D.dense.make(A.rows(), B.columns());
+		final DoubleMatrixDataset C = new DoubleMatrixDataset(A.getRowObjects(), B.getColObjects());
+				
+		final int nrBlocks = blockDiagonalIndices.size();
+		
+		ProgressBar pb = new ProgressBar("Multiplying per block", B.columns() * nrBlocks, ProgressBarStyle.ASCII);
 
-		ProgressBar pb = new ProgressBar("Multiplying per block", B.columns() * index.size(), ProgressBarStyle.ASCII);
+		DoubleMatrix2D[] Acache = new DoubleMatrix2D[nrBlocks];
+		DoubleMatrix2D[] Bcache = new DoubleMatrix2D[nrBlocks];
 
-		DoubleMatrix2D[] Acache = new DoubleMatrix2D[index.size()];
-		DoubleMatrix2D[] Bcache = new DoubleMatrix2D[index.size()];
+		int[][] AcacheIndices = new int[nrBlocks][];
 
-		int[][] AcacheIndices = new int[index.size()][];
-
+		final ArrayList<String> blocks = new ArrayList(blockDiagonalIndices.keySet());
+		
 		// Compile the subset caches. Precomputing saves overhead. Views are returned so is memory efficient.
-		for (int i = 0; i < index.size(); i++) {
-			Acache[i] = A.viewSelection(null, index.get(i));
+		for (int i = 0; i < nrBlocks; i++) {
+			
+			final ArrayList<String> blockGenes = blockDiagonalIndices.get(blocks.get(i));
+			
+			Acache[i] = A.viewSelection(null, blockGenes).getMatrix();
 			ArrayList<Integer> tmpIndices = new ArrayList<>();
 
 			for (int j = 0; j < A.rows(); j++) {
@@ -1162,11 +1170,11 @@ public class DownstreamerRegressionEngine {
 
 			AcacheIndices[i] = tmpIndices.stream().mapToInt(p -> p).toArray();
 			Acache[i] = Acache[i].viewSelection(AcacheIndices[i], null);
-			Bcache[i] = B.viewSelection(index.get(i), null);
+			Bcache[i] = B.viewSelection(blockGenes, null).getMatrix();
 		}
 
 		// Perform per block multiplication
-		for (int i = 0; i < index.size(); i++) {
+		for (int i = 0; i < nrBlocks; i++) {
 			// Re-cyle temorary results matrix
 			DoubleMatrix2D Ctmp = DoubleFactory2D.dense.make(Acache[i].rows(), 1);
 
@@ -1175,7 +1183,7 @@ public class DownstreamerRegressionEngine {
 				Acache[i].zMult(Bcache[i].viewSelection(null, new int[]{col}), Ctmp);
 				for (int j = 0; j < Ctmp.rows(); j++) {
 					int idx = AcacheIndices[i][j];
-					C.setQuick(idx, col, C.getQuick(idx, col) + Ctmp.get(j, 0));
+					C.setElementQuick(idx, col, C.getElementQuick(idx, col) + Ctmp.get(j, 0));
 				}
 				pb.step();
 			}
