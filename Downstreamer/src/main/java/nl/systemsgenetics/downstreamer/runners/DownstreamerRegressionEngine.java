@@ -7,6 +7,7 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
 import cern.jet.math.tdouble.DoubleFunctions;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TObjectIntMap;
@@ -38,6 +39,7 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.stream.IntStream;
 import me.tongfei.progressbar.ProgressBarStyle;
+import static nl.systemsgenetics.downstreamer.runners.DownstreamerEnrichment.inplacePvalueToZscore;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsBase;
 
 public class DownstreamerRegressionEngine {
@@ -46,6 +48,8 @@ public class DownstreamerRegressionEngine {
 
 	public static final String MAIN_EFFECT_COL_NAME = "main_effect";
 	public static final String INTERCEPT_COL_NAME = "intercept";
+
+	static File debugFolder;
 
 	// Vector functions
 	public static final DoubleDoubleFunction minus = (a, b) -> a - b;
@@ -64,6 +68,8 @@ public class DownstreamerRegressionEngine {
 		// Keep track of overlapping rows
 		LinkedHashSet<String> overlappingRows = new LinkedHashSet<>(X.getRowObjects());
 		overlappingRows.retainAll(Y.getRowObjects());
+
+		inplacePvalueToZscore(Y);
 
 		// Covariates
 		DoubleMatrixDataset<String, String> C = null;
@@ -226,17 +232,17 @@ public class DownstreamerRegressionEngine {
 			}
 		}
 
-//		output = performDownstreamerRegression(X, Y, C, U, L,
-//				blockDiagonalIndices,
-//				options.getPercentageOfVariance(),
-//				options.fitIntercept(),
-//				options.regressCovariates(),
-//				options.useJblas());
-//
-//		// Save linear regression results
-//		for (LinearRegressionResult curRes : output) {
-//			curRes.save(options.getOutputBasePath() + "_" + curRes.getName(), false);
-//		}
+		output = performDownstreamerRegression(X, Y, C, U, L,
+				blockDiagonalIndices2,
+				options.getPercentageOfVariance(),
+				options.fitIntercept(),
+				options.regressCovariates(),
+				options.useJblas());
+
+		// Save linear regression results
+		for (LinearRegressionResult curRes : output) {
+			curRes.save(options.getOutputBasePath() + "_" + curRes.getName(), false);
+		}
 	}
 
 	/**
@@ -305,7 +311,7 @@ public class DownstreamerRegressionEngine {
 			final boolean regressCovariates,
 			final boolean useJblas) {
 
-		File debugFolder = OptionsBase.getDebugFolder();
+		debugFolder = OptionsBase.getDebugFolder();
 
 		try {
 			X.save(new File(debugFolder, "X.txt"));
@@ -396,13 +402,14 @@ public class DownstreamerRegressionEngine {
 				ChatCache = null;
 			}
 		}
-		
+
 		try {
-			XhatCache.save(new File(debugFolder, "XhatCache.txt"));
+			if (XhatCache != null) {
+				XhatCache.save(new File(debugFolder, "XhatCache.txt"));
+			}
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
-		
 
 		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns(), ProgressBarStyle.ASCII);
 
@@ -420,17 +427,18 @@ public class DownstreamerRegressionEngine {
 
 			// Pre-compute Y^ as this can be re-used
 			final DoubleMatrix2D YHat = mult(UHatT.getMatrix(), Y.viewColAsMmatrix(curY));
-			
-			if(curY == 0){
-			try {
-				new DoubleMatrixDataset<String, String>(YHat).save(new File(debugFolder, "YHat.txt"));
-			} catch (IOException ex) {
-				throw new RuntimeException(ex);
-			}
+
+			if (curY == 0) {
+				try {
+					new DoubleMatrixDataset<String, String>(YHat).save(new File(debugFolder, "YHat.txt"));
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
 			}
 
 			// Instead of including covariates in the model, first regress their effects
 			if (regressCovariates) {
+
 				inplaceDownstreamerRegressionResidualsPrecomp(YHat, ChatCache.getMatrix(), LHatInv);
 
 				// Set covariates to null so they are not used for the rest of the regression
@@ -460,10 +468,25 @@ public class DownstreamerRegressionEngine {
 					XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache.getMatrix());
 				}
 
-				double[] curRes = downstreamerRegressionPrecomp(XCur,
-						YHat,
-						LHatInv,
-						fitIntercept);
+				if (curPathway == 0) {
+					try {
+						new DoubleMatrixDataset(XCur).save(new File(debugFolder, "XCur.txt"));
+					} catch (IOException ex) {
+						throw new RuntimeException(ex);
+					}
+				}
+
+				double[] curRes;
+				try {
+
+					curRes = downstreamerRegressionPrecomp(XCur,
+							YHat,
+							LHatInv,
+							fitIntercept);
+
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
 
 				result.appendBetas(curPathway, ArrayUtils.subarray(curRes, 0, curRes.length / 2));
 				result.appendSe(curPathway, ArrayUtils.subarray(curRes, curRes.length / 2, curRes.length));
@@ -500,7 +523,7 @@ public class DownstreamerRegressionEngine {
 	 * @return double[] with beta and standard erros in the form [beta_1, beta_2
 	 * ... beta_x, se_1, se_2 ... se_x]
 	 */
-	private static double[] downstreamerRegressionPrecomp(DoubleMatrix2D XHat, DoubleMatrix2D YHat, DoubleMatrix1D LHatInv, boolean fitIntercept) {
+	private static double[] downstreamerRegressionPrecomp(DoubleMatrix2D XHat, DoubleMatrix2D YHat, DoubleMatrix1D LHatInv, boolean fitIntercept) throws IOException {
 
 		// TODO: DoubleMatrix2D
 		double[] results = new double[XHat.columns() * 2];
@@ -520,8 +543,15 @@ public class DownstreamerRegressionEngine {
 		//DoubleMatrix2D a = mult(tmult(YHat, LHatInv), XHat);
 		//DoubleMatrix2D b = inverse(mult(tmult(XHat, LHatInv), XHat));
 		// Alternative for YHat %*% LHatInv, bit quicker
+//		new DoubleMatrixDataset(YHat).save(new File(debugFolder, "YHat_2.txt"));
+//		new DoubleMatrixDataset(LHatInv.reshape(1, (int) LHatInv.size())).save(new File(debugFolder, "LHatInv_2.txt"));
+//		new DoubleMatrixDataset(XHat).save(new File(debugFolder, "XHat_2.txt"));
+
 		DoubleMatrix2D a = mult(transpose(multDiag(YHat, LHatInv)), XHat);
 //		
+
+//		new DoubleMatrixDataset(a).save(new File(debugFolder, "a.txt"));
+
 //		LOGGER.debug("XHat " + XHat.toStringShort());
 //		LOGGER.debug(XHat.toString());
 //		LOGGER.debug("LHatInv " + LHatInv.toStringShort());
@@ -531,8 +561,10 @@ public class DownstreamerRegressionEngine {
 //		DoubleMatrix2D test = mult(transpose(multDiag(XHat, LHatInv)), XHat);
 //		LOGGER.debug(test.toString());
 //		
-
 		DoubleMatrix2D b = inverse(mult(transpose(multDiag(XHat, LHatInv)), XHat));
+
+//		new DoubleMatrixDataset(b).save(new File(debugFolder, "b.txt"));
+
 		DoubleMatrix2D beta = mult(a, b);
 
 		//-----------------------------------------------------------------------------------------
@@ -823,7 +855,7 @@ public class DownstreamerRegressionEngine {
 				for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
 
 					int colIndex = columnIndexStartOfBlock.get(block.getKey());
-					
+
 					final DoubleMatrix curMatrix = toJblasDoubleMatrix(provider.viewBlock(block.getKey(), block.getValue()).getMatrix());
 					final DoubleMatrix[] eigen = Eigen.symmetricEigenvectors(curMatrix);
 
@@ -837,7 +869,7 @@ public class DownstreamerRegressionEngine {
 						}
 						colIndex++;
 					}
-					
+
 					pb.step();
 				}
 
@@ -996,7 +1028,7 @@ public class DownstreamerRegressionEngine {
 	 * @return
 	 */
 	private static DoubleMatrix toJblasDoubleMatrix(DoubleMatrixDataset A) {
-		return(toJblasDoubleMatrix(A.getMatrix()));
+		return (toJblasDoubleMatrix(A.getMatrix()));
 	}
 
 	/**
@@ -1068,23 +1100,22 @@ public class DownstreamerRegressionEngine {
 	private static DoubleMatrixDataset<String, String> multBlockDiagonalSubsetPerColJblas(final DoubleMatrixDataset<String, String> Ac, final DoubleMatrixDataset<String, String> Bc, final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndices) {
 
 		final DoubleMatrixDataset C = new DoubleMatrixDataset(Ac.getRowObjects(), Bc.getColObjects());//DoubleFactory2D.dense.make(Ac.rows(), Bc.columns());
-		
+
 		final int nrBlocks = blockDiagonalIndices.size();
 		ProgressBar pb = new ProgressBar("Multiplying per block", Bc.columns() * nrBlocks, ProgressBarStyle.ASCII);
 
-		
 		final DoubleMatrix[] Acache = new DoubleMatrix[nrBlocks];
 		final DoubleMatrix[] Bcache = new DoubleMatrix[nrBlocks];
 
 		int[][] AcacheIndices = new int[nrBlocks][];
 
 		final ArrayList<String> blocks = new ArrayList(blockDiagonalIndices.keySet());
-		
+
 		// Compile the subset caches. Precomputing saves overhead, but is more memory intense.
 		for (int i = 0; i < nrBlocks; i++) {
-			
+
 			final ArrayList<String> blockGenes = blockDiagonalIndices.get(blocks.get(i));
-			
+
 			//Acache[i] = new DoubleMatrix(Ac.viewSelection(null, index.get(i)).toArray());
 			Acache[i] = toJblasDoubleMatrix(Ac.viewColSelection(blockGenes));
 			DoubleMatrix tmp = Acache[i].rowSums();
@@ -1141,9 +1172,9 @@ public class DownstreamerRegressionEngine {
 	private static DoubleMatrixDataset<String, String> multBlockDiagonalSubsetPerColPcolt(final DoubleMatrixDataset<String, String> A, final DoubleMatrixDataset<String, String> B, final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndices) {
 
 		final DoubleMatrixDataset C = new DoubleMatrixDataset(A.getRowObjects(), B.getColObjects());
-				
+
 		final int nrBlocks = blockDiagonalIndices.size();
-		
+
 		ProgressBar pb = new ProgressBar("Multiplying per block", B.columns() * nrBlocks, ProgressBarStyle.ASCII);
 
 		DoubleMatrix2D[] Acache = new DoubleMatrix2D[nrBlocks];
@@ -1152,13 +1183,13 @@ public class DownstreamerRegressionEngine {
 		int[][] AcacheIndices = new int[nrBlocks][];
 
 		final ArrayList<String> blocks = new ArrayList(blockDiagonalIndices.keySet());
-		
+
 		// Compile the subset caches. Precomputing saves overhead. Views are returned so is memory efficient.
 		for (int i = 0; i < nrBlocks; i++) {
-			
+
 			final ArrayList<String> blockGenes = blockDiagonalIndices.get(blocks.get(i));
-			
-			Acache[i] = A.viewSelection(null, blockGenes).getMatrix();
+
+			Acache[i] = A.viewColSelection(blockGenes).getMatrix();
 			ArrayList<Integer> tmpIndices = new ArrayList<>();
 
 			for (int j = 0; j < A.rows(); j++) {
@@ -1170,7 +1201,7 @@ public class DownstreamerRegressionEngine {
 
 			AcacheIndices[i] = tmpIndices.stream().mapToInt(p -> p).toArray();
 			Acache[i] = Acache[i].viewSelection(AcacheIndices[i], null);
-			Bcache[i] = B.viewSelection(blockGenes, null).getMatrix();
+			Bcache[i] = B.viewRowSelection(blockGenes).getMatrix();
 		}
 
 		// Perform per block multiplication

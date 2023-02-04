@@ -49,6 +49,9 @@ public class DownstreamerEnrichment {
 
 	private static final Logger LOGGER = LogManager.getLogger(DownstreamerEnrichment.class);
 	private static final String GENE_LENGTH_COL_NAME = "GeneLengths";
+	
+	//Only set in the case of unit test mode so that the test class can access it. 
+	private static LinearRegressionResult firstRestult;
 
 	public static DownstreamerStep2Results enrichmentAnalysis(OptionsModeEnrichment options) throws Exception {
 
@@ -262,12 +265,22 @@ public class DownstreamerEnrichment {
 
 			//final List<int[]> blockDiagonalIndices = DownstreamerRegressionEngine.createBlockDiagonalIndexFromGenes(chrArmGeneMap, genesOverlappingWithPathwayDatabase);
 			final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndicesForEigen = createBlockDiagonalIndexFromGenes2(chrArmGeneMap, genesOverlappingWithPathwayDatabase);
+			
+//			for(Map.Entry<String, ArrayList<String>> x : blockDiagonalIndicesForEigen.entrySet()){
+//				System.out.println(x.getKey() + " " + x.getValue().size());
+//			}
+//			
 
 			//Do eigen decompose on the gene-gene correlation matrices
 			//eigen[0] L = eigen values
 			//eigen[1] U = eigen vectors
 			final DoubleMatrixDataset<String, String>[] eigen = blockDiagonalEigenDecomposition(genesOverlappingWithPathwayDatabase, geneCorLoader, blockDiagonalIndicesForEigen, options.isJblas());
 
+			
+			
+			eigen[0] = DoubleMatrixDataset.loadDoubleData("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\test\\resources\\random\\genecor_eigenvalues.txt");
+			eigen[1] = DoubleMatrixDataset.loadDoubleData("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\test\\resources\\random\\genecor_eigenvectors.txt");
+			
 			//list contains traits
 			final List<LinearRegressionResult> pathwayRegeressionResults = DownstreamerRegressionEngine.performDownstreamerRegression(
 					pathwayData,
@@ -278,6 +291,10 @@ public class DownstreamerEnrichment {
 			final DoubleMatrixDataset<String, String> pathwayPvalues;
 			final DoubleMatrixDataset<String, String> pathwayQvalues;
 			final DoubleMatrixDataset<String, String> pathwayBetas;
+			
+			if(options.isUnitTestMode()){
+				firstRestult = pathwayRegeressionResults.get(0);
+			}
 
 			if (pathwayDatabase.isEigenvectors()) {
 				//Enrichment on eigenvectors with intent to gene reconstruction using significant eigen vectors
@@ -433,7 +450,7 @@ public class DownstreamerEnrichment {
 
 	}
 
-	private static void inplacePvalueToZscore(DoubleMatrixDataset dataset) {
+	public static void inplacePvalueToZscore(DoubleMatrixDataset dataset) {
 		final DoubleMatrix2D matrix = dataset.getMatrix();
 
 		// Inplace convert gene p-values to z-scores
@@ -472,5 +489,16 @@ public class DownstreamerEnrichment {
 		return newDataset;
 
 	}
+
+	/**
+	 * Only to be used for unit testing
+	 * 
+	 * @return 
+	 */
+	protected static LinearRegressionResult getFirstRestult() {
+		return firstRestult;
+	}
+	
+	
 
 }

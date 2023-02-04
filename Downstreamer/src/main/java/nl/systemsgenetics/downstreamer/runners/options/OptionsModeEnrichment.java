@@ -51,6 +51,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 	private final boolean excludeHla;
 	private final boolean skipPvalueToZscore;
 	private final String geneGeneCorrelationPrefix;
+	private final boolean unitTestMode;//only set true for unit testing
 
 	static {
 
@@ -153,8 +154,9 @@ public class OptionsModeEnrichment extends OptionsBase {
 	 * @param mode
 	 * @param debugMode
 	 * @param jblas
+	 * @param unitTestMode
 	 */
-	public OptionsModeEnrichment(File covariates, List<PathwayDatabase> pathwayDatabases, boolean forceNormalGenePvalues, boolean forceNormalPathwayPvalues, boolean regressGeneLengths, File geneInfoFile, File singleGwasFile, String gwasPvalueMatrixPath, boolean excludeHla, boolean skipPvalueToZscore, String geneGeneCorrelationPrefix, int numberOfThreadsToUse, File outputBasePath, File logFile, DownstreamerMode mode, boolean debugMode, boolean jblas) {
+	public OptionsModeEnrichment(File covariates, List<PathwayDatabase> pathwayDatabases, boolean forceNormalGenePvalues, boolean forceNormalPathwayPvalues, boolean regressGeneLengths, File geneInfoFile, File singleGwasFile, String gwasPvalueMatrixPath, boolean excludeHla, boolean skipPvalueToZscore, String geneGeneCorrelationPrefix, int numberOfThreadsToUse, File outputBasePath, File logFile, DownstreamerMode mode, boolean debugMode, boolean jblas, boolean unitTestMode) {
 		super(numberOfThreadsToUse, outputBasePath, logFile, mode, debugMode, jblas);
 		this.covariates = covariates;
 		this.pathwayDatabases = pathwayDatabases;
@@ -167,10 +169,13 @@ public class OptionsModeEnrichment extends OptionsBase {
 		this.excludeHla = excludeHla;
 		this.skipPvalueToZscore = skipPvalueToZscore;
 		this.geneGeneCorrelationPrefix = geneGeneCorrelationPrefix;
+		this.unitTestMode = unitTestMode;
 	}
 
 	public OptionsModeEnrichment(String[] args) throws ParseException, IOException {
 		super(args);
+		
+		unitTestMode = false;
 
 		// Parse arguments
 		final CommandLineParser parser = new PosixParser();
@@ -367,6 +372,10 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 	public String getGeneGeneCorrelationPrefix() {
 		return geneGeneCorrelationPrefix;
+	}
+
+	public boolean isUnitTestMode() {
+		return unitTestMode;
 	}
 
 }

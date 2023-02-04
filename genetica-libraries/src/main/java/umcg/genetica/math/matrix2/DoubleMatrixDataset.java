@@ -206,7 +206,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 			return new DoubleMatrixDatasetRowCompressedReader(fileName).loadFullDataset();
 		} else {
 			//old readers
-			if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz"))) {
+			if ((fileName.endsWith(".txt") || fileName.endsWith(".tsv") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv.gz"))) {
 				return loadDoubleTextData(fileName, '\t');
 			} else if (fileName.endsWith(".dat") || fileName.endsWith(".dat.gz")) {
 				return loadDoubleBinaryData(fileName);
@@ -265,9 +265,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadDoubleTextData(String fileName, char delimiter) throws IOException, Exception {
-		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv.bgz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct") || fileName.endsWith(".gct.gz"))) {
-			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
-		}
+//		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv.bgz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct") || fileName.endsWith(".gct.gz"))) {
+//			throw new IllegalArgumentException("File type must be \".txt\", \".tsv\" or \".txt.gz\" when delimiter is set. \n Input filename: " + fileName);
+//		}
 
 		return loadSubsetOfTextDoubleData(fileName, delimiter, null, null);
 
@@ -650,9 +650,9 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	}
 
 	public static DoubleMatrixDataset<String, String> loadSubsetOfTextDoubleData(String fileName, char delimiter, Set<String> desiredRows, Set<String> desiredCols, int linesToSkip) throws IOException, Exception {
-		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv.bgz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct") || fileName.endsWith(".gct.gz"))) {
-			throw new IllegalArgumentException("File type must be (gzipped) .txt or .tsv when delimiter is given (given filename: " + fileName + ")");
-		}
+//		if (!(fileName.endsWith(".txt") || fileName.endsWith(".txt.gz") || fileName.endsWith(".tsv.bgz") || fileName.endsWith(".tsv") || fileName.endsWith(".tsv.gz") || fileName.endsWith(".gct") || fileName.endsWith(".gct.gz"))) {
+//			throw new IllegalArgumentException("File type must be (gzipped) .txt or .tsv when delimiter is given (given filename: " + fileName + ")");
+//		}
 
 		//Pattern splitPatern = Pattern.compile(delimiter);
 		int columnOffset = 1;
