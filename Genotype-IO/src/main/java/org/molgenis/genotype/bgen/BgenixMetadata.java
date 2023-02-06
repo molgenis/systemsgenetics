@@ -12,12 +12,12 @@ package org.molgenis.genotype.bgen;
 public class BgenixMetadata {
 	
 	private final String fileName;
-	private final int fileSize;
+	private final long fileSize;
 	private final long lastWriteTime;
 	private final byte[] first1000bytes;
 	private final long indexCreationTime;
 
-	public BgenixMetadata(String fileName, int fileSize, long lastWriteTime, byte[] first1000bytes, long indexCreationTime) {
+	public BgenixMetadata(String fileName, long fileSize, long lastWriteTime, byte[] first1000bytes, long indexCreationTime) {
 		this.fileName = fileName;
 		this.fileSize = fileSize;
 		this.lastWriteTime = lastWriteTime;
@@ -29,7 +29,7 @@ public class BgenixMetadata {
 		return fileName;
 	}
 
-	public int getFileSize() {
+	public long getFileSize() {
 		return fileSize;
 	}
 

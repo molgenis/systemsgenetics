@@ -12,6 +12,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -303,10 +305,11 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 
 		// Add current time in int.
 		// Create and write new metadata.
+		BasicFileAttributes basicFileAttributes = Files.readAttributes(bgenFile.toPath(), BasicFileAttributes.class);
 		BgenixMetadata m = new BgenixMetadata(
 				bgenFile.getName(),
-				(int) bgenFile.length(),
-				(int) (bgenFile.lastModified() / 1000L),
+				basicFileAttributes.size(),
+				basicFileAttributes.lastModifiedTime().toMillis() / 1000L,
 				firstBytes,
 				(System.currentTimeMillis() / 1000L));
 		bgenixWriter.writeMetadata(m);
