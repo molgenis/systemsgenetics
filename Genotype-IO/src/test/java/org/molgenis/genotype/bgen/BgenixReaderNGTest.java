@@ -7,10 +7,8 @@ package org.molgenis.genotype.bgen;
 
 import java.io.File;
 import java.net.URISyntaxException;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
+
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
