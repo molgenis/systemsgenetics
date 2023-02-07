@@ -933,7 +933,7 @@ public class DownstreamerRegressionEngine {
 		}
 
 		// Order according to eigenvalues, large to small
-		orderToEigenvalues(eigenvalues, U, L);
+		U = orderToEigenvalues(eigenvalues, U, L);
 
 		DoubleMatrixDataset<String, String>[] output = new DoubleMatrixDataset[2];
 		output[0] = L;
