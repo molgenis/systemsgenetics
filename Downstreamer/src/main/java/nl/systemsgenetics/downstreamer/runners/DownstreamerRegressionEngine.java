@@ -381,6 +381,11 @@ public class DownstreamerRegressionEngine {
 		if (blockDiagonalIndices != null) {
 			logInfoMem("Precomputing XHat and CHat");
 			XhatCache = blockDiagonalMult(UHatT, X.getMatrix(), blockDiagonalIndices, useJblas);
+			try {
+				new DoubleMatrixDataset<String, String>(XhatCache, U.getHashCols(), X.getHashColsCopy()).save(new File(debugFolder, "XhatCache.txt"));
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
 
 			if (C != null) {
 				ChatCache = blockDiagonalMult(UHatT, C.getMatrix(), blockDiagonalIndices, useJblas);
@@ -396,13 +401,6 @@ public class DownstreamerRegressionEngine {
 				ChatCache = null;
 			}
 		}
-		
-		try {
-			new DoubleMatrixDataset<String, String>(XhatCache, U.getHashCols(), X.getHashColsCopy()).save(new File(debugFolder, "XhatCache.txt"));
-		} catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
-		
 
 		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns(), ProgressBarStyle.ASCII);
 
