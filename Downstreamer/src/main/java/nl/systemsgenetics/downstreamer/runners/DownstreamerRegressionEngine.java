@@ -389,7 +389,6 @@ public class DownstreamerRegressionEngine {
 
 			XhatCache = blockDiagonalMult(UHatT, X, blockDiagonalIndices, useJblas);
 
-
 			if (C != null) {
 				ChatCache = blockDiagonalMult(UHatT, C, blockDiagonalIndices, useJblas);
 			} else {
@@ -412,7 +411,6 @@ public class DownstreamerRegressionEngine {
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
-
 
 		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns(), ProgressBarStyle.ASCII);
 
@@ -549,12 +547,10 @@ public class DownstreamerRegressionEngine {
 //		new DoubleMatrixDataset(YHat).save(new File(debugFolder, "YHat_2.txt"));
 //		new DoubleMatrixDataset(LHatInv.reshape(1, (int) LHatInv.size())).save(new File(debugFolder, "LHatInv_2.txt"));
 //		new DoubleMatrixDataset(XHat).save(new File(debugFolder, "XHat_2.txt"));
-
 		DoubleMatrix2D a = mult(transpose(multDiag(YHat, LHatInv)), XHat);
 //		
 
 //		new DoubleMatrixDataset(a).save(new File(debugFolder, "a.txt"));
-
 //		LOGGER.debug("XHat " + XHat.toStringShort());
 //		LOGGER.debug(XHat.toString());
 //		LOGGER.debug("LHatInv " + LHatInv.toStringShort());
@@ -567,7 +563,6 @@ public class DownstreamerRegressionEngine {
 		DoubleMatrix2D b = inverse(mult(transpose(multDiag(XHat, LHatInv)), XHat));
 
 //		new DoubleMatrixDataset(b).save(new File(debugFolder, "b.txt"));
-
 		DoubleMatrix2D beta = mult(a, b);
 
 		//-----------------------------------------------------------------------------------------
