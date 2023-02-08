@@ -386,7 +386,9 @@ public class DownstreamerRegressionEngine {
 		// Pre-calculate XHat and Xhat in a block diagonal way, or using full matrix mult.
 		if (blockDiagonalIndices != null) {
 			logInfoMem("Precomputing XHat and CHat");
+
 			XhatCache = blockDiagonalMult(UHatT, X, blockDiagonalIndices, useJblas);
+
 
 			if (C != null) {
 				ChatCache = blockDiagonalMult(UHatT, C, blockDiagonalIndices, useJblas);
@@ -410,6 +412,7 @@ public class DownstreamerRegressionEngine {
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
+
 
 		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns(), ProgressBarStyle.ASCII);
 
@@ -967,7 +970,7 @@ public class DownstreamerRegressionEngine {
 		}
 
 		// Order according to eigenvalues, large to small
-		orderToEigenvalues(eigenvalues, U, L);
+		U = orderToEigenvalues(eigenvalues, U, L);
 
 		DoubleMatrixDataset<String, String>[] output = new DoubleMatrixDataset[2];
 		output[0] = L;
