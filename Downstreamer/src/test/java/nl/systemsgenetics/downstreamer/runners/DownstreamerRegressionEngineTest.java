@@ -53,6 +53,13 @@ public class DownstreamerRegressionEngineTest {
 	public void tearDownMethod() throws Exception {
 	}
 
+	@Test
+	public void testBlockDiagonalMult() {
+		
+		
+		
+	}
+	
 	/**
 	 * Test of blockDiagonalEigenDecomposition method, of class
 	 * DownstreamerRegressionEngine.
