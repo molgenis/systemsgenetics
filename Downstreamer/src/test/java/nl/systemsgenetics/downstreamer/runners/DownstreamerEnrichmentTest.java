@@ -62,9 +62,9 @@ public class DownstreamerEnrichmentTest {
 	@Test
 	public void testEnrichmentAnalysis() throws Exception {
 
-		File pathwayFile = new File(this.getClass().getResource("/random/random_pathways.datg").toURI());
-		File genesFile = new File(this.getClass().getResource("/random/genesMatchingTest.txt").toURI());
-		File gwasFile = new File(this.getClass().getResource("/random/random_gwas_incSnpMinP.tsv").toURI());
+		File pathwayFile = new File(this.getClass().getResource("/random/300G_x_pathways.datg").toURI());
+		File genesFile = new File(this.getClass().getResource("/random/300G_gene_info.txt").toURI());
+		File gwasFile = new File(this.getClass().getResource("/random/300G_y_gwas2.txt").toURI());
 		String geneGeneCorrelationPrefix = new File(gwasFile.getParentFile(), "corPerArm").getAbsolutePath() + "/genecor_chr_";
 		
 		File expectedBetaFile = new File(this.getClass().getResource("/random/random_ds2_sigma_x_df_107_betas").toURI());
@@ -95,7 +95,7 @@ public class DownstreamerEnrichmentTest {
 		List<PathwayDatabase> pathwayDatabases = new ArrayList<>();
 		pathwayDatabases.add(new PathwayDatabase("test", pathwayFile.getAbsolutePath(), false));
 
-		OptionsModeEnrichment options = new OptionsModeEnrichment(null, pathwayDatabases, false, false, false, genesFile, gwasFile, null, false, false, geneGeneCorrelationPrefix, 1, outputBasePath, logFile, DownstreamerMode.STEP1, true, true, true);
+		OptionsModeEnrichment options = new OptionsModeEnrichment(null, pathwayDatabases, false, false, false, genesFile, gwasFile, null, false, true, geneGeneCorrelationPrefix, 1, outputBasePath, logFile, DownstreamerMode.STEP1, true, true, true);
 		
 		options.printOptions();
 		

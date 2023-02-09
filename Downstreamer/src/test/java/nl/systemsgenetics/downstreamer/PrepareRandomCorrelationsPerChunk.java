@@ -30,8 +30,8 @@ public class PrepareRandomCorrelationsPerChunk {
 
 	public void run() throws URISyntaxException, Exception {
 		
-		File corFile = new File(this.getClass().getResource("/random/random_true_correlation_matrix.txt.gz").toURI());
-		File genesFile = new File(this.getClass().getResource("/random/genes.txt").toURI());
+		File corFile = new File(this.getClass().getResource("/random/300G_true_correlation_matrix.txt").toURI());
+		File genesFile = new File(this.getClass().getResource("/random/300G_gene_info.txt").toURI());
 		File outputFolder = new File(corFile.getParentFile(),"corPerArm");
 		
 		System.out.println(outputFolder.getAbsolutePath());
