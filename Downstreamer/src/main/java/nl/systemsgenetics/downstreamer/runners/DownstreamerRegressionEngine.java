@@ -49,7 +49,7 @@ public class DownstreamerRegressionEngine {
 	public static final String MAIN_EFFECT_COL_NAME = "main_effect";
 	public static final String INTERCEPT_COL_NAME = "intercept";
 
-	static File debugFolder;
+	//static File debugFolder;
 
 	// Vector functions
 	public static final DoubleDoubleFunction minus = (a, b) -> a - b;
@@ -311,19 +311,19 @@ public class DownstreamerRegressionEngine {
 			final boolean regressCovariates,
 			final boolean useJblas) {
 
-		debugFolder = OptionsBase.getDebugFolder();
-
-		try {
-			X.save(new File(debugFolder, "X.txt"));
-			Y.save(new File(debugFolder, "Y.txt"));
-			if (C != null) {
-				C.save(new File(debugFolder, "C.txt"));
-			}
-			U.save(new File(debugFolder, "U.txt"));
-			L.save(new File(debugFolder, "L.txt"));
-		} catch (IOException ex) {
-			throw new RuntimeException();
-		}
+//		debugFolder = OptionsBase.getDebugFolder();
+//
+//		try {
+//			X.save(new File(debugFolder, "X.txt"));
+//			Y.save(new File(debugFolder, "Y.txt"));
+//			if (C != null) {
+//				C.save(new File(debugFolder, "C.txt"));
+//			}
+//			U.save(new File(debugFolder, "U.txt"));
+//			L.save(new File(debugFolder, "L.txt"));
+//		} catch (IOException ex) {
+//			throw new RuntimeException();
+//		}
 
 		if (X.rows() != Y.rows()) {
 			throw new RuntimeException("Internal error: X and Y should contain equal number of rows");
@@ -338,18 +338,18 @@ public class DownstreamerRegressionEngine {
 			throw new RuntimeException("Internal error: U columns and L rows should be equal");
 		}
 
-		if (!X.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
-			throw new RuntimeException("Internal error: X and Y should contain row elements in same order");
-		}
-		if (!X.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
-			throw new RuntimeException("Internal error: C and Y should contain row elements in same order");
-		}
-		if (!U.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
-			throw new RuntimeException("Internal error: U and Y should contain row elements in same order");
-		}
-		if (!U.getHashCols().keySet().equals(L.getHashRows().keySet())) {
-			throw new RuntimeException("Internal error: U columns and L rows should contain elements in same order");
-		}
+//		if (!X.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
+//			throw new RuntimeException("Internal error: X and Y should contain row elements in same order");
+//		}
+//		if (!X.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
+//			throw new RuntimeException("Internal error: C and Y should contain row elements in same order");
+//		}
+//		if (!U.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
+//			throw new RuntimeException("Internal error: U and Y should contain row elements in same order");
+//		}
+//		if (!U.getHashCols().keySet().equals(L.getHashRows().keySet())) {
+//			throw new RuntimeException("Internal error: U columns and L rows should contain elements in same order");
+//		}
 
 		// Pre-transpose U as this can be re-used as well
 		DoubleMatrixDataset<String, String> UHatT = U.viewDice();
@@ -404,13 +404,13 @@ public class DownstreamerRegressionEngine {
 			}
 		}
 
-		try {
-			if (XhatCache != null) {
-				XhatCache.save(new File(debugFolder, "XhatCache.txt"));
-			}
-		} catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
+//		try {
+//			if (XhatCache != null) {
+//				XhatCache.save(new File(debugFolder, "XhatCache.txt"));
+//			}
+//		} catch (Exception ex) {
+//			throw new RuntimeException(ex);
+//		}
 
 		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns(), ProgressBarStyle.ASCII);
 
@@ -429,13 +429,13 @@ public class DownstreamerRegressionEngine {
 			// Pre-compute Y^ as this can be re-used
 			final DoubleMatrix2D YHat = mult(UHatT.getMatrix(), Y.viewColAsMmatrix(curY));
 
-			if (curY == 0) {
-				try {
-					new DoubleMatrixDataset<String, String>(YHat).save(new File(debugFolder, "YHat.txt"));
-				} catch (IOException ex) {
-					throw new RuntimeException(ex);
-				}
-			}
+//			if (curY == 0) {
+//				try {
+//					new DoubleMatrixDataset<String, String>(YHat).save(new File(debugFolder, "YHat.txt"));
+//				} catch (IOException ex) {
+//					throw new RuntimeException(ex);
+//				}
+//			}
 
 			// Instead of including covariates in the model, first regress their effects
 			if (regressCovariates) {
@@ -469,13 +469,13 @@ public class DownstreamerRegressionEngine {
 					XCur = DoubleFactory2D.dense.appendColumns(XCur, ChatCache.getMatrix());
 				}
 
-				if (curPathway == 0) {
-					try {
-						new DoubleMatrixDataset(XCur).save(new File(debugFolder, "XCur.txt"));
-					} catch (IOException ex) {
-						throw new RuntimeException(ex);
-					}
-				}
+//				if (curPathway == 0) {
+//					try {
+//						new DoubleMatrixDataset(XCur).save(new File(debugFolder, "XCur.txt"));
+//					} catch (IOException ex) {
+//						throw new RuntimeException(ex);
+//					}
+//				}
 
 				double[] curRes;
 				try {
@@ -495,12 +495,12 @@ public class DownstreamerRegressionEngine {
 				pb.step();
 			}
 
-			try {
-				result.getBeta().save(new File(debugFolder, "res_beta.txt"));
-				result.getStandardError().save(new File(debugFolder, "res_se.txt"));
-			} catch (IOException ex) {
-				throw new RuntimeException();
-			}
+//			try {
+//				result.getBeta().save(new File(debugFolder, "res_beta.txt"));
+//				result.getStandardError().save(new File(debugFolder, "res_se.txt"));
+//			} catch (IOException ex) {
+//				throw new RuntimeException();
+//			}
 
 			resultsArray[curY] = result;
 			//results.add(result);
@@ -826,7 +826,7 @@ public class DownstreamerRegressionEngine {
 
 		final IndexedDouble[] eigenvalues = new IndexedDouble[allGenes.size()];
 		List<String> eigenvectorNames = new ArrayList<>(allGenes.size());
-		for (int i = 0; i < allGenes.size(); i++) {
+		for (int i = 1; i <= allGenes.size(); i++) {
 			eigenvectorNames.add("V" + i);
 		}
 		List<String> eigenvalueNames = new ArrayList<>(1);
