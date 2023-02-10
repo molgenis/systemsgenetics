@@ -184,23 +184,22 @@ public class DownstreamerEnrichmentTest {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		Date date = new Date();
 
-		//File tmpOutputFolder = new File(tmpDir, "DownstreamerTest" + dateFormat.format(date));
-		File tmpOutputFolder = new File(tmpDir, "DownstreamerTestWithHla");
+		File tmpOutputFolder = new File(tmpDir, "DownstreamerTest" + dateFormat.format(date));
 
-//		Runtime.getRuntime().addShutdownHook(new Thread() {
-//			@Override
-//			public void run() {
-//				if (tmpOutputFolder.isDirectory()) {
-//					System.out.println("Removing tmp dir and files");
-//					for (File file : tmpOutputFolder.listFiles()) {
-//						System.out.println(" - Deleting: " + file.getAbsolutePath());
-//						file.delete();
-//					}
-//					System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
-//					tmpOutputFolder.delete();
-//				}
-//			}
-//		});
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				if (tmpOutputFolder.isDirectory()) {
+					System.out.println("Removing tmp dir and files");
+					for (File file : tmpOutputFolder.listFiles()) {
+						System.out.println(" - Deleting: " + file.getAbsolutePath());
+						file.delete();
+					}
+					System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
+					tmpOutputFolder.delete();
+				}
+			}
+		});
 		tmpOutputFolder.mkdir();
 
 		return tmpOutputFolder;
