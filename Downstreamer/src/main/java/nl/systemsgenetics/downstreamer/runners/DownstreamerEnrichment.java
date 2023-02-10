@@ -76,8 +76,10 @@ public class DownstreamerEnrichment {
 			// Load GWAS data Cols: genes, pvalue, nSNPs, min SNP p-value
 			DoubleMatrixDataset<String, String> gwasData = DoubleMatrixDataset.loadDoubleData(options.getSingleGwasFile().getAbsolutePath());
 
+			System.out.println(options.getSingleGwasFile().getAbsolutePath());
+			
 			ArrayList<String> colNames = gwasData.getColObjects();
-
+			
 			gwasGeneZscores = gwasData.viewColSelection(colNames.get(0));
 			gwasGeneVarCount = gwasData.viewColSelection(colNames.get(1));
 			gwasGeneMinVarPvalue = gwasData.viewColSelection(colNames.get(2));
@@ -226,6 +228,7 @@ public class DownstreamerEnrichment {
 				gwasGeneZscoreSubset = createColumnForceNormalDuplicate(gwasGeneZscores.viewRowSelection(genesOverlappingWithPathwayDatabase), gwasGeneMinVarPvalue.viewRowSelection(genesOverlappingWithPathwayDatabase));
 			} else {
 				gwasGeneZscoreSubset = gwasGeneZscores.viewRowSelection(genesOverlappingWithPathwayDatabase).duplicate();
+				gwasGeneZscoreSubset.normalizeColumns();
 			}
 			
 
@@ -286,7 +289,7 @@ public class DownstreamerEnrichment {
 					pathwayData,
 					gwasGeneZscoreSubset,
 					covariatesToCorrectGenePvaluesSubset,
-					eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, true, covariatesToCorrectGenePvalues != null, options.isJblas());
+					eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, false, covariatesToCorrectGenePvalues != null, options.isJblas());
 
 			final DoubleMatrixDataset<String, String> pathwayPvalues;
 			final DoubleMatrixDataset<String, String> pathwayQvalues;

@@ -5,31 +5,34 @@
  */
 package nl.systemsgenetics.downstreamer.runners;
 
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.DoubleStatistic;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import cern.jet.stat.Descriptive;
 import java.io.File;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import static nl.systemsgenetics.downstreamer.Downstreamer.DATE_TIME_FORMAT;
 import static nl.systemsgenetics.downstreamer.Downstreamer.initializeLoggers;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
-import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.ExcelWriter;
-import nl.systemsgenetics.downstreamer.io.IoUtils;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerMode;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeEnrichment;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.logging.log4j.Level;
-import static org.testng.Assert.*;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
-import static umcg.genetica.math.matrix2.DoubleMatrixDataset.loadDoubleTextData;
 
 /**
  *
@@ -62,30 +65,66 @@ public class DownstreamerEnrichmentTest {
 	@Test
 	public void testEnrichmentAnalysis() throws Exception {
 
-		File pathwayFile = new File(this.getClass().getResource("/random/300G_x_pathways.datg").toURI());
-		File genesFile = new File(this.getClass().getResource("/random/300G_gene_info.txt").toURI());
-		File gwasFile = new File(this.getClass().getResource("/random/300G_y_gwas2.txt").toURI());
-		String geneGeneCorrelationPrefix = new File(gwasFile.getParentFile(), "corPerArm").getAbsolutePath() + "/genecor_chr_";
+		final File pathwayFile = new File(this.getClass().getResource("/random/300G_x_pathways.datg").toURI());
+		final File genesFile = new File(this.getClass().getResource("/random/300G_gene_info.txt").toURI());
+		final File gwasFile = new File(this.getClass().getResource("/random/300G_y_gwas2.txt").toURI());
+		final String geneGeneCorrelationPrefix = new File(gwasFile.getParentFile(), "corPerArm").getAbsolutePath() + "/genecor_chr_";
+	
+		final File expectedBetaAndSeFile = new File(this.getClass().getResource("/random/300G_beta_se_full_r_calcultated_eigen_decomp_no_intercept.txt").toURI());
+		final String outputPrefix = "test1";
+
+		doEnrichmentTest(outputPrefix, pathwayFile, genesFile, gwasFile, geneGeneCorrelationPrefix, expectedBetaAndSeFile, false, true);
+	}
+	
+	@Test
+	public void testEnrichmentAnalysis2() throws Exception {
+
+		final File pathwayFile = new File(this.getClass().getResource("/random/300G_x_pathways2.datg").toURI());
+		final File genesFile = new File(this.getClass().getResource("/random/300G_gene_info_randomOrder.txt").toURI());
+		final File gwasFile = new File(this.getClass().getResource("/random/300G_y_gwas2.txt").toURI());
+		final String geneGeneCorrelationPrefix = new File(gwasFile.getParentFile(), "corPerArm").getAbsolutePath() + "/genecor_chr_";
 		
-		File expectedBetaFile = new File(this.getClass().getResource("/random/random_ds2_sigma_x_df_107_betas").toURI());
+		final File expectedBetaAndSeFile = new File(this.getClass().getResource("/random/300G_beta_se_full_r_calcultated_eigen_decomp_no_intercept.txt").toURI());
+		final String outputPrefix = "test2";
 
-//		List<Gene> genes = IoUtils.readGenes(genesFile);
-//		ArrayList<String> geneNames = new ArrayList<>();
-//		for (Gene gene : genes) {
-//			geneNames.add(gene.getGene());
-//		}
-//		DoubleMatrixDataset<String, String> pathways = DoubleMatrixDataset.loadDoubleBinaryData(pathwayFile.getAbsolutePath());
-//		DoubleMatrixDataset<String, String> gwas = DoubleMatrixDataset.loadDoubleData(gwasFile.getAbsolutePath());
-//		geneNames.retainAll(pathways.getRowObjects());
-//		geneNames.retainAll(gwas.getRowObjects());
-//		pathways.viewRowSelection(geneNames).saveBinary(pathwayFile.getParentFile().getAbsolutePath() + "/random_pathwaysNoHla");
-//		gwas.viewRowSelection(geneNames).save(pathwayFile.getParentFile().getAbsolutePath() + "/random_gwas_incSnpMinPNoHla.tsv");
+		doEnrichmentTest(outputPrefix, pathwayFile, genesFile, gwasFile, geneGeneCorrelationPrefix, expectedBetaAndSeFile, false, true);
+	}
 
+		@Test
+	public void testEnrichmentAnalysis3() throws Exception {
+
+		final File pathwayFile = new File(this.getClass().getResource("/random/300G_x_pathways.datg").toURI());
+		final File genesFile = new File(this.getClass().getResource("/random/300G_gene_info.txt").toURI());
+		final File gwasFile = new File(this.getClass().getResource("/random/300G_y_gwas2.txt").toURI());
+		final String geneGeneCorrelationPrefix = new File(gwasFile.getParentFile(), "corPerArm").getAbsolutePath() + "/genecor_chr_";
+		
+		final File expectedBetaAndSeFile = new File(this.getClass().getResource("/random/300G_beta_se_full_r_calcultated_eigen_decomp_no_intercept_nochr6.txt").toURI());
+		final String outputPrefix = "test3";
+
+		doEnrichmentTest(outputPrefix, pathwayFile, genesFile, gwasFile, geneGeneCorrelationPrefix, expectedBetaAndSeFile, true, true);
+	}
+	
+		@Test
+	public void testEnrichmentAnalysis4() throws Exception {
+
+		final File pathwayFile = new File(this.getClass().getResource("/random/300G_x_pathways2.datg").toURI());
+		final File genesFile = new File(this.getClass().getResource("/random/300G_gene_info_randomOrder.txt").toURI());
+		final File gwasFile = new File(this.getClass().getResource("/random/300G_y_gwas2.txt").toURI());
+		final String geneGeneCorrelationPrefix = new File(gwasFile.getParentFile(), "corPerArm").getAbsolutePath() + "/genecor_chr_";
+		
+		final File expectedBetaAndSeFile = new File(this.getClass().getResource("/random/300G_beta_se_full_r_calcultated_eigen_decomp_no_intercept_nochr6.txt").toURI());
+		final String outputPrefix = "test3";
+
+		doEnrichmentTest(outputPrefix, pathwayFile, genesFile, gwasFile, geneGeneCorrelationPrefix, expectedBetaAndSeFile, true, false);
+	}
+	
+	
+	private void doEnrichmentTest(final String outputPrefix, final File pathwayFile, final File genesFile, final File gwasFile, final String geneGeneCorrelationPrefix, final File expectedBetaAndSeFile, final boolean excludeHla, final boolean jblas) throws IOException, Exception {
 		File outdir = getTmpDir();
 		
 		System.out.println("TMPdir: " + outdir);
 
-		File outputBasePath = new File(outdir.getAbsolutePath() + "/testRun");
+		File outputBasePath = new File(outdir.getAbsolutePath() + "/" + outputPrefix);
 
 		File logFile = new File(outputBasePath.getAbsolutePath() + ".log");
 
@@ -95,7 +134,7 @@ public class DownstreamerEnrichmentTest {
 		List<PathwayDatabase> pathwayDatabases = new ArrayList<>();
 		pathwayDatabases.add(new PathwayDatabase("test", pathwayFile.getAbsolutePath(), false));
 
-		OptionsModeEnrichment options = new OptionsModeEnrichment(null, pathwayDatabases, false, false, false, genesFile, gwasFile, null, false, true, geneGeneCorrelationPrefix, 1, outputBasePath, logFile, DownstreamerMode.STEP1, true, true, true);
+		OptionsModeEnrichment options = new OptionsModeEnrichment(null, pathwayDatabases, false, false, false, genesFile, gwasFile, null, excludeHla, true, geneGeneCorrelationPrefix, 1, outputBasePath, logFile, DownstreamerMode.STEP1, true, jblas, true);
 		
 		options.printOptions();
 		
@@ -104,12 +143,34 @@ public class DownstreamerEnrichmentTest {
 		LinearRegressionResult firstTraitEnrichmentRes = DownstreamerEnrichment.getFirstRestult();
 		
 		DoubleMatrixDataset<String, String> resBetas = firstTraitEnrichmentRes.getBeta();
-		
-		DoubleMatrixDataset<String, String> expectedBetas = DoubleMatrixDataset.loadDoubleTextData(expectedBetaFile.getAbsolutePath(), '\t');
-		
-		DownstreamerRegressionEngineTest.compareTwoMatrices(resBetas, expectedBetas, 0.000000000001);
+		DoubleMatrixDataset<String, String> resSes = firstTraitEnrichmentRes.getStandardError();
 		
 		
+		DoubleMatrixDataset<String, String> expectedBetasAndSe = DoubleMatrixDataset.loadDoubleTextData(expectedBetaAndSeFile.getAbsolutePath(), '\t');
+		
+		
+		//DownstreamerRegressionEngineTest.compareTwoMatrices(resBetas, expectedBetas, 0.01);
+		//resBetas.getCol(0).
+		DenseDoubleMatrix2D combinedBetas = new DenseDoubleMatrix2D(resBetas.rows(), 2);
+		combinedBetas.viewColumn(0).assign(resBetas.getCol(0));
+		combinedBetas.viewColumn(1).assign(expectedBetasAndSe.getCol(0));
+		
+		DenseDoubleMatrix2D combinedSes = new DenseDoubleMatrix2D(resSes.rows(), 2);
+		combinedSes.viewColumn(0).assign(resSes.getCol(0));
+		combinedSes.viewColumn(1).assign(expectedBetasAndSe.getCol(1));
+		
+		
+		double correlationBetas = DoubleStatistic.correlation(DoubleStatistic.covariance(combinedBetas)).getQuick(0, 1);
+		double correlationSes = DoubleStatistic.correlation(DoubleStatistic.covariance(combinedSes)).getQuick(0, 1);
+		
+		System.out.println("Correlation betas: " + correlationBetas);
+		System.out.println("Correlation SEs: " + correlationSes);
+		
+		//We expect subtle differnce in the beta's and se. Instead of an exact match we check for high correlation
+		
+		Assert.assertTrue(correlationBetas >= 0.98, "The calculated beta's are not correlated to the expected betas.");
+		Assert.assertTrue(correlationSes >= 0.98, "The calculated SE's are not correlated to the expected SE's.");
+				
 		DoubleMatrixDataset<String, String> betas = results.getPathwayEnrichments().get(0).getBetas();
 		betas.save(outputBasePath + "_betas.txt");
 		

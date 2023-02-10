@@ -97,6 +97,8 @@ public class Downstreamer {
 			return;
 		}
 
+		
+		
 		// If the output folder does not exist, create it
 		if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
 			if (!options.getLogFile().getParentFile().mkdirs()) {
@@ -194,72 +196,93 @@ public class Downstreamer {
 
 				// Converter utils that share OptionsModeConvert()
 				case CONVERT_TXT:
+					options.printOptions();
 					DownstreamerConverters.convertTxtToBin(new OptionsModeConvert(args));
 					break;
 				case CONVERT_BIN:
+					options.printOptions();
 					DownstreamerConverters.convertBinToTxt(new OptionsModeConvert(args));
 					break;
 				case CONVERT_MERGE_BIN:
+					options.printOptions();
 					DownstreamerConverters.mergeBinMatrix(new OptionsModeConvert(args));
 					break;
 				case CONVERT_EXP:
+					options.printOptions();
 					DownstreamerConverters.convertExpressionMatrixToBin(new OptionsModeConvert(args));
 					break;
 				case CONVERT_DAT_TO_DATG:
+					options.printOptions();
 					DownstreamerConverters.convertDatToDatg(new OptionsModeConvert(args));
 					break;
 				case CONVERT_GTEX:
+					options.printOptions();
 					DownstreamerConverters.convertGct(new OptionsModeConvert(args));
 					break;
 				case CONVERT_EQTL:
+					options.printOptions();
 					DownstreamerConverters.convertEqtlToBin(new OptionsModeConvert(args));
 					break;
 				case CONVERT_PTOZSCORE:
+					options.printOptions();
 					DownstreamerConverters.convertPvalueToZscore(new OptionsModeConvert(args));
 					break;
 				case PREPARE_GWAS:
+					options.printOptions();
 					DownstreamerConverters.prepareGwasSummaryStatistics(new OptionsModeConvert(args));
 					break;
 				case PREPARE_GWAS_MERGE:
+					options.printOptions();
 					DownstreamerConverters.prepareGwasSummaryStatisticsMerge(new OptionsModeConvert(args));
 					break;
 				case MATRIX_SUBSET:
+					options.printOptions();
 					DownstreamerConverters.subsetMatrix(new OptionsModeConvert(args));
 					break;
 				case MATRIX_TRANSPOSE:
+					options.printOptions();
 					DownstreamerConverters.tranposeBinMatrix(new OptionsModeConvert(args));
 					break;
 
 				// Utilities related to making the co-regulation network. Share OptionsModeCoreg()
 				case COREG_CORRELATE_GENES:
+					options.printOptions();
 					CoregulationUtilities.coregCorrelateGenes(new OptionsModeCoreg(args));
 					break;
 				case COREG_RTOZSCORE:
+					options.printOptions();
 					CoregulationUtilities.coregConvertRtoZscore(new OptionsModeCoreg(args));
 					break;
 				case COREG_PCA:
+					options.printOptions();
 					CoregulationUtilities.coregDoPcaOnBinMatrix(new OptionsModeCoreg(args));
 					break;
 				case COREG_REMOVE_CIS_COEXP:
+					options.printOptions();
 					CoregulationUtilities.coregRemoveLocalGeneCorrelations(new OptionsModeCoreg(args));
 					break;
 				case COREG_INVESTIGATE_NETWORK:
+					options.printOptions();
 					CoregulationUtilities.coregInvestigateNetwork(new OptionsModeCoreg(args));
 					break;
 
 				// Testing utils
 				case TEST_DECOMP:
+					options.printOptions();
 					DownstreamerUtilities.testEigenDecomposition(new OptionsTesting(args));
 					break;
 
 				// Legacy modes, These will be either replaced or substantially updated
 				case CREATE_EXCEL:
+					options.printOptions();
 					DownstreamerUtilities.generateExcelFromIntermediates(new DownstreamerOptionsDeprecated(args));
 					break;
 				case PRIO_GENE_ENRICH:
+					options.printOptions();
 					PathwayDatabaseEnrichments.testPredictionPerformance(new DownstreamerOptionsDeprecated(args));
 					break;
 				case EXPAND_PATHWAYS:
+					options.printOptions();
 					PredictedPathwayAnnotations.expandAnnotations(new DownstreamerOptionsDeprecated(args));
 					break;
 				case STEP1:
