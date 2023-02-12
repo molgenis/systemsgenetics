@@ -49,7 +49,7 @@ public class DownstreamerRegressionEngine {
 	public static final String MAIN_EFFECT_COL_NAME = "main_effect";
 	public static final String INTERCEPT_COL_NAME = "intercept";
 
-	//static File debugFolder;
+	static File debugFolder;
 
 	// Vector functions
 	public static final DoubleDoubleFunction minus = (a, b) -> a - b;
@@ -311,7 +311,7 @@ public class DownstreamerRegressionEngine {
 			final boolean regressCovariates,
 			final boolean useJblas) {
 
-//		debugFolder = OptionsBase.getDebugFolder();
+		debugFolder = OptionsBase.getDebugFolder();
 //
 //		try {
 //			X.save(new File(debugFolder, "X.txt"));
@@ -495,12 +495,22 @@ public class DownstreamerRegressionEngine {
 				pb.step();
 			}
 
-//			try {
-//				result.getBeta().save(new File(debugFolder, "res_beta.txt"));
-//				result.getStandardError().save(new File(debugFolder, "res_se.txt"));
-//			} catch (IOException ex) {
-//				throw new RuntimeException();
-//			}
+			try {
+				
+				DoubleMatrixDataset<String, String> betas = result.getBeta();
+				
+				betas.save(new File(debugFolder, "res_beta.txt"));
+				result.getStandardError().save(new File(debugFolder, "res_se.txt"));
+				
+				DoubleMatrixDataset t = new DoubleMatrixDataset(betas.getRowObjects(), Arrays.asList(new String[]{"T"}));
+				t.getMatrix().viewColumn(0).assign(result.getTstatForMainEffect());
+				t.save(new File(debugFolder, "res_t.txt"));
+				
+				
+				
+			} catch (IOException ex) {
+				throw new RuntimeException();
+			}
 
 			resultsArray[curY] = result;
 			//results.add(result);
@@ -615,9 +625,9 @@ public class DownstreamerRegressionEngine {
 	 */
 	private static void inplaceDownstreamerRegressionResidualsPrecomp(DoubleMatrix2D Y, DoubleMatrix2D X, DoubleMatrix1D LHatInv) {
 
-		LOGGER.debug("Y " + Y.toString());
-		LOGGER.debug("X " + X.toString());
-		LOGGER.debug("LHatInv " + LHatInv.toString());
+//		LOGGER.debug("Y " + Y.toString());
+//		LOGGER.debug("X " + X.toString());
+//		LOGGER.debug("LHatInv " + LHatInv.toString());
 
 		DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X);
 
@@ -841,7 +851,7 @@ public class DownstreamerRegressionEngine {
 		int masterIndex = 0;
 		for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
 			columnIndexStartOfBlock.put(block.getKey(), masterIndex);
-			LOGGER.debug("block" + block.getKey() + " genes: " + block.getValue().size() + " index: " + masterIndex);
+			//LOGGER.debug("block" + block.getKey() + " genes: " + block.getValue().size() + " index: " + masterIndex);
 			masterIndex += block.getValue().size();
 
 		}
