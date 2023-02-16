@@ -127,6 +127,11 @@ public class DownstreamerEnrichment {
 		
 		final BlockPerFileDiagonalDoubleMatrixProvider geneCorLoader = new BlockPerFileDiagonalDoubleMatrixProvider(options.getGeneGeneCorrelationPrefix(), "_correlations");
 		
+		Set<String> genesInCorData = geneCorLoader.getGenes();
+		
+		int genesNotInCovariatesData = 0;
+		int genesNotInCorData = 0;
+		
 		//This loop will create a list of genes that should be selected
 		genes:
 		for (int g = 0; g < gwasGeneZscores.rows(); ++g) {
@@ -148,11 +153,6 @@ public class DownstreamerEnrichment {
 				//if gene is not in list of genes to use, skip
 				continue;
 			}
-			
-			if (covariatesToCorrectGenePvaluesTmp != null && !covariatesToCorrectGenePvaluesTmp.containsRow(gene)){
-				//gene not in covariats so skip
-				continue;
-			}
 
 			for (int c = 0; c < gwasGeneZscores.columns(); ++c) {
 				if (Double.isNaN(gwasGeneZscores.getElementQuick(g, c))) {
@@ -160,14 +160,32 @@ public class DownstreamerEnrichment {
 					continue genes;
 				}
 			}
+			
+			if (covariatesToCorrectGenePvaluesTmp != null && !covariatesToCorrectGenePvaluesTmp.containsRow(gene)){
+				//gene not in covariats so skip
+				genesNotInCovariatesData++;
+				continue;
+			}
+			
+			if(!genesInCorData.contains(gene)){
+				//gene not in gene-gene correlation data
+				genesNotInCorData++;
+				continue;
+			}
 
 			selectedGenes.add(gene);
 
 		}
 		
+		if(genesNotInCorData > 0){
+			LOGGER.info("Genes excluded because the gene was not present in gene-gene correlation data: " + genesNotInCorData);
+		}
 		
+		if(genesNotInCovariatesData > 0){
+			LOGGER.info("Genes excluded because the gene was not present in covariate data: " + genesNotInCovariatesData);
+		}
 		
-		LOGGER.info("GWAS gene found in gene info file and covariate file if provided: " + selectedGenes.size());
+		LOGGER.info("GWAS gene found in gene info: " + selectedGenes.size());
 
 		final double[] geneLengths = new double[selectedGenes.size()];
 		int geneIndex = 0;
