@@ -177,6 +177,8 @@ public class DownstreamerEnrichment {
 
 		}
 		
+		genesInCorData = null;//no longer needed
+		
 		if(genesNotInCorData > 0){
 			LOGGER.info("Genes excluded because the gene was not present in gene-gene correlation data: " + genesNotInCorData);
 		}
