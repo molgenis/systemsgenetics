@@ -117,8 +117,15 @@ public class DownstreamerEnrichment {
 		LOGGER.info("Genes in GWAS data: " + allGwasGenes.size());
 
 		LinkedHashSet<String> selectedGenes = new LinkedHashSet<>();
-
+		
+		
 		final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesTmp = options.getCovariates() == null ? null : DoubleMatrixDataset.loadDoubleData(options.getCovariates().getAbsolutePath());
+		
+		if(options.getCovariates() != null){
+			LOGGER.info("Loaded covariates from: " + options.getCovariates().getAbsolutePath());
+		}
+		
+		final BlockPerFileDiagonalDoubleMatrixProvider geneCorLoader = new BlockPerFileDiagonalDoubleMatrixProvider(options.getGeneGeneCorrelationPrefix(), "_correlations");
 		
 		//This loop will create a list of genes that should be selected
 		genes:
@@ -173,12 +180,8 @@ public class DownstreamerEnrichment {
 
 		// Load optinal covariates
 		final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvalues;
-		if (options.getCovariates() != null) {
+		if (covariatesToCorrectGenePvaluesTmp != null) {
 			
-			if (!covariatesToCorrectGenePvaluesTmp.getHashRows().keySet().containsAll(selectedGenes)) {
-				throw new Exception("Not all genes are found in the covariate file");
-			}
-
 			if (options.isRegressGeneLengths()) {
 
 				final ArrayList<String> allCovariates = new ArrayList<>(covariatesToCorrectGenePvaluesTmp.getHashCols().keySet());
@@ -186,12 +189,18 @@ public class DownstreamerEnrichment {
 
 				covariatesToCorrectGenePvalues = new DoubleMatrixDataset<>(selectedGenes, allCovariates);
 
-				covariatesToCorrectGenePvalues.viewColSelection(covariatesToCorrectGenePvaluesTmp.getHashCols().keySet()).getMatrix().assign(covariatesToCorrectGenePvaluesTmp.viewRowSelectionMatrix(selectedGenes));
+				covariatesToCorrectGenePvalues.viewColSelection(
+						covariatesToCorrectGenePvaluesTmp.getHashCols().keySet()).getMatrix()
+						.assign(covariatesToCorrectGenePvaluesTmp.viewRowSelectionMatrix(selectedGenes));
 
 				covariatesToCorrectGenePvalues.viewCol(GENE_LENGTH_COL_NAME).assign(geneLengths);
 
 			} else {
+				System.out.println("TEST");
+				
 				covariatesToCorrectGenePvalues = covariatesToCorrectGenePvaluesTmp.viewRowSelection(selectedGenes);
+				covariatesToCorrectGenePvalues.printSummary();
+				
 			}
 
 		} else if (options.isRegressGeneLengths()) {
@@ -206,7 +215,7 @@ public class DownstreamerEnrichment {
 		}
 
 		final Map<String, List<Gene>> chrArmGeneMap = IoUtils.readGenesAsChrArmMap(options.getGeneInfoFile());
-		final BlockPerFileDiagonalDoubleMatrixProvider geneCorLoader = new BlockPerFileDiagonalDoubleMatrixProvider(options.getGeneGeneCorrelationPrefix(), "_correlations");
+		
 
 		final ArrayList<PathwayEnrichments> pathwayEnrichments = new ArrayList<>(pathwayDatabases.size());
 
@@ -222,7 +231,11 @@ public class DownstreamerEnrichment {
 			}
 
 			final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesSubset = covariatesToCorrectGenePvalues == null ? null : covariatesToCorrectGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase);
-
+			
+			if(covariatesToCorrectGenePvaluesSubset != null){
+				covariatesToCorrectGenePvaluesSubset.normalizeColumns();
+			}
+			
 			final DoubleMatrixDataset<String, String> gwasGeneZscoreSubset;
 			if (options.isForceNormalGenePvalues()) {
 				gwasGeneZscoreSubset = createColumnForceNormalDuplicate(gwasGeneZscores.viewRowSelection(genesOverlappingWithPathwayDatabase), gwasGeneMinVarPvalue.viewRowSelection(genesOverlappingWithPathwayDatabase));
@@ -289,7 +302,7 @@ public class DownstreamerEnrichment {
 					pathwayData,
 					gwasGeneZscoreSubset,
 					covariatesToCorrectGenePvaluesSubset,
-					eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, false, covariatesToCorrectGenePvalues != null, options.isJblas());
+					eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, false, true, options.isJblas());
 
 			final DoubleMatrixDataset<String, String> pathwayPvalues;
 			final DoubleMatrixDataset<String, String> pathwayQvalues;

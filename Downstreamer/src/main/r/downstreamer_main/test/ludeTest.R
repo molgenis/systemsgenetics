@@ -51,7 +51,7 @@ eigenLude <- as.matrix(table_tmp[,-1])
 rownames(eigenLude) <- table_tmp[,1][[1]]
 
 betasLude <- read.delim(gzfile(paste0(trait,"_intermediates/EigenLude_Enrichment_betasExHla.txt.gz")))
-colnames(betasLude)[2] <- "Beta"
+colnames(betasLude)[2] <- "Betabb"
 
 lude <- merge(dsRes$EigenLude, betasLude, by.x = "Gene.set", by.y = "X.")
 

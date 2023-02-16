@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
@@ -41,6 +42,11 @@ public class PreparePermutations {
 	private static final Logger LOGGER = LogManager.getLogger(PreparePermutations.class);
 
 	public static void run(OptionsModePerparePermutations options) throws IOException {
+
+		if (options.isSpecial()) {
+			convertDs1Permutations(options);
+			return;
+		}
 
 		// Load the genes to run the analysis on
 		final LinkedHashMap<String, List<Gene>> genes = IoUtils.readGenesAsChrMap(options.getGeneInfoFile());
@@ -143,12 +149,12 @@ public class PreparePermutations {
 				LOGGER.info("Chr " + chr + " total genes: " + totalGenes + " genes without NaN values: " + nonNanGeneCount);
 
 				for (Map.Entry<String, ArrayList<String>> armSet : nonNanGenesPerArm.entrySet()) {
-					
-					if(armSet.getValue().isEmpty()){
+
+					if (armSet.getValue().isEmpty()) {
 						LOGGER.info("No genes in: " + armSet.getKey());
 						continue;
 					}
-					
+
 					DoubleMatrixDataset<String, String> chrGenePvaluesArm = chrGenePvalues.viewColSelection(armSet.getValue());
 
 					if (options.isForceNormalGenePvalues()) {
@@ -163,7 +169,7 @@ public class PreparePermutations {
 							options.getOutputBasePath() + "chr_" + armSet.getKey() + "_correlations",
 							chrCorrelationMatrix,
 							"Gene-Gene correlation matrix of chr " + armSet.getKey(), "Genes", "Genes");
-					
+
 					LOGGER.info("Done calculating correlation and writing results for " + armSet.getValue().size() + " genes of " + armSet.getKey());
 				}
 
@@ -215,6 +221,46 @@ public class PreparePermutations {
 		reader.close();
 
 		return Collections.unmodifiableList(names);
+	}
+
+	private static void convertDs1Permutations(OptionsModePerparePermutations options) throws IOException {
+		// Load the genes to run the analysis on
+		final LinkedHashMap<String, List<Gene>> genes = IoUtils.readGenesAsChrArmMap(options.getGeneInfoFile());
+
+		final File permutationFile = options.getPermutationFolder();
+
+		final DoubleMatrixDataset<String, String> permutationData = DoubleMatrixDataset.loadDoubleBinaryData(permutationFile.getAbsolutePath());
+
+		genes.keySet().parallelStream().forEach((String chrArm) -> {
+
+			ArrayList<String> armGenes = new ArrayList<>();
+			for (Gene gene : genes.get(chrArm)) {
+				if (permutationData.containsRow(gene.getGene())) {
+					armGenes.add(gene.getGene());
+				}
+			}
+
+			if (armGenes.size() > 2) {
+
+				DoubleMatrixDataset<String, String> armPermutationData = permutationData.viewRowSelection(armGenes).viewDice();
+
+				armPermutationData.normalizeColumns();
+
+				DoubleMatrixDataset<String, String> chrCorrelationMatrix = armPermutationData.calculateCorrelationMatrixOnNormalizedColumns();
+
+				try {
+					DoubleMatrixDatasetRowCompressedWriter.saveDataset(
+							options.getOutputBasePath() + "chr_" + chrArm + "_correlations",
+							chrCorrelationMatrix,
+							"Gene-Gene correlation matrix of chr " + chrArm, "Genes", "Genes");
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
+			}
+			LOGGER.info("Done calculating correlation and writing results for " + armGenes.size() + " genes of " + chrArm);
+
+		});
+
 	}
 
 }

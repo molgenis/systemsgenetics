@@ -24,6 +24,7 @@ public class OptionsModePerparePermutations extends OptionsBase {
 	private static final Logger LOGGER = LogManager.getLogger(OptionsBase.class);
 
 	private final boolean forceNormalGenePvalues;
+	private final boolean special;
 	private final File geneInfoFile;
 	private final File permutationFolder;
 	private final File chunkFile;
@@ -53,8 +54,12 @@ public class OptionsModePerparePermutations extends OptionsBase {
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("File with chunks");
 		OptionBuilder.withLongOpt("chunks");
-		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("c"));
+
+		OptionBuilder.withArgName("boolean");
+		OptionBuilder.withDescription("Special");
+		OptionBuilder.withLongOpt("special");
+		OPTIONS.addOption(OptionBuilder.create("s"));
 
 	}
 
@@ -65,11 +70,16 @@ public class OptionsModePerparePermutations extends OptionsBase {
 		final CommandLineParser parser = new PosixParser();
 		final CommandLine commandLine = parser.parse(OPTIONS, args, false);
 
-
 		forceNormalGenePvalues = commandLine.hasOption("fngp");
+		special = commandLine.hasOption("s");
 		geneInfoFile = new File(commandLine.getOptionValue("ge"));
 		permutationFolder = new File(commandLine.getOptionValue("p"));
-		chunkFile = new File(commandLine.getOptionValue("c"));
+		if(!special){
+			chunkFile = new File(commandLine.getOptionValue("c"));
+		} else {
+			chunkFile = null;
+		}
+		
 
 		printOptions();
 
@@ -79,11 +89,15 @@ public class OptionsModePerparePermutations extends OptionsBase {
 	public void printOptions() {
 		super.printOptions();
 
-
 		LOGGER.info(" * geneInfoFile: " + geneInfoFile.getPath());
+		if (!special) {
+			LOGGER.info(" * chunk file: " + chunkFile.getPath());
+		} else {
+			LOGGER.info("Special mode");
+		}
 		LOGGER.info(" * permutation folder: " + permutationFolder.getPath());
-		LOGGER.info(" * chunk file: " + chunkFile.getPath());
 		LOGGER.info(" * forceNormalGenePvalues: " + forceNormalGenePvalues);
+		
 
 	}
 
@@ -101,5 +115,9 @@ public class OptionsModePerparePermutations extends OptionsBase {
 
 	public File getChunkFile() {
 		return chunkFile;
+	}
+
+	public boolean isSpecial() {
+		return special;
 	}
 }

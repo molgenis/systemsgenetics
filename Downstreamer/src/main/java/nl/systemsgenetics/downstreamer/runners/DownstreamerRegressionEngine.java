@@ -438,7 +438,7 @@ public class DownstreamerRegressionEngine {
 //			}
 
 			// Instead of including covariates in the model, first regress their effects
-			if (regressCovariates) {
+			if (C != null && regressCovariates) {
 
 				inplaceDownstreamerRegressionResidualsPrecomp(YHat, ChatCache.getMatrix(), LHatInv);
 
@@ -629,7 +629,8 @@ public class DownstreamerRegressionEngine {
 //		LOGGER.debug("X " + X.toString());
 //		LOGGER.debug("LHatInv " + LHatInv.toString());
 
-		DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X);
+		//DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X);
+		DoubleMatrix2D design = X.copy();
 
 		// For docs on the stats see comments in downstreamerRegressionPrecomp() above
 		DoubleMatrix2D b = inverse(mult(transpose(multDiag(design, LHatInv)), design));
