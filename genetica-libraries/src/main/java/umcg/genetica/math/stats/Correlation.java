@@ -190,16 +190,16 @@ public class Correlation {
 
 	}
 
-	public static Pair<Double, Integer> correlateWithNaN(double[] x, double[] y) {
+	public static Pair<Double, Integer> correlateWithNaNValues(double[] x, double[] y) {
 		if (x.length == y.length) {
 			Triple<Double, Double, Integer> tmpMean = Descriptives.meanWithNaNValues(x, y);
 			double meanX = tmpMean.getLeft();
 			double meanY = tmpMean.getMiddle();
 			int nrNonNanValues = tmpMean.getRight();
 
-			if (Double.isNaN(meanX) || nrNonNanValues < 2) {
-				System.out.println("Warning: fewer than two elements remain after removing NaN values.");
-				System.out.println("Returning NaN");
+			if (Double.isNaN(meanX) || Double.isNaN(meanY) || nrNonNanValues < 2) {
+//				System.out.println("Warning: fewer than two elements remain after removing NaN values.");
+//				System.out.println("Returning NaN");
 				return new Pair<>(Double.NaN, -1);
 			}
 

@@ -145,7 +145,7 @@ public class Descriptives {
 		double sumW = 0;
 		int len = 0;
 		for (int k = 0; k < v.length; k++) {
-			if (!Double.isNaN(v[k]) && !Double.isNaN(v[k])) {
+			if (!Double.isNaN(v[k]) && !Double.isNaN(w[k])) {
 				sumV += v[k];
 				sumW += w[k];
 				len++;
