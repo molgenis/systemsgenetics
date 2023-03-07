@@ -3,6 +3,7 @@ package mbqtl.datastructures;
 import umcg.genetica.io.text.TextFile;
 
 import org.apache.commons.lang3.StringUtils;
+import umcg.genetica.math.stats.Descriptives;
 
 import java.io.IOException;
 import java.util.ArrayList;

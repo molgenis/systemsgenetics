@@ -1,6 +1,5 @@
 package umcg.genetica.math.stats;
 
-import umcg.genetica.containers.Pair;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.util.Primitives;
 
