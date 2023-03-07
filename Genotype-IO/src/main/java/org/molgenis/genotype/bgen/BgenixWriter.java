@@ -132,8 +132,11 @@ public class BgenixWriter {
 
 			PreparedStatement metadataStatement = dbConnection.prepareStatement("INSERT INTO Metadata(filename, file_size, last_write_time, first_1000_bytes, index_creation_time) VALUES(?,?,?,?,?)");
 
+			// The sqlite database requires integers for both file size and write time.
+			// However, in sqlite integers are up to 8 byte integers.
+			// This is equivalent to a long in java, therefore, we use setLong here.
 			metadataStatement.setString(1, metadata.getFileName());
-			metadataStatement.setInt(2, metadata.getFileSize());
+			metadataStatement.setLong(2, metadata.getFileSize());
 			metadataStatement.setLong(3, metadata.getLastWriteTime());
 			metadataStatement.setBytes(4, metadata.getFirst1000bytes());
 			metadataStatement.setLong(5, metadata.getIndexCreationTime());
