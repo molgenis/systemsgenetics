@@ -206,8 +206,8 @@ public class QTLRegression extends QTLAnalysis {
 				for (int d = 0; d < datasets.length; d++) {
 					Dataset thisDataset = datasets[d];
 
-					double[] datasetExp = thisDataset.select(expData, thisDataset.expressionIds);
-					double[] datasetExpRaw = thisDataset.select(expData, thisDataset.expressionIds);
+					double[] datasetExp = thisDataset.select(expData, thisDataset.getExpressionIds());
+					double[] datasetExpRaw = thisDataset.select(expData, thisDataset.getExpressionIds());
 					double[] datasetExpRanked = datasetExp;
 					if (rankData) {
 						RankArray ranker = new RankArray();
@@ -224,8 +224,8 @@ public class QTLRegression extends QTLAnalysis {
 						VCFVariant variant = variants.get(v);
 						final double[] genotypes = getGenotype(variant.getGenotypesAsByteVector());
 						final double[] dosages = getDosage(variant.getDosage());
-						double[] dosagesForDataset = thisDataset.select(dosages, thisDataset.genotypeIds); // select required dosages
-						double[] genotypesForDataset = thisDataset.select(genotypes, thisDataset.genotypeIds); // select required genotype IDs
+						double[] dosagesForDataset = thisDataset.select(dosages, thisDataset.getGenotypeIds()); // select required dosages
+						double[] genotypesForDataset = thisDataset.select(genotypes, thisDataset.getGenotypeIds()); // select required genotype IDs
 
 						VariantQCObj qcobj = checkVariant(genotypesForDataset);
 						if (qcobj.passqc) {
@@ -297,9 +297,9 @@ public class QTLRegression extends QTLAnalysis {
 						if (xcovars.rows() < xcovars.columns()) {
 							// remove the rows with lowest variance
 							int toRemove = (xcovars.columns() - xcovars.rows()) + 1;
-							System.out.println("\nWarning: " + thisDataset.name + " has more predictors than datapoints for gene " + gene + ": " + xcovars.rows() + "x" + xcovars.columns() + " removing " + toRemove + " lowest variance covars");
+							System.out.println("\nWarning: " + thisDataset.getName() + " has more predictors than datapoints for gene " + gene + ": " + xcovars.rows() + "x" + xcovars.columns() + " removing " + toRemove + " lowest variance covars");
 							xcovars = removeCovarWithLowestVariance(xcovars, toRemove);
-							System.out.println("\nWarning: " + thisDataset.name + " gene had few covars for " + gene + ". Remaining covars: " + xcovars.rows() + "x" + xcovars.columns());
+							System.out.println("\nWarning: " + thisDataset.getName() + " gene had few covars for " + gene + ". Remaining covars: " + xcovars.rows() + "x" + xcovars.columns());
 						}
 
 						try {
@@ -416,21 +416,21 @@ public class QTLRegression extends QTLAnalysis {
 										System.out.println(d + "\tResidual: " + r);
 									}
 									// copy the data back to the matrix somehow.
-									for (int q = 0; q < thisDataset.expressionIds.length; q++) {
-										int id = thisDataset.expressionIds[q];
+									for (int q = 0; q < thisDataset.size(); q++) {
+										int id = thisDataset.getExpressionIds()[q];
 										expressionData.data[geneID][id] = residuals[q];
 									}
 
 									if (debug) {
 //                                    // DEBUG STUFF:
 										double[] expData2 = expressionData.data[geneID];
-										double[] datasetExp2 = thisDataset.select(expData2, thisDataset.expressionIds);
+										double[] datasetExp2 = thisDataset.select(expData2, thisDataset.getExpressionIds());
 
 										VCFVariant variant = variants.get(0);
 										final double[] genotypes = getGenotype(variant.getGenotypesAsByteVector());
 										final double[] dosages = getDosage(variant.getDosage());
-										double[] dosagesForDataset = thisDataset.select(dosages, thisDataset.genotypeIds); // select required dosages
-										double[] genotypesForDataset = thisDataset.select(genotypes, thisDataset.genotypeIds);
+										double[] dosagesForDataset = thisDataset.select(dosages, thisDataset.getGenotypeIds()); // select required dosages
+										double[] genotypesForDataset = thisDataset.select(genotypes, thisDataset.getGenotypeIds());
 										double meanDosage = Util.meanGenotype(dosagesForDataset);
 										double meanGenotype = Util.meanGenotype(genotypesForDataset);
 //                            System.out.println(meanDosage);
@@ -476,6 +476,7 @@ public class QTLRegression extends QTLAnalysis {
 		System.out.println();
 		System.out.println("Saving residuals: " + outputPrefix + "-QTLsRemoved.txt.gz");
 		expressionData.save(outputPrefix + "-QTLsRemoved.txt.gz");
+
 		System.out.println("Done");
 		if (tabix != null) {
 			tabix.close();

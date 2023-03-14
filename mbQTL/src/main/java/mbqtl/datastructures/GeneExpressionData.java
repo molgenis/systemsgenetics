@@ -1,140 +1,133 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package mbqtl.datastructures;
-
-import umcg.genetica.io.text.TextFile;
-
-import org.apache.commons.lang3.StringUtils;
-import umcg.genetica.math.stats.Descriptives;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Set;
+import mbqtl.Util;
+import umcg.genetica.io.text.TextFile;
+import umcg.genetica.text.Strings;
 
 public class GeneExpressionData {
-	public HashMap<String, Integer> sampleMap;
-	public String[] samples;
-	public HashMap<String, Integer> geneMap;
-	public String[] genes;
 	public double[][] data;
+	public String[] genes;
+	public String[] samples;
+	public HashMap<String, Integer> sampleMap;
+	public HashMap<String, Integer> geneMap;
 
-	public GeneExpressionData(String geneExpressionDataFile, ArrayList<String> allGenes, HashSet<String> rnaSamplesMatchedToDNA) throws IOException {
-
-		load(geneExpressionDataFile, allGenes, rnaSamplesMatchedToDNA);
-
-
-	}
-
-	private void load(String geneExpressionDataFile, ArrayList<String> allGenes, HashSet<String> rnaSamplesMatchedToDNA) throws IOException {
-		System.out.println("Loading phenotype matrix: " + geneExpressionDataFile);
-		HashSet<String> geneSet = null;
-		if (allGenes != null) {
-			geneSet = new HashSet<>();
-			geneSet.addAll(allGenes);
+	public GeneExpressionData(String geneExpressionDataFile, Set<String> geneSelection, Set<String> requestedSamples) throws IOException {
+		System.out.println("Loading expression data from: " + geneExpressionDataFile);
+		if (requestedSamples != null) {
+			System.out.println("Max number of samples: " + requestedSamples.size());
 		}
 
-		TextFile tf = new TextFile(geneExpressionDataFile, TextFile.R);
-		String[] header = tf.readLineElems(TextFile.tab);
+		if (geneSelection != null) {
+			System.out.println("Max number of genes: " + geneSelection.size());
+		}
 
+		int genecol = 0;
+		TextFile tf = new TextFile(geneExpressionDataFile, false);
+		String ln = tf.readLine();
+		if (ln.startsWith("#Chr")) {
+			genecol = 3;
+			System.out.println("FastQTL style expression file");
+		}
+
+		String[] header = Strings.whitespace.split(ln);
 		boolean[] includeColumn = new boolean[header.length];
-		ArrayList<String> samplesArr = new ArrayList<>();
+		ArrayList<String> sampleTmp = new ArrayList();
 
-
-		int nrColsToInclude = 0;
-		for (int v = 0; v < header.length; v++) {
-			String sample = header[v];
-			if (rnaSamplesMatchedToDNA == null || rnaSamplesMatchedToDNA.contains(sample)) {
-				if (sampleMap.containsKey(sample)) {
-					System.out.println("Duplicate column: " + v + " in header with ID:" + sample);
-				} else {
-					samplesArr.add(header[v]);
-					sampleMap.put(header[v], nrColsToInclude);
-					includeColumn[v] = true;
-					nrColsToInclude++;
-				}
+		for(int i = 1; i < header.length; ++i) {
+			String sample = header[i];
+			if (requestedSamples == null || requestedSamples.contains(sample)) {
+				includeColumn[i] = true;
+				sampleTmp.add(sample);
 			}
 		}
 
-		System.out.println(samplesArr.size() + " selected columns (samples) in header.");
-		samples = samplesArr.toArray(new String[0]);
+		if (sampleTmp.isEmpty()) {
+			System.out.println("No matching samples found in expression data!");
+			System.exit(-1);
+		}
 
-		String line = tf.readLine();
-		int lineCounter = 1;
-		boolean warningprinted = false;
-		ArrayList<double[]> dataTMP = new ArrayList<>();
-		ArrayList<String> geneTMP = new ArrayList<>();
-		int geneCounter = 0;
+		System.out.println(sampleTmp.size() + " samples found.");
+		this.samples = (String[])sampleTmp.toArray(new String[0]);
+		this.sampleMap = Util.hash(sampleTmp);
+		String[] elems = tf.readLineElems(Strings.whitespace);
+		ArrayList<double[]> dataList = new ArrayList();
+		ArrayList<String> genetmp = new ArrayList();
+		int lctr = 0;
 
-		while (line != null) {
-			String[] elems = StringUtils.split(line, "\t", 3); // only fully split the line if we actually need the data
-			if (elems.length < 2) {
-				System.out.println("Skipping line " + lineCounter + ": fewer than 2 tab separated columns.");
-			} else {
-				String gene = elems[0];
-				if (geneSet == null || geneSet.contains(gene)) {
-					if (geneMap.containsKey(gene)) {
-						System.out.println("Duplicate phenotype found on line " + lineCounter + " with ID: " + gene);
-					} else {
-						elems = StringUtils.split(line, "\t");
-						int columnOffset = 0;
+		boolean printWarning;
+		for(printWarning = false; elems != null; elems = tf.readLineElems(Strings.whitespace)) {
+			String gene = Strings.cache(elems[genecol]);
+			if (geneSelection == null || geneSelection.contains(gene)) {
+				double[] dataln = new double[this.samples.length];
+				Arrays.fill(dataln, Double.NaN);
+				genetmp.add(gene);
+				int sctr = 0;
 
-						// check whether there is as much information as in the header for this line
-						if (elems.length != header.length) {
-							if (elems.length == header.length + 1) {
-								// this is fine; probably means that the header didn't have an ID for the first column.
-								// this is often the case if the file comes from R for instance
-								columnOffset = 1;
-								if (!warningprinted) {
-									System.out.println();
-									System.out.println("Warning: the header of " + geneExpressionDataFile + " has a different number of tab separated elements compared to line " + lineCounter + ". " + "The header is 1 element shorter. It's probably best to fix your file. Nevertheless, the program will try to continue...");
-									System.out.println();
-									warningprinted = true;
-								}
-							} else {
-								throw new RuntimeException("Error parsing: " + geneExpressionDataFile + ": number of elements in header (" + header.length + ")does not match length of line: " + lineCounter + " (" + elems.length + ")");
-							}
+				for(int i = 1; i < elems.length; ++i) {
+					if (elems.length < dataln.length) {
+						printWarning = true;
+					}
+
+					if (includeColumn[i]) {
+						try {
+							double d = Double.parseDouble(elems[i]);
+							dataln[sctr] = d;
+						} catch (NumberFormatException var21) {
+							dataln[sctr] = Double.NaN;
 						}
 
-						double[] rowdata = new double[nrColsToInclude];
-						Arrays.fill(rowdata, Double.NaN); // initialize with NaN
-						int ctr = 0;
-						for (int v = 1; v < elems.length; v++) {
-							if (includeColumn[v - columnOffset]) {
-								try {
-									rowdata[ctr] = Double.parseDouble(elems[v]);
-								} catch (NumberFormatException nfe) {
-									// if non-parse able, keep as NaN
-								}
-								ctr++;
-							}
-						}
-
-						dataTMP.add(rowdata);
-						geneMap.put(gene, geneCounter);
-						geneTMP.add(gene);
-						geneCounter++;
+						++sctr;
 					}
 				}
+
+				dataList.add(dataln);
 			}
-			line = tf.readLine();
-			if (lineCounter % 10000 == 0) {
-				System.out.print(lineCounter + " lines read, " + geneTMP.size() + " phenotypes loaded.\r");
+
+			++lctr;
+			if (geneSelection != null && dataList.size() == geneSelection.size()) {
+				System.out.print(lctr + " lines parsed, " + dataList.size() + " genes loaded.\r");
+				break;
 			}
-			lineCounter++;
+
+			if (lctr % 2000 == 0) {
+				System.out.print(lctr + " lines parsed, " + dataList.size() + " genes loaded.\r");
+			}
 		}
+
 		tf.close();
-		System.out.print(lineCounter + " lines read, " + geneTMP.size() + " phenotypes loaded. Done reading.\n");
-
-		// copy the data into an array of arrays (might be faster than an arraylist)
-		data = new double[dataTMP.size()][];
-		for (int i = 0; i < dataTMP.size(); i++) {
-			data[i] = dataTMP.get(i);
+		System.out.println(lctr + " lines parsed, " + dataList.size() + " genes loaded.");
+		if (printWarning) {
+			System.err.println("WARNING: some lines in the file " + geneExpressionDataFile + " have fewer elements than specified in the header. Please check your input for broken lines. Missing elements have been set as missing.");
 		}
-		genes = geneTMP.toArray(new String[0]);
 
+		this.genes = (String[])genetmp.toArray(new String[0]);
+		this.data = new double[this.genes.length][0];
+
+		for(int g = 0; g < this.genes.length; ++g) {
+			this.data[g] = (double[])dataList.get(g);
+		}
+
+		this.geneMap = Util.hash(genetmp);
 	}
 
-	public void save(String s) {
+	public void save(String s) throws IOException {
+		TextFile tf = new TextFile(s, true);
+		tf.writeln("-\t" + Strings.concat(this.samples, Strings.tab));
 
+		for(int q = 0; q < this.data.length; ++q) {
+			tf.writeln(this.genes[q] + "\t" + Strings.concat(this.data[q], Strings.tab));
+		}
+
+		tf.close();
 	}
 }

@@ -100,7 +100,7 @@ public class MbQTLPlot extends QTLAnalysis {
 				double[][] expressionPerDataset = new double[datasets.length][];
 				IntStream.range(0, datasets.length).forEach(d -> {
 					Dataset thisDataset = datasets[d];
-					double[] datasetExp = thisDataset.select(expData, thisDataset.expressionIds);
+					double[] datasetExp = thisDataset.select(expData, thisDataset.getExpressionIds());
 					double[] datasetExpRanked = datasetExp;
 					if (rankData) {
 						RankArray ranker = new RankArray();
@@ -128,8 +128,8 @@ public class MbQTLPlot extends QTLAnalysis {
 							VariantQCObj[] qcobjs = new VariantQCObj[datasets.length];
 							IntStream.range(0, datasets.length).forEach(d -> {
 								Dataset thisDataset = datasets[d];
-								dosagesPerDataset[d] = thisDataset.select(dosages, thisDataset.genotypeIds); // select required dosages
-								genotypesPerDataset[d] = thisDataset.select(genotypes, thisDataset.genotypeIds); // select required genotype IDs
+								dosagesPerDataset[d] = thisDataset.select(dosages, thisDataset.getGenotypeIds()); // select required dosages
+								genotypesPerDataset[d] = thisDataset.select(genotypes, thisDataset.getGenotypeIds()); // select required genotype IDs
 
 								VariantQCObj qcobj = checkVariant(genotypesPerDataset[d]);
 								if (qcobj.passqc) {
@@ -188,7 +188,7 @@ public class MbQTLPlot extends QTLAnalysis {
 									if (!qcobj.passqc) {
 										QTLPanel dsPanel = new QTLPanel(1, 1);
 										dsPanel.setNotTested();
-										dsPanel.setDatasetDetails(thisDataset.name, geneStr, variantId, 0, 1, 0);
+										dsPanel.setDatasetDetails(thisDataset.getName(), geneStr, variantId, 0, 1, 0);
 										panels.add(dsPanel);
 									} else {
 										double[] datasetExp = expressionPerDataset[d];
@@ -218,11 +218,11 @@ public class MbQTLPlot extends QTLAnalysis {
 										double[] datasetGtPruned = Util.centerScale(prunedDatasetData.getLeft());
 
 										if (datasetExpPruned.length == 0) {
-											System.out.println(datasets[d].name + ": exp: " + datasetExpCopy.length + "\tgt: " + datasetDs.length + "\t has no genotypes after pruning, but passqc: " + qcobj.passqc);
-											System.out.println(datasets[d].name + ": cr: " + qcobj.cr + "\thwep: " + qcobj.hwep + "\tmaf: " + qcobj.maf);
+											System.out.println(datasets[d].getName() + ": exp: " + datasetExpCopy.length + "\tgt: " + datasetDs.length + "\t has no genotypes after pruning, but passqc: " + qcobj.passqc);
+											System.out.println(datasets[d].getName() + ": cr: " + qcobj.cr + "\thwep: " + qcobj.hwep + "\tmaf: " + qcobj.maf);
 											QTLPanel dsPanel = new QTLPanel(1, 1);
 											dsPanel.setNotTested();
-											dsPanel.setDatasetDetails(thisDataset.name, geneStr, variantId, 0, 1, 0);
+											dsPanel.setDatasetDetails(thisDataset.getName(), geneStr, variantId, 0, 1, 0);
 											panels.add(dsPanel);
 										} else {
 											// perform correlation
@@ -250,7 +250,7 @@ public class MbQTLPlot extends QTLAnalysis {
 											}
 											dsPanel.setData(xvals, yvals);
 											dsPanel.setAlleles(variant.getAlleles());
-											dsPanel.setDatasetDetails(thisDataset.name, geneStr, variantId, z, p, r);
+											dsPanel.setDatasetDetails(thisDataset.getName(), geneStr, variantId, z, p, r);
 											panels.add(dsPanel);
 											passqcctr++;
 										}

@@ -37,7 +37,7 @@ public class GeneAnnotation {
 		int maxCol = 0;
 		for (int i = 0; i < header.length; i++) {
 			String h = header[i].toLowerCase();
-			if (h.equals("gene") || h.equals("id") || h.equals("gene_id") || h.equals("arrayaddress")) {
+			if (h.equals("ensembl") || h.equals("gene") || h.equals("id") || h.equals("gene_id") || h.equals("arrayaddress")) {
 				idcol = i;
 				if (i > maxCol) {
 					maxCol = i;
@@ -47,12 +47,12 @@ public class GeneAnnotation {
 				if (i > maxCol) {
 					maxCol = i;
 				}
-			} else if (h.equals("start") || h.equals("start_position") || h.equals("startposition")) {
+			} else if (h.equals("chrstart") || h.equals("start") || h.equals("start_position") || h.equals("startposition")) {
 				stacol = i;
 				if (i > maxCol) {
 					maxCol = i;
 				}
-			} else if (h.equals("stop") || h.equals("stop_position") || h.equals("stopposition") || h.equals("end") || h.equals("end_position") || h.equals("endposition")) {
+			} else if (h.equals("chrend") || h.equals("stop") || h.equals("stop_position") || h.equals("stopposition") || h.equals("end") || h.equals("end_position") || h.equals("endposition")) {
 				stocol = i;
 				if (i > maxCol) {
 					maxCol = i;
@@ -72,7 +72,7 @@ public class GeneAnnotation {
 
 		boolean ok = true;
 		if (idcol == -1) {
-			System.out.println("ID col not found (gene|id|gene_id) in " + geneAnnotationFile);
+			System.out.println("ID col not found (ensembl|gene|id|gene_id|arrayaddress) in " + geneAnnotationFile);
 			ok = false;
 		} else {
 			System.out.println("ID column: " + idcol);
@@ -84,13 +84,13 @@ public class GeneAnnotation {
 			System.out.println("Chromosome column: " + chrcol);
 		}
 		if (stacol == -1) {
-			System.out.println("Chromosome start position col not found (start|start_position|startposition) in " + geneAnnotationFile);
+			System.out.println("Chromosome start position col not found (chrstart|start|start_position|startposition) in " + geneAnnotationFile);
 			ok = false;
 		} else {
 			System.out.println("Chromosome start position column: " + stacol);
 		}
 		if (stocol == -1) {
-			System.out.println("Chromosome start position col not found (stop|stop_position|stopposition) in " + geneAnnotationFile);
+			System.out.println("Chromosome start position col not found (chrend|stop|stop_position|stopposition) in " + geneAnnotationFile);
 			ok = false;
 		} else {
 			System.out.println("Chromosome stop position column: " + stocol);

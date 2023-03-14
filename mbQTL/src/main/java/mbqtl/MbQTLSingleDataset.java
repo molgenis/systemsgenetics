@@ -71,7 +71,7 @@ public class MbQTLSingleDataset extends QTLAnalysis {
 				// rank once, then center+scale
 				int d = 0;
 				Dataset thisDataset = datasets[d];
-				double[] datasetExpressionData = thisDataset.select(expData, thisDataset.expressionIds);
+				double[] datasetExpressionData = thisDataset.select(expData, thisDataset.getExpressionIds());
 				RankArray ranker = new RankArray();
 				double[] expDataPerDatasetRanked = ranker.rank(datasetExpressionData, true);
 
@@ -106,11 +106,11 @@ public class MbQTLSingleDataset extends QTLAnalysis {
 					if (variant != null) {
 						String snpid = variant.getId();
 						// collect data per dataset
-						double[] datasetGenotypeData = thisDataset.select(variant.getGenotypesAsByteVector(), thisDataset.genotypeIds);
+						double[] datasetGenotypeData = thisDataset.select(variant.getGenotypesAsByteVector(), thisDataset.getGenotypeIds());
 
 						// do some QC checks: test MAF, Callrate, HWE-P
 						VariantQCObj qcobj = checkVariant(datasetGenotypeData);
-						double[] datasetDosageValues = thisDataset.select(variant.getDosage(), thisDataset.genotypeIds);
+						double[] datasetDosageValues = thisDataset.select(variant.getDosage(), thisDataset.getGenotypeIds());
 
 						if (qcobj.passqc) {
 							genotypes.add(datasetGenotypeData);

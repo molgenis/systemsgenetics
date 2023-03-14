@@ -100,7 +100,7 @@ public class QTLAnalysis {
 		datasets = createDatasets(genotypeSampleHash, expressionData.sampleMap);
 
 		combinedDataset = createCombinedDataset(genotypeSampleHash, expressionData.sampleMap);
-		System.out.println("Combined dataset has: " + combinedDataset.expressionIds.length + " samples.");
+		System.out.println("Combined dataset has: " + combinedDataset.size() + " samples.");
 
 	}
 
@@ -251,7 +251,9 @@ public class QTLAnalysis {
 		geneAnnotation = new GeneAnnotation(geneAnnotationFile, chromosome, geneLimitSet);
 
 		// load expression data
-		expressionData = new GeneExpressionData(geneExpressionDataFile, geneAnnotation.getAllGenes(), RNASamplesMatchedToDNA);
+		HashSet<String> allGeneHash =new HashSet<>();
+		allGeneHash.addAll(geneAnnotation.getAllGenes());
+		expressionData = new GeneExpressionData(geneExpressionDataFile, allGeneHash, RNASamplesMatchedToDNA);
 
 		// determine which genotype samples to load using the available RNA samples
 		HashSet<String> availableExpressionSamples = new HashSet<>();
@@ -280,10 +282,10 @@ public class QTLAnalysis {
 		datasets = createDatasets(genotypeSampleHash, expressionData.sampleMap);
 
 		combinedDataset = createCombinedDataset(genotypeSampleHash, expressionData.sampleMap);
-		System.out.println("Combined dataset has: " + combinedDataset.expressionIds.length + " samples.");
+		System.out.println("Combined dataset has: " + combinedDataset.size() + " samples.");
 
 		// initialize Z-score lookup table
-		Correlation.correlationToZScore(combinedDataset.expressionIds.length);
+		Correlation.correlationToZScore(combinedDataset.size());
 
 		if (datasets.length < minNumberOfDatasets) {
 			System.out.println("Warning: min number of datasets " + minNumberOfDatasets + " smaller than actual number of datasets " + datasets.length);
@@ -306,7 +308,7 @@ public class QTLAnalysis {
 				Dataset dataset = datasetMap.get(datasetName);
 				if (dataset == null) {
 					dataset = new Dataset();
-					dataset.name = datasetName;
+					dataset.setName(datasetName);
 					datasets.add(dataset);
 					datasetMap.put(datasetName, dataset);
 				}
@@ -320,17 +322,17 @@ public class QTLAnalysis {
 
 		int nrDatasetsWithData = 0;
 		for (int d = 0; d < datasets.size(); d++) {
-			if (!datasets.get(d).RNAIds.isEmpty()) {
+			if (!datasets.get(d).isEmpty()) {
 				nrDatasetsWithData++;
 			} else {
-				System.out.println(datasets.get(d).name + " has no data!");
+				System.out.println(datasets.get(d).getName() + " has no data!");
 			}
 		}
 
 		Dataset[] output = new Dataset[nrDatasetsWithData];
 		int dctr = 0;
 		for (int d = 0; d < datasets.size(); d++) {
-			if (!datasets.get(d).RNAIds.isEmpty()) {
+			if (!datasets.get(d).isEmpty()) {
 				output[dctr] = datasets.get(d);
 				dctr++;
 			}
@@ -339,8 +341,7 @@ public class QTLAnalysis {
 		System.out.println();
 		System.out.println("Available datasets: " + datasets.size());
 		for (Dataset d : output) {
-			System.out.println(d.name + "\t" + d.RNAIds.size() + " samples.");
-			d.toStr();
+			System.out.println(d.getName() + "\t" + d.size() + " samples.");
 		}
 		return output;
 	}
@@ -392,7 +393,7 @@ public class QTLAnalysis {
 
 	protected Dataset createCombinedDataset(HashMap<String, Integer> DNASampleMap, HashMap<String, Integer> RNASampleMap) {
 		Dataset dataset = new Dataset();
-		dataset.name = "Combined";
+		dataset.setName("Combined");
 		for (String RNA : RNASampleMap.keySet()) {
 			String DNA = RNAToDNA.get(RNA);
 
@@ -404,7 +405,7 @@ public class QTLAnalysis {
 				}
 			}
 		}
-		dataset.toStr();
+
 		return dataset;
 	}
 
@@ -510,7 +511,7 @@ public class QTLAnalysis {
 		return genotypes;
 	}
 
-// TODO: merge group annotation with gene annotation object.
+	// TODO: merge group annotation with gene annotation object.
 	public void loadExpGroupAnnotation(String expgroups) throws IOException {
 		System.out.println("Loading gene groupings from: " + expgroups);
 		geneGroups = new HashMap<>();

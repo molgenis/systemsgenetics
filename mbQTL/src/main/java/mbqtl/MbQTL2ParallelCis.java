@@ -140,9 +140,9 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 		String datasetstr = "";
 		for (int d = 0; d < datasets.length; d++) {
 			if (d == 0) {
-				datasetstr = datasets[d].name;
+				datasetstr = datasets[d].getName();
 			} else {
-				datasetstr += ";" + datasets[d].name;
+				datasetstr += ";" + datasets[d].getName();
 			}
 		}
 
@@ -337,7 +337,7 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 				double[][] expressionPerDataset = new double[datasets.length][];
 				IntStream.range(0, datasets.length).forEach(d -> {
 					Dataset thisDataset = datasets[d];
-					double[] datasetExp = thisDataset.select(expData, thisDataset.expressionIds);
+					double[] datasetExp = thisDataset.select(expData, thisDataset.getExpressionIds());
 					double[] datasetExpRanked = datasetExp;
 
 					if (rankData) {
@@ -383,8 +383,8 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 							VariantQCObj[] qcobjs = new VariantQCObj[datasets.length];
 							IntStream.range(0, datasets.length).forEach(d -> {
 								Dataset thisDataset = datasets[d];
-								dosagesPerDataset[d] = thisDataset.select(dosages, thisDataset.genotypeIds); // select required dosages
-								genotypesPerDataset[d] = thisDataset.select(genotypes, thisDataset.genotypeIds); // select required genotype IDs
+								dosagesPerDataset[d] = thisDataset.select(dosages, thisDataset.getGenotypeIds()); // select required dosages
+								genotypesPerDataset[d] = thisDataset.select(genotypes, thisDataset.getGenotypeIds()); // select required genotype IDs
 
 								VariantQCObj qcobj = checkVariant(genotypesPerDataset[d]);
 								if (qcobj.passqc) {
@@ -474,13 +474,13 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 //                                        RankArray ranker = new RankArray();
 //                                        datasetExpPruned = ranker.rank(datasetExpPruned, true); // does this work with NaNs? answer: no
 //                                    }
-											datasetExpPruned = Util.centerScale(datasetExpPruned);
+
 
 											double[] datasetDsPruned = prunedDatasetData.getMiddle();
 //											double[] datasetDsPrunedCopy = prunedDatasetData.getMiddle();
 											double[] datasetGtPruned = prunedDatasetData.getLeft();
+//											datasetDsPruned = prunedDatasetData.getMiddle();
 
-											datasetDsPruned = Util.centerScale(prunedDatasetData.getMiddle());
 											// datasetGtPruned = Util.centerScale(prunedDatasetData.getLeft());
 
 //                                                for (int v = 0; v < datasetDsPruned.length; v++) {
@@ -489,19 +489,29 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 
 											// perform correlation
 											if (Descriptives.variance(datasetDsPruned) > 0 && Descriptives.variance(datasetExpPruned) > 0) {
+
 												dsWithMinObs++;
 												// count the number of alleles, used later to estimate Beta and SE from MetaZ
 												if (permutation == -1) {
 													for (int i = 0; i < datasetGtPruned.length; i++) {
+
 														if (datasetDsPruned[i] >= 0.5 && datasetDsPruned[i] <= 1.5) {
 															nrAltAlleles += 1;
 														} else if (datasetDsPruned[i] > 1.5) {
 															nrAltAlleles += 2;
 														}
+//														System.out.println(d + "\t" + i + "\t" + datasetGtPruned[i] + "\t" + datasetDsPruned[i] + "\t" + nrAltAlleles);
 													}
 													nrTotalAlleles += datasetGtPruned.length * 2;
 												}
+
+												datasetDsPruned = Util.centerScale(datasetDsPruned); // This may not be required
+												datasetExpPruned = Util.centerScale(datasetExpPruned);
+
 												double r = Correlation.correlate(datasetDsPruned, datasetExpPruned);
+//												double r2 = Correlation.correlate(datasetDsPruned, datasetExpPruned, 0d, 0d, 1d, 1d);
+//												double deltar = Math.abs(r2) - Math.abs(r);
+//												System.out.println(r + "\t" + r2 + "\t" + deltar);
 												double p = PVal.getPvalue(r, datasetExpPruned.length - 2);
 												double z = ZScores.pToZTwoTailed(p); // p value is already two-tailed, so need to use this other p-value conversion method... :/; returns negative z-scores by default
 												if (r > 0) {
@@ -528,6 +538,8 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 										nDatasets++;
 									}
 								}
+//								System.out.println();
+//								System.out.println(variantId + "\t" + nrAltAlleles + "\t" + nrTotalAlleles);
 								double overallAltAlleleFreq = (double) nrAltAlleles / nrTotalAlleles;
 								// write some log stuff
 								if (permutation == -1) {
