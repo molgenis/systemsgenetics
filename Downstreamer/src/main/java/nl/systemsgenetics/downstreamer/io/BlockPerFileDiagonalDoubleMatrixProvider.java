@@ -35,7 +35,13 @@ public class BlockPerFileDiagonalDoubleMatrixProvider implements BlockDiagonalDo
 		DoubleMatrixDatasetRowCompressedReader blockReader = new DoubleMatrixDatasetRowCompressedReader(prefix + block + suffix);
 
 		if (!blockReader.getColumnIdentifiers().containsAll(identifiers)) {
-			throw new IOException("Not all requested genes found in columns");
+			
+			identifiers.removeAll(blockReader.getColumnIdentifiers());
+			
+			throw new IOException("Not all requested genes found in columns: " + String.join(", ", identifiers));
+			
+			
+			
 		}
 
 		if (!blockReader.getRowIdentifiers().containsAll(identifiers)) {

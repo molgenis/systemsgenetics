@@ -107,7 +107,7 @@ public class DownstreamerEnrichment {
 					hlaGenes.add(gene.getGene());
 				}
 			}
-			LOGGER.info("Excluding " + hlaGenes.size() + " genes");
+			LOGGER.info("Excluding " + hlaGenes.size() + " genes in HLA region");
 
 		} else {
 			hlaGenes = Collections.EMPTY_SET;
@@ -128,6 +128,8 @@ public class DownstreamerEnrichment {
 		final BlockPerFileDiagonalDoubleMatrixProvider geneCorLoader = new BlockPerFileDiagonalDoubleMatrixProvider(options.getGeneGeneCorrelationPrefix(), "_correlations");
 		
 		Set<String> genesInCorData = geneCorLoader.getGenes();
+		
+		System.out.println("Genes in cor data: " + genesInCorData.size());
 		
 		int genesNotInCovariatesData = 0;
 		int genesNotInCorData = 0;
@@ -216,8 +218,6 @@ public class DownstreamerEnrichment {
 				covariatesToCorrectGenePvalues.viewCol(GENE_LENGTH_COL_NAME).assign(geneLengths);
 
 			} else {
-				System.out.println("TEST");
-				
 				covariatesToCorrectGenePvalues = covariatesToCorrectGenePvaluesTmp.viewRowSelection(selectedGenes);
 				covariatesToCorrectGenePvalues.printSummary();
 				
@@ -322,7 +322,7 @@ public class DownstreamerEnrichment {
 					pathwayData,
 					gwasGeneZscoreSubset,
 					covariatesToCorrectGenePvaluesSubset,
-					eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, false, true, options.isJblas());
+					eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, false, true, options.isJblas(),0);
 
 			final DoubleMatrixDataset<String, String> pathwayPvalues;
 			final DoubleMatrixDataset<String, String> pathwayQvalues;
@@ -366,6 +366,8 @@ public class DownstreamerEnrichment {
 
 				final int numberEigenvectors = eigenvectorsInDataset.size();
 
+				final ArrayList<String> traitNames = gwasGeneZscores.getColObjects();
+				
 				for (int trait = 0; trait < gwasGeneZscores.columns(); ++trait) {
 
 					final ArrayList<String> significantEigenvectorsIdThisTrait = new ArrayList<>();
@@ -398,23 +400,14 @@ public class DownstreamerEnrichment {
 							permutationNames.add("P" + p);
 						}
 
-						//First permutaiton matrix will contain permuted gwas gene p-values, later will contain the gene reconstructed scores
+						//This will be filled with the gene reconstructed scores
 						DoubleMatrixDataset<String, String> permutationMatrix = new DoubleMatrixDataset<>(gwasGeneZscoreSubset.getHashRows().keySet(), permutationNames);
-
-						//final DoubleMatrix1D reconstructedScore2 = significantEigenvectorsThisTrait.zMult(traitSignificantTstats, null);
-						DoubleMatrix1D originalZscores = gwasGeneZscoreSubset.getCol(trait);
-
-						Random r = new Random(42);
-
-						for (int p = 0; p < nrPermutations; p++) {
-							permutationMatrix.getCol(p).assign(originalZscores.viewSelection(GenericPermuting.permutation(Math.abs(r.nextInt())+1, geneCount)));
-						}
 		
 						final List<LinearRegressionResult> pathwayRegeressionResultsPermutations = DownstreamerRegressionEngine.performDownstreamerRegression(
 								pathwayData,
-								permutationMatrix,
+								gwasGeneZscoreSubset.viewColSelection(traitNames.get(trait)),
 								covariatesToCorrectGenePvaluesSubset,
-								eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, true, covariatesToCorrectGenePvalues != null, options.isJblas());
+								eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, false, true, options.isJblas(), nrPermutations);
 
 						//do permuations
 						for (int p = 0; p < nrPermutations; ++p) {

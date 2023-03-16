@@ -1,5 +1,6 @@
 package nl.systemsgenetics.downstreamer.runners;
 
+import cern.colt.GenericPermuting;
 import cern.colt.function.tdouble.DoubleDoubleFunction;
 import cern.colt.matrix.tdouble.DoubleFactory1D;
 import cern.colt.matrix.tdouble.DoubleFactory2D;
@@ -237,7 +238,7 @@ public class DownstreamerRegressionEngine {
 				options.getPercentageOfVariance(),
 				options.fitIntercept(),
 				options.regressCovariates(),
-				options.useJblas());
+				options.useJblas(), 0);
 
 		// Save linear regression results
 		for (LinearRegressionResult curRes : output) {
@@ -247,7 +248,7 @@ public class DownstreamerRegressionEngine {
 
 	/**
 	 * Runs DS regression if eigendecompostion has been pre-computed.These are
-	 * given by U and L. Expects that these still need to be filtered. If they
+	 * given by U and L.Expects that these still need to be filtered. If they
 	 * are pre-selected make sure to set percentageOfVariance to 1 or call other
 	 * implementation below.
 	 *
@@ -264,6 +265,8 @@ public class DownstreamerRegressionEngine {
 	 * fit in the model with X
 	 * @param useJblas use Jblas non-java matrix multiplications instead of
 	 * Pcolt. Faster but may give system specific issues
+	 * @param permutations use 0 for no permutations and >0 to permute Y in
+	 * eigenvector space.
 	 * @return Per trait (column in Y) a LinearRegressionResult.
 	 */
 	public static List<LinearRegressionResult> performDownstreamerRegression(DoubleMatrixDataset<String, String> X,
@@ -275,7 +278,8 @@ public class DownstreamerRegressionEngine {
 			double percentageOfVariance,
 			boolean fitIntercept,
 			boolean regressCovariates,
-			boolean useJblas) {
+			boolean useJblas,
+			int permutations) {
 
 		DoubleMatrix1D varPerEigen = cumulativeSum(L.viewCol(0), true);
 		List<String> colsToMaintain = new ArrayList<>();
@@ -293,7 +297,7 @@ public class DownstreamerRegressionEngine {
 		U = U.viewColSelection(colsToMaintain);
 		L = L.viewRowSelection(colsToMaintain);
 
-		return performDownstreamerRegression(X, Y, C, U, L, blockDiagonalIndices, fitIntercept, regressCovariates, useJblas);
+		return performDownstreamerRegression(X, Y, C, U, L, blockDiagonalIndices, fitIntercept, regressCovariates, useJblas, 0);
 	}
 
 	/**
@@ -309,7 +313,8 @@ public class DownstreamerRegressionEngine {
 			final LinkedHashMap<String, ArrayList<String>> blockDiagonalIndices,
 			final boolean fitIntercept,
 			final boolean regressCovariates,
-			final boolean useJblas) {
+			final boolean useJblas,
+			int permutations) {
 
 		debugFolder = OptionsBase.getDebugFolder();
 //
@@ -338,6 +343,10 @@ public class DownstreamerRegressionEngine {
 			throw new RuntimeException("Internal error: U columns and L rows should be equal");
 		}
 
+		if (permutations > 0 && Y.columns() > 1) {
+			throw new RuntimeException("Max 1 trait per permutations round (this should never happen in normal usage)");
+		}
+
 //		if (!X.getHashRows().keySet().equals(Y.getHashRows().keySet())) {
 //			throw new RuntimeException("Internal error: X and Y should contain row elements in same order");
 //		}
@@ -350,7 +359,6 @@ public class DownstreamerRegressionEngine {
 //		if (!U.getHashCols().keySet().equals(L.getHashRows().keySet())) {
 //			throw new RuntimeException("Internal error: U columns and L rows should contain elements in same order");
 //		}
-
 		// Pre-transpose U as this can be re-used as well
 		DoubleMatrixDataset<String, String> UHatT = U.viewDice();
 		//UHatT = DoubleFactory2D.sparse.make(UHatT.toArray());
@@ -411,13 +419,25 @@ public class DownstreamerRegressionEngine {
 //		} catch (Exception ex) {
 //			throw new RuntimeException(ex);
 //		}
+		final int nrTraits;
+		final int[] permutationInts;
+		if (permutations == 0) {
+			nrTraits = Y.columns();
+			permutationInts = null;
+		} else {
+			Random r = new Random(42);
+			permutationInts = new int[permutations];
+			for (int p = 0; p < permutations; ++p) {
+				permutationInts[p] = Math.abs(r.nextInt()) + 1;
+			}
+			nrTraits = permutations;
+		}
 
-		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * Y.columns(), ProgressBarStyle.ASCII);
+		ProgressBar pb = new ProgressBar("Linear regressions", X.columns() * nrTraits, ProgressBarStyle.ASCII);
 
 		// Store output
-		final LinearRegressionResult[] resultsArray = new LinearRegressionResult[Y.columns()];
+		final LinearRegressionResult[] resultsArray = new LinearRegressionResult[nrTraits];
 
-		final int nrTraits = Y.columns();
 		IntStream.range(0, nrTraits).parallel().forEach(curY -> {
 			//for (int curY = 0; curY < Y.columns(); curY++) {
 
@@ -427,7 +447,17 @@ public class DownstreamerRegressionEngine {
 			List<String> curPredictorNames = predictorNames;
 
 			// Pre-compute Y^ as this can be re-used
-			final DoubleMatrix2D YHat = mult(UHatT.getMatrix(), Y.viewColAsMmatrix(curY));
+			final DoubleMatrix2D y;
+			final String name;
+			if (permutations == 0) {
+				y = Y.viewColAsMmatrix(curY);
+				name = Y.getColObjects().get(curY);
+			} else {
+				y = Y.viewColAsMmatrix(curY);
+				y.viewColumn(0).assign(y.viewColumn(0).viewSelection(GenericPermuting.permutation(permutationInts[curY], Y.rows())));
+				name = "P" + nrTraits;
+			}
+			final DoubleMatrix2D YHat = mult(UHatT.getMatrix(), y);
 
 //			if (curY == 0) {
 //				try {
@@ -436,7 +466,6 @@ public class DownstreamerRegressionEngine {
 //					throw new RuntimeException(ex);
 //				}
 //			}
-
 			// Instead of including covariates in the model, first regress their effects
 			if (C != null && regressCovariates) {
 
@@ -451,7 +480,7 @@ public class DownstreamerRegressionEngine {
 			final LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(),
 					curPredictorNames,
 					degreesOfFreedom,
-					Y.getColObjects().get(curY));
+					name);
 
 			// Calculate beta's and SE for each pathway
 			for (int curPathway = 0; curPathway < X.columns(); curPathway++) {
@@ -476,7 +505,6 @@ public class DownstreamerRegressionEngine {
 //						throw new RuntimeException(ex);
 //					}
 //				}
-
 				double[] curRes;
 				try {
 
@@ -496,18 +524,16 @@ public class DownstreamerRegressionEngine {
 			}
 
 			try {
-				
+
 				DoubleMatrixDataset<String, String> betas = result.getBeta();
-				
+
 				betas.save(new File(debugFolder, "res_beta.txt"));
 				result.getStandardError().save(new File(debugFolder, "res_se.txt"));
-				
+
 				DoubleMatrixDataset t = new DoubleMatrixDataset(betas.getRowObjects(), Arrays.asList(new String[]{"T"}));
 				t.getMatrix().viewColumn(0).assign(result.getTstatForMainEffect());
 				t.save(new File(debugFolder, "res_t.txt"));
-				
-				
-				
+
 			} catch (IOException ex) {
 				throw new RuntimeException();
 			}
@@ -517,7 +543,7 @@ public class DownstreamerRegressionEngine {
 		});
 
 		pb.close();
-		logInfoMem("Done with regression for " + Y.columns() + " traits and " + X.columns() + " pathways.");
+		logInfoMem("Done with regression for " + nrTraits + " traits and " + X.columns() + " pathways.");
 
 		return Arrays.asList(resultsArray);
 	}
@@ -628,7 +654,6 @@ public class DownstreamerRegressionEngine {
 //		LOGGER.debug("Y " + Y.toString());
 //		LOGGER.debug("X " + X.toString());
 //		LOGGER.debug("LHatInv " + LHatInv.toString());
-
 		//DoubleMatrix2D design = DoubleFactory2D.dense.appendColumns(DoubleFactory2D.dense.make(X.rows(), 1, 1), X);
 		DoubleMatrix2D design = X.copy();
 
@@ -890,17 +915,29 @@ public class DownstreamerRegressionEngine {
 		} else {
 			// Use P-colt for eigen decomposition
 
-			index.entrySet().parallelStream().forEach((Map.Entry<String, ArrayList<String>> block) -> {
+			for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
+			//index.entrySet().parallelStream().forEach((Map.Entry<String, ArrayList<String>> block) -> {
 				try {
 
 					int colIndex = columnIndexStartOfBlock.get(block.getKey());
 
 					//for (Map.Entry<String, ArrayList<String>> block : index.entrySet()) {
 					//for (int curBlock = 0; curBlock < index.size(); curBlock++) {
-					final DoubleMatrix2D curMatrix = provider.viewBlock(block.getKey(), block.getValue()).getMatrix();
+					final DoubleMatrix2D curMatrix = provider.viewBlock(block.getKey(), block.getValue()).getMatrix().copy();
 
 					//this functions seems to not contain multithreading
-					final DenseDoubleEigenvalueDecomposition eigen = new DenseDoubleEigenvalueDecomposition(curMatrix);
+					final DenseDoubleEigenvalueDecomposition eigen;
+					try {
+						eigen = new DenseDoubleEigenvalueDecomposition(curMatrix);
+					} catch (RuntimeException ex) {
+						System.out.println("curMatrix: " + curMatrix.toStringShort());
+						System.out.println(curMatrix.getQuick(0, 0));
+						System.out.println(curMatrix.getQuick(0, 1));
+						System.out.println(curMatrix.getQuick(curMatrix.rows()-1, curMatrix.columns()-1));
+						System.out.println(curMatrix.getQuick(curMatrix.rows()-1, curMatrix.columns()-2));
+						System.out.println("test");
+						throw new Exception(ex);
+					}
 
 					//get U in the same order 
 					DoubleMatrixDataset<String, String> UBlock = U.viewRowSelection(block.getValue());
@@ -918,7 +955,7 @@ public class DownstreamerRegressionEngine {
 					pb.close();
 					throw (new RuntimeException(ex));
 				}
-			});
+			}//);
 		}
 
 		//U.printMatrix();
