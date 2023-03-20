@@ -297,7 +297,7 @@ public class DownstreamerRegressionEngine {
 		U = U.viewColSelection(colsToMaintain);
 		L = L.viewRowSelection(colsToMaintain);
 
-		return performDownstreamerRegression(X, Y, C, U, L, blockDiagonalIndices, fitIntercept, regressCovariates, useJblas, 0);
+		return performDownstreamerRegression(X, Y, C, U, L, blockDiagonalIndices, fitIntercept, regressCovariates, useJblas, permutations);
 	}
 
 	/**
@@ -453,7 +453,7 @@ public class DownstreamerRegressionEngine {
 				y = Y.viewColAsMmatrix(curY);
 				name = Y.getColObjects().get(curY);
 			} else {
-				y = Y.viewColAsMmatrix(curY);
+				y = Y.viewColAsMmatrix(0);
 				y.viewColumn(0).assign(y.viewColumn(0).viewSelection(GenericPermuting.permutation(permutationInts[curY], Y.rows())));
 				name = "P" + nrTraits;
 			}
@@ -930,6 +930,8 @@ public class DownstreamerRegressionEngine {
 					try {
 						eigen = new DenseDoubleEigenvalueDecomposition(curMatrix);
 					} catch (RuntimeException ex) {
+						System.out.println(OptionsBase.getDebugFolder()  + "test.txt");
+						provider.viewBlock(block.getKey(), block.getValue()).save(OptionsBase.getDebugFolder()  + "test.txt");
 						System.out.println("curMatrix: " + curMatrix.toStringShort());
 						System.out.println(curMatrix.getQuick(0, 0));
 						System.out.println(curMatrix.getQuick(0, 1));

@@ -247,17 +247,39 @@ public class PreparePermutations {
 				armPermutationData.normalizeColumns();
 
 				DoubleMatrixDataset<String, String> chrCorrelationMatrix = armPermutationData.calculateCorrelationMatrixOnNormalizedColumns();
+				
+				ArrayList<String> genesNameCor = chrCorrelationMatrix.getColObjects();
+				ArrayList<String> genesNameCorSelected = new ArrayList<>();
+				
+				genes:
+				for(int g = 0 ; g < genesNameCor.size() ; ++g){
+					
+					for(int r = 0 ; r < chrCorrelationMatrix.rows() ; ++r){
+						if(r != g && !Double.isNaN(chrCorrelationMatrix.getElementQuick(r, g))){
+							genesNameCorSelected.add(genesNameCor.get(g));
+							continue genes;
+						}
+					}
+										
+				}
+				
+				chrCorrelationMatrix = chrCorrelationMatrix.viewSelection(genesNameCorSelected, genesNameCorSelected);
 
 				try {
-					DoubleMatrixDatasetRowCompressedWriter.saveDataset(
+					if(chrCorrelationMatrix.rows() > 0){
+						DoubleMatrixDatasetRowCompressedWriter.saveDataset(
 							options.getOutputBasePath() + "chr_" + chrArm + "_correlations",
 							chrCorrelationMatrix,
 							"Gene-Gene correlation matrix of chr " + chrArm, "Genes", "Genes");
+					}
+					
 				} catch (IOException ex) {
 					throw new RuntimeException(ex);
 				}
+				
+				LOGGER.info("Done calculating correlation and writing results for " + genesNameCorSelected.size() + " genes of " + chrArm);
 			}
-			LOGGER.info("Done calculating correlation and writing results for " + armGenes.size() + " genes of " + chrArm);
+			
 
 		});
 

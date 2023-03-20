@@ -61,6 +61,10 @@ public class BlockPerFileDiagonalDoubleMatrixProvider implements BlockDiagonalDo
 		FileFilter fileFilter = new WildcardFileFilter(x.getName() + "*" + suffix + ".datg");
 		File[] files = dir.listFiles(fileFilter);
 		
+		if(files.length == 0){
+			throw new IOException("No data found at: " + prefix);
+		}
+		
 		HashSet<String> allGenes = new HashSet<>();
 		
 		for(File file : files){
