@@ -25,20 +25,28 @@ public class SNPAnnotation {
 		int ctr = 0;
 		while (elems != null) {
 			if (elems.length > 2) {
-				String variant = elems[0];
-				Chromosome chr = Chromosome.parseChr(elems[1]);
-				int pos = Integer.parseInt(elems[2]);
+				try {
+					String variant = elems[0];
+					Chromosome chr = Chromosome.parseChr(elems[1]);
+					int pos = Integer.parseInt(elems[2]);
 
-				if (variantToId.containsKey(variant)) {
-					System.out.println("Variant " + variant + " has multiple annotations. Is this correct? Only storing first instance.");
-				} else {
-					variantToId.put(variant, ctr);
-					variants.add(variant);
-					chromosomes.add(chr);
-					positions.add(pos);
-					ctr++;
+					if (variantToId.containsKey(variant)) {
+						int tmpid = variantToId.get(variant);
+						Chromosome tmpchr = chromosomes.get(tmpid);
+						Integer tmppos = positions.get(tmpid);
+						if (!tmpchr.equals(chr) || !tmppos.equals(pos)) {
+							System.out.println("Variant " + variant + " has multiple annotations. Is this correct? Only storing first instance.");
+						}
+					} else {
+						variantToId.put(variant, ctr);
+						variants.add(variant);
+						chromosomes.add(chr);
+						positions.add(pos);
+						ctr++;
+					}
+				} catch (NumberFormatException e) {
+
 				}
-
 			}
 			elems = tf.readLineElems(TextFile.tab);
 		}

@@ -11,6 +11,7 @@ import umcg.genetica.containers.Triple;
 import umcg.genetica.enums.Chromosome;
 import umcg.genetica.enums.Strand;
 import umcg.genetica.features.Feature;
+import umcg.genetica.features.FeatureComparator;
 import umcg.genetica.features.Gene;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.stats.Correlation;
@@ -261,10 +262,18 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 			});
 			pb.close();
 		} else {
+			ArrayList<Gene> geneObjs = new ArrayList<>();
+			for (int g = 0; g < expressionData.genes.length; g++) {
+				Gene obj = geneAnnotation.getGene(expressionData.genes[g]);
+				if (obj != null) {
+					geneObjs.add(obj);
+				}
+			}
+			Collections.sort(geneObjs, new FeatureComparator());
 			ProgressBar pb = new ProgressBar(expressionData.genes.length, "Processing " + expressionData.genes.length + " genes...");
-			IntStream.range(0, expressionData.genes.length).parallel().forEach(g -> {
+			IntStream.range(0, geneObjs.size()).parallel().forEach(g -> {
 				HashSet<String> groupGenes = new HashSet<>();
-				groupGenes.add(expressionData.genes[g]);
+				groupGenes.add(geneObjs.get(g).getName());
 				try {
 					testGenes(null, groupGenes, logout, finalSnplogout, finalOutAll1, finalPermutationoutput, outTopFx, randomSeed);
 				} catch (IOException e) {
@@ -311,6 +320,7 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 		// todo: check if the genes in the group are in the same genomic location
 		// if so, variants can be cached, which will save some disk and parsing overhead
 		HashSet<String> uniqueSNPIDs = new HashSet<>();
+		int prevchr = -1;
 		for (String gene : genes) {
 //            Integer geneAnnotationId = geneAnnotation.getGeneId(gene);
 			Gene geneAnnotationObj = geneAnnotation.getGene(gene);
@@ -330,8 +340,8 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 				}
 				int stop = pos + cisWindow;
 //				int chr = geneAnnotationObj.getChromosome().getNumber(); // .getChr(geneAnnotationId);
-				Chromosome chromosomeObj = geneAnnotationObj.getChromosome();
-				Feature cisRegion = new Feature(chromosomeObj, start, stop);
+				Chromosome geneChromosomeObj = geneAnnotationObj.getChromosome();
+				Feature cisRegion = new Feature(geneChromosomeObj, start, stop);
 
 				// split expression data per dataset
 				double[][] expressionPerDataset = new double[datasets.length][];
@@ -359,8 +369,18 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 				Iterator<VCFVariant> snpIterator = null;
 				VCFTabix tabix = null;
 				if (analysisType == ANALYSISTYPE.CIS) {
-					// todo: replace vcf file with the one from the actual chromosome, if CHR template has been provided.
-					tabix = new VCFTabix(vcfFile);
+					// replace vcf file with the one from the actual chromosome, if CHR template has been provided.
+					if (geneChromosomeObj.getNumber() != prevchr && origvcfFile.contains("CHR")) {
+
+						// Note: code below is not correct, because it overwrites datasets that are outside of scope of the thread that runs this code
+						// can cause race conditions!!!!
+						String actualVCFFile = origvcfFile.replace("CHR", "" + geneChromosomeObj.getNumber());
+//						updateDatasets(actualVCFFile); // assume the order of samples is equal across files, for now...
+						tabix = new VCFTabix(actualVCFFile);
+						prevchr = geneChromosomeObj.getNumber();
+					} else {
+						tabix = new VCFTabix(vcfFile);
+					}
 					snpIterator = tabix.getVariants(cisRegion, genotypeSamplesToInclude, snpLimitSetForGene);
 				} else {
 					// TODO: NOT IMPLEMENTED YET
