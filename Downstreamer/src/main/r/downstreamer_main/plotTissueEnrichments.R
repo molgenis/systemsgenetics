@@ -31,15 +31,13 @@ read.depict2 <- function(path, potential_traits=NULL) {
 }
 
 
-files <- list.files(pattern = ".xlsx")
-traits <- sub("_tissueEnrichment_enrichtments.xlsx", "", files)
-tissues <- NULL
+traits <- read.delim("../../traitList.txt", header = F)$V1
 
 minZfdrSig <- Inf
 
-x <- files[1]
-resultList <- lapply(files, function(x){
-  res <- read.depict2(x)[["tissueMedian"]]
+x <- traits[1]
+resultList <- lapply(traits, function(x){
+  res <- read.depict2(paste0(x,"/",x,"_tissueEnrichment_enrichtments.xlsx"))[["tissueMedianCentered"]]
   tissues <<- res$Gene.set[order(res$Gene.set)]
   
   if(any(res$FDR.5..significant)){
@@ -58,26 +56,11 @@ colnames(tissueEnrichments) <- traits
 
 
 library(pheatmap)
-library(amap)
 
 sigZ <- -qnorm(0.05/nrow(tissueEnrichments)/2)
 
 
-
-
-
-library(readr)
-colTypes <- cols( .default = col_double(),  `...1` = col_character())
-table_tmp <- read_delim("../../combinedHealthyTissue_medianPerTissue.txt.gz", delim = "\t", quote = "", col_types = colTypes)
-medianPerTissue <- as.matrix(table_tmp[,-1])
-rownames(medianPerTissue) <- table_tmp[,1][[1]]
-rm(table_tmp)
-
-medianPerTissue <- medianPerTissue[,rownames(tissueEnrichments)]
-
-#as.dist(1-cor(medianPerTissue))
-tissueClust <- hclust(Dist(t(medianPerTissue), method = "pearson"))
-plot(tissueClust)
+load("../../combinedHealthyTissue_medianPerTissueCenteredCluster.RData", verbose = T)
 
 
 #"#f03b20"
@@ -86,7 +69,10 @@ colBreaks <- c(seq(min(tissueEnrichments),-sigZ,length.out= 100), seq(sigZ,max(t
 
 
 pdf("plot.pdf", width = 20, height =20)
-pheatmap(tissueEnrichments, scale = "none", col = colHeatmap, breaks = colBreaks,cluster_rows = tissueClust)
+pheatmap(tissueEnrichments[medianPerTissueCenteredCluster$labels,], scale = "none", col = colHeatmap, breaks = colBreaks,cluster_rows = medianPerTissueCenteredCluster)
 dev.off()
+  
+str(tissueEnrichments)
 
-
+str(medianPerTissueCenteredCluster$labels)
+str(tissueEnrichments)

@@ -34,7 +34,6 @@ allFiles <- c(sraFiles, gtexFiles, "rse-tcga/rseTCGA.rda", "rse-tcga/rse_ESCA_TC
 file = gtexFiles[2]
 
 perChunkExp <- sapply(allFiles, function(file){
-  
   loadedObject <- load(file)
   
   sreObjects <- get(loadedObject[1])
@@ -277,21 +276,52 @@ shortTissue <- ifelse(nchar(tissueClasses) > 20, paste0(substr(tissueClasses,0,1
 
 library(pheatmap)
 library(viridisLite, lib.loc = .libPaths()[2])
+library(amap)
 
 
-write.table(medianPerTissue, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissue.txt.gz")), sep = "\t", quote = F, col.names = NA)
+#write.table(medianPerTissue, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissue.txt.gz")), sep = "\t", quote = F, col.names = NA)
 
+medianPerTissue <- as.matrix(read.delim("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissue.txt.gz", row.names = 1))
+str(medianPerTissue)
 
 
 medianPerTissueCor <- cor(medianPerTissue)
 diag(medianPerTissueCor) <- NA
-clust <- hclust(as.dist(1 - medianPerTissueCor))
+
+
+
+clust <- hclust(Dist(t(medianPerTissue), method = "pearson"), method = "ward.D2")
 rpng(width = 1000, height = 1000)
 pheatmap(medianPerTissueCor, scale = "none", labels_row = shortTissue, labels_col = shortTissue, cluster_rows = clust, cluster_cols = clust, border_color = NA)
 dev.off()
 
+rpng(width = 1000, height = 1000)
+pheatmap(medianPerTissueCor, scale = "none", labels_row = shortTissue, labels_col = shortTissue, cluster_rows = clustX, cluster_cols = clustX, border_color = NA)
+dev.off()
+
+medianPerTissueGeneMean <- apply(medianPerTissue, 1 ,mean)
+
+medianPerTissueCentered <- apply(medianPerTissue, 2, function(x){x - medianPerTissueGeneMean})
+
+write.table(medianPerTissueCentered, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueCentered.txt.gz")), sep = "\t", quote = F, col.names = NA)
+  
+
+
+
+medianPerTissueCenteredCor <- cor(medianPerTissueCentered)
+diag(medianPerTissueCenteredCor) <- NA
+medianPerTissueCenteredCluster <- hclust(Dist(t(medianPerTissueCentered), method = "pearson"), method = "ward.D")
+
+save(medianPerTissueCenteredCluster, file = "CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueCenteredCluster.RData")
+
+rpng(width = 1000, height = 1000)
+pheatmap(medianPerTissueCenteredCor, scale = "none", labels_row = shortTissue, labels_col = shortTissue, cluster_rows = medianPerTissueCenteredCluster, cluster_cols = medianPerTissueCenteredCluster, border_color = NA)
+dev.off()
+
+
+
 medianPerTissueScaled <- t(scale(t(medianPerTissue)))
-write.table(medianPerTissueScaled, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueScaled.txt.gz")), sep = "\t", quote = F, col.names = NA)
+#write.table(medianPerTissueScaled, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueScaled.txt.gz")), sep = "\t", quote = F, col.names = NA)
 
 
 medianPerTissueScaledCor <- cor(medianPerTissueScaled)
@@ -302,18 +332,18 @@ pheatmap(medianPerTissueScaledCor, scale = "none", col = colHeatmap, breaks = co
 dev.off()
 
 
-medianOfmedianPerTissue <- apply(medianPerTissue, 1, median)
+#medianOfmedianPerTissue <- apply(medianPerTissue, 1, median)
 
 
-medianOfmedianPerTissueUnique <- medianPerTissue - medianOfmedianPerTissue
-write.table(medianOfmedianPerTissueUnique, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueCorrected.txt.gz")), sep = "\t", quote = F, col.names = NA)
+#medianOfmedianPerTissueUnique <- medianPerTissue - medianOfmedianPerTissue
+#write.table(medianOfmedianPerTissueUnique, file = gzfile(paste0("CombinedHealthyTissue/combinedHealthyTissue_medianPerTissueCorrected.txt.gz")), sep = "\t", quote = F, col.names = NA)
 
-medianOfmedianPerTissueUniqueCor <- cor(medianOfmedianPerTissueUnique)
-diag(medianOfmedianPerTissueUniqueCor) <- 0
-clust3 <- hclust(as.dist(1 - medianOfmedianPerTissueUniqueCor))
-rpng(width = 1000, height = 1000)
-pheatmap(medianOfmedianPerTissueUniqueCor, scale = "none", col = colHeatmap, breaks = colBreaks, labels_row = shortTissue, labels_col = shortTissue, cluster_rows = clust3, cluster_cols = clust3, border_color = NA)
-dev.off()
+#medianOfmedianPerTissueUniqueCor <- cor(medianOfmedianPerTissueUnique)
+#diag(medianOfmedianPerTissueUniqueCor) <- 0
+#clust3 <- hclust(as.dist(1 - medianOfmedianPerTissueUniqueCor))
+#rpng(width = 1000, height = 1000)
+#pheatmap(medianOfmedianPerTissueUniqueCor, scale = "none", col = colHeatmap, breaks = colBreaks, labels_row = shortTissue, labels_col = shortTissue, cluster_rows = clust3, cluster_cols = clust3, border_color = NA)
+#dev.off()
 
 
 medianPerTissue2 <- medianPerTissue

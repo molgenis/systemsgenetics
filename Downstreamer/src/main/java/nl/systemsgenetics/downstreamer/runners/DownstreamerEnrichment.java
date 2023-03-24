@@ -275,9 +275,9 @@ public class DownstreamerEnrichment {
 					}
 				}
 
-				if (pathwayDatabase.isEigenvectors()) {
-					pathwayDataTmp.normalizeColumns();
-				}
+				
+				pathwayDataTmp.normalizeColumns();
+				
 
 				if (allColumns.size() == included.size()) {
 					pathwayData = pathwayDataTmp;
@@ -327,7 +327,7 @@ public class DownstreamerEnrichment {
 
 			if (pathwayDatabase.isEigenvectors()) {
 				
-				final int nrPermutations = 10000;
+				final int nrPermutations = 100;
 				final double nrPermutationsMin1Double = nrPermutations - 1;
 				
 				//Enrichment on eigenvectors with intent to gene reconstruction using significant eigen vectors
