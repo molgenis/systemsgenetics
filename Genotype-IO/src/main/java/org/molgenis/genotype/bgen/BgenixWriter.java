@@ -11,6 +11,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+
+import org.apache.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.variant.GeneticVariant;
 
@@ -20,6 +22,7 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class BgenixWriter {
 
+	private static final Logger LOGGER = Logger.getLogger(BgenixWriter.class);
 	private final Connection dbConnection;
 	private final PreparedStatement addVariantStatement;
 	private int addVariantBufferCounter = 0;
@@ -29,7 +32,8 @@ public class BgenixWriter {
 	public BgenixWriter(File bgenixFile) {
 
 		if (bgenixFile.exists()) {
-			throw new GenotypeDataException("Bgen index file already exisist: " + bgenixFile.getAbsolutePath());
+			LOGGER.warn("BGEN index file already exists: " + bgenixFile.getAbsolutePath());
+			LOGGER.warn("BGEN index file contents will be overwritten!");
 		}
 
 		try {
@@ -41,6 +45,7 @@ public class BgenixWriter {
 
 		try {
 
+			dbConnection.createStatement().execute("DROP TABLE IF EXISTS Variant;");
 			dbConnection.createStatement().execute("CREATE TABLE Variant ( chromosome TEXT NOT NULL, position INT NOT NULL, rsid TEXT NOT NULL, number_of_alleles INT NOT NULL, allele1 TEXT NOT NULL, allele2 TEXT NULL, file_start_position INT NOT NULL, size_in_bytes INT NOT NULL, PRIMARY KEY (chromosome, position, rsid, allele1, allele2, file_start_position )) WITHOUT ROWID;");
 
 			addVariantStatement = dbConnection.prepareStatement("INSERT INTO Variant(chromosome, position, rsid, number_of_alleles, allele1, allele2, file_start_position, size_in_bytes) VALUES(?,?,?,?,?,?,?,?)");
@@ -128,12 +133,16 @@ public class BgenixWriter {
 
 		try {
 
+			dbConnection.createStatement().execute("DROP TABLE IF EXISTS Metadata;");
 			dbConnection.createStatement().execute("CREATE TABLE Metadata (filename TEXT NOT NULL, file_size INT NOT NULL, last_write_time INT NOT NULL, first_1000_bytes BLOB NOT NULL, index_creation_time INT NOT NULL);");
 
 			PreparedStatement metadataStatement = dbConnection.prepareStatement("INSERT INTO Metadata(filename, file_size, last_write_time, first_1000_bytes, index_creation_time) VALUES(?,?,?,?,?)");
 
+			// The sqlite database requires integers for both file size and write time.
+			// However, in sqlite integers are up to 8 byte integers.
+			// This is equivalent to a long in java, therefore, we use setLong here.
 			metadataStatement.setString(1, metadata.getFileName());
-			metadataStatement.setInt(2, metadata.getFileSize());
+			metadataStatement.setLong(2, metadata.getFileSize());
 			metadataStatement.setLong(3, metadata.getLastWriteTime());
 			metadataStatement.setBytes(4, metadata.getFirst1000bytes());
 			metadataStatement.setLong(5, metadata.getIndexCreationTime());
