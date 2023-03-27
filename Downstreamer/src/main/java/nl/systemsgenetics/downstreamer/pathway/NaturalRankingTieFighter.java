@@ -187,11 +187,12 @@ public class NaturalRankingTieFighter {
      * resolved using <code>tiesStrategy.</code>
      *
      * @param data array to be ranked
+	 * @param xWings the tie breaker
      * @return array of ranks
      * @throws NotANumberException if the selected {@link NaNStrategy} is {@code FAILED}
      * and a {@link Double#NaN} is encountered in the input data
      */
-    protected double[] rank(double[] data, double[] xWings) {
+    public double[] rank(final double[] data, final double[] xWings) {
 
         // Array recording initial positions of data to be ranked
         IntDoubleDoubleTriple[] ranks = new IntDoubleDoubleTriple[data.length];

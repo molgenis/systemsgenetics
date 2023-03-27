@@ -25,7 +25,6 @@ import java.util.stream.IntStream;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import nl.systemsgenetics.downstreamer.containers.GwasLocus;
 import nl.systemsgenetics.downstreamer.containers.LeadVariant;
@@ -49,9 +48,10 @@ import umcg.genetica.math.stats.ZScores;
 /**
  * @author patri
  */
+
 public class PathwayEnrichments {
 
-	private static final Logger LOGGER = LogManager.getLogger(DownstreamerDeprecated.class);
+	private static final Logger LOGGER = LogManager.getLogger(PathwayEnrichments.class);
 
 	private final PathwayDatabase pathwayDatabase;
 	private final HashSet<String> hlaGenesToExclude;
@@ -1328,6 +1328,9 @@ public class PathwayEnrichments {
 
 	public final DoubleMatrixDataset<String, String> getEnrichmentZscores() {
 
+//		LOGGER.warn("!!!!!!!!!! p to z overwriten by debug code");
+//		return pValues;
+		
 		DoubleMatrixDataset<String, String> zscores = pValues.duplicate();
 
 		for (int r = 0; r < zscores.rows(); r++) {
@@ -1351,6 +1354,10 @@ public class PathwayEnrichments {
 
 	public DoubleMatrixDataset<String, String> getpValues() {
 		return pValues;
+	}
+
+	public DoubleMatrixDataset<String, String> getBetas() {
+		return betas;
 	}
 
 	public static PathwayEnrichments createPathwayEnrichmentsFromGenePvalues(DownstreamerOptionsDeprecated options, DoubleMatrixDataset<String, String> genePvalues) throws Exception {

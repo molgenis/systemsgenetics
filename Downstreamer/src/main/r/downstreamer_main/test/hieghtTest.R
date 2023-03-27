@@ -50,6 +50,7 @@ myotubeBetas <- read.delim(gzfile("Myotube_Enrichment_betasExHla.txt.gz"))
 colnames(myotubeBetas)[2] <- "Beta"
 myotube <- merge(dsRes$Myotube, myotubeBetas, by.x = "Gene.set", by.y = "X.")
 
+str(myotube)
 
 myotubeSelected <- myotube[myotube$FDR.5..significant,c("Gene.set", "Beta")]
 

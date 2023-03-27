@@ -1,0 +1,13 @@
+[INFO]	10:55:13,463 - 
+[INFO]	10:55:13,468 - Downstreamer 2.1-SNAPSHOT
+[INFO]	10:55:13,468 - Current date and time: 2023-02-10 10:55:13
+[INFO]	10:55:13,469 - Supplied options:
+[INFO]	10:55:13,469 -  * Mode: CONVERT_TXT
+[INFO]	10:55:13,469 -  * Ouput path: C:\Users\patri\Documents\GitHub\systemsgenetics\Downstreamer\src\test\resources\random\300G_x_pathways2
+[INFO]	10:55:13,470 -  * Debug mode: off
+[INFO]	10:55:13,470 -  * Number of threads to use: 12
+[INFO]	10:55:13,470 -  * Use jblas for matrix algebra: no
+[INFO]	10:55:14,072 - Analysis completed
+[INFO]	10:55:14,073 - Current date and time: 2023-02-10 10:55:14
+[INFO]	10:55:14,073 - --------------------------------------------------------------------------------
+[INFO]	10:55:14,073 - 

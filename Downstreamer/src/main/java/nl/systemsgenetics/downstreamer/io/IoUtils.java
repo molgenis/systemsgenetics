@@ -37,6 +37,7 @@ public class IoUtils {
 
 	private static final Logger LOGGER = LogManager.getLogger(IoUtils.class);
 	private static Map<String, ChrPosTreeMap<LeadVariant>> leadVariantsPerTraitCache = null;
+
 	private static class LeadVariantFileNameFilter implements FilenameFilter {
 
 		public LeadVariantFileNameFilter() {
@@ -123,13 +124,12 @@ public class IoUtils {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 
-		CSVReader reader = null;
-		if (file.getName().endsWith(".gz")) {
-			reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)))))).withSkipLines(1).withCSVParser(parser).build();
-		} else {
-			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(file))).withCSVParser(parser).withSkipLines(1).build();
-		}
-
+		final CSVReader reader
+				= new CSVReaderBuilder((new BufferedReader(
+						file.getName().endsWith(".gz")
+						? new InputStreamReader(new GZIPInputStream(new FileInputStream(file)))
+						: new FileReader(file)
+				))).withSkipLines(1).withCSVParser(parser).build();
 
 		ChrPosTreeMap<LeadVariant> leadVariants = new ChrPosTreeMap<>();
 
@@ -150,12 +150,12 @@ public class IoUtils {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 
-		CSVReader reader = null;
-		if (geneFile.getName().endsWith(".gz")) {
-			reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(geneFile)))))).withSkipLines(1).withCSVParser(parser).build();
-		} else {
-			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
-		}
+		final CSVReader reader
+				= new CSVReaderBuilder((new BufferedReader(
+						geneFile.getName().endsWith(".gz")
+						? new InputStreamReader(new GZIPInputStream(new FileInputStream(geneFile)))
+						: new FileReader(geneFile)
+				))).withSkipLines(1).withCSVParser(parser).build();
 
 		final LinkedHashMap<String, Gene> genes = new LinkedHashMap<>();
 
@@ -173,12 +173,12 @@ public class IoUtils {
 	public static LinkedHashMap<String, List<Gene>> readGenesAsChrMap(File geneFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		CSVReader reader = null;
-		if (geneFile.getName().endsWith(".gz")) {
-			reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(geneFile)))))).withSkipLines(1).withCSVParser(parser).build();
-		} else {
-			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
-		}
+		final CSVReader reader
+				= new CSVReaderBuilder((new BufferedReader(
+						geneFile.getName().endsWith(".gz")
+						? new InputStreamReader(new GZIPInputStream(new FileInputStream(geneFile)))
+						: new FileReader(geneFile)
+				))).withSkipLines(1).withCSVParser(parser).build();
 
 		final LinkedHashMap<String, List<Gene>> genes = new LinkedHashMap<>();
 
@@ -199,12 +199,12 @@ public class IoUtils {
 	public static LinkedHashMap<String, List<Gene>> readGenesAsChrArmMap(File geneFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		CSVReader reader = null;
-		if (geneFile.getName().endsWith(".gz")) {
-			reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(geneFile)))))).withSkipLines(1).withCSVParser(parser).build();
-		} else {
-			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(geneFile))).withCSVParser(parser).withSkipLines(1).build();
-		}
+		final CSVReader reader
+				= new CSVReaderBuilder((new BufferedReader(
+						geneFile.getName().endsWith(".gz")
+						? new InputStreamReader(new GZIPInputStream(new FileInputStream(geneFile)))
+						: new FileReader(geneFile)
+				))).withSkipLines(1).withCSVParser(parser).build();
 
 		final LinkedHashMap<String, List<Gene>> genes = new LinkedHashMap<>();
 
@@ -228,13 +228,12 @@ public class IoUtils {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 
-		CSVReader reader = null;
-		if (sampleFile.getName().endsWith(".gz")) {
-			reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(sampleFile)))))).withSkipLines(0).withCSVParser(parser).build();
-		} else {
-			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(sampleFile))).withCSVParser(parser).withSkipLines(0).build();
-		}
-
+		final CSVReader reader
+				= new CSVReaderBuilder((new BufferedReader(
+						sampleFile.getName().endsWith(".gz")
+						? new InputStreamReader(new GZIPInputStream(new FileInputStream(sampleFile)))
+						: new FileReader(sampleFile)
+				))).withSkipLines(0).withCSVParser(parser).build();
 
 		final HashSet<String> samples = new HashSet<>();
 
@@ -252,13 +251,12 @@ public class IoUtils {
 	public static HashSet<String> readVariantFilterFile(File variantFilterFile) throws IOException {
 
 		final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-		CSVReader reader = null;
-		if (variantFilterFile.getName().endsWith(".gz")) {
-			reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(variantFilterFile)))))).withSkipLines(0).withCSVParser(parser).build();
-		} else {
-			reader = new CSVReaderBuilder(new BufferedReader(new FileReader(variantFilterFile))).withCSVParser(parser).withSkipLines(0).build();
-		}
-
+final CSVReader reader
+				= new CSVReaderBuilder((new BufferedReader(
+						variantFilterFile.getName().endsWith(".gz")
+						? new InputStreamReader(new GZIPInputStream(new FileInputStream(variantFilterFile)))
+						: new FileReader(variantFilterFile)
+				))).withSkipLines(0).withCSVParser(parser).build();
 
 		final HashSet<String> variants = new HashSet<>();
 
@@ -346,7 +344,6 @@ public class IoUtils {
 	}
 
 	// Specalized readers
-
 	/**
 	 * Load existing results from step 2 from storage
 	 *
@@ -454,6 +451,7 @@ public class IoUtils {
 
 	/**
 	 * Load lead variants for all traits in the run.
+	 *
 	 * @param options
 	 * @return
 	 * @throws IOException
@@ -509,15 +507,14 @@ public class IoUtils {
 		}
 	}
 
-
 	public static void writeBlockDiagonalIndices(List<int[]> blockDiagonalIndices, List<String> colObjects, String basePath) throws IOException {
-		File blockdiagonalFile =  new File(basePath);
+		File blockdiagonalFile = new File(basePath);
 
 		BufferedWriter writer = new BufferedWriter(new FileWriter(blockdiagonalFile));
 		int curBlock = 0;
 		writer.write("block\tindex\tgene");
 		writer.newLine();
-		for (int[] cur :blockDiagonalIndices) {
+		for (int[] cur : blockDiagonalIndices) {
 
 			for (int i : cur) {
 				writer.write(curBlock + "\t" + i + "\t" + colObjects.get(i));
@@ -529,9 +526,5 @@ public class IoUtils {
 		writer.close();
 
 	}
-
-
-
-
 
 }

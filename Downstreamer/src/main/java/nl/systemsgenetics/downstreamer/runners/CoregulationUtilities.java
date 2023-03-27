@@ -14,6 +14,7 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import nl.systemsgenetics.downstreamer.Downstreamer;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.IoUtils;
@@ -90,7 +91,7 @@ public class CoregulationUtilities {
 
 		DoubleMatrixDataset<String, String> output = new DoubleMatrixDataset<>(zScoreMatrix.getRowObjects(), colnames);
 
-		ProgressBar pb = new ProgressBar("Coregulation summary stats", genesInMatrix);
+		ProgressBar pb = new ProgressBar("Coregulation summary stats", genesInMatrix, ProgressBarStyle.ASCII);
 		for (int i = 0; i < genesInMatrix; ++i) {
 
 			double curSumZ = 0;
@@ -222,7 +223,6 @@ public class CoregulationUtilities {
 
 		// Normalize the input data
 		if (options.isNormalizeEigenvectors()) {
-			// TODO: Why normalize by row, is this valid??? Won't this in some cased ruin the ordering of the eigenvectors if the variance between rows is different.
 			expressionMatrix.normalizeRows();
 			expressionMatrix.normalizeColumns();
 			LOGGER.info("Data row normalized and then column normalized");
