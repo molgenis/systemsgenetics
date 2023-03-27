@@ -10,6 +10,7 @@ public class Main {
 	public static void main(String[] args) {
 
 		Options options = new Options();
+
 		options.addOption(OptionBuilder.withLongOpt("mode")
 				.withDescription("Mode: [metaqtl|mbqtl|mbqtlsingleds|mbqtlplot|regressqtl|sortfile|determineld|determineldgwas|concatconditional]")
 				.isRequired()
@@ -501,7 +502,7 @@ public class Main {
 					}
 					break;
 				case "mbqtl":
-					if (vcf == null || chrom == -1 || linkfile == null || geneannotation == null || genexpression == null || output == null) {
+					if (vcf == null || linkfile == null || geneannotation == null || genexpression == null || output == null) {
 						System.err.println("Usage: --vcf tabix.vcf.gz, --chr [1-22], --gte linkfile.txt, --annotation annotation.txt.gz, --exp expfile.txt.gz and --out /outdir/ ");
 						System.err.println("Optional: --replacemissinggenotypes, --norank, --minobservations 10 --maf 0.01 --cr 0.95 --hwep 0.001 --ciswindow 1E6 --nrdatasets 2");
 						System.err.println("Optional: --seed 123456789 --outputall --perm 1000 --snplog --outputallpermutations");
@@ -520,7 +521,7 @@ public class Main {
 							bQTL.loadSNPAnnotation(cmd.getOptionValue("snpannotation"));
 						}
 
-						if(cmd.hasOption("expgroups")){
+						if (cmd.hasOption("expgroups")) {
 							bQTL.loadExpGroupAnnotation(cmd.getOptionValue("expgroups"));
 						}
 						if (cmd.hasOption("replacemissinggenotypes")) {

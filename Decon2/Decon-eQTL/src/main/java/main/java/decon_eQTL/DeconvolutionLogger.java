@@ -14,7 +14,8 @@ import java.util.logging.Logger;
 
 public class DeconvolutionLogger {
 	static private FileHandler outfilePath;
-	protected final static Logger log = LogManager.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	protected final static Logger log = LogManager.getLogManager().getLogger(Logger.GLOBAL_LOGGER_NAME);
+
 	static public void setup(String outputDir, Boolean noConsole) throws IOException {
 		// get the global logger to configure it
 		LogManager.getLogManager().reset();
@@ -22,14 +23,14 @@ public class DeconvolutionLogger {
 		DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 		Date date = new Date();
 		File file = new File(outputDir+"/DeconvolutionLog_"+dateFormat.format(date)+".txt");
-	
+
 		File parent = file.getParentFile();
 		if (!parent.exists() && !parent.mkdirs()) {
 		    throw new IllegalStateException("Couldn't create dir: " + parent);
 		}
-		
+
 		Files.deleteIfExists(file.toPath());
-		
+
 		setOutfilePath(new FileHandler(outputDir+"/DeconvolutionLog_"+dateFormat.format(date)+".txt"));
 		CustomRecordFormatter customFormatter = new CustomRecordFormatter();
 		ConsoleHandler consoleHandler = new ConsoleHandler();

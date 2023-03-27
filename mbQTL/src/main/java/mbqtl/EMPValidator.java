@@ -1,11 +1,12 @@
 package mbqtl;
 
-import mbqtl.data.Dataset;
+import mbqtl.datastructures.Dataset;
 import mbqtl.vcf.VCFTabix;
 import mbqtl.vcf.VCFVariant;
 import umcg.genetica.containers.Triple;
 import umcg.genetica.enums.Chromosome;
 import umcg.genetica.features.Feature;
+import umcg.genetica.features.Gene;
 import umcg.genetica.io.text.TextFile;
 import umcg.genetica.math.stats.Correlation;
 import umcg.genetica.math.stats.ZScores;
@@ -48,7 +49,7 @@ public class EMPValidator extends QTLAnalysis {
 		String snplogheader = "SNP\tDatasetsPassQC\tNTotal\tNJoint1\tMAFJoint1\tCallRateJoint1\tHWEPJoint1\tNJoint1\tMAFJoint1\tCallRateJoint1\tHWEPJoint1";
 		HashSet<String> seenSNP = new HashSet<>();
 		for (int d = 0; d < datasets.length; d++) {
-			String name = datasets[d].name;
+			String name = datasets[d].getName();
 			snplogheader += "\t" + name + "-MAF";
 			snplogheader += "\t" + name + "-CallRate";
 			snplogheader += "\t" + name + "-HWEP";
@@ -62,8 +63,8 @@ public class EMPValidator extends QTLAnalysis {
 		for (int g = 0; g < expressionData.genes.length; g++) {
 			String gene = expressionData.genes[g];
 
-			Integer geneAnnotationId = geneAnnotation.getGeneId(gene);
-			if (geneAnnotationId != null) {
+			Gene geneAnnotationObj = geneAnnotation.getGene(gene);
+			if (geneAnnotationObj != null) {
 				double[] expData = expressionData.data[g];
 
 				// rank once, then center+scale
@@ -72,13 +73,13 @@ public class EMPValidator extends QTLAnalysis {
 
 				for (int d = 0; d < datasets.length; d++) {
 					Dataset thisDataset = datasets[d];
-					double[] datasetExpressionData = thisDataset.select(expData, thisDataset.expressionIds);
+					double[] datasetExpressionData = thisDataset.select(expData, thisDataset.getExpressionIds());
 					expDataPerDatasetRanked[d] = ranker.rank(datasetExpressionData, true);
 					expDataPerDatasetRankedCenterScaled[d] = Util.centerScale(expDataPerDatasetRanked[d]);
 				}
 
 				// get variants, 1mb up and downstream
-				int pos = geneAnnotation.getStartPos(geneAnnotationId);
+				int pos = geneAnnotationObj.getStart();
 				int start = pos - 1000001;
 				if (start < 0) {
 					start = 0;
@@ -119,19 +120,19 @@ public class EMPValidator extends QTLAnalysis {
 						for (int d = 0; d < datasets.length; d++) {
 							Dataset thisDataset = datasets[d];
 
-							double[] datasetGenotypeData = thisDataset.select(variant.getGenotypesAsByteVector(), thisDataset.genotypeIds);
+							double[] datasetGenotypeData = thisDataset.select(variant.getGenotypesAsByteVector(), thisDataset.getGenotypeIds());
 
 							// do some QC checks? test MAF, Callrate, HWE-P
 							VariantQCObj qcobj = checkVariant(datasetGenotypeData);
 							datasetsQCObjs[d] = qcobj;
 							datasetsGenotypeData[d] = datasetGenotypeData;
 //                            double[] datasetDosageValues = thisDataset.select(variant.getGenotypeDosage(), thisDataset.genotypeIds);
-							double[] datasetDosageValues = thisDataset.select(variant.getDosage(), thisDataset.genotypeIds);
+							double[] datasetDosageValues = thisDataset.select(variant.getDosage(), thisDataset.getGenotypeIds());
 							datasetsGenotypeDosageData[d] = datasetDosageValues;
 
 //                            System.out.println(variant.getGenotypesAsByteVector().length);
 							if (print) {
-								System.out.println(thisDataset.name + "\t" + datasetGenotypeData.length + "\t" + qcobj.toString());
+								System.out.println(thisDataset.getName() + "\t" + datasetGenotypeData.length + "\t" + qcobj.toString());
 							}
 //                            for (int q = 0; q < datasetGenotypeData.length; q++) {
 //                                System.out.println(datasetGenotypeData[q]);
@@ -171,7 +172,7 @@ public class EMPValidator extends QTLAnalysis {
 
 									Triple<double[], double[], double[]> prunedDatasetData = pruneMissingValues(datasetsGenotypeData[d], datasetsGenotypeDosageData[d], expDataPerDatasetRanked[d]);
 									if (prunedDatasetData.getRight().length == 0 || prunedDatasetData.getLeft().length == 0) {
-										System.out.println(datasets[d].name + " has 0 values, but " + datasets[d].expressionIds.length + " samples");
+										System.out.println(datasets[d].getName() + " has 0 values, but " + datasets[d].getExpressionIds().length + " samples");
 										for (int v = 0; v < datasetsGenotypeData[d].length; v++) {
 											System.out.println(datasetsGenotypeData[d][v] + "\t" + expDataPerDatasetRanked[d][v]);
 										}
@@ -197,7 +198,7 @@ public class EMPValidator extends QTLAnalysis {
 //                                    System.out.println(datasets[d].name + "\t" + 0 + "\t" + 0 + "\t" + 0 + "\t" + datasetsQCObjs[d]);
 								}
 								if (print) {
-									System.out.println(datasets[d].name + "\t" + zScores[d]);
+									System.out.println(datasets[d].getName() + "\t" + zScores[d]);
 								}
 							}
 
