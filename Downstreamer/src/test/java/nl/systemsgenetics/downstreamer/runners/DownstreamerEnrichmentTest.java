@@ -25,6 +25,7 @@ import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerMode;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeEnrichment;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
+import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.logging.log4j.Level;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -113,7 +114,7 @@ public class DownstreamerEnrichmentTest {
 		final String geneGeneCorrelationPrefix = new File(gwasFile.getParentFile(), "corPerArm").getAbsolutePath() + "/genecor_chr_";
 		
 		final File expectedBetaAndSeFile = new File(this.getClass().getResource("/random/300G_beta_se_full_r_calcultated_eigen_decomp_no_intercept_nochr6.txt").toURI());
-		final String outputPrefix = "test3";
+		final String outputPrefix = "test4";
 
 		doEnrichmentTest(outputPrefix, pathwayFile, genesFile, gwasFile, geneGeneCorrelationPrefix, expectedBetaAndSeFile, true, false);
 	}
@@ -143,11 +144,12 @@ public class DownstreamerEnrichmentTest {
 		LinearRegressionResult firstTraitEnrichmentRes = DownstreamerEnrichment.getFirstRestult();
 		
 		DoubleMatrixDataset<String, String> resBetas = firstTraitEnrichmentRes.getBeta();
-		DoubleMatrixDataset<String, String> resSes = firstTraitEnrichmentRes.getStandardError();
+		DoubleMatrixDataset<String, String> resTs = firstTraitEnrichmentRes.getTstats();
 		
 		
 		DoubleMatrixDataset<String, String> expectedBetasAndSe = DoubleMatrixDataset.loadDoubleTextData(expectedBetaAndSeFile.getAbsolutePath(), '\t');
 		
+
 		
 		//DownstreamerRegressionEngineTest.compareTwoMatrices(resBetas, expectedBetas, 0.01);
 		//resBetas.getCol(0).
@@ -155,21 +157,27 @@ public class DownstreamerEnrichmentTest {
 		combinedBetas.viewColumn(0).assign(resBetas.getCol(0));
 		combinedBetas.viewColumn(1).assign(expectedBetasAndSe.getCol(0));
 		
-		DenseDoubleMatrix2D combinedSes = new DenseDoubleMatrix2D(resSes.rows(), 2);
-		combinedSes.viewColumn(0).assign(resSes.getCol(0));
-		combinedSes.viewColumn(1).assign(expectedBetasAndSe.getCol(1));
+		DenseDoubleMatrix2D combinedTs = new DenseDoubleMatrix2D(resTs.rows(), 2);
+		combinedTs.viewColumn(0).assign(resTs.getCol(0));
+		
+		for(int r = 0 ; r < combinedTs.rows() ; ++r){
+			
+			double t = expectedBetasAndSe.getElementQuick(r, 0) / expectedBetasAndSe.getElementQuick(r, 1);
+			combinedTs.setQuick(r, 1, t);
+			
+		}
 		
 		
 		double correlationBetas = DoubleStatistic.correlation(DoubleStatistic.covariance(combinedBetas)).getQuick(0, 1);
-		double correlationSes = DoubleStatistic.correlation(DoubleStatistic.covariance(combinedSes)).getQuick(0, 1);
+		double correlationTs = DoubleStatistic.correlation(DoubleStatistic.covariance(combinedTs)).getQuick(0, 1);
 		
 		System.out.println("Correlation betas: " + correlationBetas);
-		System.out.println("Correlation SEs: " + correlationSes);
+		System.out.println("Correlation Ts: " + correlationTs);
 		
 		//We expect subtle differnce in the beta's and se. Instead of an exact match we check for high correlation
 		
 		Assert.assertTrue(correlationBetas >= 0.98, "The calculated beta's are not correlated to the expected betas.");
-		Assert.assertTrue(correlationSes >= 0.98, "The calculated SE's are not correlated to the expected SE's.");
+		Assert.assertTrue(correlationTs >= 0.98, "The calculated T's are not correlated to the expected T's.");
 				
 		DoubleMatrixDataset<String, String> betas = results.getPathwayEnrichments().get(0).getBetas();
 		betas.save(outputBasePath + "_betas.txt");
@@ -192,7 +200,7 @@ public class DownstreamerEnrichmentTest {
 				if (tmpOutputFolder.isDirectory()) {
 					System.out.println("Removing tmp dir and files");
 					for (File file : tmpOutputFolder.listFiles()) {
-						System.out.println(" - Deleting: " + file.getAbsolutePath());
+						//System.out.println(" - Deleting: " + file.getAbsolutePath());
 						file.delete();
 					}
 					System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());

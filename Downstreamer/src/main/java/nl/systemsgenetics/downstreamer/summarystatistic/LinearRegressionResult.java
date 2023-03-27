@@ -1,5 +1,6 @@
 package nl.systemsgenetics.downstreamer.summarystatistic;
 
+import cern.colt.function.tdouble.DoubleDoubleFunction;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import org.apache.commons.lang3.NotImplementedException;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
@@ -65,7 +66,9 @@ public class LinearRegressionResult {
 	}
 
 	public DoubleMatrixDataset<String, String> getTstats() {
-		throw new NotImplementedException("Not yet implemented");
+		DoubleMatrixDataset<String, String> t = beta.duplicate();
+		t.getMatrix().assign(standardError.getMatrix(), cern.jet.math.tdouble.DoubleFunctions.div);
+		return(t);
 	}
 
 	public DoubleMatrixDataset<String, String> getPvalues() {
