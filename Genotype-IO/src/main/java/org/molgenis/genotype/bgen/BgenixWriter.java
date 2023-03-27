@@ -12,7 +12,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.variant.GeneticVariant;
 
@@ -22,7 +23,8 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class BgenixWriter {
 
-	private static final Logger LOGGER = Logger.getLogger(BgenixWriter.class);
+	private static final Logger LOGGER = LogManager.getLogger(BgenixWriter.class);
+
 	private final Connection dbConnection;
 	private final PreparedStatement addVariantStatement;
 	private int addVariantBufferCounter = 0;
