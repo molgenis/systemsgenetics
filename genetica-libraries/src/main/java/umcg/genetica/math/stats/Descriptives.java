@@ -6,15 +6,16 @@ package umcg.genetica.math.stats;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import umcg.genetica.containers.Pair;
+import umcg.genetica.containers.Triple;
 
 /**
  * @author harmjan
  */
 public class Descriptives {
-	
+
 	public static double[] m_zScoreToPValue = null;
 	public static double[] m_sqrtSample = null;
-	
+
 	/**
 	 * Calculate the mean for an array of floats
 	 *
@@ -28,7 +29,7 @@ public class Descriptives {
 		}
 		return (sum / (double) v.length);
 	}
-	
+
 	/**
 	 * Calculate the variance for an array of floats
 	 *
@@ -43,7 +44,7 @@ public class Descriptives {
 		}
 		return ans / (v.length - 1);
 	}
-	
+
 	public static void lookupSqrt(int totalNrSamples) {
 		//Fast look-up service for squared root of number of samples:
 		double[] sqrtSample = new double[totalNrSamples + 1];
@@ -52,12 +53,12 @@ public class Descriptives {
 		}
 		m_sqrtSample = sqrtSample;
 	}
-	
+
 	public static void initializeZScoreToPValue() {
 		//Fast look-up service for normal distribution:
 		JSci.maths.statistics.NormalDistribution normDist = new JSci.maths.statistics.NormalDistribution();
 		m_zScoreToPValue = new double[376501];
-		
+
 		for (int z = 0; z <= 376500; z++) {
 			double zScore = ((double) z - 188250d) / 5000d;
 			double pValue;
@@ -76,19 +77,19 @@ public class Descriptives {
 			m_zScoreToPValue[z] = pValue;
 		}
 	}
-	
+
 	public static double convertZscoreToPvalue(double zScore) {
 		if (Double.isNaN(zScore)) {
 			return 1;
 		}
-		
+
 		// REMOVED: this is not thread safe!
 		if (m_zScoreToPValue == null) {
 			throw new IllegalArgumentException("ZScore to P-value lookup table is not initialized.");
 		}
 		return m_zScoreToPValue[getZScorePvalueIndex(zScore)];
 	}
-	
+
 	public static int getZScorePvalueIndex(double zScore) {
 		int zScoreIndex = (int) ((zScore * 5000.0d) + 188250);
 		if (zScoreIndex < 0) {
@@ -99,8 +100,8 @@ public class Descriptives {
 		}
 		return zScoreIndex;
 	}
-	
-	
+
+
 	public static double zScore(double value, double mean, double variance) {
 		if (variance > 0.0 && mean > 0.0) {
 			double sd = Math.sqrt(variance);
@@ -112,7 +113,7 @@ public class Descriptives {
 			return Double.MAX_VALUE;
 		}
 	}
-	
+
 	public static double mean(double[] v) {
 		double sum = 0;
 		for (int k = 0; k < v.length; k++) {
@@ -120,7 +121,7 @@ public class Descriptives {
 		}
 		return (sum / (double) v.length);
 	}
-	
+
 	/**
 	 * Simultainiusly calculates mean for two double[] of the same lengths
 	 * Warning: Does not check if the length is identical!
@@ -138,12 +139,30 @@ public class Descriptives {
 		}
 		return (new Pair<Double, Double>((sumV / (double) v.length), (sumW / (double) v.length)));
 	}
-	
+
+	public static Triple<Double, Double, Integer> meanWithNaNValues(double[] v, double[] w) {
+		double sumV = 0;
+		double sumW = 0;
+		int len = 0;
+		for (int k = 0; k < v.length; k++) {
+			if (!Double.isNaN(v[k]) && !Double.isNaN(w[k])) {
+				sumV += v[k];
+				sumW += w[k];
+				len++;
+			}
+		}
+		if (len < 1) {
+			return new Triple<>(Double.NaN, Double.NaN, len);
+		}
+		return new Triple<>((sumV / (double) len), (sumW / (double) len), len);
+	}
+
+
 	public static double variance(double[] v) {
 		double mean = mean(v);
 		return variance(v, mean);
 	}
-	
+
 	public static double variance(double[] v, double mean) {
 		double ans = 0.0;
 		for (int i = 0; i < v.length; i++) {
@@ -151,7 +170,7 @@ public class Descriptives {
 		}
 		return ans / (v.length - 1);
 	}
-	
+
 	public static double getSqrt(int nrTotalSamples) {
 		if (m_sqrtSample == null) {
 			System.out.println("ERROR: square-root table not correctly initialized.");
@@ -159,7 +178,7 @@ public class Descriptives {
 		}
 		return m_sqrtSample[nrTotalSamples];
 	}
-	
+
 	public static double sum(double[] v) {
 		double sum = 0;
 		for (double d : v) {
@@ -167,7 +186,7 @@ public class Descriptives {
 		}
 		return sum;
 	}
-	
+
 	public static double absSum(double[] v) {
 		double sum = 0;
 		for (double d : v) {
@@ -175,8 +194,8 @@ public class Descriptives {
 		}
 		return sum;
 	}
-	
-	
+
+
 	public static double cityBlockDistance(double[] v, double[] w) {
 		double summedDistance = 0;
 		for (int i = 0; i < v.length; ++i) {
@@ -184,7 +203,7 @@ public class Descriptives {
 		}
 		return summedDistance;
 	}
-	
+
 	public static double BrayCurtisDistance(double[] v, double[] w) {
 		double summedDistance = 0;
 		double sum = 0;
@@ -195,7 +214,7 @@ public class Descriptives {
 		}
 		return (summedDistance / sum);
 	}
-	
+
 	public static int sum(int[] ints) {
 		int sum = 0;
 		for (int i : ints) {
