@@ -98,6 +98,17 @@
 			<version>4.0</version>
 		</dependency>
 		<dependency>
+			<groupId>ca.umontreal.iro.simul</groupId>
+			<artifactId>ssj</artifactId>
+			<version>3.3.2</version>
+			<exclusions>
+				<exclusion>  <!-- We don't use colt features from ssj and including this gave conflicts with the pcolt we used -->
+					<groupId>colt</groupId>
+					<artifactId>colt</artifactId>
+				</exclusion>
+			</exclusions> 
+		</dependency>
+		<dependency>
 			<groupId>com.edwardraff</groupId>
 			<artifactId>JSAT</artifactId>
 			<version>0.0.9</version>

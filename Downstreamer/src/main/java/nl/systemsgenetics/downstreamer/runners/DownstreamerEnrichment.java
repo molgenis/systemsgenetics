@@ -325,8 +325,8 @@ public class DownstreamerEnrichment {
 
 			if (pathwayDatabase.isEigenvectors()) {
 
-				final int nrPermutations = 10;
-				//final double nrPermutationsMin1Double = nrPermutations - 1;
+				final int nrPermutations = 1000;
+				final double nrPermutationsMin1Double = nrPermutations - 1;
 
 				//Enrichment on eigenvectors with intent to gene reconstruction using significant eigen vectors
 				//Note these are not the eigen vectors of the gene-gene correlations but of the co-expression data
@@ -376,7 +376,7 @@ public class DownstreamerEnrichment {
 
 					final int sigEigenCount = significantEigenvectorsIdThisTrait.size();
 
-					System.out.println("significantEigenvectorsIdThisTrait: " + sigEigenCount);
+					LOGGER.info("significantEigenvectorsIdThisTrait: " + sigEigenCount);
 
 					if (significantEigenvectorsIdThisTrait.size() > 0) {
 
@@ -386,6 +386,7 @@ public class DownstreamerEnrichment {
 						//final DoubleMatrix1D traitSignificantTstats = pathwayTstatsIntermediates.viewRowSelection(significantEigenvectorsIdThisTrait).getCol(trait);
 
 						final DoubleMatrix1D reconstructedScore = significantEigenvectorsThisTrait.zMult(traitSignificantBetas, null);
+						pathwayBetas.getCol(trait).assign(reconstructedScore);
 						//final DoubleMatrix1D reconstructedScore2 = significantEigenvectorsThisTrait.zMult(traitSignificantTstats, null);
 
 						List<String> permutationNames = new ArrayList<>(nrPermutations);
@@ -395,6 +396,8 @@ public class DownstreamerEnrichment {
 
 						//This will be filled with the gene reconstructed scores
 						DoubleMatrixDataset<String, String> permutationData = new DoubleMatrixDataset<>(gwasGeneZscoreSubset.getHashRows().keySet(), permutationNames);
+
+						DoubleMatrixDataset<String, String> permutationBetas = new DoubleMatrixDataset<>(pathwayData.getHashCols().keySet(), permutationNames);
 
 						final List<LinearRegressionResult> pathwayRegeressionResultsPermutations = DownstreamerRegressionEngine.performDownstreamerRegression(
 								pathwayData,
@@ -410,6 +413,8 @@ public class DownstreamerEnrichment {
 							int[] permEigenTopIndex = Arrays.copyOfRange(
 									DoubleSorting.quickSort.sortIndex(permRes.getPvalueForMainEffect()),
 									0, numberEigenvectors);
+
+							permutationBetas.viewCol(p).assign(permRes.getBetaForMainEffect());
 
 							final DoubleMatrix2D permTopEigen = pathwayData.getMatrix().viewSelection(null, permEigenTopIndex);
 							final DoubleMatrix1D permSignificantBetas = permRes.getBetaForMainEffect().viewSelection(permEigenTopIndex);
@@ -430,44 +435,41 @@ public class DownstreamerEnrichment {
 						}
 
 						permutationData.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationMatrix.txt");
+						permutationBetas.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationBetas.txt");
 
 						DoubleMatrix2D permutationMatrix = permutationData.getMatrix();
 
-						// Calc mean
-						double meanNull = 0;
-						for (int r = 0; r < reconstructedScore.size(); ++r) {
+						for (int g = 0; g < reconstructedScore.size(); ++g) {
+
+							// Calc mean
+							double meanNull = 0;
 							for (int p = 0; p < nrPermutations; ++p) {
-								meanNull += permutationMatrix.getQuick(r, p);
+								meanNull += permutationMatrix.getQuick(g, p);
 							}
-						}
-						meanNull /= permutationMatrix.size();
 
-						// Calc sd
-						double x = 0;
-						for (int r = 0; r < reconstructedScore.size(); ++r) {
+							meanNull /= nrPermutations;
+
+							// Calc sd
+							double x = 0;
 							for (int p = 0; p < nrPermutations; ++p) {
-								x += (permutationMatrix.getQuick(r, p) - meanNull) * (permutationMatrix.getQuick(r, p) - meanNull);
+								x += (permutationMatrix.getQuick(g, p) - meanNull) * (permutationMatrix.getQuick(g, p) - meanNull);
 							}
-						}
-						final double sdNull = Math.sqrt(x / (permutationMatrix.size() - 1d));
 
-						final NormalDistribution referenceDist = new NormalDistribution(meanNull, sdNull);
+							final double sdNull = Math.sqrt(x / nrPermutationsMin1Double);
 
-						for (int r = 0; r < reconstructedScore.size(); ++r) {
+							final NormalDistribution referenceDist = new NormalDistribution(meanNull, sdNull);
 
-							pathwayPvalues.setElementQuick(r, trait, referenceDist.cumulativeProbability(-Math.abs(reconstructedScore.getQuick(r))) * 2);
+							pathwayPvalues.setElementQuick(g, trait, referenceDist.cumulativeProbability(-Math.abs(reconstructedScore.getQuick(g))) * 2);
 
 						}
-
-						pathwayBetas.getCol(trait).assign(reconstructedScore);
 
 					}
 				}
 
 				pathwayQvalues = DownstreamerUtilities.adjustPvaluesBenjaminiHochberg(pathwayPvalues);
-				
-				pathwayPvalues.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresBeta.txt");
-				pathwayBetas.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresTstat.txt");
+
+				pathwayPvalues.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresPvalues.txt");
+				pathwayBetas.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresBetas.txt");
 				pathwayPvaluesIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorPvalues.txt");
 				pathwaySeIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorSes.txt");
 				pathwayBetasIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorBetas.txt");
