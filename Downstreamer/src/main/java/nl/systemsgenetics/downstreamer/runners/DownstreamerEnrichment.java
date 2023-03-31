@@ -398,6 +398,7 @@ public class DownstreamerEnrichment {
 						DoubleMatrixDataset<String, String> permutationData = new DoubleMatrixDataset<>(gwasGeneZscoreSubset.getHashRows().keySet(), permutationNames);
 
 						DoubleMatrixDataset<String, String> permutationBetas = new DoubleMatrixDataset<>(pathwayData.getHashCols().keySet(), permutationNames);
+						DoubleMatrixDataset<String, String> permutationSes = new DoubleMatrixDataset<>(pathwayData.getHashCols().keySet(), permutationNames);
 
 						final List<LinearRegressionResult> pathwayRegeressionResultsPermutations = DownstreamerRegressionEngine.performDownstreamerRegression(
 								pathwayData,
@@ -415,6 +416,7 @@ public class DownstreamerEnrichment {
 									0, numberEigenvectors);
 
 							permutationBetas.viewCol(p).assign(permRes.getBetaForMainEffect());
+							permutationSes.viewCol(p).assign(permRes.getSeForMainEffect());
 
 							final DoubleMatrix2D permTopEigen = pathwayData.getMatrix().viewSelection(null, permEigenTopIndex);
 							final DoubleMatrix1D permSignificantBetas = permRes.getBetaForMainEffect().viewSelection(permEigenTopIndex);
@@ -433,9 +435,12 @@ public class DownstreamerEnrichment {
 							permTopEigen.zMult(permSignificantBetas, permutationData.viewCol(p));
 
 						}
+						
+						pathwayData.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "NormalizedComponents.txt");
 
 						permutationData.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationMatrix.txt");
 						permutationBetas.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationBetas.txt");
+						permutationSes.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationSes.txt");
 
 						DoubleMatrix2D permutationMatrix = permutationData.getMatrix();
 
