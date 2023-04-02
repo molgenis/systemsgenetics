@@ -480,7 +480,9 @@ public class DownstreamerRegressionEngine {
 			final LinearRegressionResult result = new LinearRegressionResult(X.getColObjects(),
 					curPredictorNames,
 					degreesOfFreedom,
-					name);
+					name,
+					UHatT.rows()
+			);
 
 			// Calculate beta's and SE for each pathway
 			for (int curPathway = 0; curPathway < X.columns(); curPathway++) {

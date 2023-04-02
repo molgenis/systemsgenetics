@@ -46,6 +46,8 @@ resultList <- lapply(traits, function(x){
       minZfdrSig <<- z
     }
   }
+  res$Enrichment.Z.score[!res$FDR.5..significant] <- 0
+  
   
   return(res[order(res$Gene.set),"Enrichment.Z.score"])
 }) 
@@ -65,9 +67,7 @@ load("../../combinedHealthyTissue_medianPerTissueCenteredCluster.RData", verbose
 
 #"#f03b20"
 colHeatmap <- c(colorRampPalette(c("#feb24c", "#ffeda0"))(99), "white", colorRampPalette(c("#e0ecf4", "#9ebcda", "#8856a7"))(99))
-colBreaks <- c(seq(min(tissueEnrichments),-sigZ,length.out= 100), seq(sigZ,max(tissueEnrichments),length.out= 100))
-
-
+colBreaks <- c(seq(min(tissueEnrichments),-minZfdrSig,length.out= 100), seq(minZfdrSig,max(tissueEnrichments),length.out= 100))
 pdf("plot.pdf", width = 20, height =20)
 pheatmap(tissueEnrichments[medianPerTissueCenteredCluster$labels,], scale = "none", col = colHeatmap, breaks = colBreaks,cluster_rows = medianPerTissueCenteredCluster)
 dev.off()
