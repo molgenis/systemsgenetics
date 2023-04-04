@@ -5,7 +5,6 @@
  */
 package nl.systemsgenetics.downstreamer.runners;
 
-import cern.colt.GenericPermuting;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DoubleSorting;
@@ -20,9 +19,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.IntStream;
+import jdk.internal.joptsimple.internal.Strings;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.BlockPerFileDiagonalDoubleMatrixProvider;
@@ -35,13 +34,15 @@ import static nl.systemsgenetics.downstreamer.runners.DownstreamerRegressionEngi
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeEnrichment;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.commons.math3.distribution.NormalDistribution;
-import org.apache.commons.math3.distribution.TDistribution;
 import org.apache.commons.math3.stat.descriptive.moment.Kurtosis;
 import org.apache.commons.math3.stat.descriptive.moment.Skewness;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.apache.commons.math3.stat.descriptive.moment.Variance;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import umcg.genetica.math.JohnsonSuPdf;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
@@ -354,9 +355,11 @@ public class DownstreamerEnrichment {
 				//degrees of freedom is the same for all traits because all genes filters and settings are shared
 				//int degreesOfFreemdom = 0;
 				int numberOfComponentsUsedInRegression = 0;
-				int nubmerOfGenes = pathwayData.rows();
+				int numberOfGenes = pathwayData.rows();
 
 				//columns in gwasGeneZscores are traits
+				final ArrayList<String> traitNames = gwasGeneZscores.getColObjects();
+
 				for (int trait = 0; trait < gwasGeneZscores.columns(); ++trait) {
 					LinearRegressionResult thisGwasRestuls = pathwayRegeressionResults.get(trait);
 
@@ -383,10 +386,8 @@ public class DownstreamerEnrichment {
 				final ArrayList<String> eigenvectorsInDataset = pathwayPvaluesIntermediates.getRowObjects();
 				final int numberEigenvectors = eigenvectorsInDataset.size();
 
-				
 				System.out.println("eigenvectorsInDataset: " + numberEigenvectors);
 
-				
 				for (int trait = 0; trait < gwasGeneZscores.columns(); ++trait) {
 
 					final ArrayList<String> significantEigenvectorsIdThisTrait = new ArrayList<>();
@@ -413,11 +414,9 @@ public class DownstreamerEnrichment {
 						significantEigenvectorsThisTrait.zMult(traitSignificantBetas, pathwayBetas.getCol(trait));
 
 						//This will be filled with the gene reconstructed scores
-						DoubleMatrixDataset<String, String> permutationData = new DoubleMatrixDataset<>(gwasGeneZscoreSubset.getHashRows().keySet(), permutationNames);
-
-						DoubleMatrixDataset<String, String> permutationBetas = new DoubleMatrixDataset<>(pathwayData.getHashCols().keySet(), permutationNames);
-						DoubleMatrixDataset<String, String> permutationSes = new DoubleMatrixDataset<>(pathwayData.getHashCols().keySet(), permutationNames);
-
+						//DoubleMatrixDataset<String, String> permutationData = new DoubleMatrixDataset<>(gwasGeneZscoreSubset.getHashRows().keySet(), permutationNames);
+						//DoubleMatrixDataset<String, String> permutationBetas = new DoubleMatrixDataset<>(pathwayData.getHashCols().keySet(), permutationNames);
+						//DoubleMatrixDataset<String, String> permutationSes = new DoubleMatrixDataset<>(pathwayData.getHashCols().keySet(), permutationNames);
 //						final List<LinearRegressionResult> pathwayRegeressionResultsPermutations = DownstreamerRegressionEngine.performDownstreamerRegression(
 //								pathwayData,
 //								gwasGeneZscoreSubset.viewColSelection(traitNames.get(trait)),
@@ -425,11 +424,18 @@ public class DownstreamerEnrichment {
 //								eigen[1], eigen[0], blockDiagonalIndicesForEigen, 0.9, false, true, options.isJblas(), nrPermutations);
 						//final DenseDoubleMatrix1D randomTs = new DenseDoubleMatrix1D(numberEigenvectors);
 						//final DenseDoubleMatrix1D randomTsAbs = new DenseDoubleMatrix1D(numberEigenvectors);
-						final DenseDoubleMatrix1D randomBetas = new DenseDoubleMatrix1D(numberEigenvectors);
-						final DenseDoubleMatrix1D randomBetasAbs = new DenseDoubleMatrix1D(numberEigenvectors);
+						NullDistributionGenerator[] nullDistInfo = new NullDistributionGenerator[numberOfGenes];
+						
+						for (int g = 0; g < numberOfGenes; ++g) {
+							nullDistInfo[g] = new NullDistributionGenerator();
+						}
 
 						//double randomT;
-						for (int p = 0; p < nrPermutations; ++p) {
+						//for (int p = 0; p < nrPermutations; ++p) {
+						IntStream.range(0, nrPermutations).parallel().forEach(p -> {
+
+							final DenseDoubleMatrix1D randomBetas = new DenseDoubleMatrix1D(numberEigenvectors);
+							final DenseDoubleMatrix1D randomBetasAbs = new DenseDoubleMatrix1D(numberEigenvectors);
 
 							for (int e = 0; e < numberEigenvectors; ++e) {
 //								randomT = tDistForEigenvectorRegression.sample();
@@ -444,12 +450,15 @@ public class DownstreamerEnrichment {
 
 							}
 
-							permutationBetas.viewCol(p).assign(randomBetas);
-
+							//permutationBetas.viewCol(p).assign(randomBetas);
 							int[] permEigenTopIndex = Arrays.copyOfRange(
 									DoubleSorting.quickSort.sortIndex(randomBetasAbs),
-									0, numberEigenvectors);
+									0, sigEigenCount);
+//							LinearRegressionResult permRes = pathwayRegeressionResultsPermutations.get(p);
 
+//							int[] permEigenTopIndex = Arrays.copyOfRange(
+//									DoubleSorting.quickSort.sortIndex(permRes.getPvalueForMainEffect()),
+//									0, numberEigenvectors);
 							//permutationBetas.viewCol(p).assign(permRes.getBetaForMainEffect());
 							//permutationSes.viewCol(p).assign(permRes.getSeForMainEffect());
 							final DoubleMatrix2D permTopEigen = pathwayData.getMatrix().viewSelection(null, permEigenTopIndex);
@@ -467,52 +476,85 @@ public class DownstreamerEnrichment {
 //							LOGGER.info("Perm " + p + " minP " + minP + " maxP" + maxP + " minB " + minB + " maxB " + maxB + " meanB " + meanB + " minIndex " + permEigenTopIndex[0] + " minP2 " + permRes.getPvalueForMainEffect().getQuick(permEigenTopIndex[0]));
 
 							//overwrite permutation matrix
-							permTopEigen.zMult(permBetas, permutationData.viewCol(p));
+							//permTopEigen.zMult(permBetas, permutationData.viewCol(p));
+							DoubleMatrix1D permRes = permTopEigen.zMult(permBetas, null);
 
-						}
+							for (int g = 0; g < numberOfGenes; ++g) {
 
-						pathwayData.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "NormalizedComponents.txt");
+								nullDistInfo[g].addPermutation(permRes.get(g));
 
-						permutationData.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationMatrix.txt");
-						permutationBetas.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationBetas.txt");
-						permutationSes.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationSes.txt");
-
-						DoubleMatrix2D permutationMatrix = permutationData.getMatrix();
-
-						for (int g = 0; g < nubmerOfGenes; ++g) {
-
-							// Calc mean
-							double meanNull = 0;
-							for (int p = 0; p < nrPermutations; ++p) {
-								meanNull += permutationMatrix.getQuick(g, p);
 							}
 
-							meanNull /= nrPermutations;
+//							if (p == 0) {
+//								System.out.println("Indices: " + Arrays.toString(permEigenTopIndex));
+//								System.out.println("permBetas: " + permBetas.toString());
+//								System.out.println("permTopEigen: " + permTopEigen.getQuick(0, 0) + "\t" + permTopEigen.getQuick(0, 1) + "\t" + permTopEigen.getQuick(1, 0) + "\t" + permTopEigen.getQuick(1, 1) + "\t");
+//
+//							}
+						});
 
-							// Calc sd
-							double x = 0;
-							for (int p = 0; p < nrPermutations; ++p) {
-								x += (permutationMatrix.getQuick(g, p) - meanNull) * (permutationMatrix.getQuick(g, p) - meanNull);
-							}
+//						pathwayData.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "NormalizedComponents.txt");
+//
+//						permutationData.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationMatrix.txt");
+//						permutationBetas.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationBetas.txt");
+////						permutationSes.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "permutationSes.txt");
+//
+//						DoubleMatrix2D permutationMatrix = permutationData.getMatrix();
+						final ArrayList<String> geneNames = pathwayPvalues.getRowObjects();
 
-							final double sdNull = Math.sqrt(x / nrPermutationsMin1Double);
+						final int trait2 = trait;
+						
+						IntStream.range(0, numberOfGenes).parallel().forEach(g -> {
 
-							Kurtosis k = new Kurtosis();
-							k.incrementAll(permutationMatrix.viewRow(g).toArray());
+//							Kurtosis k = new Kurtosis();
+//							Skewness s = new Skewness();
+//
+//							// Calc mean
+//							double meanNull = 0;
+//							for (int p = 0; p < nrPermutations; ++p) {
+//								double x = permutationMatrix.getQuick(g, p);
+//								meanNull += x;
+//								k.increment(x);
+//								s.increment(x);
+//							}
+//
+//							meanNull /= nrPermutations;
+//
+//							// Calc sd
+//							double x = 0;
+//							for (int p = 0; p < nrPermutations; ++p) {
+//								x += (permutationMatrix.getQuick(g, p) - meanNull) * (permutationMatrix.getQuick(g, p) - meanNull);
+//							}
+//
+//							final double sdNull = Math.sqrt(x / nrPermutationsMin1Double);
+							final NullDistributionGenerator geneNullDistInfo = nullDistInfo[g];
 
-							Skewness s = new Skewness();
-							s.incrementAll(permutationMatrix.viewRow(g).toArray());
+							final double meanNull = geneNullDistInfo.getMean();
+							final double sdNull = geneNullDistInfo.getStandardDeviation();
+							final double kurtosis = geneNullDistInfo.getKurtosis();
+							final double skewness = geneNullDistInfo.getSwewness();
+									
+							//System.out.println("kurtosis: " + k.getResult());
+							//							System.out.println("skew: " + s.getResult());
+							final NormalDistribution nullDistNorm = new NormalDistribution(meanNull, sdNull);
+							//final JohnsonSUDist nullDist = new JohnsonSUDist(s.getResult(), (k.getResult() + 3), meanNull, sdNull);
 
-//							System.out.println("kurtosis: " + k.getResult());
-//							System.out.println("skew: " + s.getResult());
-//							
-							//final NormalDistribution nullDist = new NormalDistribution(meanNull, sdNull);
-							final JohnsonSUDist nullDist = new JohnsonSUDist(s.getResult(), k.getResult() + 3, meanNull, sdNull);
+							final double pvalue = JohnsonSuPdf.cumulativeProbability(-Math.abs(pathwayBetas.getElementQuick(g, trait2)), meanNull, sdNull, skewness, kurtosis + 3) * 2;
 
-							//pathwayPvalues.setElementQuick(g, trait, nullDist.cumulativeProbability(-Math.abs(pathwayBetas.getElementQuick(g, trait))) * 2);
-							pathwayPvalues.setElementQuick(g, trait, nullDist.cdf(-Math.abs(pathwayBetas.getElementQuick(g, trait))) * 2);
+//							if (geneNames.get(g).equals("ENSG00000196739")) {
+//								System.out.println("mean: " + meanNull);
+//								System.out.println("sd: " + sdNull);
+//								System.out.println("skewness: " + skewness);
+//								System.out.println("kurtosis: " + kurtosis);
+//								System.out.println("kurtosis +3: " + (kurtosis + 3));
+//								System.out.println("p-value norm: " + nullDistNorm.cumulativeProbability(-Math.abs(pathwayBetas.getElementQuick(g, trait))) * 2);
+//								System.out.println("p-value: " + pvalue);
+//							}
 
-						}
+							//pathwayPvalues.setElementQuick(g, trait, nullDistNorm.cumulativeProbability(-Math.abs(pathwayBetas.getElementQuick(g, trait))) * 2);
+							pathwayPvalues.setElementQuick(g, trait2, pvalue);
+
+						});
 
 					}
 				}
