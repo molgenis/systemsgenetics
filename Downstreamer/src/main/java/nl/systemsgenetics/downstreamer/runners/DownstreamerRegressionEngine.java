@@ -1477,7 +1477,7 @@ public class DownstreamerRegressionEngine {
 	}
 
 	private static void logInfoMem(String msg) {
-		Downstreamer.logInfoMem(msg, LOGGER);
+		Downstreamer.logDebugMem(msg, LOGGER);
 	}
 
 }

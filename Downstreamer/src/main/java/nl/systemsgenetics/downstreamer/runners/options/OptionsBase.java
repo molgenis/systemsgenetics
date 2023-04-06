@@ -26,6 +26,7 @@ public class OptionsBase {
 	private DownstreamerMode mode;
 	private boolean debugMode;
 	private static File debugFolder;
+	private final File intermediateFolder;
 	private boolean jblas;
 
 	static {
@@ -41,7 +42,7 @@ public class OptionsBase {
 
 		// debugMode
 		OptionBuilder.withArgName("boolean");
-		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file and will save many intermediate results to files. Not recommended for large analysis. Not all tools have debug mode.");
+		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file and will save many intermeiate results to files. Not recommended for large analysis. Not all tools have debug mode.");
 		OptionBuilder.withLongOpt("debug");
 		OPTIONS.addOption(OptionBuilder.create("d"));
 
@@ -58,19 +59,18 @@ public class OptionsBase {
 		OptionBuilder.withDescription("Print help message. Combine with -m for viewing tool specific arguments.");
 		OptionBuilder.withLongOpt("help");
 		OPTIONS.addOption(OptionBuilder.create("h"));
-		
+
 		OptionBuilder.withArgName("int");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Maximum number of calculation threads");
 		OptionBuilder.withLongOpt("threads");
 		OPTIONS.addOption(OptionBuilder.create("t"));
-		
+
 		// debugMode
 		OptionBuilder.withArgName("boolean");
 		OptionBuilder.withDescription("Use jblas for matrix algebra. NOTE: this does require native system libraries.");
 		OptionBuilder.withLongOpt("jblas");
 		OPTIONS.addOption(OptionBuilder.create("jb"));
-		
 
 	}
 
@@ -82,8 +82,9 @@ public class OptionsBase {
 		this.debugMode = debugMode;
 		this.jblas = jblas;
 		this.debugFolder = new File(outputBasePath + "_debugFiles");
+		this.intermediateFolder = new File(outputBasePath + "_intermediates");
 	}
-	
+
 	public OptionsBase(String[] args) throws ParseException {
 
 		// Parse arguments
@@ -105,7 +106,7 @@ public class OptionsBase {
 			try {
 				numberOfThreadsToUse = Integer.parseInt(commandLine.getOptionValue('t'));
 				System.setProperty("Djava.util.concurrent.ForkJoinPool.common.parallelism", commandLine.getOptionValue('t'));
-				System.out.println("getParallelism=" +ForkJoinPool.commonPool().getParallelism());
+				System.out.println("getParallelism=" + ForkJoinPool.commonPool().getParallelism());
 				ConcurrencyUtils.setNumberOfThreads(numberOfThreadsToUse);
 			} catch (NumberFormatException e) {
 				throw new ParseException("Error parsing --threads \"" + commandLine.getOptionValue('t') + "\" is not an int");
@@ -122,6 +123,7 @@ public class OptionsBase {
 
 		logFile = new File(outputBasePath + ".log");
 		debugFolder = new File(outputBasePath + "_debugFiles");
+		intermediateFolder = new File(outputBasePath + "_intermediates");
 		debugMode = commandLine.hasOption('d');
 		jblas = commandLine.hasOption("jb");
 	}
@@ -134,7 +136,7 @@ public class OptionsBase {
 		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
 		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
 		LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
-		System.out.println("getParallelism=" +ForkJoinPool.commonPool().getParallelism());
+		System.out.println("getParallelism=" + ForkJoinPool.commonPool().getParallelism());
 		LOGGER.info(" * Use jblas for matrix algebra: " + (jblas ? "yes" : "no"));
 
 	}
@@ -145,7 +147,7 @@ public class OptionsBase {
 		formatter.printHelp(" ", OPTIONS);
 	}
 
-	public  int getNumberOfThreadsToUse() {
+	public int getNumberOfThreadsToUse() {
 		return numberOfThreadsToUse;
 	}
 
@@ -176,5 +178,9 @@ public class OptionsBase {
 
 	public boolean isJblas() {
 		return jblas;
+	}
+
+	public File getIntermediateFolder() {
+		return intermediateFolder;
 	}
 }

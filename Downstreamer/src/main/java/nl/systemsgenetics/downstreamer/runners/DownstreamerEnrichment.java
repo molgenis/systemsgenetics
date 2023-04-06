@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
-import jdk.internal.joptsimple.internal.Strings;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.io.BlockPerFileDiagonalDoubleMatrixProvider;
@@ -34,10 +33,6 @@ import static nl.systemsgenetics.downstreamer.runners.DownstreamerRegressionEngi
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeEnrichment;
 import nl.systemsgenetics.downstreamer.summarystatistic.LinearRegressionResult;
 import org.apache.commons.math3.distribution.NormalDistribution;
-import org.apache.commons.math3.stat.descriptive.moment.Kurtosis;
-import org.apache.commons.math3.stat.descriptive.moment.Skewness;
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-import org.apache.commons.math3.stat.descriptive.moment.Variance;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.logging.log4j.LogManager;
@@ -46,7 +41,6 @@ import umcg.genetica.math.JohnsonSuPdf;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetFastSubsetLoader;
 import umcg.genetica.math.stats.ZScores;
-import umontreal.iro.lecuyer.probdist.JohnsonSUDist;
 
 /**
  *
@@ -70,6 +64,8 @@ public class DownstreamerEnrichment {
 				throw new FileNotFoundException("Could not read: " + pd.getLocation() + ".dat or .datg");
 			}
 		}
+		
+		options.getIntermediateFolder().mkdirs();
 
 		// Load the genes to run the analysis on
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
@@ -254,7 +250,8 @@ public class DownstreamerEnrichment {
 				}
 			}
 
-			final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesSubset = covariatesToCorrectGenePvalues == null ? null : covariatesToCorrectGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase);
+			//make copy because normalization on selected genes is inplace
+			final DoubleMatrixDataset<String, String> covariatesToCorrectGenePvaluesSubset = covariatesToCorrectGenePvalues == null ? null : covariatesToCorrectGenePvalues.viewRowSelection(genesOverlappingWithPathwayDatabase).duplicate();
 
 			if (covariatesToCorrectGenePvaluesSubset != null) {
 				covariatesToCorrectGenePvaluesSubset.normalizeColumns();
@@ -312,6 +309,9 @@ public class DownstreamerEnrichment {
 			//eigen[1] U = eigen vectors
 			final DoubleMatrixDataset<String, String>[] eigen = blockDiagonalEigenDecomposition(genesOverlappingWithPathwayDatabase, geneCorLoader, blockDiagonalIndicesForEigen, options.isJblas());
 
+			
+			pathwayData.save(options.getOutputBasePath() + "test.txt" );
+			
 //			eigen[0] = DoubleMatrixDataset.loadDoubleData("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\test\\resources\\random\\genecor_eigenvalues.txt");
 //			eigen[1] = DoubleMatrixDataset.loadDoubleData("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\test\\resources\\random\\genecor_eigenvectors.txt");
 			//list contains traits
@@ -334,8 +334,7 @@ public class DownstreamerEnrichment {
 				//Note these are not the eigen vectors of the gene-gene correlations but of the co-expression data
 
 				final int nrPermutations = 10000;
-				final double nrPermutationsMin1Double = nrPermutations - 1;
-
+				
 				List<String> permutationNames = new ArrayList<>(nrPermutations);
 				for (int p = 0; p < nrPermutations; p++) {
 					permutationNames.add("P" + p);
@@ -348,9 +347,10 @@ public class DownstreamerEnrichment {
 				pathwayBetas = new DoubleMatrixDataset<>(pathwayData.getRowObjects(), gwasGeneZscores.getColObjects());
 
 				final DoubleMatrixDataset<String, String> pathwayPvaluesIntermediates = new DoubleMatrixDataset<>(pathwayData.getColObjects(), gwasGeneZscores.getColObjects());
-				final DoubleMatrixDataset<String, String> pathwaySeIntermediates = new DoubleMatrixDataset<>(pathwayData.getColObjects(), gwasGeneZscores.getColObjects());
+				final DoubleMatrixDataset<String, String> pathwaySelectedIntermediates = new DoubleMatrixDataset<>(pathwayData.getColObjects(), gwasGeneZscores.getColObjects());
+				//final DoubleMatrixDataset<String, String> pathwaySeIntermediates = new DoubleMatrixDataset<>(pathwayData.getColObjects(), gwasGeneZscores.getColObjects());
 				final DoubleMatrixDataset<String, String> pathwayBetasIntermediates = new DoubleMatrixDataset<>(pathwayData.getColObjects(), gwasGeneZscores.getColObjects());
-				final DoubleMatrixDataset<String, String> pathwayTstatsIntermediates = new DoubleMatrixDataset<>(pathwayData.getColObjects(), gwasGeneZscores.getColObjects());
+				//final DoubleMatrixDataset<String, String> pathwayTstatsIntermediates = new DoubleMatrixDataset<>(pathwayData.getColObjects(), gwasGeneZscores.getColObjects());
 
 				//degrees of freedom is the same for all traits because all genes filters and settings are shared
 				//int degreesOfFreemdom = 0;
@@ -371,9 +371,9 @@ public class DownstreamerEnrichment {
 					//System.out.println("Degree freedom: " + thisGwasRestuls.getDegreesOfFreedom());
 					//System.out.println("lin reg res: " + thisGwasRestuls.getName() + " " + thisGwasRestuls.getBeta().getMatrix().toStringShort());
 					pathwayPvaluesIntermediates.getCol(trait).assign(thisGwasRestuls.getPvalueForMainEffect());
-					pathwaySeIntermediates.getCol(trait).assign(thisGwasRestuls.getSeForMainEffect());
+					//pathwaySeIntermediates.getCol(trait).assign(thisGwasRestuls.getSeForMainEffect());
 					pathwayBetasIntermediates.getCol(trait).assign(thisGwasRestuls.getBetaForMainEffect());
-					pathwayTstatsIntermediates.getCol(trait).assign(thisGwasRestuls.getTstatForMainEffect());
+					//pathwayTstatsIntermediates.getCol(trait).assign(thisGwasRestuls.getTstatForMainEffect());
 				}
 
 				//TDistribution tDistForEigenvectorRegression = new TDistribution(degreesOfFreemdom);
@@ -381,12 +381,8 @@ public class DownstreamerEnrichment {
 
 				final DoubleMatrixDataset<String, String> pathwayQvaluesIntermediates = DownstreamerUtilities.adjustPvaluesBenjaminiHochberg(pathwayPvaluesIntermediates);
 
-				System.out.println("pathwayQvaluesIntermediates: " + pathwayQvaluesIntermediates.getMatrix().toStringShort());
-
 				final ArrayList<String> eigenvectorsInDataset = pathwayPvaluesIntermediates.getRowObjects();
 				final int numberEigenvectors = eigenvectorsInDataset.size();
-
-				System.out.println("eigenvectorsInDataset: " + numberEigenvectors);
 
 				for (int trait = 0; trait < gwasGeneZscores.columns(); ++trait) {
 
@@ -396,13 +392,14 @@ public class DownstreamerEnrichment {
 
 						if (pathwayQvaluesIntermediates.getElementQuick(trait, eigenVectorI) <= 0.05) {
 							significantEigenvectorsIdThisTrait.add(eigenvectorsInDataset.get(eigenVectorI));
+							pathwaySelectedIntermediates.setElementQuick(trait, eigenVectorI, 1);
 						}
 
 					}
 
 					final int sigEigenCount = significantEigenvectorsIdThisTrait.size();
 
-					LOGGER.info("significantEigenvectorsIdThisTrait: " + sigEigenCount);
+					LOGGER.info("Significant eigenvectors used from " + pathwayDatabase.getName() + ": " + sigEigenCount);
 
 					if (significantEigenvectorsIdThisTrait.size() > 0) {
 
@@ -556,17 +553,21 @@ public class DownstreamerEnrichment {
 
 						});
 
+					} else {
+						pathwayPvalues.viewCol(trait).assign(1);
 					}
 				}
 
 				pathwayQvalues = DownstreamerUtilities.adjustPvaluesBenjaminiHochberg(pathwayPvalues);
 
-				pathwayPvalues.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresPvalues.txt");
-				pathwayBetas.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresBetas.txt");
-				pathwayPvaluesIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorPvalues.txt");
-				pathwaySeIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorSes.txt");
-				pathwayBetasIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorBetas.txt");
-				pathwayTstatsIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorTstats.txt");
+				pathwayPvalues.save(options.getIntermediateFolder() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresPvalues.txt");
+				pathwayBetas.save(options.getIntermediateFolder() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresBetas.txt");
+				pathwayPvaluesIntermediates.save(options.getIntermediateFolder() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorPvalues.txt");
+				pathwaySelectedIntermediates.save(options.getIntermediateFolder() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorSelected.txt");
+				
+				//pathwaySeIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorSes.txt");
+				//pathwayBetasIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorBetas.txt");
+				//pathwayTstatsIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorTstats.txt");
 
 			} else {
 				//normal pathway enrichment just get regression p-values

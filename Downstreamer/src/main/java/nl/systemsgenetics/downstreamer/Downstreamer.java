@@ -414,8 +414,8 @@ public class Downstreamer {
 		return used;
 	}
 
-	public static void logInfoMem(String message, Logger logger) {
-		logger.info("[mem: " + String.format("%,.2f", memUsage()) + "G] " + message);
+	public static void logDebugMem(String message, Logger logger) {
+		logger.debug("[mem: " + String.format("%,.2f", memUsage()) + "G] " + message);
 	}
 
 	public static String formatMsForLog(long ms) {
