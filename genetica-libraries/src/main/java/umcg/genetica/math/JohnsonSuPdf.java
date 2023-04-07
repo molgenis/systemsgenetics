@@ -9,7 +9,9 @@ import org.apache.commons.math3.special.Erf;
 import org.apache.commons.math3.util.FastMath;
 
 /**
- *
+ * Code adapted from the the pJSU function in gamlss package (https://search.r-project.org/CRAN/refmans/gamlss.dist/html/JSU.html)
+ * 
+ * 
  * @author patri
  */
 public class JohnsonSuPdf {
