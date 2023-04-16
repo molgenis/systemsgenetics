@@ -181,6 +181,7 @@ public class OptionsBase {
 	}
 
 	public File getIntermediateFolder() {
+		intermediateFolder.mkdirs();
 		return intermediateFolder;
 	}
 }

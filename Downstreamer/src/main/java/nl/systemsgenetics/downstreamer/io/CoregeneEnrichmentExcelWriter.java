@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
-import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
+import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotationsFile;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.Logger;
@@ -108,7 +108,7 @@ public class CoregeneEnrichmentExcelWriter {
 						throw new FileNotFoundException("Cannot find file: "+geneAssociations.getLocation() + ".colAnnotations.txt or "+geneAssociations.getLocation() + ".colAnnotations.txt.gz");
 					}
 				}
-				PathwayAnnotations geneAssociationsAnnotations = new PathwayAnnotations(new File(pathwayAnnotationFile));
+				PathwayAnnotationsFile geneAssociationsAnnotations = new PathwayAnnotationsFile(new File(pathwayAnnotationFile));
 				int maxAnnotations = geneAssociationsAnnotations.getMaxNumberOfAnnotations();
 
 				XSSFSheet sh = (XSSFSheet) wb.createSheet(WorkbookUtil.createSafeSheetName(geneAssociations.getName()));

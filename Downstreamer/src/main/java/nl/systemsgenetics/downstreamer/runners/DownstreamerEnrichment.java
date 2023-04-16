@@ -65,8 +65,6 @@ public class DownstreamerEnrichment {
 			}
 		}
 		
-		options.getIntermediateFolder().mkdirs();
-
 		// Load the genes to run the analysis on
 		LinkedHashMap<String, Gene> genes = IoUtils.readGenesMap(options.getGeneInfoFile());
 		LOGGER.info("Loaded " + genes.size() + " genes");
@@ -560,13 +558,13 @@ public class DownstreamerEnrichment {
 
 				pathwayQvalues = DownstreamerUtilities.adjustPvaluesBenjaminiHochberg(pathwayPvalues);
 
-				pathwayPvalues.save(options.getIntermediateFolder() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresPvalues.txt");
-				pathwayBetas.save(options.getIntermediateFolder() + "_" + pathwayDatabase.getName() + "_" + "reconstructedScoresBetas.txt");
-				pathwayPvaluesIntermediates.save(options.getIntermediateFolder() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorPvalues.txt");
-				pathwaySelectedIntermediates.save(options.getIntermediateFolder() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorSelected.txt");
+				pathwayPvalues.save(options.getIntermediateFolder() + "/" + pathwayDatabase.getName() + "_" + "reconstructedScoresPvalues.txt");
+				pathwayBetas.save(options.getIntermediateFolder() + "/" + pathwayDatabase.getName() + "_" + "reconstructedScoresBetas.txt");
+				pathwayPvaluesIntermediates.save(options.getIntermediateFolder() + "/" + pathwayDatabase.getName() + "_" + "eigenvectorPvalues.txt");
+				pathwaySelectedIntermediates.save(options.getIntermediateFolder() + "/" + pathwayDatabase.getName() + "_" + "eigenvectorSelected.txt");
 				
 				//pathwaySeIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorSes.txt");
-				//pathwayBetasIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorBetas.txt");
+				pathwayBetasIntermediates.save(options.getIntermediateFolder() + "/" + pathwayDatabase.getName() + "_" + "eigenvectorBetas.txt");
 				//pathwayTstatsIntermediates.save(options.getOutputBasePath() + "_" + pathwayDatabase.getName() + "_" + "eigenvectorTstats.txt");
 
 			} else {

@@ -267,7 +267,7 @@ numberOfComps <- lapply(tissues, function(tissue){
   dev.off()
   
   
-  write.table(eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),"_eigenVec.txt.gz")), sep = "\t", quote = F, col.names = NA)
+  write.table(eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("tcga/tissuePca/",make.names(tissue),"_eigenVec.txt.gz")), sep = "\t", quote = F, col.names = NA)
   
   
   tissuePca <- list(eigenVectors = eigenVectors, eigenValues = eigenValues, expPcs = expPcs, explainedVariance = explainedVariance)

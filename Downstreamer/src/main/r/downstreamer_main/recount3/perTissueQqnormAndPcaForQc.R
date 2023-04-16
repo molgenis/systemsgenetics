@@ -326,6 +326,8 @@ sink <- lapply(tissueClasses, function(tissue){
 
 cat(make.names(tissueClasses), sep = "\n")
 
+tissue = "Whole.Blood"
+
 sink <- lapply(tissueClasses, function(tissue){
   
   #load(file = paste0("perTissueNormalization/perTissueQq/",make.names(tissue),".RData"))
@@ -334,8 +336,6 @@ sink <- lapply(tissueClasses, function(tissue){
   #tissueExp <- exp[,tissueSamples]
   
   load(file = paste0("perTissueNormalization/globalQqnorm/",make.names(tissue),".RData"), verbose = T) 
-  
-  write.table(tissueExp, file = gzfile("huvec.txt.gz"), sep = "\t", quote = F, col.names = NA)
   
   
   #https://stackoverflow.com/questions/18964837/fast-correlation-in-r-using-c-and-parallelization/18965892#18965892

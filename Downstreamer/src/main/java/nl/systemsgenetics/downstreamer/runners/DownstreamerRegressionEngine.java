@@ -195,9 +195,9 @@ public class DownstreamerRegressionEngine {
 			blockDiagonalIndices = createBlockDiagonalIndexFromGenes(options.getGenes(), finalRowSelection);
 			blockDiagonalIndices2 = createBlockDiagonalIndexFromGenes2(options.getGenes(), finalRowSelection);
 
-			if (options.isDebugMode()) {
-				IoUtils.writeBlockDiagonalIndices(blockDiagonalIndices, finalRowSelection, options.getDebugFolder() + "/block_diagonal_indices.txt");
-			}
+//			if (options.isDebugMode()) {
+//				IoUtils.writeBlockDiagonalIndices(blockDiagonalIndices, finalRowSelection, options.getDebugFolder() + "/block_diagonal_indices.txt");
+//			}
 		}
 
 		// Depending on input, first decompse Sigma, or run with precomputed eigen decomp.
@@ -525,20 +525,20 @@ public class DownstreamerRegressionEngine {
 				pb.step();
 			}
 
-			try {
-
-				DoubleMatrixDataset<String, String> betas = result.getBeta();
-
-				betas.save(new File(debugFolder, "res_beta.txt"));
-				result.getStandardError().save(new File(debugFolder, "res_se.txt"));
-
-				DoubleMatrixDataset t = new DoubleMatrixDataset(betas.getRowObjects(), Arrays.asList(new String[]{"T"}));
-				t.getMatrix().viewColumn(0).assign(result.getTstatForMainEffect());
-				t.save(new File(debugFolder, "res_t.txt"));
-
-			} catch (IOException ex) {
-				throw new RuntimeException();
-			}
+//			try {
+//
+//				DoubleMatrixDataset<String, String> betas = result.getBeta();
+//
+//				betas.save(new File(debugFolder, "res_beta.txt"));
+//				result.getStandardError().save(new File(debugFolder, "res_se.txt"));
+//
+//				DoubleMatrixDataset t = new DoubleMatrixDataset(betas.getRowObjects(), Arrays.asList(new String[]{"T"}));
+//				t.getMatrix().viewColumn(0).assign(result.getTstatForMainEffect());
+//				t.save(new File(debugFolder, "res_t.txt"));
+//
+//			} catch (IOException ex) {
+//				throw new RuntimeException();
+//			}
 
 			resultsArray[curY] = result;
 			//results.add(result);
