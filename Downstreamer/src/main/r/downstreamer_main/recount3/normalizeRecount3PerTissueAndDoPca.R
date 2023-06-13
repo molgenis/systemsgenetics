@@ -4,7 +4,7 @@
 
 
 
-remoter::client("localhost", port = 55506)#55556
+remoter::client("localhost", port = 55001)#55556
 
 library(DESeq2)
 library(parallel)

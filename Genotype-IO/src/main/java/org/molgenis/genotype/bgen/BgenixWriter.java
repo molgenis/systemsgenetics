@@ -11,9 +11,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.variant.GeneticVariant;
 

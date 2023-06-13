@@ -8,7 +8,6 @@ package nl.systemsgenetics.downstreamer.io;
 import nl.systemsgenetics.downstreamer.DownstreamerStep3Results;
 import nl.systemsgenetics.downstreamer.DownstreamerStep2Results;
 import nl.systemsgenetics.downstreamer.DownstreamerDeprecated;
-import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 
 import java.io.File;
@@ -21,10 +20,11 @@ import nl.systemsgenetics.downstreamer.containers.GwasLocus;
 import nl.systemsgenetics.downstreamer.gene.Gene;
 import nl.systemsgenetics.downstreamer.gene.IndexedDouble;
 import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
+import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotationsFile;
+import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotationsGenes;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import nl.systemsgenetics.downstreamer.pathway.PathwayEnrichments;
 import nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities;
-import static nl.systemsgenetics.downstreamer.runners.DownstreamerUtilities.getDistanceGeneToTopCisSnpPerTrait;
 import nl.systemsgenetics.downstreamer.runners.options.OptionsModeEnrichment;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.Logger;
@@ -64,6 +64,7 @@ public class ExcelWriter {
 	}
 
 	/**
+	 * @param results
 	 * @throws java.io.FileNotFoundException
 	 */
 	public void saveStep2Excel(DownstreamerStep2Results results) throws Exception {
@@ -215,10 +216,10 @@ public class ExcelWriter {
 
 				// Intersect all available genes for that pathway
 				String curDbRowFile = curDb.getLocation() + ".rows.txt";
-				if(!new File(curDbRowFile).canRead()){
-					curDbRowFile+=".gz";
-					if(!new File(curDbRowFile).canRead()){
-						throw new FileNotFoundException("Cannot find file: "+curDb.getLocation() + ".rows.txt or "+curDb.getLocation() + ".rows.txt.gz");
+				if (!new File(curDbRowFile).canRead()) {
+					curDbRowFile += ".gz";
+					if (!new File(curDbRowFile).canRead()) {
+						throw new FileNotFoundException("Cannot find file: " + curDb.getLocation() + ".rows.txt or " + curDb.getLocation() + ".rows.txt.gz");
 					}
 				}
 				List<String> availGenes = DoubleMatrixDataset.readDoubleTextDataRowNames(curDbRowFile, '\t');
@@ -265,7 +266,7 @@ public class ExcelWriter {
 
 		XSSFSheet locusOverview = (XSSFSheet) enrichmentWorkbook.createSheet(sheetName);
 		XSSFTable table = locusOverview.createTable(new AreaReference(new CellReference(0, 0),
-				new CellReference(numberOfRows, numberOfCols-1),
+				new CellReference(numberOfRows, numberOfCols - 1),
 				SpreadsheetVersion.EXCEL2007));
 
 		table.setName(sheetName);
@@ -522,15 +523,21 @@ public class ExcelWriter {
 	private void populatePathwaySheet(Workbook enrichmentWorkbook, PathwayEnrichments pathwayEnrichment, String trait, CreationHelper createHelper, DoubleMatrixDataset<String, String> genePvalues) throws Exception {
 
 		PathwayDatabase pathwayDatabase = pathwayEnrichment.getPathwayDatabase();
-
-		String pathwayAnnotationFile = pathwayDatabase.getLocation() + ".colAnnotations.txt";
-		if(!new File(pathwayAnnotationFile).canRead()){
-			pathwayAnnotationFile+=".gz";
-			if(!new File(pathwayAnnotationFile).canRead()){
-				LOGGER.debug("Cannot find file: "+pathwayDatabase.getLocation() + ".colAnnotations.txt or "+pathwayDatabase.getLocation() + ".colAnnotations.txt.gz");
+		final PathwayAnnotations pathwayAnnotations;
+		
+		if (pathwayDatabase.isEigenvectors()) {
+			pathwayAnnotations = new PathwayAnnotationsGenes(options.getGeneInfoFile());
+		} else {
+			String pathwayAnnotationFile = pathwayDatabase.getLocation() + ".colAnnotations.txt";
+			if (!new File(pathwayAnnotationFile).canRead()) {
+				pathwayAnnotationFile += ".gz";
+				if (!new File(pathwayAnnotationFile).canRead()) {
+					LOGGER.debug("Cannot find file: " + pathwayDatabase.getLocation() + ".colAnnotations.txt or " + pathwayDatabase.getLocation() + ".colAnnotations.txt.gz");
+				}
 			}
+			pathwayAnnotations = new PathwayAnnotationsFile(new File(pathwayAnnotationFile));
 		}
-		PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pathwayAnnotationFile));
+
 		int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 
 		DoubleMatrixDataset<String, String> databaseEnrichmentZscores = pathwayEnrichment.getEnrichmentZscores();
@@ -542,7 +549,7 @@ public class ExcelWriter {
 		DoubleMatrix1D traitEnrichment = databaseEnrichmentZscores.getCol(trait);
 		DoubleMatrix1D traitQvalue = databaseEnrichmentQvalues.getCol(trait);
 		int[] order = DoubleMatrix1dOrder.sortIndexReverse(traitEnrichment);
-		final boolean annotateWithGwasData = false ;//options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
+		final boolean annotateWithGwasData = false;//options.getPathwayDatabasesToAnnotateWithGwas().contains(pathwayDatabase.getName());
 		int gwasAnnotations = 0;
 		final int windowExtend = 0;//options.getCisWindowExtend();
 		final String transLabel = "Trans (>" + (windowExtend >= 1000 ? ((windowExtend / 1000) + " k") : (windowExtend + " ")) + "b)";
@@ -573,8 +580,8 @@ public class ExcelWriter {
 
 		String tableName = pathwayDatabase.getName();
 		tableName = tableName.replace('-', '_');
-			
-		table.setName(tableName+ "_res");
+
+		table.setName(tableName + "_res");
 		table.setDisplayName(tableName);
 		table.setStyleName("TableStyleLight9");
 		table.getCTTable().getTableStyleInfo().setShowRowStripes(true);
@@ -612,7 +619,7 @@ public class ExcelWriter {
 
 			// Annotations from .colAnnotations file
 			if (maxAnnotations > 0) {
-				ArrayList<String> thisPathwayAnnotations = pathwayAnnotations.getAnnotationsForPathway(geneSet);
+				List<String> thisPathwayAnnotations = pathwayAnnotations.getAnnotationsForPathway(geneSet);
 				if (thisPathwayAnnotations == null) {
 					for (int j = 0; j < maxAnnotations; ++j) {
 						row.createCell(j + 1, CellType.STRING).setCellValue("");
@@ -734,7 +741,6 @@ public class ExcelWriter {
 					genePCell.setCellValue(genePvalue);
 					genePCell.setCellStyle(genePvalue < 0.001 ? styles.getSmallPvalueStyle() : styles.getLargePvalueStyle());
 				}
-
 
 			}
 		}

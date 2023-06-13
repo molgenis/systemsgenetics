@@ -5,101 +5,21 @@
  */
 package nl.systemsgenetics.downstreamer.pathway;
 
-import com.opencsv.CSVParser;
-import com.opencsv.CSVParserBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVReaderBuilder;
-
-import java.io.*;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.zip.GZIPInputStream;
-
-import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import java.util.List;
 
 /**
+ *
  * @author patri
  */
-public class PathwayAnnotations {
+public interface PathwayAnnotations {
 
-	private final HashMap<String, ArrayList<String>> annotations;
-	private final ArrayList<String> annotationHeaders;
-	private final String setName;
+	List<String> getAnnotationHeaders();
 
-	private static final Logger LOGGER = LogManager.getLogger(DownstreamerOptionsDeprecated.class);
+	List<String> getAnnotationsForPathway(String pathway);
 
-	public PathwayAnnotations(final File annotationFile) throws FileNotFoundException, IOException {
+	int getMaxNumberOfAnnotations();
 
-		if (annotationFile.exists()) {
-
-			annotations = new HashMap<>();
-			final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-			CSVReader reader = null;
-			if (annotationFile.getName().endsWith(".gz")) {
-				GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(annotationFile));
-				BufferedReader br = new BufferedReader(new InputStreamReader(gzipInputStream, "US-ASCII"));
-				reader = new CSVReaderBuilder(br).withCSVParser(parser).withSkipLines(0).build();
-			} else {
-				reader = new CSVReaderBuilder(new BufferedReader(new FileReader(annotationFile))).withCSVParser(parser).withSkipLines(0).build();
-			}
-
-
-			String[] nextLine = reader.readNext();
-			if (nextLine == null) {
-				throw new IOException("Empty annotation file: " + annotationFile.getAbsolutePath());
-			}
-
-			annotationHeaders = new ArrayList<>(nextLine.length - 1);
-			setName = nextLine[0];
-			for (int i = 1; i < nextLine.length; ++i) {
-				annotationHeaders.add(nextLine[i]);
-			}
-
-			final int numberOfAnnotations = annotationHeaders.size();
-
-			while ((nextLine = reader.readNext()) != null) {
-
-				ArrayList<String> thisAnnotions = new ArrayList<>(numberOfAnnotations);
-
-				for (int i = 1; i < nextLine.length; ++i) {
-					thisAnnotions.add(nextLine[i]);
-				}
-
-				annotations.put(nextLine[0], thisAnnotions);
-
-			}
-
-			LOGGER.debug("Found annotations at: " + annotationFile.getAbsolutePath() + ". Number of annotations is: " + annotationHeaders.size());
-
-		} else {
-			LOGGER.debug("Did not found annotations at: " + annotationFile.getAbsolutePath());
-			annotations = null;
-			setName = null;
-			annotationHeaders = null;
-
-		}
-
-	}
-
-	public ArrayList<String> getAnnotationsForPathway(String pathway) {
-		return annotations.get(pathway);
-	}
-
-	public int getMaxNumberOfAnnotations() {
-		if (annotationHeaders == null) {
-			return 0;
-		}
-		return annotationHeaders.size();
-	}
-
-	public String getSetName() {
-		return setName;
-	}
-
-	public ArrayList<String> getAnnotationHeaders() {
-		return annotationHeaders;
-	}
-
+	String getSetName();
+	
 }

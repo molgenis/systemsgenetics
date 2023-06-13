@@ -16,11 +16,12 @@ public class LinearRegressionResult {
 	private final DoubleMatrixDataset<String, String> standardError;
 	private final DoubleMatrixDataset<String, String> explainedVariance;
 	private final int degreesOfFreedom;
+	private final int numberOfObservations;
 
 	private final DoubleMatrixDataset<String, String> tStatisticCache;
 	private final DoubleMatrixDataset<String, String> pValueCache;
 
-	public LinearRegressionResult(Collection<String> rownames, Collection<String> colnames, int degreesOfFreedom, String name) {
+	public LinearRegressionResult(Collection<String> rownames, Collection<String> colnames, int degreesOfFreedom, String name, int numberOfObservations) {
 		this.beta = new DoubleMatrixDataset<>(rownames, colnames);
 		this.standardError = new DoubleMatrixDataset<>(rownames, colnames);
 		this.explainedVariance = null;
@@ -28,7 +29,7 @@ public class LinearRegressionResult {
 		this.name = name;
 		this.tStatisticCache = null;
 		this.pValueCache = null;
-
+		this.numberOfObservations = numberOfObservations;
 	}
 
 	public DoubleMatrixDataset<String, String> getBeta() {
@@ -128,4 +129,10 @@ public class LinearRegressionResult {
 			standardError.save(finalPath + "_se");
 		}
 	}
+
+	public int getNumberOfObservations() {
+		return numberOfObservations;
+	}
+	
+	
 }
