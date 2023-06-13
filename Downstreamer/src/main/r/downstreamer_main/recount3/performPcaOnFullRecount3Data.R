@@ -30,7 +30,7 @@ expScale = expScale / sqrt(rowSums(expScale^2));
 expCov = tcrossprod(expScale);#equivalent to correlation due to center scale
 
 expEigen <- eigen(expCov)
-
+        
 eigenVectors <- expEigen$vectors
 colnames(eigenVectors) <- paste0("PC_",1:ncol(eigenVectors))
 rownames(eigenVectors) <- rownames(expScale)

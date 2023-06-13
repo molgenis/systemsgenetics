@@ -1,7 +1,7 @@
 package nl.systemsgenetics.downstreamer.io;
 
 import nl.systemsgenetics.downstreamer.runners.options.DownstreamerOptionsDeprecated;
-import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotations;
+import nl.systemsgenetics.downstreamer.pathway.PathwayAnnotationsFile;
 import nl.systemsgenetics.downstreamer.pathway.PathwayDatabase;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -66,7 +66,7 @@ public class PathwayDatabaseEnrichmentExcelWriter {
                     }
                 }
 
-                PathwayAnnotations geneAssociationsAnnotations = new PathwayAnnotations(new File(geneAssociationAnnotationFile));
+                PathwayAnnotationsFile geneAssociationsAnnotations = new PathwayAnnotationsFile(new File(geneAssociationAnnotationFile));
 
                 int maxAnnotations = geneAssociationsAnnotations.getMaxNumberOfAnnotations();
 

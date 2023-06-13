@@ -421,7 +421,7 @@ public class PathwayEnrichmentsOld {
 					}
 				}
 
-				final PathwayAnnotations pathwayAnnotations = new PathwayAnnotations(new File(pwAnnotationFile));
+				final PathwayAnnotationsFile pathwayAnnotations = new PathwayAnnotationsFile(new File(pwAnnotationFile));
 				final int maxAnnotations = pathwayAnnotations.getMaxNumberOfAnnotations();
 				final DoubleMatrixDataset<String, String> databaseEnrichment = enrichments.get(pathwayDatabase);
 				final ArrayList<String> geneSets = databaseEnrichment.getRowObjects();
