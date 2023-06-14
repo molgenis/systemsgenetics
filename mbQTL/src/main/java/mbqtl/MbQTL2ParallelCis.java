@@ -386,6 +386,7 @@ public class MbQTL2ParallelCis extends QTLAnalysis {
 					// TODO: NOT IMPLEMENTED YET
 				}
 
+				// TODO: can the VCF parsing be cached somehow?
 				while (snpIterator.hasNext()) {
 					VCFVariant variant = snpIterator.next();
 					if (variant != null) {
