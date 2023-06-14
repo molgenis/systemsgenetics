@@ -306,9 +306,7 @@ public class DownstreamerEnrichment {
 			//eigen[0] L = eigen values
 			//eigen[1] U = eigen vectors
 			final DoubleMatrixDataset<String, String>[] eigen = blockDiagonalEigenDecomposition(genesOverlappingWithPathwayDatabase, geneCorLoader, blockDiagonalIndicesForEigen, options.isJblas());
-
 			
-			pathwayData.save(options.getOutputBasePath() + "test.txt" );
 			
 //			eigen[0] = DoubleMatrixDataset.loadDoubleData("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\test\\resources\\random\\genecor_eigenvalues.txt");
 //			eigen[1] = DoubleMatrixDataset.loadDoubleData("C:\\Users\\patri\\Documents\\GitHub\\systemsgenetics\\Downstreamer\\src\\test\\resources\\random\\genecor_eigenvectors.txt");

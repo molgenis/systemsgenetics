@@ -4,7 +4,7 @@
 
 
 
-remoter::client("localhost", port = 55001)#55556
+remoter::client("localhost", port = 55556)# 55001
 
 library(DESeq2)
 library(parallel)
@@ -16,6 +16,9 @@ setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
 
 #load(file = "perTissueNormalization/selectedSamplesRawExpression.RData", verbose = T)
 load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
+str(samplesWithPredictionNoOutliers)
+
+#write.table(samplesWithPredictionNoOutliers, file = "tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.txt", quote = F, col.names = NA, sep = "\t")
 
 
 sort(table(samplesWithPredictionNoOutliers$predictedTissue))

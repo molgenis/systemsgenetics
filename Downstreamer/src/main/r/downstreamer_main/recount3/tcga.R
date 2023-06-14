@@ -133,7 +133,7 @@ str(tcgaExpVstCovCor2)
 #save(tcgaExpVstCovCor2, file = "tcga/tcgaCancerVstCovCor.RData")
 
 load("tcga/metaData.RData")
-load("tcga/tcgaCancerVstCovCor.RData")
+load("tcga/tcgaCancerVstCovCor.RData", verbose =T)
 
 expScale = tcgaExpVstCovCor2 - rowMeans(tcgaExpVstCovCor2);
 #expScale = tcgaExpVst - rowMeans(tcgaExpVst);
@@ -205,6 +205,11 @@ tissues <- c("Prostate", "Breast", "Skin", "Colorectal", "Stomach", "Ovary")
 
 tissue <- tissues[1]
 
+
+sapply(tissues, function(tissue){
+  
+  length(rownames(tcgaCancer)[tcgaCancer$tcga.gdc_cases.project.primary_site == tissue])
+})
 
 numberOfComps <- lapply(tissues, function(tissue){
   

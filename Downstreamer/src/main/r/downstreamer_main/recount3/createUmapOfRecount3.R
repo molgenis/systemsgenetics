@@ -1,8 +1,8 @@
 #srun --cpus-per-task=1 --mem=50gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
-#remoter::server(verbose = T, port = 55556, password = "laberkak", sync = T)
+#remoter::server(verbose = T, port = 55001, password = "laberkak", sync = T)
 
 
-remoter::client("localhost", port = 55501, password = "laberkak")
+remoter::client("localhost", port = 55001, password = "laberkak")
 
 
 
@@ -12,10 +12,65 @@ setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs\\Recount3\\")
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
 
-load(file = "DataForPredictions.RData")
-rownames(pcsAndMeta) <- pcsAndMeta$Row.names
-load(file = "tissuePredictions/samplesWithPrediction_16_09_22.RData", verbose = T)
+#load(file = "DataForPredictions.RData")
+#rownames(pcsAndMeta) <- pcsAndMeta$Row.names
+
+
+load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbose = T)
 tissueCol <- read.delim("umap/col.txt", row.names = 1, na.strings = "")
+rownames(tissueCol)
+
+tissueCol2 <- tissueCol$Col
+names(tissueCol2) <- rownames(tissueCol)
+
+all(samplesWithPredictionNoOutliers$predictedTissue %in% names(tissueCol2))
+
+
+samplesWithPredictionNoOutliers$col <- tissueCol2[samplesWithPredictionNoOutliers$predictedTissue]
+
+
+load(paste0("CombinedHealthyTissue/combinedHealthyTissue_PCA.RData"))
+
+
+all(rownames(combinedHealtyTissuePca$expPcs) == rownames(samplesWithPredictionNoOutliers))
+
+
+str(samplesWithPredictionNoOutliers)
+dim(combinedHealtyTissuePca$expPcs)
+nnData <- umap(combinedHealtyTissuePca$expPcs, ret_nn = T)
+nnDataCorrelation <- umap(combinedHealtyTissuePca$expPcs, ret_nn = T, metric = "correlation")
+nnDataCosine <- umap(combinedHealtyTissuePca$expPcs, ret_nn = T, metric = "cosine")
+
+str(nnData)
+
+nn <- nnDataCorrelation$nn[[1]]
+nn <- nnData$nn[[1]]
+nn <- nnDataCosine$nn[[1]]
+init <- combinedHealtyTissuePca$expPcs[,1:2]
+
+sampleUmap <- umap(X = NULL, nn_method = nn)
+rpng(height = 1000, width = 1000)
+plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.5), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
+dev.off()
+
+
+sampleUmap <- umap(X = NULL, nn_method = nn, bandwidth = 10, n_epochs = 500)
+rpng(height = 1000, width = 1000)
+plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.5), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
+dev.off()
+
+
+sampleUmap <- umap(X = NULL, nn_method = nn, init = init, 
+                    bandwidth = 100,n_epochs = 200,learning_rate = 10,
+                    n_neighbors = 100,local_connectivity = 50)#, n_neighbors = 50,n_epochs = 1000,learning_rate = 10,local_connectivity = 50,bandwidth = 1000, repulsion_strength = 0.1
+rownames(sampleUmap) <- rownames(combinedHealtyTissuePca)
+colnames(sampleUmap) <- c("UMAP1", "UMAP2")
+
+rpng(height = 1000, width = 1000)
+plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.5), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
+dev.off()
+
+
 
 
 colnamesToUpdate <- colnames(pcsAndMeta)[colnames(pcsAndMeta) %in% colnames(combinedMeta)]
@@ -85,6 +140,8 @@ tissueSamples$plotOrderTissues <- order(tissueSamples$TissueCol != defaultCol)
 compsToUseForUmap <- compsToUse
 init <- as.matrix(tissueSamples[,paste0("PC_",1:2)])
 umapInput <- as.matrix(tissueSamples[,paste0("PC_",1:compsToUseForUmap)])
+
+
 
 sampleUmap <- umap(
   umapInput, 
