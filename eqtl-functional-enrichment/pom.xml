@@ -51,8 +51,8 @@
                 <version>3.8.1</version>
                 <configuration>
                     <encoding>UTF-8</encoding>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -96,7 +96,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>3.0.0-M3</version>
+                        <version>3.1.0</version>
                         <configuration>
                             <suiteXmlFiles>
                                 <suiteXmlFile>target/nb-private/testng-suite.xml</suiteXmlFile>

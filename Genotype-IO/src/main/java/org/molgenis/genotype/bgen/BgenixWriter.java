@@ -23,7 +23,8 @@ import org.molgenis.genotype.variant.GeneticVariant;
  */
 public class BgenixWriter {
 
-	private static final Logger LOGGER =  LogManager.getLogger(BgenixWriter.class);
+	private static final Logger LOGGER = LogManager.getLogger(BgenixWriter.class);
+
 	private final Connection dbConnection;
 	private final PreparedStatement addVariantStatement;
 	private int addVariantBufferCounter = 0;
