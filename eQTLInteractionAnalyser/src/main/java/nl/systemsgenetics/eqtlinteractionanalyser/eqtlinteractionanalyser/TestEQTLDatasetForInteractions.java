@@ -1157,6 +1157,7 @@ public class TestEQTLDatasetForInteractions {
 
 		// add PCs
 		if (nrCompsToCorrectFor > 0) {
+			System.out.println("Adding "+nrCompsToCorrectFor+" PCs to the covariates.");
 			for (int comp = 0; comp < nrCompsToCorrectFor; comp++) {
 				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
 //					 datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + covsToCorrect.length + comp][s] = datasetCovariatesPCAForceNormal.rawData[datasetCovariatesPCAForceNormal.nrProbes - 39 + comp][s];
@@ -1244,6 +1245,7 @@ public class TestEQTLDatasetForInteractions {
 //				}
 //			}
 		if (nrCompsToCorrectFor > 0) {
+			System.out.println("Adding "+nrCompsToCorrectFor+" PCs to the covariates.");
 			for (int comp = 0; comp < nrCompsToCorrectFor; comp++) {
 				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
 					// WARNING: this assumes there are PCs in the covariate data, and that they are on the first rows!

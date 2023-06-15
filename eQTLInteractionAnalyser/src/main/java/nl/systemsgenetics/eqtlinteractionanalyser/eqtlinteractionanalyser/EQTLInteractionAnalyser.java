@@ -319,6 +319,10 @@ public class EQTLInteractionAnalyser {
             }
             if (commandLine.hasOption("pc")) {
                 numPCsToRegress = Integer.parseInt(commandLine.getOptionValue("pc"));
+                if(numPCsToRegress == 0){
+                    System.out.println("Error: -pc option should be integer > 0");
+                    System.exit(-1);
+                }
             }
 
         } catch (ParseException ex) {
