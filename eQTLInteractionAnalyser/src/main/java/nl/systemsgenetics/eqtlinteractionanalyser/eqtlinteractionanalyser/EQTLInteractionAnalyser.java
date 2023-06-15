@@ -169,8 +169,9 @@ public class EQTLInteractionAnalyser {
 
         OptionBuilder.withArgName("int");
         OptionBuilder.hasArg();
-        OptionBuilder.withDescription("Number of PCs to correct for");
+        OptionBuilder.withDescription("Number of PCs to correct for. Defaults to 1. IMPORTANT: PCs should be in your binary covariate file, and on the first row(s) of your covariate data! An analysis without PCs will not work.");
         OptionBuilder.withLongOpt("numpc");
+        OptionBuilder.isRequired();
         OPTIONS.addOption(OptionBuilder.create("pc"));
     }
 
@@ -182,7 +183,7 @@ public class EQTLInteractionAnalyser {
         String inputDir, outputDir, eqtlFile = null, annotationFile = null;
         final File snpsToSwapFile;
         int maxNumCovariatesToRegress = 20;
-        int numPCsToRegress = 25;
+        int numPCsToRegress = 1; // HJW: was 25, even if there are no PCs in the data. If I set this to 0, nothing works anymore
         int numThreads;
         final boolean interpret, chi2sumDiff, permute, preproces;
         final int startRoundCompareChi2, threshold;
