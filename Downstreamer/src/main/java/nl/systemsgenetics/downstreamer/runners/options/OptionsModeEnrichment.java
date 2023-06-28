@@ -136,6 +136,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 		OptionBuilder.withArgName("double");
 		OptionBuilder.withDescription("FDR threshold to determine which eigenvectors should be used for key-gene scores");
 		OptionBuilder.withLongOpt("eigenFdr");
+		OptionBuilder.hasArg();
 		OPTIONS.addOption(OptionBuilder.create("efdr"));
 
 	}
@@ -216,8 +217,8 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 		excludeHla = commandLine.hasOption("eh");
 		
-		if(commandLine.hasOption("efdr")){
-			fdrThresholdEigenvectors = Double.parseDouble(commandLine.getOptionValue("efdr"));
+		if(commandLine.hasOption("eigenFdr")){
+			fdrThresholdEigenvectors = Double.parseDouble(commandLine.getOptionValue("eigenFdr"));
 		} else {
 			fdrThresholdEigenvectors = 0.05;
 		}
@@ -340,6 +341,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 		LOGGER.info(" * Skip gene p-values to Z-score (should only be disabled if already z-score per gene): " + skipPvalueToZscore);
 		LOGGER.info(" * Correct gene p-values for gene length: " + regressGeneLengths);
 		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
+		LOGGER.info(" * FDR threshold for eigenvectors to use: " + fdrThresholdEigenvectors);
 
 	}
 
