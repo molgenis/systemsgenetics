@@ -44,8 +44,8 @@ nnDataCosine <- umap(combinedHealtyTissuePca$expPcs, ret_nn = T, metric = "cosin
 str(nnData)
 
 nn <- nnDataCorrelation$nn[[1]]
-nn <- nnData$nn[[1]]
-nn <- nnDataCosine$nn[[1]]
+#nn <- nnData$nn[[1]]
+#nn <- nnDataCosine$nn[[1]]
 init <- combinedHealtyTissuePca$expPcs[,1:2]
 
 sampleUmap <- umap(X = NULL, nn_method = nn)
@@ -69,6 +69,56 @@ colnames(sampleUmap) <- c("UMAP1", "UMAP2")
 rpng(height = 1000, width = 1000)
 plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.5), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
 dev.off()
+
+
+
+umapSweep
+
+for(b in c(1,10,100,10000)){
+  
+  for(nnb in c(10, 100,1000)){
+    
+    for(lc in c(1,10,100)){
+      
+      for(ns in c(5)){
+        
+        for(rs in c(0.01,0.1,1,10)){
+          
+          for(lr in c(1,10)){
+            
+            sampleUmap <- umap(X = NULL, nn_method = nn, init = init, 
+                               bandwidth = b,n_epochs = 1000,learning_rate = lr,
+                               n_neighbors = nnb,local_connectivity = lc, repulsion_strength = rs, negative_sample_rate = ns )#, n_neighbors = 50,n_epochs = 1000,learning_rate = 10,local_connectivity = 50,bandwidth = 1000, repulsion_strength = 0.1
+            rownames(sampleUmap) <- rownames(combinedHealtyTissuePca)
+            colnames(sampleUmap) <- c("UMAP1", "UMAP2")
+            
+            
+            pngFile <- paste0("umapSweep/", "b" , b, "nnb" , nnb, "lc" , lc, "ns", ns, "rs" , rs, "lr" , lr, ".png")
+            
+            if(!file.exists(pngFile)){
+              
+              png(file = pngFile, height = 1000, width = 1000)
+              plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.5), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
+              dev.off()
+              
+              
+            }
+            
+            
+            
+            
+          }
+          
+        }
+        
+      }
+      
+      
+    }
+    
+  }
+  
+}
 
 
 

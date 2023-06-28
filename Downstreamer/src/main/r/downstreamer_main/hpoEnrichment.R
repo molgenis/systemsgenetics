@@ -1,13 +1,13 @@
 
 
-#remoter::server(verbose = T, port = 55556, sync = T)
+#remoter::server(port = 55556, sync = T)
+#remoter::server(port = 54001, sync = T)
 
+#ml R/4.2.1-foss-2022a-bare
 
+remoter::client("localhost", port = 54001)#55556 55501   54104
 
-
-remoter::client("localhost", port = 55556)#55556 55501
-
-setwd("/groups/umcg-fg/tmp01/projects/downstreamer/depict2_bundle/")
+setwd("/groups/umcg-fg/tmp02/projects/downstreamer/")
 
 
 library(readxl)
@@ -41,42 +41,42 @@ read.depict2 <- function(path, potential_traits=NULL) {
 }
 
 
-geneInfo <- read.delim("/groups/umcg-fg/tmp01/projects/downstreamer/depict2_bundle/reference_datasets/human_b37/genes_Ensembl94.txt")
+geneInfo <- read.delim("depict2_bundle/reference_datasets/human_b37/genes_Ensembl94_protein_coding.txt", header = F)
 str(geneInfo)
 
 library(readr)
 
 #change X1 in case of specified header for row names
 colTypes <- cols( .default = col_double(),  `-` = col_character())
-table_tmp <- read_delim("reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.txt.gz", delim = "\t", quote = "", col_types = colTypes)
+table_tmp <- read_delim("depict2_bundle/reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.txt.gz", delim = "\t", quote = "", col_types = colTypes)
 hpoMatrix <- as.matrix(table_tmp[,-1])
 rownames(hpoMatrix) <- table_tmp[,1][[1]]
-rm(table_tmp)
+rm(table_tmp) 
 
-hpoAnnotations <- as.matrix(read.delim("reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.colAnnotations.txt", row.names = 1))
+hpoAnnotations <- as.matrix(read.delim("depict2_bundle/reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.colAnnotations.txt", row.names = 1))
 hpoAnnotations <- hpoAnnotations[,1]
 
 
 hpoPerGene <- apply(hpoMatrix, 1, function(x){sum(x>0)})
 hpoMatrix <- hpoMatrix[hpoPerGene >= 1,]
-str(hpoMatrix)
 
-traits <- read.delim("../PascalX_bundle/traitList.txt", header = F)$V1
-
-metaZscores <- matrix(NA, nrow = nrow(geneInfo), ncol = length(traits), dimnames = list(geneInfo$Gene.stable.ID, traits))
-recount3Zscores <- matrix(NA, nrow = nrow(geneInfo), ncol = length(traits), dimnames = list(geneInfo$Gene.stable.ID, traits))
+genePerHpo <- apply(hpoMatrix, 2, function(x){sum(x>0)})
+hpoMatrix <- hpoMatrix[,genePerHpo >= 10]
+dim(hpoMatrix)
 
 
 
-trait <- traits[1]
-trait <- "IBD_deLange2017"
-trait <- "Schizophrenia_Pardinas2018"
-trait <- "ADHD_Demontis2018"
 
+traits <- read.delim("traits.txt", header = T)[,1]
+
+metaZscores <- matrix(NA, nrow = nrow(geneInfo), ncol = length(traits), dimnames = list(geneInfo$V1, traits))
+recount3Zscores <- matrix(NA, nrow = nrow(geneInfo), ncol = length(traits), dimnames = list(geneInfo$V1, traits))
+
+trait <- traits[2]
 hpoEnrichmentList <- lapply(traits, function(trait){
   
   cat(trait,"\n")
-  res <- read.depict2(paste0("output/ds2/", trait,"/",trait,"_keygenes_covCor_enrichtments.xlsx"))
+  res <- read.depict2(paste0("depict2_bundle/output/ds2_B_25k/", trait,"/",trait,"_keygenes_enrichtments.xlsx"))
   
   
   tissues <- names(res)[names(res) != "Recount3"]
@@ -92,7 +92,7 @@ hpoEnrichmentList <- lapply(traits, function(trait){
   
   
   tissueZscores <- matrix(NA, nrow = length(genes), ncol = length(tissues), dimnames = list(genes, tissues))
-
+  
   sapply(tissues, function(t){
     resT <- res[[t]]
     resTz <- resT$Enrichment.Z.score
@@ -105,24 +105,61 @@ hpoEnrichmentList <- lapply(traits, function(trait){
     return(1)
   })
   
-
+  
   metaZ <- apply(tissueZscores, 1, function(z){
     z <- z[!is.na(z)]
     
     return(sum(z) / sqrt(length(z)))
     
   })
-
+  
   metaZ <- metaZ[!is.na(metaZ)]
   
   
   metaZscores[names(metaZ), trait] <<- metaZ
   
   
- # dataForO <- as.data.frame(tissueZscores)
-#  dataForO$meta <- metaZ
+  resRecount3 <- res[["Recount3"]]
+
+  recount3Zscores[resRecount3$Gene.ID, trait] <<- resRecount3$Enrichment.Z.score
   
- # write.table(dataForO, file = "ibdData.txt", sep = "\t", quote = F, col.names = NA)
+  
+  
+})
+
+#save(recount3Zscores, metaZscores, traits, hpoMatrix, hpoAnnotations, file = "depict2_bundle/hpoEnrichmentSession3a_25k.RData")
+
+
+setwd("/groups/umcg-fg/tmp02/projects/downstreamer/")
+
+
+load("depict2_bundle/hpoEnrichmentSession3a_25k.RData")
+
+
+trait <- traits[1]
+trait <- "IBD_deLange2017"
+trait <- "Schizophrenia_Pardinas2018"
+trait <- "ADHD_Demontis2018"
+
+library(parallel)
+
+clust <- makeCluster(10)
+
+
+clusterExport(clust, "recount3Zscores")
+clusterExport(clust, "metaZscores")
+clusterExport(clust, "hpoMatrix")
+clusterExport(clust, "hpoAnnotations")
+
+
+hpoEnrichmentList <- parLapply(clust, traits, function(trait){
+  
+  metaZ <- metaZscores[, trait] 
+  metaZ <- metaZ[!is.na(metaZ)]
+  length(metaZ)
+  
+  sum(is.na(metaZscores[, trait] ))
+  
   
   sigThreshold <- -qnorm(0.05/length(metaZ)/2)
   sig <- metaZ >= sigThreshold
@@ -131,7 +168,6 @@ hpoEnrichmentList <- lapply(traits, function(trait){
   overlapGenes <- intersect(names(sig), row.names(hpoMatrix))
   
   sig <- sig[overlapGenes]
-  print("test3")
   if(sum(sig) <= 10){ 
       tissueMetaHpoEnrichment <- NA
     }else {
@@ -156,150 +192,93 @@ hpoEnrichmentList <- lapply(traits, function(trait){
         }
       )
     }))
-    print("test5")
     
-    #hist(-log10(tissueMetaHpoEnrichment[,1]))
     tissueMetaHpoEnrichment <- as.data.frame(tissueMetaHpoEnrichment)
     colnames(tissueMetaHpoEnrichment)[1] <- "Fisher-Pvalue"
     colnames(tissueMetaHpoEnrichment)[3:6] <- c("noKeyNoHpo", "keyNoHpo", "noKeyHpo", "keyHpo")
     tissueMetaHpoEnrichment$descip <- hpoAnnotations[rownames(tissueMetaHpoEnrichment)]
     
   }
-  print("test4")
   
-#  pdf("ibdEnrichment.pdf")
-#  par(xpd = NA)
-#  plot(log2(tissueMetaHpoEnrichment[,2]), -log10(tissueMetaHpoEnrichment[,1]), pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), xlab = "log2(odds ratio)", ylab = "-log10(Fisher pvalue)", main = "Schizo tissue specific meta analyzed enrichment")
-#  abline(h = -log10(0.05/nrow(tissueMetaHpoEnrichment)), lwd = 2, col = "darkred")
-#  dev.off()
+
   
-#  tissueMetaHpoEnrichment[order(tissueMetaHpoEnrichment[,1], decreasing = F)[1:20],]
-#  tissueMetaHpoEnrichment[order(tissueMetaHpoEnrichment[,2], decreasing = T)[1:20],]
-  
-  
-#  library(pROC)
-#  table(sig, hpoMatrixS[,"HP:0002733"])
-#  r <- roc(response = sig, predictor = hpoMatrixS[,"HP:0002733"])
-#  plot.roc(r)
-  
-  
-#  library(beeswarm)
-#  beeswarm(metaZ[overlapGenes][hpoMatrixS[,"HP:0002583"]==1])
-#  abline(h=sigThreshold)
+  resRecount3 <- recount3Zscores[, trait] 
+  resRecount3 <- resRecount3[!is.na(resRecount3)]
   
   
   
-#  library(vioplot)
-#  vioplot(metaZ[overlapGenes], drawRect = F, ylab = "Schizo tissue meta keygene z-score", main = "Hyperactivity")
-#  beeswarm(metaZ[overlapGenes][hpoMatrixS[,"HP:0000752"]==1], add = T, pch = 16, col = "orange2")
-#  abline(h = sigThreshold, lwd = 2, col = "darkred")
-  
-  resRecount3 <- res[["Recount3"]]
-  str(resRecount3)
-  recount3Zscores[resRecount3$Gene.ID, trait] <<- resRecount3$Enrichment.Z.score
+  sigThreshold <- -qnorm(0.05/length(resRecount3)/2)
+  sig <- resRecount3 >= sigThreshold
   
   
-  overlapGenes <- intersect(resRecount3$Gene.ID, row.names(hpoMatrix))
+  overlapGenes <- intersect(names(sig), row.names(hpoMatrix))
   
-  resRecount3 <- resRecount3[overlapGenes,]
-  hpoMatrixS <- hpoMatrix[overlapGenes,]
-  hpoMatrixS <- hpoMatrixS[,apply(hpoMatrixS, 2, function(x){sum(x>0)})>=10]
-  
-  hpoMatrixS <- hpoMatrixS[,apply(hpoMatrixS, 2, function(x){sum(x<1)})>=10]
-  
-  resRecount3$key <- resRecount3$Enrichment.Z.score > 0 & resRecount3$Bonferroni.significant
-  table(resRecount3$key)
-  print("test2")
-  if(sum(resRecount3$key) <= 10){
+  sig <- sig[overlapGenes]
+  if(sum(sig) <= 10){ 
     recount3HpoEnrichment <- NA
-  } else {
+  }else {
     
-    recount3HpoEnrichment <-t(apply(hpoMatrixS, 2, function(x){
+    
+    hpoMatrixS <- hpoMatrix[overlapGenes,]
+    hpoMatrixS <- hpoMatrixS[,apply(hpoMatrixS, 2, function(x){sum(x>0)})>=10]
+    hpoMatrixS <- hpoMatrixS[,apply(hpoMatrixS, 2, function(x){sum(x<1)})>=10]
+    
+    x <- hpoMatrixS[,1]
+    recount3HpoEnrichment <- t(apply(hpoMatrixS, 2, function(x){
       tryCatch( 
         {  
           
-          f <- fisher.test(table(resRecount3$key, x))
-          return(c(f$p.value, f$estimate, as.vector(table(resRecount3$key, x))))
+          f <- fisher.test(table(sig, x))
+          return(c(f$p.value, f$estimate, as.vector(table(sig, x))))
           
           
         },
         error=function(cond) {
-          print(table(resRecount3$key, x)) 
+          print(table(sig, x)) 
         }
       )
     }))
+    
     recount3HpoEnrichment <- as.data.frame(recount3HpoEnrichment)
     colnames(recount3HpoEnrichment)[1] <- "Fisher-Pvalue"
     colnames(recount3HpoEnrichment)[3:6] <- c("noKeyNoHpo", "keyNoHpo", "noKeyHpo", "keyHpo")
     recount3HpoEnrichment$descip <- hpoAnnotations[rownames(recount3HpoEnrichment)]
+    
   }
   
-  #vioplot(resRecount3[overlapGenes, "Enrichment.Z.score"], drawRect = F, ylab = "IBD recount3 keygene z-score", main = "Colitis")
-  #beeswarm(resRecount3[overlapGenes, "Enrichment.Z.score"][hpoMatrixS[,"HP:0002583"]==1], add = T, pch = 16, col = "orange2")
-  #abline(h=min(abs(resRecount3$Enrichment.Z.score)[resRecount3$Bonferroni.significant]))
-  #dev.off()
   
-  #ovelap = intersect(rownames(recount3HpoEnrichment), rownames(tissueMetaHpoEnrichment))
-  
- # plot(-log10(tissueMetaHpoEnrichment[ovelap,1]), -log10(recount3HpoEnrichment[ovelap,1]), xlab = "Recount3 -log10(pvalue)", ylab = "Tissue meta analysis -log10(pvalue)", pch = 16, col=adjustcolor( ifelse(tissueMetaHpoEnrichment[ovelap,2] > 1, "dodgerblue2", "orange2"), alpha.f = 0.5))
-#  plot(log2(tissueMetaHpoEnrichment[ovelap,2]), log2(recount3HpoEnrichment[ovelap,2]), xlab = "Recount3 log2(OR)", ylab = "Tissue meta analysis log2(OR)", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), xlim = c(-4,6), ylim = c(-4,6))
-  
-  #head(sort(recount3HpoEnrichment), n = 25)
-  
-  #table(hpoMatrixS[,5])
-  
-  #sum(hpoMatrixS[,5] > 0)
-  
-  #colnames(hpoMatrixS)[1]
-
-
-  
-  #genes <- intersect(res$Recount3$Gene.ID, names(metaZ))
-  #zThreshold <- -log10(0.05/length(genes))
-  
-  #table(res$Recount3[genes, "Enrichment.Z.score"] >= zThreshold, metaZ[genes] >= zThreshold)
-  #276* 100 / (54+276)
-  
-  #pdf("ibdCompare.pdf")
-  #par(xpd = NA)
-  #plot(res$Recount3[genes, "Enrichment.Z.score"], metaZ[genes], cex = 0.8, pch = 16, col=adjustcolor(ifelse(res$Recount3[genes, "Enrichment.Z.score"] >= zThreshold, "darkred", "dodgerblue2"), alpha.f = 0.2),
-  #     ylab = "Meta analysis of tissue specific networks",
-  #     xlab = "Multi tissue network",
-  #     main = "IBD key-gene prediction scores")
-  #abline(h = zThreshold)
-  #abline(v = zThreshold)
-  #dev.off()
-  #cor.test(res$Recount3[genes, "Enrichment.Z.score"], metaZ[genes])
-  print("test")
   return(list(recount3HpoEnrichment, tissueMetaHpoEnrichment))
 
 }) 
 
 names(hpoEnrichmentList) <- traits
 
-hist(metaZscores)
+#hpoEnrichmentList50kb <- hpoEnrichmentList
+hpoEnrichmentList25kb <- hpoEnrichmentList
+
+#save(recount3Zscores, metaZscores, traits, hpoEnrichmentList, hpoAnnotations, file = "depict2_bundle/hpoEnrichmentSession3b_25k.RData")
+
+str(hpoEnrichmentList25kb$IBD_deLange2017[[2]])
+str(hpoEnrichmentList50kb$IBD_deLange2017[[2]])
+
+heigthEnrichmentCompare <- merge(hpoEnrichmentList25kb$IBD_deLange2017[[2]], hpoEnrichmentList50kb$IBD_deLange2017[[2]], by = "descip", all = T, suffixes = c ("25kb", "50kb"))
+str(heigthEnrichmentCompare)
+
+plot(-log10(heigthEnrichmentCompare$`Fisher-Pvalue50kb`), -log10(heigthEnrichmentCompare$`Fisher-Pvalue25kb`))
 dev.off()
 
+write.table(heigthEnrichmentCompare, file = "ibdCompare.txt", sep = "\t", quote = F, col.names = NA)
+
+
+plot(heigthEnrichmentCompare$`odds ratio50kb`, heigthEnrichmentCompare$`odds ratio25kb`)
+dev.off()
+
+load(file = "depict2_bundle/hpoEnrichmentSession3b_25k.RData")
+
+metaZscores <- metaZscores[apply(metaZscores, 1, function(x){!all(is.na(x))}),]
 str(metaZscores)
 
-
-
-
-
-
-
-
-metaZscores <- metaZscores[apply(metaZscores, 1, function(x){any(!is.na(x))}),]
-recount3Zscores <- recount3Zscores[apply(recount3Zscores, 1, function(x){any(!is.na(x))}),]
-
-#save(recount3Zscores, metaZscores, traits, hpoEnrichmentList, hpoAnnotations, file = "hpoEnrichmentSession2.RData")
-
-load(file = "hpoEnrichmentSession2.RData")
-
-
-
-
-
+x <- metaZscores[,2]
 metaZscoresSig <- apply(metaZscores, 2, function(x){
   t <- -qnorm((0.05/sum(!is.na(x)))/2)
   
@@ -308,7 +287,8 @@ metaZscoresSig <- apply(metaZscores, 2, function(x){
   return(x)
   })
 
-write.table(metaZscoresSig, file = gzfile("signficantMetaKeyGene.txt.gz") , sep = "\t", quote = F, col.names = NA)
+write.table(metaZscoresSig, file = gzfile("depict2_bundle/signficantMetaKeyGene3_25kb.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
+write.table(metaZscores, file = gzfile("depict2_bundle/metaKeyGene3_25kb.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
 
 str(metaZscoresSig)
 
@@ -329,7 +309,7 @@ trait <- "IBD_deLange2017"
 
 trait <- traits[1]
 
-hpoE <- hpoEnrichmentList[[1]]
+
 
 x <- lapply(traits, function(trait){
   
@@ -389,9 +369,6 @@ str(hpoEnrichOrMatrix2)
 
 
 
-
-
-
 all(colnames(hpoMatrix) %in% names(hpoAnnotations))
 hpoMatrix2 <- hpoMatrix
 colnames(hpoMatrix2) <- hpoAnnotations[colnames(hpoMatrix)]
@@ -419,13 +396,14 @@ maxLog2Or <- max(abs(hpoEnrichOrMatrix2[!is.infinite(hpoEnrichOrMatrix2)]), na.r
 hpoEnrichOrMatrix2[is.na(hpoEnrichOrMatrix2)] <- 0
 
 
-write.table(hpoEnrichOrMatrix2, file = "hpoErichmentHeatmap2.txt", sep = "\t", quote = F, col.names = NA)
+write.table(hpoEnrichOrMatrix2, file = "hpoErichmentHeatmap2b_25kb.txt", sep = "\t", quote = F, col.names = NA, na = "")
 
 
 hpoEnrichOrMatrix2[is.infinite(hpoEnrichOrMatrix2) & hpoEnrichOrMatrix2 < 0] <- -maxLog2Or
 hpoEnrichOrMatrix2[is.infinite(hpoEnrichOrMatrix2) & hpoEnrichOrMatrix2 > 0] <- maxLog2Or
 
-
+plot( as.dendrogram(traitClust))
+dev.off()
 
 colHeatmap <- rev(c(colorRampPalette(c("#f03b20", "#feb24c", "#ffeda0"))(99), "white", colorRampPalette(c("#e0ecf4", "#9ebcda", "#8856a7"))(99)))
 colBreaks <- c(seq(-maxLog2Or,-2,length.out= 100), seq(2,maxLog2Or,length.out= 100))
@@ -436,8 +414,80 @@ hpoClust <- hclust(hpoDist, method =  "ward.D")
 str(hpoClust)
 library(pheatmap)
 #rpng(width = 600, height = 1000)
-pdf("hpoErichmentHeatmap2.pdf", height = 80, width = 15)
+pdf("hpoErichmentHeatmap3.pdf", height = 90, width = 15)
 pheatmap(hpoEnrichOrMatrix2, Rowv  = as.dendrogram(hpoClust), Colv = as.dendrogram(traitClust), col = colHeatmap, breaks = colBreaks, scale = "none", cellwidth = 10, cellheight = 10)
 dev.off()
 sum(is.na(hpoEnrichOrMatrix2ForCluster))
 range(hpoEnrichOrMatrix2ForCluster)
+
+sum(is.na(hpoEnrichOrMatrix2))
+sum( is.infinite (hpoEnrichOrMatrix2))
+
+
+
+
+
+
+#  pdf("ibdEnrichment.pdf")
+#  par(xpd = NA)
+#  plot(log2(tissueMetaHpoEnrichment[,2]), -log10(tissueMetaHpoEnrichment[,1]), pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), xlab = "log2(odds ratio)", ylab = "-log10(Fisher pvalue)", main = "Schizo tissue specific meta analyzed enrichment")
+#  abline(h = -log10(0.05/nrow(tissueMetaHpoEnrichment)), lwd = 2, col = "darkred")
+#  dev.off()
+
+#  tissueMetaHpoEnrichment[order(tissueMetaHpoEnrichment[,1], decreasing = F)[1:20],]
+#  tissueMetaHpoEnrichment[order(tissueMetaHpoEnrichment[,2], decreasing = T)[1:20],]
+
+
+#  library(pROC)
+#  table(sig, hpoMatrixS[,"HP:0002733"])
+#  r <- roc(response = sig, predictor = hpoMatrixS[,"HP:0002733"])
+#  plot.roc(r)
+
+
+#  library(beeswarm)
+#  beeswarm(metaZ[overlapGenes][hpoMatrixS[,"HP:0002583"]==1])
+#  abline(h=sigThreshold)
+
+
+
+#  library(vioplot)
+#  vioplot(metaZ[overlapGenes], drawRect = F, ylab = "Schizo tissue meta keygene z-score", main = "Hyperactivity")
+#  beeswarm(metaZ[overlapGenes][hpoMatrixS[,"HP:0000752"]==1], add = T, pch = 16, col = "orange2")
+#  abline(h = sigThreshold, lwd = 2, col = "darkred")
+
+#vioplot(resRecount3[overlapGenes, "Enrichment.Z.score"], drawRect = F, ylab = "IBD recount3 keygene z-score", main = "Colitis")
+#beeswarm(resRecount3[overlapGenes, "Enrichment.Z.score"][hpoMatrixS[,"HP:0002583"]==1], add = T, pch = 16, col = "orange2")
+#abline(h=min(abs(resRecount3$Enrichment.Z.score)[resRecount3$Bonferroni.significant]))
+#dev.off()
+
+#ovelap = intersect(rownames(recount3HpoEnrichment), rownames(tissueMetaHpoEnrichment))
+
+# plot(-log10(tissueMetaHpoEnrichment[ovelap,1]), -log10(recount3HpoEnrichment[ovelap,1]), xlab = "Recount3 -log10(pvalue)", ylab = "Tissue meta analysis -log10(pvalue)", pch = 16, col=adjustcolor( ifelse(tissueMetaHpoEnrichment[ovelap,2] > 1, "dodgerblue2", "orange2"), alpha.f = 0.5))
+#  plot(log2(tissueMetaHpoEnrichment[ovelap,2]), log2(recount3HpoEnrichment[ovelap,2]), xlab = "Recount3 log2(OR)", ylab = "Tissue meta analysis log2(OR)", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), xlim = c(-4,6), ylim = c(-4,6))
+
+#head(sort(recount3HpoEnrichment), n = 25)
+
+#table(hpoMatrixS[,5])
+
+#sum(hpoMatrixS[,5] > 0)
+
+#colnames(hpoMatrixS)[1]
+
+
+
+#genes <- intersect(res$Recount3$Gene.ID, names(metaZ))
+#zThreshold <- -log10(0.05/length(genes))
+
+#table(res$Recount3[genes, "Enrichment.Z.score"] >= zThreshold, metaZ[genes] >= zThreshold)
+#276* 100 / (54+276)
+
+#pdf("ibdCompare.pdf")
+#par(xpd = NA)
+#plot(res$Recount3[genes, "Enrichment.Z.score"], metaZ[genes], cex = 0.8, pch = 16, col=adjustcolor(ifelse(res$Recount3[genes, "Enrichment.Z.score"] >= zThreshold, "darkred", "dodgerblue2"), alpha.f = 0.2),
+#     ylab = "Meta analysis of tissue specific networks",
+#     xlab = "Multi tissue network",
+#     main = "IBD key-gene prediction scores")
+#abline(h = zThreshold)
+#abline(v = zThreshold)
+#dev.off()
+#cor.test(res$Recount3[genes, "Enrichment.Z.score"], metaZ[genes])
