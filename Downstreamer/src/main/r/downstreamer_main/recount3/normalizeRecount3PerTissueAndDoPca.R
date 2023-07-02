@@ -228,11 +228,49 @@ numberOfComps <- lapply(tissueClasses, function(tissue){
   return(numberComponentsToInclude)
 })
 
+
+tissue <- "Prostate"
+
+numberOfComps <- lapply(tissueClasses, function(tissue){
+  
+  load( file = paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),".RData"))
+  
+  numberSamples <- ncol(tissueVstPca$eigenVectors)
+
+  
+  explainedVariance <- tissueVstPca$eigenValues * 100 / sum( tissueVstPca$eigenValues)
+  
+  
+  numberComponentsToIncludeVariance <- which.max(cumsum(explainedVariance) >= 80)
+  
+  sampleEigen <- explainedVariance * numberSamples / 100
+  
+  
+  numberComponentsToIncludeSampleEigen <- sum( sampleEigen >= 1)
+  
+  sampleEigen[numberComponentsToIncludeSampleEigen]
+  
+  numberComponentsToInclude <- min(numberComponentsToIncludeVariance, numberComponentsToIncludeSampleEigen)
+  
+
+  
+  write.table(tissueVstPca$eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("perTissueNormalization/vstCovCorPca/",make.names(tissue),"_eigenVec2.txt.gz")), sep = "\t", quote = F, col.names = NA)
+  
+  
+  return(numberComponentsToInclude)
+
+})
+
 numberOfComps <- do.call("c", numberOfComps)
 names(numberOfComps) <- tissueClasses
+
+
+
+
+
 #as.data.frame(numberOfComps)
 
-nrSamplesCombined <- nrow(samplesWithPredictionNoOutliers)
+nrSamplesCombined <- 1#nrow(samplesWithPredictionNoOutliers)
 nrComponentsCominbedNetwork <- 848
 
 sampleCounts <- table(samplesWithPredictionNoOutliers$predictedTissue)
@@ -247,6 +285,7 @@ points(nrSamplesCombined, nrComponentsCominbedNetwork, pch = 16, col=adjustcolor
 dev.off()
 
 write.table(as.data.frame(numberOfComps), file = "perTissueNormalization/vstCovCorPca/compsPerTissue.txt", col.names = NA, quote = F, sep = "\t")
+write.table(as.data.frame(numberOfSamples), file = "perTissueNormalization/vstCovCorPca/samplesPerTissue.txt", col.names = NA, quote = F, sep = "\t")
 
 sink <- lapply(tissueClasses, function(tissue){
   cat(tissue, "\n")

@@ -69,14 +69,28 @@ dim(hpoMatrix)
 
 traits <- read.delim("traits.txt", header = T)[,1]
 
+traits2 <- c("Height_2022", "schizophrenia_2018_29483656_hg19", "IBD_deLange2017")
+
 metaZscores <- matrix(NA, nrow = nrow(geneInfo), ncol = length(traits), dimnames = list(geneInfo$V1, traits))
 recount3Zscores <- matrix(NA, nrow = nrow(geneInfo), ncol = length(traits), dimnames = list(geneInfo$V1, traits))
+pascalxZscores <- matrix(NA, nrow = nrow(geneInfo), ncol = length(traits), dimnames = list(geneInfo$V1, traits))
+
 
 trait <- traits[2]
-hpoEnrichmentList <- lapply(traits, function(trait){
+sink <- lapply(traits2, function(trait){
   
+    
   cat(trait,"\n")
-  res <- read.depict2(paste0("depict2_bundle/output/ds2_B_25k/", trait,"/",trait,"_keygenes_enrichtments.xlsx"))
+
+  
+  
+  pascalxRes <- read.delim(paste0("/groups/umcg-fg/tmp02/projects/downstreamer/PascalX_bundle/results_25kb/",trait, ".txt"), row.names =1 )
+  str(pascalxRes)
+  pxg <- intersect(geneInfo$V1, row.names(pascalxRes))
+  
+  pascalxZscores[pxg,trait] <<- -qnorm(pascalxRes[pxg,"pvalue"])
+  
+  res <- read.depict2(paste0("depict2_bundle/output/ds2_B_25k/", trait,"/",trait,"_keygenes3_enrichtments.xlsx"))
   
   
   tissues <- names(res)[names(res) != "Recount3"]
@@ -133,26 +147,29 @@ hpoEnrichmentList <- lapply(traits, function(trait){
 setwd("/groups/umcg-fg/tmp02/projects/downstreamer/")
 
 
-load("depict2_bundle/hpoEnrichmentSession3a_25k.RData")
+#load("depict2_bundle/hpoEnrichmentSession3a_25k.RData")
 
 
 trait <- traits[1]
 trait <- "IBD_deLange2017"
 trait <- "Schizophrenia_Pardinas2018"
 trait <- "ADHD_Demontis2018"
+trait <- "Height_2022"
 
 library(parallel)
 
-clust <- makeCluster(10)
+clust <- makeCluster(3)
 
 
 clusterExport(clust, "recount3Zscores")
 clusterExport(clust, "metaZscores")
+clusterExport(clust, "pascalxZscores")
 clusterExport(clust, "hpoMatrix")
 clusterExport(clust, "hpoAnnotations")
 
 
-hpoEnrichmentList <- parLapply(clust, traits, function(trait){
+
+hpoEnrichmentList <- parLapply(clust, traits2, function(trait){
   
   metaZ <- metaZscores[, trait] 
   metaZ <- metaZ[!is.na(metaZ)]
@@ -199,6 +216,56 @@ hpoEnrichmentList <- parLapply(clust, traits, function(trait){
     tissueMetaHpoEnrichment$descip <- hpoAnnotations[rownames(tissueMetaHpoEnrichment)]
     
   }
+  
+  
+  
+  pascalZ <- pascalxZscores[, trait] 
+  pascalZ <- pascalZ[!is.na(pascalZ)]
+  length(pascalZ)
+  str(pascalxZscores[,trait])
+  
+  sigThreshold <- -qnorm(0.05/length(pascalZ)/2)
+  sig <- pascalZ >= sigThreshold
+  
+  
+  overlapGenes <- intersect(names(sig), row.names(hpoMatrix))
+  
+  sig <- sig[overlapGenes]
+  if(sum(sig) <= 10){ 
+    pascalXHpoEnrichment <- NA
+  }else {
+    
+    
+    hpoMatrixS <- hpoMatrix[overlapGenes,]
+    hpoMatrixS <- hpoMatrixS[,apply(hpoMatrixS, 2, function(x){sum(x>0)})>=10]
+    hpoMatrixS <- hpoMatrixS[,apply(hpoMatrixS, 2, function(x){sum(x<1)})>=10]
+    
+    x <- hpoMatrixS[,1]
+    pascalXHpoEnrichment <- t(apply(hpoMatrixS, 2, function(x){
+      tryCatch( 
+        {  
+          
+          f <- fisher.test(table(sig, x))
+          return(c(f$p.value, f$estimate, as.vector(table(sig, x))))
+          
+          
+        },
+        error=function(cond) {
+          print(table(sig, x)) 
+        }
+      )
+    }))
+    
+    pascalXHpoEnrichment <- as.data.frame(pascalXHpoEnrichment)
+    colnames(pascalXHpoEnrichment)[1] <- "Fisher-Pvalue"
+    colnames(pascalXHpoEnrichment)[3:6] <- c("noKeyNoHpo", "keyNoHpo", "noKeyHpo", "keyHpo")
+    pascalXHpoEnrichment$descip <- hpoAnnotations[rownames(pascalXHpoEnrichment)]
+    
+  }
+  
+  
+  
+  
   
 
   
@@ -247,27 +314,79 @@ hpoEnrichmentList <- parLapply(clust, traits, function(trait){
   }
   
   
-  return(list(recount3HpoEnrichment, tissueMetaHpoEnrichment))
+  return(list(recount3HpoEnrichment, tissueMetaHpoEnrichment, pascalXHpoEnrichment))
 
 }) 
 
-names(hpoEnrichmentList) <- traits
+names(hpoEnrichmentList) <- traits2
+
+str(hpoEnrichmentList$IBD_deLange2017[[2]])
+str(hpoEnrichmentList$IBD_deLange2017[[3]])
+
+enrichmentCompare <- merge(hpoEnrichmentList$IBD_deLange2017[[2]], hpoEnrichmentList$IBD_deLange2017[[3]], by = "descip", all = T, suffixes = c ("-DS", "-PX"))
+plot(-log10(enrichmentCompare$`Fisher-Pvalue-PX`), -log10(enrichmentCompare$`Fisher-Pvalue-DS`), xlab = "PascalX enrichment", ylab = "Downtreamer enrichment", main = "IBD")
+abline(coef = c(0,1))
+dev.off()
+write.table(enrichmentCompare, file = "ibd.txt", sep = "\t", quote = F, col.names = NA)
+
+
+
+enrichmentCompare <- merge(hpoEnrichmentList$Height_2022[[2]], hpoEnrichmentList$Height_2022[[3]], by = "descip", all = T, suffixes = c ("-DS", "-PX"))
+plot(-log10(enrichmentCompare$`Fisher-Pvalue-PX`), -log10(enrichmentCompare$`Fisher-Pvalue-DS`), xlab = "PascalX enrichment", ylab = "Downtreamer enrichment", main = "Height")
+abline(coef = c(0,1))
+dev.off()
+write.table(enrichmentCompare, file = "height.txt", sep = "\t", quote = F, col.names = NA)
+
+
+
+
+enrichmentCompare <- merge(hpoEnrichmentList$schizophrenia_2018_29483656_hg19[[2]], hpoEnrichmentList$schizophrenia_2018_29483656_hg19[[3]], by = "descip", all = T, suffixes = c ("-DS", "-PX"))
+plot(-log10(enrichmentCompare$`Fisher-Pvalue-PX`), -log10(enrichmentCompare$`Fisher-Pvalue-DS`), xlab = "PascalX enrichment", ylab = "Downtreamer enrichment", main = "Schizophrenia")
+abline(coef = c(0,1))
+dev.off()
+write.table(enrichmentCompare, file = "schizo.txt", sep = "\t", quote = F, col.names = NA)
+
+
+#hpoEnrichmentListold <- hpoEnrichmentList
+#hpoEnrichmentListNew <- hpoEnrichmentList
 
 #hpoEnrichmentList50kb <- hpoEnrichmentList
-hpoEnrichmentList25kb <- hpoEnrichmentList
+#hpoEnrichmentList25kb <- hpoEnrichmentList
 
 #save(recount3Zscores, metaZscores, traits, hpoEnrichmentList, hpoAnnotations, file = "depict2_bundle/hpoEnrichmentSession3b_25k.RData")
 
 str(hpoEnrichmentList25kb$IBD_deLange2017[[2]])
 str(hpoEnrichmentList50kb$IBD_deLange2017[[2]])
 
-heigthEnrichmentCompare <- merge(hpoEnrichmentList25kb$IBD_deLange2017[[2]], hpoEnrichmentList50kb$IBD_deLange2017[[2]], by = "descip", all = T, suffixes = c ("25kb", "50kb"))
-str(heigthEnrichmentCompare)
+heigthEnrichmentCompare <- merge(hpoEnrichmentListold$IBD_deLange2017[[2]], hpoEnrichmentListNew$IBD_deLange2017[[2]], by = "descip", all = T, suffixes = c ("fdr05", "fdr25"))
 
-plot(-log10(heigthEnrichmentCompare$`Fisher-Pvalue50kb`), -log10(heigthEnrichmentCompare$`Fisher-Pvalue25kb`))
+
+plot(-log10(heigthEnrichmentCompare$`Fisher-Pvaluefdr05`), -log10(heigthEnrichmentCompare$`Fisher-Pvaluefdr25`), xlab = "Eigen FDR 0.05", ylab = "Eigen FDR 0.25", main = "IBD")
+abline(coef = c(0,1))
 dev.off()
 
-write.table(heigthEnrichmentCompare, file = "ibdCompare.txt", sep = "\t", quote = F, col.names = NA)
+
+heigthEnrichmentCompare <- merge(hpoEnrichmentListold$Height_2022[[2]], hpoEnrichmentListNew$Height_2022[[2]], by = "descip", all = T, suffixes = c ("fdr05", "fdr25"))
+
+
+plot(-log10(heigthEnrichmentCompare$`Fisher-Pvaluefdr05`), -log10(heigthEnrichmentCompare$`Fisher-Pvaluefdr25`), xlab = "Eigen FDR 0.05", ylab = "Eigen FDR 0.25", main = "Height")
+abline(coef = c(0,1))
+dev.off()
+
+
+heigthEnrichmentCompare <- merge(hpoEnrichmentListold$schizophrenia_2018_29483656_hg19[[2]], hpoEnrichmentListNew$schizophrenia_2018_29483656_hg19[[2]], by = "descip", all = T, suffixes = c ("fdr05", "fdr25"))
+str(heigthEnrichmentCompare)
+
+plot(-log10(heigthEnrichmentCompare$`Fisher-Pvaluefdr05`), -log10(heigthEnrichmentCompare$`Fisher-Pvaluefdr25`), xlab = "Eigen FDR 0.05", ylab = "Eigen FDR 0.25", main = "Schizophrenia")
+abline(coef = c(0,1))
+dev.off()
+
+
+
+
+
+
+write.table(heigthEnrichmentCompare, file = "tmp.txt", sep = "\t", quote = F, col.names = NA)
 
 
 plot(heigthEnrichmentCompare$`odds ratio50kb`, heigthEnrichmentCompare$`odds ratio25kb`)

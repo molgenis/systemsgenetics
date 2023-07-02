@@ -389,6 +389,21 @@ public class DownstreamerEnrichment {
 
 					for (int eigenVectorI = 0; eigenVectorI < numberEigenvectors; ++eigenVectorI) {
 
+//						System.err.println("WARNING HARD CODED OVERWRITE");
+//						System.out.println("WARNING HARD CODED OVERWRITE");
+//						
+//						////----------------------
+//						
+//						String name = eigenvectorsInDataset.get(eigenVectorI);
+//						if(name.equals("Comp_7") || name.equals("Comp_28") || name.equals("Comp_11")){
+//							significantEigenvectorsIdThisTrait.add(eigenvectorsInDataset.get(eigenVectorI));
+//							pathwaySelectedIntermediates.setElementQuick(trait, eigenVectorI, 1);
+//						}
+//						
+//						
+//						
+//						//------------------------
+						
 						if (pathwayQvaluesIntermediates.getElementQuick(trait, eigenVectorI) <= options.getFdrThresholdEigenvectors()) {
 							significantEigenvectorsIdThisTrait.add(eigenvectorsInDataset.get(eigenVectorI));
 							pathwaySelectedIntermediates.setElementQuick(trait, eigenVectorI, 1);
