@@ -8,7 +8,7 @@ library(havok)
 
 
 
-setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
+setwd("/groups/umcg-fg/tmp02/projects/genenetwork/recount3/")
 
 
 load(file = "Metadata/combinedMeta_2022_09_15.RData", verbose = T)
@@ -25,9 +25,10 @@ tcgaAll <- combinedMeta[combinedMeta$study == "TCGA",]
 tcgaCancer <- tcgaAll[tcgaAll$Cancer,]
 
 table(tcgaCancer$tcga.cgc_sample_sample_type)
+sum(table(tcgaCancer$tcga.cgc_sample_sample_type))
 
 tcgaCancer <- tcgaCancer[tcgaCancer$tcga.cgc_sample_sample_type == "Primary Tumor",]
-table(tcgaCancer$tcga.gdc_cases.project.primary_site)
+table(tcgaCancer$tcga.gdc_cases.project.primary_site,useNA= "always")
 
 rpng(width = 1000, height = 1000)
 par(mar = c(9,4,3,1))
@@ -35,7 +36,6 @@ barplot(table(tcgaCancer$tcga.gdc_cases.project.primary_site), las = 2, main = "
 dev.off()
 
 dim(tcgaCancer)
-
 
 rownames(tcgaCancer)
 
@@ -211,6 +211,9 @@ sapply(tissues, function(tissue){
   length(rownames(tcgaCancer)[tcgaCancer$tcga.gdc_cases.project.primary_site == tissue])
 })
 
+
+
+
 numberOfComps <- lapply(tissues, function(tissue){
   
   tissueSamples <- rownames(tcgaCancer)[tcgaCancer$tcga.gdc_cases.project.primary_site == tissue]
@@ -281,4 +284,34 @@ numberOfComps <- lapply(tissues, function(tissue){
   return(numberComponentsToInclude)
 })
 
+tissue <- tissues[1]
+numberOfComps <- lapply(tissues, function(tissue){
+  
+  load(file = paste0("tcga/tissuePca/",make.names(tissue),".RData"))
+  
+  
+  str(tissuePca)
+  
+  numberSamples <- ncol(tissuePca$eigenVectors)
+  
+  explainedVariance <- tissuePca$eigenValues * 100 / sum( tissuePca$eigenValues)
+  
+  
+  numberComponentsToIncludeVariance <- which.max(cumsum(explainedVariance) >= 80)
+  
+  sampleEigen <- explainedVariance * numberSamples / 100
+  
+  
+  numberComponentsToIncludeSampleEigen <- sum( sampleEigen >= 1)
+  
+  
+  numberComponentsToInclude <- min(numberComponentsToIncludeVariance, numberComponentsToIncludeSampleEigen)
+  
+   write.table(tissuePca$eigenVectors[,1:numberComponentsToInclude], file = gzfile(paste0("tcga/tissuePca/",make.names(tissue),"_eigenVec2.txt.gz")), sep = "\t", quote = F, col.names = NA)
+  
+  
+  return(numberComponentsToInclude)
+  
 
+  
+})

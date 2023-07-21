@@ -8,6 +8,7 @@
 remoter::client("localhost", port = 54001)#55556 55501   54104
 
 setwd("/groups/umcg-fg/tmp02/projects/downstreamer/")
+setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
 
 
 library(readxl)
@@ -46,14 +47,18 @@ str(geneInfo)
 
 library(readr)
 
+
+#table_tmp <- read_delim("depict2_bundle/reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.txt.gz", delim = "\t", quote = "", col_types = colTypes)
+
 #change X1 in case of specified header for row names
 colTypes <- cols( .default = col_double(),  `-` = col_character())
-table_tmp <- read_delim("depict2_bundle/reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.txt.gz", delim = "\t", quote = "", col_types = colTypes)
+table_tmp <- read_delim("/groups/umcg-fg/tmp01/projects/genenetwork/pathway_databases/HPO/2023_06_17/HPO_2023_06_17.txt.gz", delim = "\t", quote = "", col_types = colTypes)
 hpoMatrix <- as.matrix(table_tmp[,-1])
 rownames(hpoMatrix) <- table_tmp[,1][[1]]
 rm(table_tmp) 
 
-hpoAnnotations <- as.matrix(read.delim("depict2_bundle/reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.colAnnotations.txt", row.names = 1))
+#hpoAnnotations <- as.matrix(read.delim("depict2_bundle/reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.colAnnotations.txt", row.names = 1))
+hpoAnnotations <- as.matrix(read.delim("/groups/umcg-fg/tmp01/projects/genenetwork/pathway_databases/HPO/2023_06_17/hpoToName.txt", row.names = 1))
 hpoAnnotations <- hpoAnnotations[,1]
 
 
@@ -66,8 +71,8 @@ dim(hpoMatrix)
 
 
 
-
-traits <- read.delim("traits.txt", header = T)[,1]
+gwas <- read.delim("traits.txt", header = T)
+traits <- gwas[,1]
 
 traits2 <- c("Height_2022", "schizophrenia_2018_29483656_hg19", "IBD_deLange2017")
 
@@ -77,7 +82,7 @@ pascalxZscores <- matrix(NA, nrow = nrow(geneInfo), ncol = length(traits), dimna
 
 
 trait <- traits[2]
-sink <- lapply(traits2, function(trait){
+sink <- lapply(traits, function(trait){
   
     
   cat(trait,"\n")
@@ -85,12 +90,14 @@ sink <- lapply(traits2, function(trait){
   
   
   pascalxRes <- read.delim(paste0("/groups/umcg-fg/tmp02/projects/downstreamer/PascalX_bundle/results_25kb/",trait, ".txt"), row.names =1 )
-  str(pascalxRes)
+  #str(pascalxRes)
   pxg <- intersect(geneInfo$V1, row.names(pascalxRes))
+  range(pascalxRes[pxg,"pvalue"])
+  range(-qnorm(pascalxRes[pxg,"pvalue"]))
+  pascalxZscores[pxg,trait] <<- -qnorm(pascalxRes[pxg,"pvalue"]/2)
   
-  pascalxZscores[pxg,trait] <<- -qnorm(pascalxRes[pxg,"pvalue"])
   
-  res <- read.depict2(paste0("depict2_bundle/output/ds2_B_25k/", trait,"/",trait,"_keygenes3_enrichtments.xlsx"))
+  res <- read.depict2(paste0("depict2_bundle/output/ds2_B_25k/", trait,"/",trait,"_keygenes3_noCovCor_enrichtments.xlsx"))
   
   
   tissues <- names(res)[names(res) != "Recount3"]
@@ -141,13 +148,13 @@ sink <- lapply(traits2, function(trait){
   
 })
 
-#save(recount3Zscores, metaZscores, traits, hpoMatrix, hpoAnnotations, file = "depict2_bundle/hpoEnrichmentSession3a_25k.RData")
+#save(recount3Zscores, geneInfo, pascalxZscores, metaZscores, traits, hpoMatrix, hpoAnnotations, file = "depict2_bundle/hpoEnrichmentSession4.RData")
 
 
 setwd("/groups/umcg-fg/tmp02/projects/downstreamer/")
 
 
-#load("depict2_bundle/hpoEnrichmentSession3a_25k.RData")
+load("hpoEnrichmentSession4.RData")
 
 
 trait <- traits[1]
@@ -158,7 +165,7 @@ trait <- "Height_2022"
 
 library(parallel)
 
-clust <- makeCluster(3)
+clust <- makeCluster(10)
 
 
 clusterExport(clust, "recount3Zscores")
@@ -169,7 +176,7 @@ clusterExport(clust, "hpoAnnotations")
 
 
 
-hpoEnrichmentList <- parLapply(clust, traits2, function(trait){
+hpoEnrichmentList <- parLapply(clust, traits, function(trait){
   
   metaZ <- metaZscores[, trait] 
   metaZ <- metaZ[!is.na(metaZ)]
@@ -318,9 +325,12 @@ hpoEnrichmentList <- parLapply(clust, traits2, function(trait){
 
 }) 
 
-names(hpoEnrichmentList) <- traits2
+#save(recount3Zscores, metaZscores, pascalxZscores, traits, geneInfo, hpoEnrichmentList, hpoAnnotations, file = "depict2_bundle/hpoEnrichmentSession4bNewHpo.RData")
+load(file = "hpoEnrichmentSession4bNewHpo.RData")
 
-str(hpoEnrichmentList$IBD_deLange2017[[2]])
+names(hpoEnrichmentList) <- traits
+
+View(hpoEnrichmentList$Height[[2]])
 str(hpoEnrichmentList$IBD_deLange2017[[3]])
 
 enrichmentCompare <- merge(hpoEnrichmentList$IBD_deLange2017[[2]], hpoEnrichmentList$IBD_deLange2017[[3]], by = "descip", all = T, suffixes = c ("-DS", "-PX"))
@@ -353,7 +363,7 @@ write.table(enrichmentCompare, file = "schizo.txt", sep = "\t", quote = F, col.n
 #hpoEnrichmentList50kb <- hpoEnrichmentList
 #hpoEnrichmentList25kb <- hpoEnrichmentList
 
-#save(recount3Zscores, metaZscores, traits, hpoEnrichmentList, hpoAnnotations, file = "depict2_bundle/hpoEnrichmentSession3b_25k.RData")
+
 
 str(hpoEnrichmentList25kb$IBD_deLange2017[[2]])
 str(hpoEnrichmentList50kb$IBD_deLange2017[[2]])
@@ -392,8 +402,20 @@ write.table(heigthEnrichmentCompare, file = "tmp.txt", sep = "\t", quote = F, co
 plot(heigthEnrichmentCompare$`odds ratio50kb`, heigthEnrichmentCompare$`odds ratio25kb`)
 dev.off()
 
-load(file = "depict2_bundle/hpoEnrichmentSession3b_25k.RData")
 
+str(pascalxZscores)
+pascalxSig <- apply(pascalxZscores, 2, function(x){
+  t <- -qnorm((0.05/sum(!is.na(x)))/2)
+  
+  x[!is.na(x)] <- x[!is.na(x)] >= t
+  return(x)
+})
+
+write.table(pascalxSig, file = gzfile("signficantPascalx.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
+write.table(pascalxZscores, file = gzfile("pascalxZscores.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
+hist(pascalxZscores)
+barplot(apply(pascalxSig, 2, sum, na.rm=T))
+sort(apply(pascalxSig, 2, sum, na.rm=T))
 metaZscores <- metaZscores[apply(metaZscores, 1, function(x){!all(is.na(x))}),]
 str(metaZscores)
 
@@ -402,14 +424,13 @@ metaZscoresSig <- apply(metaZscores, 2, function(x){
   t <- -qnorm((0.05/sum(!is.na(x)))/2)
   
   x[!is.na(x)] <- x[!is.na(x)] >= t
-  
   return(x)
   })
 
-write.table(metaZscoresSig, file = gzfile("depict2_bundle/signficantMetaKeyGene3_25kb.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
-write.table(metaZscores, file = gzfile("depict2_bundle/metaKeyGene3_25kb.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
+write.table(metaZscoresSig, file = gzfile("signficantMetaKeyGeneNoCov.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
+write.table(metaZscores, file = gzfile("metaKeyGeneNoCov.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
 
-str(metaZscoresSig)
+  str(metaZscoresSig)
 
 
 apply(metaZscoresSig, 2, sum, na.rm=T)
@@ -425,15 +446,15 @@ sum(metaZscores[,"Height_2022"] >= 4.66, na.rm = T)
 
 trait <- "Alzheimers_Jansen2019"
 trait <- "IBD_deLange2017"
-
+trait <- "Height_2022"
 trait <- traits[1]
 
-
+str(hpoEnrichmentList)
 
 x <- lapply(traits, function(trait){
   
   print(trait)
-  tissueMetaHpoEnrichment <- hpoEnrichmentList[[trait]][[1]]
+  tissueMetaHpoEnrichment <- hpoEnrichmentList[[trait]][[2]]
   
   if(length(tissueMetaHpoEnrichment)>1){
   
@@ -444,22 +465,21 @@ x <- lapply(traits, function(trait){
   
   tissueMetaHpoEnrichment$log2Or <- log2(tissueMetaHpoEnrichment$`odds ratio`)
   
-  tissueMetaHpoEnrichmentFilter <- tissueMetaHpoEnrichment[tissueMetaHpoEnrichment$`Fisher-Pvalue` <= bonThres & abs(tissueMetaHpoEnrichment$log2Or) >= 2,] 
+  tissueMetaHpoEnrichmentFilter <- tissueMetaHpoEnrichment[tissueMetaHpoEnrichment$`Fisher-Pvalue` <= bonThres & tissueMetaHpoEnrichment$log2Or >= 0,] 
 
     
     
-  print(tissueMetaHpoEnrichmentFilter[order(tissueMetaHpoEnrichmentFilter$`Fisher-Pvalue`, decreasing=F)[1:10],], width = 500)
-  #print(tissueMetaHpoEnrichmentFilter[order(abs(tissueMetaHpoEnrichmentFilter$`log2Or`), decreasing=T)[1:10],], width = 500)
+  #print(tissueMetaHpoEnrichmentFilter[order(tissueMetaHpoEnrichmentFilter$`Fisher-Pvalue`, decreasing=F)[1:10],], width = 500)
+  print(tissueMetaHpoEnrichmentFilter[order(abs(tissueMetaHpoEnrichmentFilter$`log2Or`), decreasing=T)[1:10],], width = 500)
   } else {
     print(" ")
   }
 })
 
-
+str(hpoAnnotations)
 
 
 hpoEnrichOrMatrix <- matrix(NA, nrow = length(hpoAnnotations), ncol = length(traits), dimnames = list(hpoAnnotations, traits))
-
 
 trait <- traits[1]
 
@@ -472,11 +492,11 @@ x <- lapply(traits, function(trait){
     
     bonThres <- 0.05/nrow(tissueMetaHpoEnrichment)
     
-    
+    tissueMetaHpoEnrichment[tissueMetaHpoEnrichment$descip=="Abnormality of the thorax",]
     tissueMetaHpoEnrichment$log2Or <- log2(tissueMetaHpoEnrichment$`odds ratio`)
-    
-    tissueMetaHpoEnrichmentFilter <- tissueMetaHpoEnrichment[tissueMetaHpoEnrichment$`Fisher-Pvalue` <= bonThres  & abs(tissueMetaHpoEnrichment$log2Or) >= 2,] 
-    
+    #View(tissueMetaHpoEnrichment)
+    tissueMetaHpoEnrichmentFilter <- tissueMetaHpoEnrichment[tissueMetaHpoEnrichment$`Fisher-Pvalue` <= bonThres  & tissueMetaHpoEnrichment$log2Or >= 0,] 
+    #View(tissueMetaHpoEnrichmentFilter)
     hpoEnrichOrMatrix[tissueMetaHpoEnrichmentFilter$descip,trait] <<- tissueMetaHpoEnrichmentFilter$log2Or
     
   }
@@ -484,29 +504,38 @@ x <- lapply(traits, function(trait){
 })
 
 hpoEnrichOrMatrix2 <- hpoEnrichOrMatrix[apply(hpoEnrichOrMatrix, 1, function(x){any(!is.na(x))}), apply(hpoEnrichOrMatrix, 2, function(x){any(!is.na(x))})]
+
 str(hpoEnrichOrMatrix2)
 
 
+colnames(hpoEnrichOrMatrix2) <- gwas$Name[match(colnames(hpoEnrichOrMatrix2), gwas$machine_friendly_id)]
+
+#colnames(hpoMatrix)[!colnames(hpoMatrix) %in% names(hpoAnnotations)]
 
 all(colnames(hpoMatrix) %in% names(hpoAnnotations))
 hpoMatrix2 <- hpoMatrix
 colnames(hpoMatrix2) <- hpoAnnotations[colnames(hpoMatrix)]
 hpoMatrix2 <- hpoMatrix2[,rownames(hpoEnrichOrMatrix2)]
 
-hpoEnrichOrMatrix2ForCluster <- hpoEnrichOrMatrix2
 
-hpoEnrichOrMatrix2ForCluster[is.na(hpoEnrichOrMatrix2ForCluster)] <- 0
+#hpoEnrichOrMatrix2ForCluster <- hpoEnrichOrMatrix2
 
-hist(hpoEnrichOrMatrix2ForCluster)
-dev.off()
+#hpoEnrichOrMatrix2ForCluster[is.na(hpoEnrichOrMatrix2ForCluster)] <- 0
+
+#hist(hpoEnrichOrMatrix2ForCluster)
+#dev.off()
 
 
-traitDist <- as.dist(1 - cor(metaZscores[,colnames(hpoEnrichOrMatrix2)], use = "pa"))
+metaZscores2 <- metaZscores
+colnames(metaZscores2) <- gwas$Name[match(colnames(metaZscores2), gwas$machine_friendly_id)]
+
+
+traitDist <- as.dist(1 - cor(metaZscores2[,colnames(hpoEnrichOrMatrix2)], use = "pa"))
 traitDist[is.nan(traitDist)] <- 1
 traitDist[is.na(traitDist)] <- 1
-str(traitDist)
+traitClust <- hclust(traitDist, method = "ward.D2")
 
-traitClust <- hclust(traitDist)
+
 plot(traitClust)
 dev.off()
 
@@ -515,27 +544,85 @@ maxLog2Or <- max(abs(hpoEnrichOrMatrix2[!is.infinite(hpoEnrichOrMatrix2)]), na.r
 hpoEnrichOrMatrix2[is.na(hpoEnrichOrMatrix2)] <- 0
 
 
-write.table(hpoEnrichOrMatrix2, file = "hpoErichmentHeatmap2b_25kb.txt", sep = "\t", quote = F, col.names = NA, na = "")
+
+#hpoEnrichOrMatrix2[is.infinite(hpoEnrichOrMatrix2) & hpoEnrichOrMatrix2 < 0] <- -maxLog2Or
+hpoEnrichOrMatrix3 <- hpoEnrichOrMatrix2
+hpoEnrichOrMatrix3[is.infinite(hpoEnrichOrMatrix2) & hpoEnrichOrMatrix2 > 0] <- maxLog2Or
 
 
-hpoEnrichOrMatrix2[is.infinite(hpoEnrichOrMatrix2) & hpoEnrichOrMatrix2 < 0] <- -maxLog2Or
-hpoEnrichOrMatrix2[is.infinite(hpoEnrichOrMatrix2) & hpoEnrichOrMatrix2 > 0] <- maxLog2Or
+#colHeatmap <- rev(c(colorRampPalette(c("#f03b20", "#feb24c", "#ffeda0"))(99), "white", colorRampPalette(c("#e0ecf4", "#9ebcda", "#8856a7"))(99)))
+#colBreaks <- c(seq(-maxLog2Or,-2,length.out= 100), seq(2,maxLog2Or,length.out= 100))
 
-plot( as.dendrogram(traitClust))
-dev.off()
-
-colHeatmap <- rev(c(colorRampPalette(c("#f03b20", "#feb24c", "#ffeda0"))(99), "white", colorRampPalette(c("#e0ecf4", "#9ebcda", "#8856a7"))(99)))
-colBreaks <- c(seq(-maxLog2Or,-2,length.out= 100), seq(2,maxLog2Or,length.out= 100))
+colHeatmap <- rev(c(colorRampPalette(c("#f03b20", "#feb24c", "#ffeda0"))(99), "white"))
+#colBreaks <- c(0,seq(2,maxLog2Or,length.out= 100))
+colBreaks <- c(0,seq(0.1,maxLog2Or,length.out= 100))
 
 str(hpoMatrix2)
 hpoDist <- dist(t(hpoMatrix2), method = "manhattan")
-hpoClust <- hclust(hpoDist, method =  "ward.D")
-str(hpoClust)
+hpoClust <- hclust(hpoDist, method =  "ward.D2")
+plot(hpoClust)
+
+
+write.table(hpoEnrichOrMatrix2[hpoClust$labels[hpoClust$order],traitClust$labels[traitClust$order]], file = "hpoErichmentHeatmap25kNoCovCor.txt", sep = "\t", quote = F, col.names = NA, na = "")
+
+
+unique(gwas$class)
+
+gwasHeatmapAnnotation <- data.frame(Class = gwas$class, row.names = gwas$Name)
+str(gwasHeatmapAnnotation)
+
 library(pheatmap)
+
+
 #rpng(width = 600, height = 1000)
-pdf("hpoErichmentHeatmap3.pdf", height = 90, width = 15)
-pheatmap(hpoEnrichOrMatrix2, Rowv  = as.dendrogram(hpoClust), Colv = as.dendrogram(traitClust), col = colHeatmap, breaks = colBreaks, scale = "none", cellwidth = 10, cellheight = 10)
+pdf("hpoErichmentHeatmapNewHpo.pdf", height = 180, width = 20)#65
+pheatmap(hpoEnrichOrMatrix3, cluster_rows  = hpoClust, cluster_cols = traitClust, col = colHeatmap, breaks = colBreaks, scale = "none", cellwidth = 10, cellheight = 10, treeheight_row = 300, treeheight_col = 100, annotation_col = gwasHeatmapAnnotation, legend_breaks = seq(0,6,2))
 dev.off()
+
+hpoExample <- read.delim("HpoExample.txt", header = F)$V1
+
+
+hpoDist <- dist(t(hpoMatrix2[,hpoExample]), method = "manhattan")
+hpoClust <- hclust(hpoDist)#, method =  "ward.D2"
+plot(hpoClust)
+
+
+pdf("hpoErichmentHeatmapNewHpoSelection.pdf", height = 11, width = 20)#65
+pheatmap(hpoEnrichOrMatrix3[hpoExample,], cluster_rows  = hpoClust, cluster_cols = traitClust, col = colHeatmap, breaks = colBreaks, scale = "none", cellwidth = 10, cellheight = 10, treeheight_row = 300, treeheight_col = 100, annotation_col = gwasHeatmapAnnotation, legend_breaks = seq(0,6,2))
+dev.off()
+
+
+
+class = "cardiovascular"
+class = "brain"
+for(class in unique(gwas$class)){
+  
+  print(class)
+  
+  slectedTraits <- colnames(hpoEnrichOrMatrix3)[colnames(hpoEnrichOrMatrix3) %in% gwas$Name[gwas$class==class]]
+  
+  if(length(slectedTraits) > 1){
+    traitDistClass <- as.dist(1 - cor(metaZscores2[,slectedTraits], use = "pa"))
+    traitDistClass[is.nan(traitDistClass)] <- 1
+    traitDistClass[is.na(traitDistClass)] <- 1
+    traitClustClass <- hclust(traitDistClass, method = "ward.D2")
+    
+  } else {
+    traitClustClass = FALSE
+  }
+  #needs new clustering per class
+  
+  hpoEnrichOrMatrixClass <- hpoEnrichOrMatrix3[,slectedTraits, drop = F]
+  hpoEnrichOrMatrixClass <- hpoEnrichOrMatrixClass[apply(hpoEnrichOrMatrixClass,1,function(x){any(x>0)}),,drop = F]
+
+  hpoClustClass <- hclust(dist(t(hpoMatrix2[,rownames(hpoEnrichOrMatrixClass),drop =F]), method = "manhattan"), method =  "ward.D2")
+  pdf(paste0("hpoErichmentHeatmap_",class,"newHpo.pdf"), height = 75, width = 12)
+  pheatmap(hpoEnrichOrMatrixClass, cluster_rows  = hpoClustClass, cluster_cols = traitClustClass, col = colHeatmap, breaks = colBreaks, scale = "none", cellwidth = 10, cellheight = 10, treeheight_row = 300, treeheight_col = 100, legend_breaks = seq(2,6,2), main = class)
+  dev.off()
+  
+}
+
+
 sum(is.na(hpoEnrichOrMatrix2ForCluster))
 range(hpoEnrichOrMatrix2ForCluster)
 

@@ -31,6 +31,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.mahout.math.Arrays;
 
 /**
  *
@@ -290,6 +291,10 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 				if (!duplicateChecker.add(nextLine[0])) {
 					throw new ParseException("Error parsing --pathwayEigenFile. Duplicate database name found, note must also be unique with --pathwayDatabase --ExpressionEigenVectors ");
+				}
+				
+				if(nextLine.length != 3){
+					throw new ParseException("Error parsing --pathwayEigenFile. Each row should contain 3 columns but found: " + nextLine.length + " at line: " + Arrays.toString(nextLine));
 				}
 
 				pathwayDatabases.add(new PathwayDatabase(nextLine[0], nextLine[1], Boolean.parseBoolean(nextLine[2])));
