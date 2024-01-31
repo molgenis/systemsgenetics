@@ -3,7 +3,7 @@
 
 
 
-remoter::client("localhost", port = 55504)#55556 55501
+remoter::client("localhost", port = 55556)#55556 55501 55504
 
 setwd("/groups/umcg-fg/tmp02/projects/downstreamer/depict2_bundle/")
 
@@ -51,13 +51,13 @@ str(eigenFiles)
 
 x <- traits[1]
 resultList <- lapply(traits, function(x){
-  res <- read.depict2(paste0("output/ds2_B_25k/",x,"/",x,"_TissueEnrichment_enrichtments.xlsx"))[["tissue"]]
+  res <- read.depict2(paste0("output/ds2_B_25k/",x,"/",x,"_TissueEnrichment_noCov_enrichtments.xlsx"))[["tissue"]]
   
   sigTissues <- res$Gene.set[res$Enrichment.Z.score >0 & res$Bonferroni.significant]
   
   eigenSelection <- eigenFiles[eigenFiles$V1 %in% sigTissues,]
   str(eigenSelection)
   
-  write.table(eigenSelection, file = paste0("output/ds2_B_25k/",x,"/",x,"_eigenFilesSignificant.txt"), sep = "\t", quote = F, col.names = F, row.names = F)
+  write.table(eigenSelection, file = paste0("output/ds2_B_25k/",x,"/",x,"_eigenFilesSignificant_noCov.txt"), sep = "\t", quote = F, col.names = F, row.names = F)
   
 }) 

@@ -5,9 +5,9 @@
 
 #ml R/4.2.1-foss-2022a-bare
 
-remoter::client("localhost", port = 54001)#55556 55501   54104
+remoter::client("localhost", port = 55556)#55556 55501   54104   54001
 
-setwd("/groups/umcg-fg/tmp02/projects/downstreamer/")
+setwd("/groups/umcg-fg/tmp01/projects/downstreamer/")
 setwd("D:\\UMCG\\Genetica\\Projects\\Depict2Pgs")
 
 
@@ -47,19 +47,20 @@ str(geneInfo)
 
 library(readr)
 
-
-#table_tmp <- read_delim("depict2_bundle/reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.txt.gz", delim = "\t", quote = "", col_types = colTypes)
-
-#change X1 in case of specified header for row names
-colTypes <- cols( .default = col_double(),  `-` = col_character())
-table_tmp <- read_delim("/groups/umcg-fg/tmp01/projects/genenetwork/pathway_databases/HPO/2023_06_17/HPO_2023_06_17.txt.gz", delim = "\t", quote = "", col_types = colTypes)
+#change X1 in case of specified header for row names. Use ...1 if first colun has no ID
+colTypes <- cols( .default = col_double(),  `X1` = col_character())
+table_tmp <- read_delim("../genenetwork/pathway_databases/goa_human_2020_06_01.gaf_P_2020_06_01_matrix.txt", delim = "\t", quote = "", col_types = colTypes)
 hpoMatrix <- as.matrix(table_tmp[,-1])
 rownames(hpoMatrix) <- table_tmp[,1][[1]]
-rm(table_tmp) 
+rm(table_tmp)
 
-#hpoAnnotations <- as.matrix(read.delim("depict2_bundle/reference_datasets/human_b37/hpo/phenotype_to_genes_V1268_OMIMandORPHA.txt_matrix.colAnnotations.txt", row.names = 1))
-hpoAnnotations <- as.matrix(read.delim("/groups/umcg-fg/tmp01/projects/genenetwork/pathway_databases/HPO/2023_06_17/hpoToName.txt", row.names = 1))
-hpoAnnotations <- hpoAnnotations[,1]
+
+
+
+str(hpoMatrix2[,"MP:0011098"])
+
+hpoAnnotations <- as.matrix(read.delim("../genenetwork/pathway_databases/MGI/2020_10_20/VOC_MammalianPhenotype.rpt", stringsAsFactors = F, header = F, row.names = 1))
+hpoAnnotations <- hpoAnnotations[,2]
 
 
 hpoPerGene <- apply(hpoMatrix, 1, function(x){sum(x>0)})
@@ -89,7 +90,7 @@ sink <- lapply(traits, function(trait){
 
   
   
-  pascalxRes <- read.delim(paste0("/groups/umcg-fg/tmp02/projects/downstreamer/PascalX_bundle/results_25kb/",trait, ".txt"), row.names =1 )
+  pascalxRes <- read.delim(paste0("/groups/umcg-fg/tmp01/projects/downstreamer/PascalX_bundle/results_25kb/",trait, ".txt"), row.names =1 )
   #str(pascalxRes)
   pxg <- intersect(geneInfo$V1, row.names(pascalxRes))
   range(pascalxRes[pxg,"pvalue"])
@@ -325,10 +326,12 @@ hpoEnrichmentList <- parLapply(clust, traits, function(trait){
 
 }) 
 
-#save(recount3Zscores, metaZscores, pascalxZscores, traits, geneInfo, hpoEnrichmentList, hpoAnnotations, file = "depict2_bundle/hpoEnrichmentSession4bNewHpo.RData")
+names(hpoEnrichmentList) <- traits
+
+#save(recount3Zscores, metaZscores, pascalxZscores, traits, geneInfo, hpoEnrichmentList, hpoAnnotations, file = "depict2_bundle/mgiEnrichmentSession.RData")
 load(file = "hpoEnrichmentSession4bNewHpo.RData")
 
-names(hpoEnrichmentList) <- traits
+
 
 View(hpoEnrichmentList$Height[[2]])
 str(hpoEnrichmentList$IBD_deLange2017[[3]])
@@ -411,8 +414,8 @@ pascalxSig <- apply(pascalxZscores, 2, function(x){
   return(x)
 })
 
-write.table(pascalxSig, file = gzfile("signficantPascalx.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
-write.table(pascalxZscores, file = gzfile("pascalxZscores.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
+write.table(pascalxSig, file = gzfile("signficantPascalxMgi.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
+write.table(pascalxZscores, file = gzfile("pascalxZscoresMgi.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
 hist(pascalxZscores)
 barplot(apply(pascalxSig, 2, sum, na.rm=T))
 sort(apply(pascalxSig, 2, sum, na.rm=T))
@@ -427,8 +430,8 @@ metaZscoresSig <- apply(metaZscores, 2, function(x){
   return(x)
   })
 
-write.table(metaZscoresSig, file = gzfile("signficantMetaKeyGene.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
-write.table(metaZscores, file = gzfile("metaKeyGene.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
+write.table(metaZscoresSig, file = gzfile("signficantMetaKeyGeneMgi.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
+write.table(metaZscores, file = gzfile("metaKeyGeneMgi.txt.gz") , sep = "\t", quote = F, col.names = NA, na = "")
 
   str(metaZscoresSig)
 
@@ -441,8 +444,7 @@ table(metaZscoresSig, useNA = "a")
 sum(metaZscores[,"Height_2022"] >= 4.66, na.rm = T)
 
 
-
-
+str(hpoEnrichmentList[["Height_2022"]][[2]])
 
 trait <- "Alzheimers_Jansen2019"
 trait <- "IBD_deLange2017"
@@ -467,8 +469,9 @@ x <- lapply(traits, function(trait){
   
   tissueMetaHpoEnrichmentFilter <- tissueMetaHpoEnrichment[tissueMetaHpoEnrichment$`Fisher-Pvalue` <= bonThres & tissueMetaHpoEnrichment$log2Or >= 0,] 
 
-    
-    
+  tissueMetaHpoEnrichment["MP:0001730",]
+  
+    str(hpoMatrix)
   #print(tissueMetaHpoEnrichmentFilter[order(tissueMetaHpoEnrichmentFilter$`Fisher-Pvalue`, decreasing=F)[1:10],], width = 500)
   print(tissueMetaHpoEnrichmentFilter[order(abs(tissueMetaHpoEnrichmentFilter$`log2Or`), decreasing=T)[1:10],], width = 500)
   } else {

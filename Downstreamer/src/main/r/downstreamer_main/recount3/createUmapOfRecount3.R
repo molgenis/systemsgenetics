@@ -411,14 +411,14 @@ tissueClass <- levels(umapAndMetaClassified$umapFactor)[2]
 study <- "GTEx"
 
 set.seed(42)
-#for each tissue slecect samples for training
+#for each tissue select samples for training
 for(tissueClass in levels(umapAndMetaClassified$umapFactor)){
   thisTissueSamples <- umapAndMetaClassified$umapFactor==tissueClass
   studiesForThisTissue <- unique(umapAndMetaClassified$study[thisTissueSamples])
   numberOfStudies <- length(studiesForThisTissue)
   numberOfSamplesPerStudy <- ceiling(minSamplesTraining / numberOfStudies)
   print(paste(tissueClass, length(studiesForThisTissue), numberOfSamplesPerStudy, sep = " - "))
-  #for each studies put samples to training or test
+  #for each study put samples to training or test
   for(study in studiesForThisTissue){
     
     thisTissueAndStudySamples <- thisTissueSamples & umapAndMetaClassified$study == study

@@ -2,7 +2,7 @@ library(parallel)
 
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
-load(file = "combinedMeta_2022_09_15.RData", verbose = T)
+load(file = "Metadata/combinedMeta_2022_09_15.RData", verbose = T)
 load(file = "Recount3_QC_2ndRun/PCA_Patrick/pcs.RData", verbose = T)
 load(file = "Recount3_QC_2ndRun/PCA_Patrick/eigen.RData", verbose = T)
 
