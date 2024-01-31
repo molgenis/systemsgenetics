@@ -1,7 +1,7 @@
 #srun --cpus-per-task=1 --mem=50gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
 #remoter::server(verbose = T, port = 55001, password = "laberkak", sync = T)
 
-
+#test
 remoter::client("localhost", port = 55001, password = "laberkak")
 plot(2)
 dev.off()
