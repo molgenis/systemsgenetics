@@ -1,10 +1,9 @@
 #srun --cpus-per-task=1 --mem=50gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
 #remoter::server(verbose = T, port = 55001, password = "laberkak", sync = T)
 
-#test2
-remoter::client("localhost", port = 55001, password = "laberkak")
+test2
+#remoter::client("localhost", port = 55001, password = "laberkak")
 plot(2)
-dev.off()
 
 library(uwot)
 
@@ -42,7 +41,6 @@ pcsAndMeta$cancerTraining <- NA
 cancerCelllineTissuePred <- merge(pcsAndMeta, samplesWithPredictionNoOutliers[,"predictedTissue", drop =F], all = T, by.x = 1, by.y = 0 )
 
 dim(pcsAndMeta)
-colnames(test)
 
 table(cancerCelllineTissuePred$excludeBasedOnPredictionCellline2, !is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
 table(cancerCelllineTissuePred$excludeBasedOnPredictionCancer, !is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
@@ -121,16 +119,20 @@ library(glmnet)
 cfit <- cv.glmnet(x = as.matrix(cancerCelllineTissuePredClassifiedTraining[,paste0("PC_",1:compsToUse)]), y = cancerCelllineTissuePredClassifiedTraining$predictedTissue, family = "multinomial", type.measure = "class")
 cfit
 
-rpng()
 plot(cfit) 
-rpng.off()
-#dev.off()
 
 
 
-assess.glmnet(cfit, newx = as.matrix(cancerCelllineTissuePredClassifiedTest[,paste0("PC_",1:compsToUse)]), newy = cancerCelllineTissuePredClassifiedTest$umapFactor, family = "multinomial", type.measure = "class", keep = TRUE, alpha=1, lambda = "1se")
+assess.glmnet(cfit, newx = as.matrix(cancerCelllineTissuePredClassifiedTest[,paste0("PC_",1:compsToUse)]), newy = cancerCelllineTissuePredClassifiedTest$predictedTissue, family = "multinomial", type.measure = "class", keep = TRUE, alpha=1, lambda = "1se")
 
 
 
 predictionsTest <- predict(cfit, s = "lambda.1se", newx = as.matrix(cancerCelllineTissuePredClassifiedTest[,paste0("PC_",1:compsToUse)]), type = "class")
+
+str(predictionsTest)
+
+
+sum(!cancerCelllineTissuePredClassifiedTest$predictedTissue == predictionsTest[,1])
+
+
 
