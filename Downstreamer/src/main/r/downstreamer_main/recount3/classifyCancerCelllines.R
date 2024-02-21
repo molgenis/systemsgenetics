@@ -1,9 +1,8 @@
 #srun --cpus-per-task=1 --mem=50gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
 #remoter::server(verbose = T, port = 55001, password = "laberkak", sync = T)
 
-test2
+
 #remoter::client("localhost", port = 55001, password = "laberkak")
-plot(2)
 
 library(uwot)
 
@@ -14,39 +13,14 @@ load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbos
 
 load(file = "DataForPredictions.RData")
 
-colnames(pcsAndMeta)
 pcsAndMeta <- pcsAndMeta[!pcsAndMeta$exclude,]
-
-
-str(samplesWithPredictionNoOutliers)
-
-dim(pcsAndMeta)
-table(pcsAndMeta$selectedSamples, useNA = "always")
-colnames(pcsAndMeta)
-colnames(samplesWithPredictionNoOutliers)
-
-
-head(rownames(samplesWithPredictionNoOutliers))
-head(pcsAndMeta$Row.names)
-
-
-str(pcsAndMeta$Row.names[pcsAndMeta$selectedSamples])
 
 
 all(rownames(samplesWithPredictionNoOutliers) %in%  pcsAndMeta$Row.names[pcsAndMeta$selectedSamples])
 
-rownames(samplesWithPredictionNoOutliers[,"predictedTissue", drop =F ])
 
 pcsAndMeta$cancerTraining <- NA
 cancerCelllineTissuePred <- merge(pcsAndMeta, samplesWithPredictionNoOutliers[,"predictedTissue", drop =F], all = T, by.x = 1, by.y = 0 )
-
-dim(pcsAndMeta)
-
-table(cancerCelllineTissuePred$excludeBasedOnPredictionCellline2, !is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
-table(cancerCelllineTissuePred$excludeBasedOnPredictionCancer, !is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
-table(cancerCelllineTissuePred$excludeBasedOnPredictionCancer, cancerCelllineTissuePred$excludeBasedOnPredictionCellline2, useNA = "a")
-
-table(cancerCelllineTissuePred$excludeBasedOnPredictionCellline2 | cancerCelllineTissuePred$excludeBasedOnPredictionCancer, !is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
 
 cancerCelllineTissuePred$predictedCellineCancer <- cancerCelllineTissuePred$excludeBasedOnPredictionCellline2 | cancerCelllineTissuePred$excludeBasedOnPredictionCancer
 
@@ -73,7 +47,7 @@ cancerCelllineTissuePredClassified <- cancerCelllineTissuePred[!is.na(cancerCell
 cancerCelllineTissuePredClassified$training <- FALSE
 
 tissueClass <- levels(cancerCelllineTissuePredClassified$predictedTissue)[1]
-study <- "GTEx"
+#study <- "GTEx"
 
 set.seed(42)
 #for each tissue slecect samples for training
