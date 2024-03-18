@@ -152,6 +152,9 @@ public class GadoCommandline {
 				case EXPAND_PREDICTIONS:
 					SpikeInKnownAnnotations.spikeIn(options);
 					break;
+				case PREPARE_HPO_FOR_PREDICTIONS:
+					PrepareHpoPhenoToGenesForPredictions.prioritize(options);
+					break;
 			}
 		} catch (IOException e) {
 			System.err.println("Problem running mode: " + options.getMode());
