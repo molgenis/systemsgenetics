@@ -1,10 +1,8 @@
 #srun --cpus-per-task=1 --mem=50gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
 #remoter::server(verbose = T, port = 55001, password = "laberkak", sync = T)
 
-#test
-remoter::client("localhost", port = 55001, password = "laberkak")
-plot(2)
-dev.off()
+
+#remoter::client("localhost", port = 55001, password = "laberkak")
 
 library(uwot)
 
@@ -15,40 +13,14 @@ load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbos
 
 load(file = "DataForPredictions.RData")
 
-colnames(pcsAndMeta)
 pcsAndMeta <- pcsAndMeta[!pcsAndMeta$exclude,]
-
-
-str(samplesWithPredictionNoOutliers)
-
-dim(pcsAndMeta)
-table(pcsAndMeta$selectedSamples, useNA = "always")
-colnames(pcsAndMeta)
-colnames(samplesWithPredictionNoOutliers)
-
-
-head(rownames(samplesWithPredictionNoOutliers))
-head(pcsAndMeta$Row.names)
-
-
-str(pcsAndMeta$Row.names[pcsAndMeta$selectedSamples])
 
 
 all(rownames(samplesWithPredictionNoOutliers) %in%  pcsAndMeta$Row.names[pcsAndMeta$selectedSamples])
 
-rownames(samplesWithPredictionNoOutliers[,"predictedTissue", drop =F ])
 
 pcsAndMeta$cancerTraining <- NA
 cancerCelllineTissuePred <- merge(pcsAndMeta, samplesWithPredictionNoOutliers[,"predictedTissue", drop =F], all = T, by.x = 1, by.y = 0 )
-
-dim(pcsAndMeta)
-colnames(test)
-
-table(cancerCelllineTissuePred$excludeBasedOnPredictionCellline2, !is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
-table(cancerCelllineTissuePred$excludeBasedOnPredictionCancer, !is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
-table(cancerCelllineTissuePred$excludeBasedOnPredictionCancer, cancerCelllineTissuePred$excludeBasedOnPredictionCellline2, useNA = "a")
-
-table(cancerCelllineTissuePred$excludeBasedOnPredictionCellline2 | cancerCelllineTissuePred$excludeBasedOnPredictionCancer, !is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
 
 cancerCelllineTissuePred$predictedCellineCancer <- cancerCelllineTissuePred$excludeBasedOnPredictionCellline2 | cancerCelllineTissuePred$excludeBasedOnPredictionCancer
 
@@ -75,7 +47,7 @@ cancerCelllineTissuePredClassified <- cancerCelllineTissuePred[!is.na(cancerCell
 cancerCelllineTissuePredClassified$training <- FALSE
 
 tissueClass <- levels(cancerCelllineTissuePredClassified$predictedTissue)[1]
-study <- "GTEx"
+#study <- "GTEx"
 
 set.seed(42)
 #for each tissue slecect samples for training
@@ -121,16 +93,20 @@ library(glmnet)
 cfit <- cv.glmnet(x = as.matrix(cancerCelllineTissuePredClassifiedTraining[,paste0("PC_",1:compsToUse)]), y = cancerCelllineTissuePredClassifiedTraining$predictedTissue, family = "multinomial", type.measure = "class")
 cfit
 
-rpng()
 plot(cfit) 
-rpng.off()
-#dev.off()
 
 
 
-assess.glmnet(cfit, newx = as.matrix(cancerCelllineTissuePredClassifiedTest[,paste0("PC_",1:compsToUse)]), newy = cancerCelllineTissuePredClassifiedTest$umapFactor, family = "multinomial", type.measure = "class", keep = TRUE, alpha=1, lambda = "1se")
+assess.glmnet(cfit, newx = as.matrix(cancerCelllineTissuePredClassifiedTest[,paste0("PC_",1:compsToUse)]), newy = cancerCelllineTissuePredClassifiedTest$predictedTissue, family = "multinomial", type.measure = "class", keep = TRUE, alpha=1, lambda = "1se")
 
 
 
 predictionsTest <- predict(cfit, s = "lambda.1se", newx = as.matrix(cancerCelllineTissuePredClassifiedTest[,paste0("PC_",1:compsToUse)]), type = "class")
+
+str(predictionsTest)
+
+
+sum(!cancerCelllineTissuePredClassifiedTest$predictedTissue == predictionsTest[,1])
+
+
 

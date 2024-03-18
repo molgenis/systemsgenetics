@@ -2,7 +2,7 @@
 #remoter::server(verbose = T, port = 55001, password = "laberkak", sync = T)
 
 
-remoter::client("localhost", port = 55001, password = "laberkak")
+#remoter::client("localhost", port = 55001, password = "laberkak")
 
 
 
@@ -37,38 +37,72 @@ all(rownames(combinedHealtyTissuePca$expPcs) == rownames(samplesWithPredictionNo
 
 str(samplesWithPredictionNoOutliers)
 dim(combinedHealtyTissuePca$expPcs)
+
+combinedHealtyTissuePca$expPcs <- combinedHealtyTissuePca$expPcs[,1:50]
+str(combinedHealtyTissuePca$expPcs )
+
 nnData <- umap(combinedHealtyTissuePca$expPcs, ret_nn = T)
 nnDataCorrelation <- umap(combinedHealtyTissuePca$expPcs, ret_nn = T, metric = "correlation")
 nnDataCosine <- umap(combinedHealtyTissuePca$expPcs, ret_nn = T, metric = "cosine")
 
 str(nnData)
 
-nn <- nnDataCorrelation$nn[[1]]
+#nn <- nnDataCorrelation$nn[[1]]
 #nn <- nnData$nn[[1]]
 #nn <- nnDataCosine$nn[[1]]
 init <- combinedHealtyTissuePca$expPcs[,1:2]
 
 sampleUmap <- umap(X = NULL, nn_method = nn)
-rpng(height = 1000, width = 1000)
 plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.5), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
-dev.off()
+
 
 
 sampleUmap <- umap(X = NULL, nn_method = nn, bandwidth = 10, n_epochs = 500)
-rpng(height = 1000, width = 1000)
 plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.5), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
-dev.off()
 
 
-sampleUmap <- umap(X = NULL, nn_method = nn, init = init, 
-                    bandwidth = 100,n_epochs = 200,learning_rate = 10,
-                    n_neighbors = 100,local_connectivity = 50)#, n_neighbors = 50,n_epochs = 1000,learning_rate = 10,local_connectivity = 50,bandwidth = 1000, repulsion_strength = 0.1
+sampleUmap <- umap(X = NULL, nn_method = nnDataCorrelation$nn[[1]], init = init, 
+                    bandwidth = 500,n_epochs = 200,learning_rate = 10,
+                    n_neighbors = 50,local_connectivity = 1)#, n_neighbors = 50,n_epochs = 1000,learning_rate = 10,local_connectivity = 50,bandwidth = 1000, repulsion_strength = 0.1
 rownames(sampleUmap) <- rownames(combinedHealtyTissuePca)
 colnames(sampleUmap) <- c("UMAP1", "UMAP2")
 
-rpng(height = 1000, width = 1000)
-plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.5), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
+plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.3), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
+
+
+
+
+sampleUmap <- umap(X = NULL, nn_method = nnDataCorrelation$nn[[1]], init = init, 
+                   bandwidth = 100,n_epochs = 200,learning_rate = 10,
+                   n_neighbors = 10,local_connectivity = 10, spread = 10)#, n_neighbors = 50,n_epochs = 1000,learning_rate = 10,local_connectivity = 50,bandwidth = 1000, repulsion_strength = 0.1
+rownames(sampleUmap) <- rownames(combinedHealtyTissuePca)
+colnames(sampleUmap) <- c("UMAP1", "UMAP2")
+
+
+par(pty="s")
+plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.3), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
+
+
+
+tissueCenters <- aggregate(sampleUmap[,1:2], by = list(samplesWithPredictionNoOutliers$annotatedTissue), FUN = median)
+tissueCenters <- merge(tissueCenters, tissueCol, by.x = "Group.1", by.y = 0)
+str(tissueCenters)
+
+
+
+#points(tissueCenters$UMAP1, tissueCenters$UMAP2, col = tissueCenters$Col, cex = 6)
+
+pdf("umap/umapWithLables.pdf", width = 10, height = 10, useDingbats = F)
+par(pty="s", xpd = NA)
+plot(sampleUmap[,1],sampleUmap[,2], pch = 16, col=adjustcolor(samplesWithPredictionNoOutliers$col, alpha.f = 0.3), bty="n", xlab = "UMAP-1", ylab = "UMAP-2", cex = 0.7)
+text(tissueCenters$UMAP1, tissueCenters$UMAP2, tissueCenters$Group.1, col = tissueCenters$Col, adj = c(0.5, 0.5))
 dev.off()
+
+save.image("umap/umapSession.RData")
+
+
+
+
 
 
 
