@@ -155,6 +155,9 @@ public class GadoCommandline {
 				case PREPARE_HPO_FOR_PREDICTIONS:
 					PrepareHpoPhenoToGenesForPredictions.prioritize(options);
 					break;
+				case CONVERT_TXT:
+					Converters.convertTxtToBin(options);;
+					break;
 			}
 		} catch (IOException e) {
 			System.err.println("Problem running mode: " + options.getMode());
