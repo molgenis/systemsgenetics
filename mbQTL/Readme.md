@@ -138,9 +138,8 @@ This is a tab-separated file containing the expression of each feature per sampl
 
 This is a tab-separated file containing the expression groups. During the permutation step, where the minimum permuted P-value is calculated, the minimum is taken per group. This parameter is optional, and if not supplied, the groups are each feature. The first column is the feature, and the second column is the feature group. There is no header.
 
-|                               |                
-| :-----------------------------| :--------------
 ENSG00000078369_ENSG00000198804 | ENSG00000078369
+| :-----------------------------| :--------------
 ENSG00000078369_ENSG00000198938 | ENSG00000078369
 ENSG00000078369_ENSG00000198712 | ENSG00000078369
 ENSG00000078369_ENSG00000198899 | ENSG00000078369
@@ -156,9 +155,8 @@ ENSG00000078369_ENSG00000198888 | ENSG00000078369
 
 This is a tab-separated file mapping the genotype identifiers to expression identifiers, and the dataset the samples are from. The first column is the genotype ID, the second the expression ID, and the third column the dataset (name). There is no header
 
-|          |            |         
-| :--------| :----------| :-------
 SAMPLE0101 | SAMPLE0101 | Dataset1
+| :--------| :----------| :-------
 SAMPLE0102 | SAMPLE0102 | Dataset1
 SAMPLE0103 | SAMPLE0103 | Dataset1
 SAMPLE0104 | SAMPLE0104 | Dataset1
