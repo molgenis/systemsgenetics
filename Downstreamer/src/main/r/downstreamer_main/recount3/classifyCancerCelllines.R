@@ -19,12 +19,22 @@ pcsAndMeta <- pcsAndMeta[!pcsAndMeta$exclude,]
 all(rownames(samplesWithPredictionNoOutliers) %in%  pcsAndMeta$Row.names[pcsAndMeta$selectedSamples])
 
 
+table(cancerCelllineTissuePred$Cancer, useNA = "a")
+
 pcsAndMeta$cancerTraining <- NA
 cancerCelllineTissuePred <- merge(pcsAndMeta, samplesWithPredictionNoOutliers[,"predictedTissue", drop =F], all = T, by.x = 1, by.y = 0 )
 
 cancerCelllineTissuePred$predictedCellineCancer <- cancerCelllineTissuePred$excludeBasedOnPredictionCellline2 | cancerCelllineTissuePred$excludeBasedOnPredictionCancer
 
-table(cancerCelllineTissuePred$predictedCellineCancer, !is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
+table(cancerCelllineTissuePred$predictedCellineCancer)
+
+cancerCelllineTissuePred$AnnotatedAsTissue <- (cancerCelllineTissuePred$Tissue != "" | cancerCelllineTissuePred$Tissue2 != "") & !cancerCelllineTissuePred$Cancer & !cancerCelllineTissuePred$Cellline
+table(cancerCelllineTissuePred$AnnotatedAsTissue)
+
+table(cancerCelllineTissuePred$predictedCellineCancer, cancerCelllineTissuePred$AnnotatedAsTissue)
+
+
+table(cancerCelllineTissuePred$predictedCellineCancer, is.na(cancerCelllineTissuePred$predictedTissue), useNA = "a")
 
 #only select samples predicted as cancer / celline and main tissue samples that passed the QC per tissue
 cancerCelllineTissuePred <- cancerCelllineTissuePred[cancerCelllineTissuePred$predictedCellineCancer | !is.na(cancerCelllineTissuePred$predictedTissue), ]
@@ -35,6 +45,7 @@ dim(cancerCelllineTissuePred)
 
 cancerCelllineTissuePred$predictedTissue <- as.factor(cancerCelllineTissuePred$predictedTissue)
 
+bar
 
 
 
@@ -109,4 +120,78 @@ str(predictionsTest)
 sum(!cancerCelllineTissuePredClassifiedTest$predictedTissue == predictionsTest[,1])
 
 
+predictions <- predict(cfit, s = "lambda.1se", newx = as.matrix(cancerCelllineTissuePred[,paste0("PC_",1:compsToUse)]), type = "class")
 
+table(predictions)
+cancerCelllineTissuePred$newPrediction <- predictions[,1]
+
+predictionsScores <- predict(cfit, s = "lambda.1se", newx = as.matrix(cancerCelllineTissuePred[,paste0("PC_",1:compsToUse)]), type = "response")
+predictionsScores <- predictionsScores[,,1]
+cancerCelllineTissuePred$newPredictionScore <- apply(predictionsScores, 1, max)
+
+
+hist(cancerCelllineTissuePred$newPredictionScore, breaks = 42)
+
+layout(matrix(1:2, ncol = 2))
+par(mar = c(5, 4, 4, 2) + 0.1)
+hist(cancerCelllineTissuePred$newPredictionScore[!is.na(cancerCelllineTissuePred$predictedTissue)], breaks = 42, main = "Posterior probability of predicited tissue of normal", xlab = "Posterior probability")
+hist(cancerCelllineTissuePred$newPredictionScore[cancerCelllineTissuePred$predictedCellineCancer], breaks = 42, main = "Posterior probability of predicited tissue of cancer/cell-line", xlab = "Posterior probability")
+
+sum(cancerCelllineTissuePred$newPredictionScore >= 0.5)
+#umapAndMeta$predictedTissue[umapAndMeta$predictedTissueScore <= 0.5] <- NA
+
+
+
+#Subset to only the samples that are predited to be cancer or celllines
+cancerCelllineTissuePred2 <- cancerCelllineTissuePred[cancerCelllineTissuePred$predictedCellineCancer,]
+dim(cancerCelllineTissuePred2)
+
+predictionCounts <- table(cancerCelllineTissuePred2$newPrediction[cancerCelllineTissuePred2$newPredictionScore >= 0.5])
+layout(1)
+par(mar  =c(3,30,1,1))
+barplot(sort(predictionCounts, decreasing = F), horiz = T, las =1 )
+
+table(cancerCelllineTissuePred2$Cohort)
+aggregate(cancerCelllineTissuePred2$newPredictionScore, list(cancerCelllineTissuePred2$Cohort), mean)
+
+hist(cancerCelllineTissuePred2$newPredictionScore[cancerCelllineTissuePred2$Cohort=="TCGA"])
+
+
+sort(table(cancerCelllineTissuePred2$newPrediction[cancerCelllineTissuePred2$Cohort=="GTEx"]))
+
+length(cancerCelllineTissuePred2$gtex.smtsd[cancerCelllineTissuePred2$Cohort=="GTEx" & (cancerCelllineTissuePred2$Tissue != "" | cancerCelllineTissuePred2$Tissue2 != "")])
+barplot(sort(predictionCounts, decreasing = F), horiz = T, las =1 )
+
+
+
+sort(table(paste0(cancerCelllineTissuePred2$newPrediction, "-", cancerCelllineTissuePred2$CelllineName)[cancerCelllineTissuePred2$CelllineName=="HeLa"]))
+
+
+table(cancerCelllineTissuePred2$CelllineName[cancerCelllineTissuePred2$newPrediction=="hematopoietic progenitors" & cancerCelllineTissuePred2$newPredictionScore >= 0.5])
+table(cancerCelllineTissuePred2$CelllineName[cancerCelllineTissuePred2$newPrediction=="fibroblasts_cell-lines_smooth-muscle-cell_mesenchymal-stem-cells" & cancerCelllineTissuePred2$newPredictionScore >= 0.5])
+table(cancerCelllineTissuePred2$CelllineName[cancerCelllineTissuePred2$newPrediction=="T-Cells" & cancerCelllineTissuePred2$newPredictionScore >= 0.5])
+
+"tcga.gdc_cases.project.primary_site" 
+"Cohort"   
+study
+Tissue
+Tissue2
+CelllineName
+
+cancerCelllineTissuePred2Tcga <- cancerCelllineTissuePred2[cancerCelllineTissuePred2$Cohort=="TCGA" & cancerCelllineTissuePred2$tcga.cgc_sample_sample_type=="Primary Tumor" & cancerCelllineTissuePred2$newPredictionScore >= 0.5,]
+table(cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site, useNA = "a")
+
+sort(table(paste0(cancerCelllineTissuePred2Tcga$newPrediction, " - ", cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site)[]))
+
+table(cancerCelllineTissuePred2Tcga$newPrediction[cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site == "Liver"])
+table(cancerCelllineTissuePred2Tcga$newPrediction[cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site == "Kidney"])
+table(cancerCelllineTissuePred2Tcga$newPrediction[cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site == "Prostate"])
+table(cancerCelllineTissuePred2Tcga$newPrediction[cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site == "Lung"])
+table(cancerCelllineTissuePred2Tcga$newPrediction[cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site == "Brain"])
+table(cancerCelllineTissuePred2Tcga$newPrediction[cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site == "Breast"])
+table(cancerCelllineTissuePred2Tcga$newPrediction[cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site == "Colorectal"])
+table(cancerCelllineTissuePred2Tcga$newPrediction[cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site == "Head and Neck"])
+table(cancerCelllineTissuePred2Tcga$newPrediction[cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site == "Thyroid"])
+
+
+sort(table(cancerCelllineTissuePred2Tcga$tcga.gdc_cases.project.primary_site))
