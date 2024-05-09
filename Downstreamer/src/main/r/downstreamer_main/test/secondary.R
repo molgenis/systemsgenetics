@@ -9,24 +9,42 @@ dosages <- as.matrix(table_tmp[,-1])
 rownames(dosages) <- table_tmp[,1][[1]]
 rm(table_tmp)
 
+dosages <- dosages[1000:1999,]
 
 
 str(dosages)
-"rs17881035" %in% rownames(dosages)
 
 
-exp <- dosages["rs17881035",] * 0.42 + rnorm(ncol(dosages))
+effect1 <- dosages["rs17881035",] * 0.42
+effect2 <- dosages["rs8073498",] * 0.2
+effect3 <- 0 #dosages["rs1614984",] * 0.1
+
+set.seed(42);
+noise <- rnorm(ncol(dosages), sd = 0.2)
+exp <- effect1 + noise
+
+
+exp <- effect1 + effect2 + effect3 + noise
 
 plot(dosages["rs17881035",], exp)
+plot(dosages["rs1614984",], exp)
+
 
 cor(exp,dosages["rs17881035",])
 
-summary(lm(exp ~ dosages["rs17881035",]))$coefficients[2,4]
+summary(lm(exp ~ dosages["rs17881035",]))
+summary(lm(exp ~ dosages["rs8073498",]))
+summary(lm(exp ~ dosages["rs1614984",]))
 
-cor.test(exp,dosages["rs17881035",])
+summary(lm(exp ~ dosages["rs17881035",] + dosages["rs8073498",] + dosages["rs1614984",]))
+
+cor.test(exp,dosages["rs17881035",])$p.value
+cor.test(exp,dosages["rs8073498",])$p.value
+cor.test(exp,dosages["rs1614984",])$p.value
 
 rounds <- 5
 pvalues <- matrix(NA, nrow = nrow(dosages), ncol = rounds)
+betas <- matrix(NA, nrow = nrow(dosages), ncol = rounds)
 roundStats <- matrix(NA, nrow = 5, ncol = 3)
 colnames(roundStats) <- c("variantIndex", "min p-value", "beta")
 
@@ -40,7 +58,9 @@ for(r in 1:rounds){
     
     fit <- lm(previousResiduals ~ dosages[v,])
     snpP <- summary(fit)$coefficients[2,4]
+    snpBeta <- summary(fit)$coefficients[2,1]
     pvalues[v,r] <- snpP
+    betas[v,r] <- snpBeta
     
     if(snpP < roundMinP){
       roundResiduals <- residuals(fit)
@@ -48,7 +68,7 @@ for(r in 1:rounds){
       
       roundStats[r,1] <- v
       roundStats[r,2] <- snpP
-      roundStats[r,3] <- summary(fit)$coefficients[2,1]
+      roundStats[r,3] <- snpBeta
       
     }
     
@@ -60,6 +80,39 @@ for(r in 1:rounds){
 }
 roundStats
 
-plot(-log10(pvalues[,2]), pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5))
+
+library("RColorBrewer")
+snpColPallete <- brewer.pal(3, name = "Accent")
+
+snp1Index <- match("rs17881035", rownames(dosages))
+snp2Index <- match("rs8073498", rownames(dosages))
+snp3Index <- match("rs1614984", rownames(dosages))
+
+snpCol <- rep(adjustcolor("grey", alpha.f = 0.5),nrow(dosages))
+snpCol[snp1Index] <- snpColPallete[1]
+snpCol[snp2Index] <- snpColPallete[2]
+snpCol[snp3Index] <- snpColPallete[3]
+
+snpSize <- rep(1, nrow(dosages))
+snpSize[snp1Index] <- 2
+snpSize[snp2Index] <- 2
+snpSize[snp3Index] <- 2
+
+plot(betas[,1], pch = 16, col=snpCol, cex = snpSize)
+legend("topright", fill = snpColPallete, legend = c("Primairy (b=0.42)","Secondary (b=0.2)","Tertiary (b=0.1)"))
+
+plot(betas[,2], pch = 16, col=snpCol, cex = snpSize)
+legend("topright", fill = snpColPallete, legend = c("Primairy (b=0.42)","Secondary (b=0.2)","Tertiary (b=0.1)"))
+
+plot(betas[,3], pch = 16, col=snpCol, cex = snpSize)
+legend("topright", fill = snpColPallete, legend = c("Primairy (b=0.42)","Secondary (b=0.2)","Tertiary (b=0.1)"))
 
 
+plot(-log10(pvalues[,1]), pch = 16, col=snpCol, cex = snpSize)
+legend("topright", fill = snpColPallete, legend = c("Primairy (b=0.42)","Secondary (b=0.2)","Tertiary (b=0.1)"))
+
+plot(-log10(pvalues[,2]), pch = 16, col=snpCol, cex = snpSize)
+legend("topright", fill = snpColPallete, legend = c("Primairy (b=0.42)","Secondary (b=0.2)","Tertiary (b=0.1)"))
+
+plot(-log10(pvalues[,3]), pch = 16, col=snpCol, cex = snpSize)
+legend("topright", fill = snpColPallete, legend = c("Primairy (b=0.42)","Secondary (b=0.2)","Tertiary (b=0.1)"))
