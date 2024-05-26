@@ -16,6 +16,17 @@ rm(table_tmp)
 
 dosagesLL <- dosagesLL[rownames(dosagesLL) %in% rownames(dosages1000g),]
 
+colTypes <- cols( .default = col_double(),  `...1` = col_character())
+table_tmp <- read_delim("/groups/umcg-bios/tmp01/users/umcg-pdeelen/ikzf1genotypes_LLarray.txt.dosages.txt", delim = "\t", quote = "", col_types = colTypes)
+dosagesLLa <- as.matrix(table_tmp[,-1])
+rownames(dosagesLLa) <- table_tmp[,1][[1]]
+rm(table_tmp)
+
+
+dosagesLLa <- dosagesLLa[rownames(dosagesLLa) %in% rownames(dosages1000g),]
+
+str(dosagesLL)
+
 
 colTypes <- cols( .default = col_double(),  `ID` = col_character())
 table_tmp <- read_delim("/groups/umcg-bios/tmp01/projects/BIOS_for_eQTLGenII/pipeline/20220426/1_DataQC/out/LL/outputfolder_exp/exp_data_QCd/exp_data_preprocessed.txt", delim = "\t", quote = "", col_types = colTypes)
@@ -25,8 +36,8 @@ rm(table_tmp)
 
 all(rownames(expLL) == colnames(dosagesLL))
 
-
-
+dosagesLLa <- dosagesLLa[,match(rownames(expLL), colnames(dosagesLLa))]
+all(rownames(expLL) == colnames(dosagesLLa))
 
 
 str(dosagesLL)
@@ -50,27 +61,44 @@ plot(cumsum(dosage1000gSvd$d[1:compsToUse] * 100/ sum(dosage1000gSvd$d)))
 
 
 dosagesLLScale = (dosagesLL - center[rownames(dosagesLL)]) / scale[rownames(dosagesLL)]
+dosagesLLaScale = (dosagesLLa - center[rownames(dosagesLLa)]) / scale[rownames(dosagesLLa)]
 
 llMapped <- t(dosagesLLScale) %*% dosage1000gSvd$v[rownames(dosagesLL),1:compsToUse] %*% diag(1/dosage1000gSvd$d[1:compsToUse])
+llaMapped <- t(dosagesLLaScale) %*% dosage1000gSvd$v[rownames(dosagesLLa),1:compsToUse] %*% diag(1/dosage1000gSvd$d[1:compsToUse])
 
+plot(llaMapped[,70], llMapped[,70])
+
+plot(diag(cor(llaMapped, llMapped)))
 #tp53 	ENSG00000141510
 #IKZF1  ENSG00000185811
 
-eigenFit <- summary(lm(expLL[,"ENSG00000185811"] ~ ., data = as.data.frame(llMapped)))
+eigenFitI <- summary(lm(expLL[,"ENSG00000185811"] ~ ., data = as.data.frame(llMapped[,1:50])))
+eigenFitA <- summary(lm(expLL[,"ENSG00000185811"] ~ ., data = as.data.frame(llaMapped[,1:50])))
+#eigenFit <- summary(lm(expLL[,"ENSG00000185811"] ~ ., data = as.data.frame(llaMapped[,17])))
 
-eigenFitBCoef <- eigenFit$coefficients[-1,]
-eigenFitBCoef[eigenFitBCoef[,4]>0.01,1] <- 0
-eigenFitBBeta <- eigenFitBCoef[,1]
-sum(eigenFitBBeta != 0)
+eigenFitABetaCoef <- eigenFitA$coefficients[-1,]
+eigenFitABetaCoef[eigenFitABetaCoef[,4]>0.01,1] <- 0
+eigenFitABeta <- eigenFitABetaCoef[,1]
+sum(eigenFitABeta != 0)
+
+
+eigenFitIBetaCoef <- eigenFitI$coefficients[-1,]
+eigenFitIBetaCoef[eigenFitIBetaCoef[,4]>0.01,1] <- 0
+eigenFitIBeta <- eigenFitIBetaCoef[,1]
+sum(eigenFitIBeta != 0)
 
 layout(1)
-eqtlSignal <-  llMapped %*% eigenFitBBeta
+eqtlSignal <-  llaMapped[,1:50] %*% eigenFitBBeta
 
 plot(eqtlSignal, pch = 16, ylab = "Reconstructed regulation score", main = "Joint modeling of locus")
 
 layout(matrix(1:3, nrow =1))
 
-modeledExpression <- llMapped %*% eigenFitBBeta
+modeledExpression <-  llaMapped[,1:50]  %*% eigenFitABeta
+plot(expLL[,"ENSG00000185811"], modeledExpression, main = "PCA method ext ref", xlab = "Simulated expression", ylab = "Predicted expression using PCA of 1000G", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.8)
+cor.test(expLL[,"ENSG00000185811"], modeledExpression)
+
+modeledExpression <-  llMapped[,1:50]  %*% eigenFitIBeta
 plot(expLL[,"ENSG00000185811"], modeledExpression, main = "PCA method ext ref", xlab = "Simulated expression", ylab = "Predicted expression using PCA of 1000G", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.8)
 cor.test(expLL[,"ENSG00000185811"], modeledExpression)
 
@@ -126,7 +154,7 @@ for(r in 1:rounds){
   
 }
 summary(lm( expLL[,"ENSG00000185811"] ~ ., data = as.data.frame(t(dosagesLL[roundStats[,1],]))))
-predictBasedOnRounds <- predict(lm( expLL[,"ENSG00000185811"] ~ .^2, data = as.data.frame(t(dosagesLL[roundStats[,1],]))))
+predictBasedOnRounds <- predict(lm( expLL[,"ENSG00000185811"] ~ ., data = as.data.frame(t(dosagesLL[roundStats[,1],]))))
 cor.test( expLL[,"ENSG00000185811"], predictBasedOnRounds)
 
 x <- as.data.frame(t(dosagesLL[roundStats[,1],]))
@@ -202,4 +230,41 @@ panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
   if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
   text(0.5, 0.5, txt, cex = cex.cor * r)
 }
-pairs(cbind(expLL[,"ENSG00000185811"], dosagesLLScale[590,], dosageLLSvd$u[,11], llMapped[,17]),upper.panel = panel.cor)
+pairs(cbind(expLL[,"ENSG00000185811"], dosagesLLScale[590,], dosageLLSvd$u[,11], llaMapped[,17], llMapped[,17]),upper.panel = panel.cor)
+
+
+cor.test(expLL[,"ENSG00000185811"], llaMapped[,17])
+cor.test(expLL[,"ENSG00000185811"], llMapped[,17])
+cor.test(expLL[,"ENSG00000185811"], dosagesLLScale[590,])
+
+
+
+
+
+
+
+comps <- 50
+
+library(glmnet)
+cfit <- cv.glmnet(x = llMapped[,1:comps], y = expLL[,"ENSG00000185811"])
+cfit
+
+plot(cfit) 
+
+str(cfit)
+
+assess.glmnet(cfit, newx = llMapped[,1:comps], newy = expLL[,"ENSG00000185811"], keep = TRUE, alpha=1, lambda = "1se")
+
+coef(cfit, s = "lambda.min")
+
+predictionsTest <- predict(cfit, s = "lambda.min", newx = llMapped[,1:comps])
+
+plot(expLL[,"ENSG00000185811"], predictionsTest)
+cor.test(expLL[,"ENSG00000185811"], predictionsTest)
+
+
+
+
+
+
+
