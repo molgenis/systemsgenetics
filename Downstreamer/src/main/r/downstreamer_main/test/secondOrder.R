@@ -156,6 +156,10 @@ for(r in 1:rounds){
   previousResiduals <- roundResiduals
   
 }
+roundStats2 <- as.data.frame(roundStats)
+roundStats2$snp <- rownames(dosagesLL)[roundStats2$variantIndex]
+View(roundStats2)
+
 summary(lm( expLL[,gene] ~ ., data = as.data.frame(t(dosagesLL[unique(roundStats[,1]),]))))
 predictBasedOnRounds <- predict(lm( expLL[,gene] ~ ., data = as.data.frame(t(unique(dosagesLL[roundStats[,1],])))))
 cor.test( expLL[,gene], predictBasedOnRounds)
@@ -284,12 +288,11 @@ eigenFitI2 <- summary(lm(expLL[,gene] ~ . * expLL[,gene2], data = as.data.frame(
 
 
 
-x <- as.data.frame(t(unique(dosagesLL)))
+x <- as.data.frame(t(dosagesLL))
 x$gene2 <- expLL[,gene2]
 colnames(x) <- make.names(colnames(x))
 
-
-snps <- make.names(rownames(dosagesLL)[unique(roundStats[,1])])
+snps <- make.names(rownames(dosagesLL)[roundStats[1:3,1]])
 
 summary(lm(as.formula(
   paste('expLL[,gene] ~',paste('poly(',snps,',2)',collapse = ' + '))
@@ -308,16 +311,59 @@ cor.test( expLL[,gene], y)
 
 paste('expLL[,gene] ~', paste(snps, "gene2", sep = " * ", collapse = " + "))
 paste('expLL[,gene] ~', paste(snps, sep = " + ", collapse = " + "))
-paste('expLL[,gene] ~ gene2 + rs7500036 + rs1861757 + rs4785224 + rs111491166')
+paste('expLL[,gene] ~ gene2 + rs2111235 + X16.50714603.C.CTGTG + rs1861757')
+paste('expLL[,gene] ~ rs2111235 + X16.50714603.C.CTGTG + rs1861757')
 paste('gene2 ~', paste(snps, sep = " * ", collapse = " + "))
-paste('expLL[,gene] ~ gene2 * rs7500036 + gene2 * rs1861757 + gene2 * rs4785224 + gene2 * rs111491166')
+paste('expLL[,gene] ~ gene2 * rs2111235 + gene2 * X16.50714603.C.CTGTG + gene2 * rs1861757')
+
+paste(' expLL[,gene] ~ ',paste(paste('poly(',snps,',2)'), "gene2", sep = "*", collapse = ' + '))
+paste(' expLL[,gene] ~ ',paste(paste('poly(',snps,',2)'), sep = "*", collapse = ' + '))
 
 fit <- lm(as.formula(
-  paste('gene2 ~ rs7500036 + rs1861757 + rs4785224 + rs111491166')
+  paste('expLL[,gene] ~', paste(snps, "gene2", sep = " * ", collapse = " + "))
 ) , data = x)
 summary(fit)
 y <- predict(fit)
 cor.test( expLL[,gene], y)
+plot( expLL[,gene], y)
+
+
+fit2 <- lm(as.formula(
+  paste(' expLL[,gene] ~ ',paste(paste('poly(',snps,',2)'), sep = "*", collapse = ' + '))
+) , data = x)
+summary(fit2)
+y2 <- predict(fit2)
+cor.test( expLL[,gene], y2)
+plot( expLL[,gene], y2)
+
+
+fit3 <- lm(as.formula(
+  paste(' expLL[,gene] ~ ',paste(paste('poly(',snps,',2)'), "gene2", sep = "*", collapse = ' + '))
+) , data = x)
+summary(fit3)
+y3 <- predict(fit3)
+cor.test( expLL[,gene], y3)
+plot( expLL[,gene], y3)
+
+
+fit4 <- lm(as.formula(
+  paste('expLL[,gene] ~', paste(snps, sep = " + ", collapse = " + "))
+) , data = x)
+summary(fit4)
+y4 <- predict(fit4)
+cor.test( expLL[,gene], y4)plot( expLL[,gene], y4)
+
+plot(expLL[,gene], y, main = "Model C", xlab = "NOD2", ylab = "NOD2 described by model", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.8)
+
+plot(expLL[,gene], y3, main = "Model D", xlab = "NOD2", ylab = "NOD2 described by model", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.8)
+
+
+
+anova(fit, fit3)
+
+
+anova(fit4, fit2)
+
 cor.test( y, expLL[,gene2])
 
 z <- residuals(fit)
