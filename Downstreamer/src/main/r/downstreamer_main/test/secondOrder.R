@@ -26,6 +26,13 @@ dosagesLLa <- dosagesLLa[rownames(dosagesLLa) %in% rownames(dosages1000g),]
 
 str(dosagesLL)
 
+#change X1 in case of specified header for row names. Use ...1 if first colun has no ID
+colTypes <- cols( .default = col_double(),  `...1` = col_character())
+table_tmp <- read_delim("/groups/umcg-bios/tmp01/users/umcg-pdeelen/nod2genotypes_RS.txt.dosages.txt", delim = "\t", quote = "", col_types = colTypes)
+dosagesRS <- as.matrix(table_tmp[,-1])
+rownames(dosagesRS) <- table_tmp[,1][[1]]
+rm(table_tmp)
+
 
 colTypes <- cols( .default = col_double(),  `ID` = col_character())
 table_tmp <- read_delim("/groups/umcg-bios/tmp01/projects/BIOS_for_eQTLGenII/pipeline/20220426/1_DataQC/out/LL/outputfolder_exp/exp_data_QCd/exp_data_preprocessed.txt", delim = "\t", quote = "", col_types = colTypes)
@@ -33,7 +40,17 @@ expLL <- as.matrix(table_tmp[,-1])
 rownames(expLL) <- table_tmp[,1][[1]]
 rm(table_tmp)
 
+
+
+colTypes <- cols( .default = col_double(),  `ID` = col_character())
+table_tmp <- read_delim("/groups/umcg-bios/tmp01/projects/BIOS_for_eQTLGenII/pipeline/20220426/1_DataQC/out/RS/outputfolder_exp/exp_data_QCd/exp_data_preprocessed.txt", delim = "\t", quote = "", col_types = colTypes)
+expRS <- as.matrix(table_tmp[,-1])
+rownames(expRS) <- table_tmp[,1][[1]]
+rm(table_tmp)
+
+
 all(rownames(expLL) == colnames(dosagesLL))
+all(rownames(expRS) == colnames(dosagesRS))
 
 dosagesLLa <- dosagesLLa[,match(rownames(expLL), colnames(dosagesLLa))]
 all(rownames(expLL) == colnames(dosagesLLa))
@@ -292,6 +309,13 @@ x <- as.data.frame(t(dosagesLL))
 x$gene2 <- expLL[,gene2]
 colnames(x) <- make.names(colnames(x))
 
+
+v <- as.data.frame(t(dosagesRS))
+v$gene2 <- expRS[,gene2]
+colnames(v) <- make.names(colnames(v))
+
+
+
 snps <- make.names(rownames(dosagesLL)[roundStats[1:3,1]])
 
 summary(lm(as.formula(
@@ -328,6 +352,19 @@ cor.test( expLL[,gene], y)
 plot( expLL[,gene], y)
 
 
+fitRS <- lm(as.formula(
+  paste('expRS[,gene] ~', paste(snps, "gene2", sep = " * ", collapse = " + "))
+) , data = v)
+summary(fitRS)
+yRS <- predict(fitRS)
+cor.test( expRS[,gene], yRS)
+plot( expRS[,gene], yRS)
+
+
+yv <- predict(fit, newdata = v)
+cor.test( expRS[,gene], yv)
+plot( expRS[,gene], yv)
+
 fit2 <- lm(as.formula(
   paste(' expLL[,gene] ~ ',paste(paste('poly(',snps,',2)'), sep = "*", collapse = ' + '))
 ) , data = x)
@@ -345,6 +382,18 @@ y3 <- predict(fit3)
 cor.test( expLL[,gene], y3)
 plot( expLL[,gene], y3)
 
+fit3RS <- lm(as.formula(
+  paste(' expRS[,gene] ~ ',paste(paste('poly(',snps,',2)'), "gene2", sep = "*", collapse = ' + '))
+) , data = v)
+summary(fit3RS)
+y3RS <- predict(fit3RS)
+cor.test( expRS[,gene], y3RS)
+plot( expRS[,gene], y3RS)
+
+yv3 <- predict(fit3, newdata = v)
+cor.test( expRS[,gene], yv3)
+plot( expRS[,gene], yv3)
+
 
 fit4 <- lm(as.formula(
   paste('expLL[,gene] ~', paste(snps, sep = " + ", collapse = " + "))
@@ -353,16 +402,47 @@ summary(fit4)
 y4 <- predict(fit4)
 cor.test( expLL[,gene], y4)plot( expLL[,gene], y4)
 
+
+
+
+fit5 <- lm(as.formula(
+  paste(' expLL[,gene] ~ ',paste(paste('poly(',snps,',5)'), paste('poly(gene2,3)'), sep = "*", collapse = ' + '))
+) , data = x)
+summary(fit5)
+y5 <- predict(fit5)
+cor.test( expLL[,gene], y5)
+plot( expLL[,gene], y5)
+
+
+fit6 <- lm(as.formula(
+  paste(' expLL[,gene] ~ poly(rs2111235,2) + poly(X16.50714603.C.CTGTG,2) + poly(rs1861757,2) + gene2 + gene2 * rs2111235  + gene2 * X16.50714603.C.CTGTG + gene2 * rs1861757')
+) , data = x)
+summary(fit6)
+y6 <- predict(fit6)
+cor.test( expLL[,gene], y6)
+plot( expLL[,gene], y6)
+
+
+
 plot(expLL[,gene], y, main = "Model C", xlab = "NOD2", ylab = "NOD2 described by model", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.8)
 
 plot(expLL[,gene], y3, main = "Model D", xlab = "NOD2", ylab = "NOD2 described by model", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.8)
 
+layout(matrix(1:2, nrow = 1))
+plot(expRS[,gene], yv, main = "Model C validated on RS", xlab = "NOD2", ylab = "NOD2 described by model", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.8)
+
+plot(expRS[,gene], yv3, main = "Model D validated on RS", xlab = "NOD2", ylab = "NOD2 described by model", pch = 16, col=adjustcolor("dodgerblue2", alpha.f = 0.5), cex = 0.8)
+
 
 
 anova(fit, fit3)
-
+anova(fit, fit6)
+anova(fitRS, fit3RS)
 
 anova(fit4, fit2)
+
+
+anova(fit3, fit5)
 
 cor.test( y, expLL[,gene2])
 
