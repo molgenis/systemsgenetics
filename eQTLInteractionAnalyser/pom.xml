@@ -9,7 +9,7 @@
         <version>1.0.4-SNAPSHOT</version>
     </parent>
     <artifactId>eQTLInteractionAnalyser</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
     <name>eQTLInteractionAnalyser</name>
     <url>http://maven.apache.org</url>
     <properties>

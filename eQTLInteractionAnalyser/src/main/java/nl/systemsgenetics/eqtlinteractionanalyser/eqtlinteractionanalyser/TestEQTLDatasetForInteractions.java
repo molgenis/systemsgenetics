@@ -9,6 +9,7 @@ import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 import com.google.common.collect.HashMultimap;
 import gnu.trove.set.hash.TIntHashSet;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -46,7 +47,6 @@ import umcg.genetica.io.trityper.EQTL;
 import umcg.genetica.io.trityper.QTLTextFile;
 
 /**
- *
  * @author lude
  */
 public class TestEQTLDatasetForInteractions {
@@ -90,7 +90,7 @@ public class TestEQTLDatasetForInteractions {
 		final HashMultimap<String, String> qtlProbeSnpMultiMap = HashMultimap.create();
 		if (eQTLfileName != null) {
 			final QTLTextFile eQtlFileReader = new QTLTextFile(eQTLfileName, false);
-			for (Iterator<EQTL> it = eQtlFileReader.getEQtlIterator(); it.hasNext();) {
+			for (Iterator<EQTL> it = eQtlFileReader.getEQtlIterator(); it.hasNext(); ) {
 				EQTL qtl = it.next();
 				qtlProbeSnpMultiMap.put(qtl.getProbe(), qtl.getRsName());
 			}
@@ -100,7 +100,7 @@ public class TestEQTLDatasetForInteractions {
 		if (eQTLfileNameCovariates != null) {
 			qtlProbeSnpMultiMapCovariates = HashMultimap.create();
 			final QTLTextFile eQtlFileReader = new QTLTextFile(eQTLfileNameCovariates, false);
-			for (Iterator<EQTL> it = eQtlFileReader.getEQtlIterator(); it.hasNext();) {
+			for (Iterator<EQTL> it = eQtlFileReader.getEQtlIterator(); it.hasNext(); ) {
 				EQTL qtl = it.next();
 				qtlProbeSnpMultiMapCovariates.put(qtl.getProbe(), qtl.getRsName());
 			}
@@ -150,15 +150,28 @@ public class TestEQTLDatasetForInteractions {
 
 		String[] covsToCorrect = primaryCovsToCorrect;
 		int cnt = 0;
+		HashSet<String> previousTopCovariates = new HashSet<String>();
 		while (cnt < maxNumTopCovs) {
+			System.out.println("");
+			System.out.println("---------------");
+			System.out.println("Iteration " + cnt);
+			System.out.println("---------------");
+			System.out.println("");
 			String topCov = performInteractionAnalysis(covsToCorrect, covariatesToCorrect2, outputTopCovs, snpsToSwapFile, qtlProbeSnpMultiMap, covariatesToTest, hashSamples, numThreads, snpsToTest, skipNormalization, skipCovariateNormalization, qtlProbeSnpMultiMapCovariates, nrCompsToCorrectFor);
-			String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
-			for (int c = 0; c < covsToCorrect.length; c++) {
-				covsToCorrectNew[c] = covsToCorrect[c];
+			if (topCov == null) {
+				break;
 			}
-			covsToCorrectNew[covsToCorrect.length] = topCov;
-			covsToCorrect = covsToCorrectNew;
-			cnt++;
+			if (!previousTopCovariates.contains(topCov)) {
+				String[] covsToCorrectNew = new String[covsToCorrect.length + 1];
+				for (int c = 0; c < covsToCorrect.length; c++) {
+					covsToCorrectNew[c] = covsToCorrect[c];
+				}
+				covsToCorrectNew[covsToCorrect.length] = topCov;
+				covsToCorrect = covsToCorrectNew;
+				cnt++;
+				previousTopCovariates.add(topCov);
+			}
+
 		}
 		outputTopCovs.close();
 	}
@@ -523,7 +536,7 @@ public class TestEQTLDatasetForInteractions {
 
 			datasetZScores.sampleNames = new String[datasetGenotypes.probeNames.length];
 			for (int i = 0; i < datasetGenotypes.probeNames.length; ++i) {
-				datasetZScores.sampleNames[i] = datasetGenotypes.probeNames[i] + datasetExpression.probeNames[i].substring(datasetExpression.probeNames[i].lastIndexOf('_'));
+				datasetZScores.sampleNames[i] = datasetGenotypes.probeNames[i] + datasetExpression.probeNames[i]; //.substring(datasetExpression.probeNames[i].lastIndexOf('_'));
 			}
 
 			datasetZScores.recalculateHashMaps();
@@ -542,7 +555,11 @@ public class TestEQTLDatasetForInteractions {
 				}
 			}
 
-			String maxChi2Cov = "";
+			HashSet<String> correctedCovariateSet = new HashSet<>();
+			for (String s : covsToCorrect) {
+				correctedCovariateSet.add(s);
+			}
+			String maxChi2Cov = null;
 			int maxChi2CovI = 0;
 			double maxChi2 = 0;
 			try {
@@ -566,9 +583,12 @@ public class TestEQTLDatasetForInteractions {
 						}
 
 						if (chi2Sum > maxChi2 && !datasetCovariates.probeNames[cov].startsWith("Comp") && !datasetCovariates.probeNames[cov].equals("LLS") && !datasetCovariates.probeNames[cov].equals("LLdeep") && !datasetCovariates.probeNames[cov].equals("RS") && !datasetCovariates.probeNames[cov].equals("CODAM")) {
-							maxChi2 = chi2Sum;
-							maxChi2CovI = cov;
-							maxChi2Cov = datasetCovariates.probeNames[cov];
+							String covName = datasetCovariates.probeNames[cov];
+							if (!correctedCovariateSet.contains(covName)) {
+								maxChi2 = chi2Sum;
+								maxChi2CovI = cov;
+								maxChi2Cov = covName;
+							}
 						}
 						//System.out.println(covsToCorrect.length + "\t" + cov + "\t" + datasetCovariates.probeNames[cov] + "\t" + chi2Sum);
 						if ((task + 1) % 512 == 0) {
@@ -639,7 +659,7 @@ public class TestEQTLDatasetForInteractions {
 	 * and the coordinate of its midpoint as annotation
 	 *
 	 * @param annotFname - path to the annotation file (in the
-	 * eqtlmappingpipeline format)
+	 *                   eqtlmappingpipeline format)
 	 * @throws IOException
 	 */
 	private void createGeneDistanceMap(String annotFname) throws IOException {
@@ -1129,7 +1149,7 @@ public class TestEQTLDatasetForInteractions {
 		int[] covsToCorrectIndex = new int[covsToCorrect.length];
 		for (int c = 0; c < covsToCorrect.length; c++) {
 			hashCovsToCorrect.put(covsToCorrect[c], null);
-			covsToCorrectIndex[c] = ((Integer) datasetCovariatesPCAForceNormal.hashProbes.get(covsToCorrect[c])).intValue();
+			covsToCorrectIndex[c] = datasetCovariatesPCAForceNormal.hashProbes.get(covsToCorrect[c]);
 			for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
 				datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + c][s] = datasetCovariatesPCAForceNormal.rawData[covsToCorrectIndex[c]][s];
 			}
@@ -1137,9 +1157,12 @@ public class TestEQTLDatasetForInteractions {
 
 		// add PCs
 		if (nrCompsToCorrectFor > 0) {
+			System.out.println("Adding "+nrCompsToCorrectFor+" PCs to the covariates.");
 			for (int comp = 0; comp < nrCompsToCorrectFor; comp++) {
 				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-					datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + covsToCorrect.length + comp][s] = datasetCovariatesPCAForceNormal.rawData[datasetCovariatesPCAForceNormal.nrProbes - 51 + comp][s];
+//					 datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + covsToCorrect.length + comp][s] = datasetCovariatesPCAForceNormal.rawData[datasetCovariatesPCAForceNormal.nrProbes - 39 + comp][s];
+					// HJW: this assumes that all these components are on the beginning of the file; not sure what happens to the other PCs that might be in there.
+					datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + covsToCorrect.length + comp][s] = datasetCovariatesPCAForceNormal.rawData[comp][s];
 				}
 			}
 		}
@@ -1197,7 +1220,7 @@ public class TestEQTLDatasetForInteractions {
 
 	private void correctExpressionData(String[] covsToCorrect2, ExpressionDataset datasetGenotypes, ExpressionDataset datasetCovariates, ExpressionDataset datasetExpression, int nrCompsToCorrectFor) throws Exception {
 		//Define a set of covariates that we want to use as correction:
-		System.out.println("Correcting gene expression data for cohort specific effects and top " + nrCompsToCorrectFor +  " components");
+		System.out.println("Correcting gene expression data for cohort specific effects and top " + nrCompsToCorrectFor + " components");
 		//String[] cohorts = {"LLDeep", "LLS", "RS", "CODAM"};
 
 		ExpressionDataset datasetCovariatesToCorrectFor = new ExpressionDataset(covsToCorrect2.length + nrCompsToCorrectFor, datasetGenotypes.nrSamples);
@@ -1222,9 +1245,12 @@ public class TestEQTLDatasetForInteractions {
 //				}
 //			}
 		if (nrCompsToCorrectFor > 0) {
+			System.out.println("Adding "+nrCompsToCorrectFor+" PCs to the covariates.");
 			for (int comp = 0; comp < nrCompsToCorrectFor; comp++) {
 				for (int s = 0; s < datasetGenotypes.nrSamples; s++) {
-					datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + comp][s] = datasetCovariates.rawData[datasetCovariates.nrProbes - 51 + comp][s];
+					// WARNING: this assumes there are PCs in the covariate data, and that they are on the first rows!
+					datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + comp][s] = datasetCovariates.rawData[comp][s];
+//					 datasetCovariatesToCorrectFor.rawData[covsToCorrect2.length + comp][s] = datasetCovariates.rawData[datasetCovariates.nrProbes - 39 + comp][s];
 				}
 			}
 		}
@@ -1378,7 +1404,7 @@ public class TestEQTLDatasetForInteractions {
 
 		for (int p = 0; p < datasetExpression.nrProbes; p++) {
 
-			String probe = datasetExpression.probeNames[p].substring(0, datasetExpression.probeNames[p].lastIndexOf('_'));
+			String probe = datasetExpression.probeNames[p]; // .substring(0, datasetExpression.probeNames[p].lastIndexOf('_'));
 			Set<String> probeQtls = qtlProbeSnpMultiMap.get(probe);
 
 			if (probeQtls.isEmpty()) {
