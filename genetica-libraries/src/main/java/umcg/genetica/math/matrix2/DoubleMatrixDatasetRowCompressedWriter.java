@@ -17,6 +17,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,14 +102,14 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		final File colFile = new File(path + ".cols.txt.gz");
 
 		numberOfColumns = columns.size();
-		final CSVWriter colNamesWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(colFile)), "UTF8")), '\t', '\0', '\0', "\n");
+		final CSVWriter colNamesWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(colFile)), StandardCharsets.UTF_8)), '\t', '\0', '\0', "\n");
 		for (Object col : columns) {
 			outputLine[0] = col.toString();
 			colNamesWriter.writeNext(outputLine);
 		}
 		colNamesWriter.close();
 
-		rowNamesWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(rowFile)), "UTF8")), '\t', '\0', '\0', "\n");
+		rowNamesWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(rowFile)), StandardCharsets.UTF_8)), '\t', '\0', '\0', "\n");
 
 		blockIndices = new TLongArrayList(1000);
 
