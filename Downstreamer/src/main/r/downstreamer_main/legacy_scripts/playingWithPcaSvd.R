@@ -29,7 +29,6 @@ write.table(expSubScale, file = "testDataScaled2.txt", sep = "\t", quote = FALSE
 hist(apply(expSubScale, 1, mean))
 hist(apply(expSubScale, 1, sd))
 
-str(expSvd)
 
 expSvd <- svd(expSubScale, nu = 1000, nv = 1000)
 
