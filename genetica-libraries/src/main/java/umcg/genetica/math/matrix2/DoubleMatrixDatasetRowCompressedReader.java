@@ -54,7 +54,7 @@ public class DoubleMatrixDatasetRowCompressedReader {
 	private final int rowsPerBlock;
 	private final long timestampCreated;
 	private final String datasetName;
-	private final String dataOnRows;//For instnace genes
+	private final String dataOnRows;//For instance genes
 	private final String dataOnCols;//For instance pathays
 	private final byte[] blockData;
 	private int currentBlock = -1;
