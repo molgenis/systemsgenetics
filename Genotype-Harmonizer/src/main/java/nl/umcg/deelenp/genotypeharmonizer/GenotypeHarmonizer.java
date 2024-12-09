@@ -227,6 +227,7 @@ class GenotypeHarmonizer {
 					while ((line = variantIdFilterReader.readLine()) != null) {
 						snps.add(line);
 					}
+					LOGGER.info("Variants in filter list: " + snps.size());
 					VariantIdIncludeFilter snpIdFilter = new VariantIdIncludeFilter(snps);
 					varFilter.add(snpIdFilter);
 				} catch (FileNotFoundException ex) {
