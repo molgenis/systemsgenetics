@@ -287,7 +287,14 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 
 		RandomAccessFile bgenRandomAccess = new RandomAccessFile(bgenFile, "rw");
 		bgenRandomAccess.seek(8);
-		bgenRandomAccess.write(variantCount);
+
+		ByteBuffer variantCountBuffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+		variantCountBuffer.putInt((int) variantCount);
+		variantCountBuffer.flip();
+		byte[] data = new byte[4];
+		variantCountBuffer.get(data);
+		bgenRandomAccess.write(data);
+
 		bgenRandomAccess.close();
 
 		// Finalize bgenix file

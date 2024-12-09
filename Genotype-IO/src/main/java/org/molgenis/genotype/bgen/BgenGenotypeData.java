@@ -77,6 +77,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 	private final double minimumPosteriorProbabilityToCall;
 	private final int sampleVariantProviderUniqueId;
 	private final int sampleCount;
+	private final long variantCount;
 
 	public BgenGenotypeData(String bgenFilePath) throws IOException {
 		this(new File(bgenFilePath + ".bgen"),
@@ -167,7 +168,7 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		}
 
 		// Get the number of variants in the file.
-		long variantCount = readFourBytesAsUInt32(
+		variantCount = readFourBytesAsUInt32(
 				"Number of SNPs",
 				"Error reading bgen file header. File is corrupt");
 
@@ -1829,5 +1830,9 @@ public class BgenGenotypeData extends AbstractRandomAccessGenotypeData implement
 		long getVariantDataSizeInBytes(long variantReadingPosition) {
 			return variantGenotypeStartPosition - variantReadingPosition + getBlockLengthHeaderInclusive();
 		}
+	}
+
+	public long getVariantCount() {
+		return variantCount;
 	}
 }
