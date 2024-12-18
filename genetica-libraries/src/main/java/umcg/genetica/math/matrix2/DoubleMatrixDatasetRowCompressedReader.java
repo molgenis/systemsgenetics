@@ -17,14 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.zip.Checksum;
 import java.util.zip.GZIPInputStream;
 import net.jpountz.lz4.LZ4BlockInputStream;
@@ -37,7 +30,7 @@ import org.apache.commons.io.input.RandomAccessFileInputStream;
  *
  * @author patri
  */
-public class DoubleMatrixDatasetRowCompressedReader {
+public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMatrixDatasetRow> {
 
 	private final LinkedHashMap<String, Integer> rowMap;
 	private final LinkedHashMap<String, Integer> colMap;
@@ -345,5 +338,41 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 		return (map);
 
+	}
+
+	@Override
+	public Iterator<DoubleMatrixDatasetRow> iterator() {
+		return new DoubleMatrixDatasetRowIteratorDatg(this);
+	}
+
+	private class DoubleMatrixDatasetRowIteratorDatg implements Iterator<DoubleMatrixDatasetRow> {
+
+		private int nextRow;
+		private final DoubleMatrixDatasetRowCompressedReader matrixReader;
+		private final int nrRows;
+		Iterator<String> rowNameIterator;
+
+		public DoubleMatrixDatasetRowIteratorDatg(DoubleMatrixDatasetRowCompressedReader matrixReader) {
+			this.matrixReader = matrixReader;
+			nextRow = 0;
+			nrRows = matrixReader.getNumberOfRows();
+			rowNameIterator = matrixReader.getRowIdentifiers().iterator();
+		}
+
+		@Override
+		public boolean hasNext() {
+			return nextRow < nrRows;
+		}
+
+		@Override
+		public DoubleMatrixDatasetRow next() {
+
+			try {
+				return new DoubleMatrixDatasetRow(matrixReader.loadSingleRow(nextRow++), rowNameIterator.next());
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+
+		}
 	}
 }

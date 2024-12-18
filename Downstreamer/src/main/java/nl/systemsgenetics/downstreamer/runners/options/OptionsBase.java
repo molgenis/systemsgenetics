@@ -133,7 +133,7 @@ public class OptionsBase {
 		//TODO subclasses need to overwrite or extend or somthing to print all options relevant
 		LOGGER.info("Supplied options:");
 		LOGGER.info(" * Mode: " + mode.name());
-		LOGGER.info(" * Ouput path: " + outputBasePath.getAbsolutePath());
+		LOGGER.info(" * Output path: " + outputBasePath.getAbsolutePath());
 		LOGGER.info(" * Debug mode: " + (debugMode ? "on (this will result in many intermediate output files)" : "off"));
 		LOGGER.info(" * Number of threads to use: " + numberOfThreadsToUse);
 		System.out.println("getParallelism=" + ForkJoinPool.commonPool().getParallelism());
