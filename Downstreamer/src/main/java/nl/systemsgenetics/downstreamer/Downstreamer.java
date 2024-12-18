@@ -8,7 +8,6 @@ import nl.systemsgenetics.downstreamer.runners.*;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
-
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,6 +19,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+
 
 import java.io.File;
 import java.io.IOException;
@@ -106,7 +106,7 @@ public class Downstreamer {
 			Level loggingLevel = Level.INFO;
 			if (options.isDebugMode()) {
 				loggingLevel = Level.DEBUG;
-				options.getDebugFolder().mkdir();
+				OptionsBase.getDebugFolder().mkdir();
 			}
 
 			initializeLoggers(loggingLevel, options.getLogFile(), startDateTime);
@@ -353,7 +353,7 @@ public class Downstreamer {
 
 	public static void initializeLoggers(Level loggingLevel, File logFile, String startDateTime) throws IOException {
 		Configurator.setRootLevel(loggingLevel);
-		LoggerContext context = LoggerContext.getContext(false);
+		org.apache.logging.log4j.core.LoggerContext context = LoggerContext.getContext(false);
 		Configuration config = context.getConfiguration();
 
 		PatternLayout loggingLayoutFull = PatternLayout.newBuilder()
