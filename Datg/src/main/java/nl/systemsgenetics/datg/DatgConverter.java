@@ -163,7 +163,7 @@ public class DatgConverter {
         //First nextLine contains the header
         String[] nextLine = reader.readNext();
 
-        ArrayList<Object> colnames = new ArrayList<>(nextLine.length-1);
+        ArrayList<String> colnames = new ArrayList<>(nextLine.length-1);
         for(int i = 1 ; i < nextLine.length ; i++){
             colnames.add(nextLine[i]);
         }
