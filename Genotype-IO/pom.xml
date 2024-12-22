@@ -23,6 +23,11 @@
             <version>2.24.3</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.24.3</version>
+        </dependency>
+        <dependency>
             <groupId>org.molgenis</groupId>
             <artifactId>vcf-io</artifactId>
             <version>1.1.1</version>
@@ -106,10 +111,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                    <release>8</release>
-                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -164,29 +165,5 @@
             </testResource>
         </testResources>
     </build>
-    <profiles>
-        <profile>
-            <id>netbeans-private-testng</id>
-            <activation>
-                <property>
-                    <name>netbeans.testng.action</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.10</version>
-                        <configuration>
-                            <suiteXmlFiles>
-                                <suiteXmlFile>target/nb-private/testng-suite.xml</suiteXmlFile>
-                            </suiteXmlFiles>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
     <name>Genotype IO</name>
 </project>

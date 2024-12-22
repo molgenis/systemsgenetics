@@ -10,12 +10,12 @@
     </parent>
 
     <artifactId>Datg</artifactId>
-    <version>2.0.1</version>
+    <version>1.0</version>
 
 
     <properties>
-        <maven.compiler.source>22</maven.compiler.source>
-        <maven.compiler.target>22</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -84,8 +84,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <release>8</release>
                 </configuration>
             </plugin>
         </plugins>
@@ -96,6 +95,12 @@
             <groupId>nl.systemsgenetics</groupId>
             <artifactId>genetica-libraries</artifactId>
             <version>1.0.10-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>6.8.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

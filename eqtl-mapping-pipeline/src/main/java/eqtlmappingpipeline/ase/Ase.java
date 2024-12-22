@@ -27,16 +27,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.LogManager;
 import java.util.regex.Pattern;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.appender.FileAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.molgenis.genotype.GenotypeDataException;
 import org.molgenis.genotype.RandomAccessGenotypeData;
@@ -69,7 +71,7 @@ public class Ase {
 			+ "  |        Department of Genetics         |\n"
 			+ "  |  University Medical Center Groningen  |\n"
 			+ "  \\---------------------------------------/";
-	private static final Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger(Ase.class);
+	private static final Logger LOGGER = LogManager.getLogger(Ase.class);
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final Date currentDataTime = new Date();
 	private static final Pattern TAB_PATTERN = Pattern.compile("\\t");
