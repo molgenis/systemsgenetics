@@ -2,11 +2,12 @@ library(parallel)
 
 setwd("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/")
 
-load(file = "combinedMeta_2022_09_15.RData", verbose = T)
+load(file = "Metadata/combinedMeta_2022_09_15.RData", verbose = T)
 load(file = "Recount3_QC_2ndRun/PCA_Patrick/pcs.RData", verbose = T)
 load(file = "Recount3_QC_2ndRun/PCA_Patrick/eigen.RData", verbose = T)
 
 #save.image("predictionSession.RData")
+load("predictionSession.RData")
 
 explainedVariance <- eigenValues * 100 / sum(eigenValues)
 (compsToUse <- which(cumsum(explainedVariance)>= 80)[1])
@@ -18,13 +19,16 @@ sum(!rownames(expPcs[,1:compsToUse]) %in% rownames(combinedMeta))
 
 pcsAndMeta <- merge(expPcs[,1:compsToUse], combinedMeta, by = 0)
 rownames(pcsAndMeta) <- pcsAndMeta$Row.names
-
+colnames(pcsAndMeta)
 
 #save(pcsAndMeta, compsToUse, file = "DataForPredictions.RData")
+load(file = "DataForPredictions.RData")
 
-dim(pcsAndMeta)
+colnames(pcsAndMeta)
 pcsAndMeta <- pcsAndMeta[!pcsAndMeta$exclude,]
 dim(pcsAndMeta)
+
+table(pcsAndMeta$excludeBasedOnPredictionCancer, pcsAndMeta$excludeBasedOnPredictionCellline2)
 
 #write.table(merge(combinedMeta, expPcs[,1:100], by = 0, all.y = T), file = "Metadata/pcsAndAnnotations.txt", sep = "\t", quote = FALSE, col.names = NA)
 
@@ -32,7 +36,7 @@ dim(pcsAndMeta)
 
 
 defaultCol <- adjustcolor("grey", alpha.f = 0.6)
-tissueCol <- read.delim("Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", row.names = 0)
+tissueCol <- read.delim("Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt")
 
 #write.table(tissueCol, file = "Recount3_QC_2ndRun/SRA_Studies_Annotations_Patrick/Annotations_color2.txt", quote = F, row.names = F, sep = "\t")
 
@@ -266,7 +270,7 @@ pcsAndMeta$colCelline[!is.na(pcsAndMeta[,"Cancer"]) & pcsAndMeta[,"Cancer"]] <- 
 defaultCol <- adjustcolor("grey", alpha.f = 0.3)
 pcsAndMeta$classCol <- defaultCol
 pcsAndMeta$classCol[!is.na(pcsAndMeta$Cellline) & pcsAndMeta$Cellline] <- adjustcolor("magenta", alpha.f = 0.6)
-pcsAndMeta$classCol[pcsAndMeta$CelllineName == "iPSC"] <- adjustcolor("goldenrod1", alpha.f = 0.6)
+pcsAndMeta$classCol[pcsAndMeta$CelllineName == "iPSC"] <- adjustcolor("grey", alpha.f = 0.6)
 pcsAndMeta$classCol[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & pcsAndMeta$Cancer] <- adjustcolor("forestgreen", alpha.f = 0.6)
 pcsAndMeta$classCol[(pcsAndMeta$Tissue != "" | pcsAndMeta$Tissue2 != "") & !is.na(pcsAndMeta$Cancer) & !pcsAndMeta$Cancer] <- adjustcolor("royalblue1", alpha.f = 0.6)
 
@@ -290,13 +294,47 @@ abline(h = 0.5, lwd = 2, col = adjustcolor("forestgreen", alpha.f = 0.4))
 dev.off()
 
 rpng(width = 800, height = 800)
+pdf("cancerCellLine.pdf", useDingbats = F)
+par(xpd=NA)
 plot(pcsAndMeta[plotOrderClass,"excludeBasedOnPredictionCellline2Scoreb"], log(pcsAndMeta[plotOrderClass,"CnvAutoCor"]), col = pcsAndMeta$classCol[plotOrderClass], cex = pcsAndMeta$classCex[plotOrderClass], pch = 16, 
-     xlab = "Cell line logistic regression using components", 
-     ylab= "Log sample Auto correlation")
+     xlab = "Sampe cell line prediction", 
+     ylab= "Sample copy number variant load",
+     frame = F)
 abline(v = min(pcsAndMeta[pcsAndMeta$excludeBasedOnPredictionCellline2,"excludeBasedOnPredictionCellline2Scoreb"]), lwd = 2, col = adjustcolor("magenta", alpha.f = 0.4))
 abline(h = log(min(pcsAndMeta[pcsAndMeta$excludeBasedOnPredictionCancer,"CnvAutoCor"]))
        , lwd = 2, col = adjustcolor("forestgreen", alpha.f = 0.4))
 dev.off()
+
+
+
+
+
+
+
+
+
+
+
+rpng(width = 800, height = 800)
+plot(pcsAndMeta[plotOrderClass,"excludeBasedOnPredictionCellline2Scoreb"], log(pcsAndMeta[plotOrderClass,"CnvAutoCor"]), col = pcsAndMeta$classCol[plotOrderClass], cex = pcsAndMeta$classCex[plotOrderClass], pch = 16, 
+     xlab = "Sampe cell line prediction", 
+     ylab= "Sample copy number variant load",
+     frame = F)
+abline(v = min(pcsAndMeta[pcsAndMeta$excludeBasedOnPredictionCellline2,"excludeBasedOnPredictionCellline2Scoreb"]), lwd = 2, col = adjustcolor("magenta", alpha.f = 0.4))
+abline(h = log(min(pcsAndMeta[pcsAndMeta$excludeBasedOnPredictionCancer,"CnvAutoCor"]))
+       , lwd = 2, col = adjustcolor("forestgreen", alpha.f = 0.4))
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
 
 
 rpng(width = 800, height = 800)
