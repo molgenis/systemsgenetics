@@ -102,6 +102,12 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 		final File rowFile = new File(path + ".rows.txt.gz");
 		final File colFile = new File(path + ".cols.txt.gz");
 
+		if(!matrixFile.getParentFile().exists()) {
+			if (!matrixFile.getParentFile().mkdirs()) {
+				throw new IOException("Unable to create directory " + matrixFile.getParent());
+			}
+		}
+
 		numberOfColumns = columns.size();
 		final CSVWriter colNamesWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(colFile)), StandardCharsets.UTF_8)), '\t', '\0', '\0', "\n");
 		for (Object col : columns) {

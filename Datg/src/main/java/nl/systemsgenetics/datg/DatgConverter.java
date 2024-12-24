@@ -37,6 +37,9 @@ public class DatgConverter {
     public static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     public static final DateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
 
+    //This is set to true by testng to throw error instead of catch it for nice user output.
+    protected static boolean TESTNG_MODE = false;
+
     private static final Logger LOGGER = LogManager.getLogger(DatgConverter.class);
     private static final String HEADER
             = "  /---------------------------------------\\\n"
@@ -87,15 +90,19 @@ public class DatgConverter {
             Level loggingLevel = Level.INFO;
             initializeLoggers(loggingLevel, options.getLogFile(), startDateTime);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.err.println("Failed to create logger: " + e.getMessage());
-            System.exit(1);
+            if (TESTNG_MODE) {
+                throw new RuntimeException(e);
+            } else {
+                System.exit(1);
+            }
         }
 
         options.printOptions();
 
-        try{
-            switch (options.getMode()){
+        try {
+            switch (options.getMode()) {
 
                 case TXT_2_DATG:
                     //DoubleMatrixDataset.loadDoubleTextData(options.getInputFile().getAbsolutePath());
@@ -106,8 +113,8 @@ public class DatgConverter {
                 case DATG_2_TXT:
                     DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(options.getInputFile().getAbsolutePath());
 
-                    LOGGER.info("Input .datg file contains " + datgData.getNumberOfColumns() + " columns and " + datgData.getNumberOfRows());
-                    LOGGER.info("The dataset is named: '" + datgData.getDatasetName() + "' and was created on: " +  DATE_TIME_FORMAT.format(datgData.getTimestampCreated()));
+                    LOGGER.info("Input .datg file contains " + datgData.getNumberOfColumns() + " columns and " + datgData.getNumberOfRows() + " rows");
+                    LOGGER.info("The dataset is named: '" + datgData.getDatasetName() + "' and was created on: " + DATE_TIME_FORMAT.format(new Date(datgData.getTimestampCreated()*1000)));
 
                     final CSVWriter outputWriter;
                     outputWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(options.getOutputFile())))), '\t', '\0', '\0', "\n");
@@ -115,18 +122,18 @@ public class DatgConverter {
                     final String[] outputLine = new String[datgData.getNumberOfColumns() + 1];
                     int c = 0;
                     outputLine[c++] = "";
-                    for(String column : datgData.getColumnIdentifiers()){
+                    for (String column : datgData.getColumnIdentifiers()) {
                         outputLine[c++] = column;
                     }
 
                     outputWriter.writeNext(outputLine);
 
-                    for(DoubleMatrixDatasetRow rowData : datgData){
+                    for (DoubleMatrixDatasetRow rowData : datgData) {
 
                         c = 0;
                         outputLine[c++] = rowData.getRowName();
                         double[] rowContent = rowData.getData();
-                        for(int i = 0 ; i < datgData.getNumberOfColumns() ; ++i){
+                        for (int i = 0; i < datgData.getNumberOfColumns(); ++i) {
                             outputLine[c++] = String.valueOf(rowContent[i]);
                         }
 
@@ -147,11 +154,15 @@ public class DatgConverter {
 
                     break;
             }
-        } catch (IOException e) {
-                System.err.println("Problem running mode: " + options.getMode());
-                LOGGER.fatal("Error: ", e);
+        } catch (Exception e) {
+            System.err.println("Problem running mode: " + options.getMode());
+            LOGGER.fatal("Error: ", e);
+            if (TESTNG_MODE) {
+                throw new RuntimeException(e);
+            } else {
                 System.exit(1);
             }
+        }
 
         currentDataTime = new Date();
         LOGGER.info("Conversion completed at: " + DATE_TIME_FORMAT.format(currentDataTime));
@@ -159,24 +170,47 @@ public class DatgConverter {
     }
 
     private static void convertTxt2Datg(Options options) throws IOException {
+
+        if (!options.getInputFile().exists()) {
+            throw new IOException("Input file not found at: " + options.getInputFile());
+        }
+
         final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
-        final CSVReader reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(options.getInputFile()))))))).withCSVParser(parser).build();
+        final CSVReader reader;
+        if (options.getInputFile().getName().endsWith(".gz")) {
+            reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(options.getInputFile()))))))).withCSVParser(parser).build();
+        } else {
+            reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new FileInputStream(options.getInputFile())))))).withCSVParser(parser).build();
+        }
+
 
         //First nextLine contains the header
         String[] nextLine = reader.readNext();
 
-        ArrayList<String> colnames = new ArrayList<>(nextLine.length-1);
-        for(int i = 1 ; i < nextLine.length ; i++){
+        ArrayList<String> colnames = new ArrayList<>(nextLine.length - 1);
+        for (int i = 1; i < nextLine.length; i++) {
             colnames.add(nextLine[i]);
         }
 
-        DoubleMatrixDatasetRowCompressedWriter datgWriter = new DoubleMatrixDatasetRowCompressedWriter(options.getOutputFile().getAbsolutePath(), colnames, options.getDatasetName(), options.getRowContent(), options.getColContent());
+        if (colnames.isEmpty()) {
+            throw new IOException("No columns found in: " + options.getInputFile());
+        }
+
+
+        DoubleMatrixDatasetRowCompressedWriter datgWriter =
+                new DoubleMatrixDatasetRowCompressedWriter(
+                        options.getOutputFile().getAbsolutePath(),
+                        colnames,
+                        options.getDatasetName(),
+                        options.getRowContent(),
+                        options.getColContent()
+                );
 
         double[] rowData = new double[colnames.size()];
         while ((nextLine = reader.readNext()) != null) {
 
-            for(int i = 1 ; i < nextLine.length ; i++){
-                rowData[i] = Double.parseDouble(nextLine[i]);
+            for (int i = 1; i < nextLine.length; i++) {
+                rowData[i-1] = Double.parseDouble(nextLine[i]);
             }
 
             datgWriter.addRow(nextLine[0], rowData);
