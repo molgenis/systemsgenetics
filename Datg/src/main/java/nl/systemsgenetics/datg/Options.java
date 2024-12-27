@@ -104,7 +104,7 @@ public class Options {
 
 
         outputFile = new File(outputArg);
-        logFile = new File(outputArg + ".log");
+        logFile = new File((outputArg.endsWith(".datg") ? outputArg.substring(0, outputArg.length() - 5) : outputArg) + ".log");
         inputFile = new File(inputArg);
 
         rowContent = commandLine.getOptionValue("rowContent","");

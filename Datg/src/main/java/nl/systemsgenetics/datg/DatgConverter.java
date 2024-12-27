@@ -27,6 +27,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -153,6 +154,11 @@ public class DatgConverter {
                     data.saveBinary(options.getOutputFile().getAbsolutePath(), options.getDatasetName(), options.getRowContent(), options.getColContent());
 
                     break;
+                case TEST:
+
+                    testFunction(options);
+
+
             }
         } catch (Exception e) {
             System.err.println("Problem running mode: " + options.getMode());
@@ -166,6 +172,36 @@ public class DatgConverter {
 
         currentDataTime = new Date();
         LOGGER.info("Conversion completed at: " + DATE_TIME_FORMAT.format(currentDataTime));
+
+    }
+
+    private static void testFunction(Options options) throws IOException {
+
+        Random random = new Random(42);
+        DoubleMatrixDataset<String, String> testData = new DoubleMatrixDataset<>(20000,50000);
+        for (int r = 0; r < testData.rows() ; ++r){
+            for(int c = 0; c < testData.columns() ; ++c){
+                testData.setElementQuick(r,c,random.nextDouble());
+            }
+        }
+
+        LOGGER.info("T1 " + DATE_TIME_FORMAT.format(new Date()));
+        
+        DoubleMatrixDatasetRowCompressedWriter.saveDataset(options.getOutputFile().getPath(), testData);
+
+        LOGGER.info("T2 " + DATE_TIME_FORMAT.format(new Date()));
+
+        DoubleMatrixDataset<String, String> tmp = new DoubleMatrixDatasetRowCompressedReader(options.getOutputFile().getPath()).loadFullDataset();
+
+        LOGGER.info("T3 " + DATE_TIME_FORMAT.format(new Date()));
+
+        testData.saveBinaryOldFormat(options.getOutputFile().getPath() + "old");
+
+        LOGGER.info("T4 " + DATE_TIME_FORMAT.format(new Date()));
+
+        DoubleMatrixDataset.loadDoubleBinaryData(options.getOutputFile().getPath() + "old");
+
+        LOGGER.info("T5 " + DATE_TIME_FORMAT.format(new Date()));
 
     }
 

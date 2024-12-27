@@ -122,21 +122,21 @@ public class DoubleMatrixDatasetRowCompressedWriter {
         colFile = new File(path + ".cols.txt.gz");
         md5File = new File(path + ".md5");
 
-        if (!matrixFile.getParentFile().exists()) {
+        if (matrixFile.getParentFile() != null && !matrixFile.getParentFile().exists()) {
             if (!matrixFile.getParentFile().mkdirs()) {
                 throw new IOException("Unable to create directory " + matrixFile.getParent());
             }
         }
 
         numberOfColumns = columns.size();
-        final CSVWriter colNamesWriter = new CSVWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(colFile)), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
+        final CSVWriter colNamesWriter = new CSVWriter(new OutputStreamWriter(new GZIPOutputStream(new DigestOutputStream(new FileOutputStream(colFile), colFileMd5Digest)), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
         for (Object col : columns) {
             outputLine[0] = col.toString();
             colNamesWriter.writeNext(outputLine);
         }
         colNamesWriter.close();
 
-        rowNamesWriter = new CSVWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(rowFile)), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
+        rowNamesWriter = new CSVWriter(new OutputStreamWriter(new GZIPOutputStream(new DigestOutputStream(new FileOutputStream(rowFile), rowFileMd5Digest)), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
 
         blockIndices = new TLongArrayList(1000);
 
@@ -245,9 +245,6 @@ public class DoubleMatrixDatasetRowCompressedWriter {
         metaDataBlockWriter.close();
 
         rowNamesWriter.close();
-
-
-        matrixFileMd5Digest.digest();
 
         final BufferedWriter md5FileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(md5File), StandardCharsets.UTF_8));
 

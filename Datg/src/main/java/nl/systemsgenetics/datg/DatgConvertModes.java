@@ -4,7 +4,8 @@ public enum DatgConvertModes {
 
     TXT_2_DATG("Convert tab separated .txt or .txt.gz files to a .datg file. The first row is expected to be header information and the first column should contain row names"),
     DATG_2_TXT("Convert a datg file to a txt.gz"),
-    DAT_2_DATG("Special mode for our old inhouse .dat files, not recommend for public use.");
+    DAT_2_DATG("Special mode for our old inhouse .dat files, not recommend for public use."),
+    TEST("");
 
     private final String description;
 
