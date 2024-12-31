@@ -26,7 +26,6 @@ public class Options {
         OptionBuilder.hasArg();
         OptionBuilder.withDescription("The output file.");
         OptionBuilder.withLongOpt("output");
-        OptionBuilder.isRequired();
         OPTIONS.addOption(OptionBuilder.create("o"));
 
         OptionBuilder.withArgName("path");
@@ -64,18 +63,24 @@ public class Options {
     private final String colContent;
     private final String datasetName;
 
-    public Options(String[] args) throws ParseException {
+    public Options(String[] args) throws Exception {
 
         final CommandLineParser parser = new PosixParser();
         final CommandLine commandLine = parser.parse(OPTIONS, args, false);
 
         try {
-            mode = DatgConvertModes.valueOf(commandLine.getOptionValue("m").toUpperCase());
+            String modeString = commandLine.getOptionValue("m").toUpperCase();
+            modeString = modeString.replace('-', '_');
+            mode = DatgConvertModes.valueOf(modeString);
         } catch (IllegalArgumentException e) {
             throw new ParseException("Error parsing --mode \"" + commandLine.getOptionValue("m") + "\" is not a valid mode");
         }
-        String outputArg = commandLine.getOptionValue('o');
         String inputArg = commandLine.getOptionValue('i');
+
+        String outputArg = null;
+        if(mode != DatgConvertModes.INSPECT){
+            outputArg = commandLine.getOptionValue('o');
+        }
 
         switch (mode){
             case DAT_2_DATG:
@@ -92,19 +97,22 @@ public class Options {
                 if (!inputArg.endsWith(".datg")) {
                     inputArg = inputArg + ".datg";
                 }
-                if(!outputArg.endsWith(".txt.gz")){
-                    if(outputArg.endsWith(".txt")){
-                        outputArg = outputArg + ".gz";
-                    } else {
-                        outputArg = outputArg + ".txt.gz";
-                    }
+                if(outputArg.endsWith(".gz")){
+                    throw new Exception("Writing as gz file is not supported, it is much faster to just use gzip afterwards");
+                }
+                if(!outputArg.endsWith(".txt")){
+                    outputArg = outputArg + ".txt";
                 }
                 break;
         }
 
-
-        outputFile = new File(outputArg);
-        logFile = new File((outputArg.endsWith(".datg") ? outputArg.substring(0, outputArg.length() - 5) : outputArg) + ".log");
+        if(outputArg == null){
+            outputFile = null;
+            logFile = null;
+        } else {
+            outputFile = new File(outputArg);
+            logFile = new File((outputArg.endsWith(".datg") ? outputArg.substring(0, outputArg.length() - 5) : outputArg) + ".log");
+        }
         inputFile = new File(inputArg);
 
         rowContent = commandLine.getOptionValue("rowContent","");
@@ -123,8 +131,10 @@ public class Options {
         LOGGER.info("Supplied options:");
         LOGGER.info(" * Mode: " + mode.name());
         LOGGER.info(" * Input path: " + inputFile.getAbsolutePath());
-        LOGGER.info(" * Output path: " + outputFile.getAbsolutePath());
-        if(mode != DatgConvertModes.DATG_2_TXT){
+        if(outputFile != null) {
+            LOGGER.info(" * Output path: " + outputFile.getAbsolutePath());
+        }
+        if(mode != DatgConvertModes.DATG_2_TXT && mode != DatgConvertModes.INSPECT){
             LOGGER.info(" * Row content: " + rowContent);
             LOGGER.info(" * Column content: " + colContent);
             LOGGER.info(" * Dataset name: " + datasetName);

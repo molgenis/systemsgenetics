@@ -9,8 +9,8 @@
         <version>1.0.4-SNAPSHOT</version>
     </parent>
 
-    <artifactId>Datg</artifactId>
-    <version>1.0.1</version>
+    <artifactId>Datg-tool</artifactId>
+    <version>1.1</version>
 
 
     <properties>
@@ -30,7 +30,7 @@
                 </includes>
             </resource>
         </resources>
-        <finalName>Datg-${project.version}</finalName>
+        <finalName>Datg-tool-${project.version}</finalName>
         <plugins>
             <!-- The configuration of maven-assembly-plugin -->
             <plugin>
@@ -102,6 +102,12 @@
             <version>6.8.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.anarres</groupId>
+            <artifactId>parallelgzip</artifactId>
+            <version>1.0.5</version>
+        </dependency>
+
     </dependencies>
 
 </project>

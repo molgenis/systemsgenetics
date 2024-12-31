@@ -1,9 +1,6 @@
 package nl.systemsgenetics.datg;
 
-import com.google.common.io.Files;
 import com.opencsv.*;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.math3.util.Precision;
 import org.apache.commons.cli.ParseException;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetRow;
@@ -23,14 +20,12 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Random;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 public class DatgConverter {
 
@@ -75,13 +70,18 @@ public class DatgConverter {
             System.err.println("Error parsing commandline: " + ex.getMessage());
             Options.printHelp();
             return;
+        } catch (Exception ex) {
+            System.err.println("Error parsing commandline: " + ex.getMessage());
+            return;
         }
 
-        // If the output folder does not exist, create it
-        if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
-            if (!options.getLogFile().getParentFile().mkdirs()) {
-                System.err.println("Failed to create output folder: " + options.getLogFile().getParent());
-                System.exit(1);
+        if(options.getOutputFile() != null) {
+            // If the output folder does not exist, create it
+            if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
+                if (!options.getLogFile().getParentFile().mkdirs()) {
+                    System.err.println("Failed to create output folder: " + options.getLogFile().getParent());
+                    System.exit(1);
+                }
             }
         }
 
@@ -112,46 +112,21 @@ public class DatgConverter {
 
                     break;
                 case DATG_2_TXT:
-                    DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(options.getInputFile().getAbsolutePath());
-
-                    LOGGER.info("Input .datg file contains " + datgData.getNumberOfColumns() + " columns and " + datgData.getNumberOfRows() + " rows");
-                    LOGGER.info("The dataset is named: '" + datgData.getDatasetName() + "' and was created on: " + DATE_TIME_FORMAT.format(new Date(datgData.getTimestampCreated()*1000)));
-
-                    final CSVWriter outputWriter;
-                    outputWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(options.getOutputFile())))), '\t', '\0', '\0', "\n");
-
-                    final String[] outputLine = new String[datgData.getNumberOfColumns() + 1];
-                    int c = 0;
-                    outputLine[c++] = "";
-                    for (String column : datgData.getColumnIdentifiers()) {
-                        outputLine[c++] = column;
-                    }
-
-                    outputWriter.writeNext(outputLine);
-
-                    for (DoubleMatrixDatasetRow rowData : datgData) {
-
-                        c = 0;
-                        outputLine[c++] = rowData.getRowName();
-                        double[] rowContent = rowData.getData();
-                        for (int i = 0; i < datgData.getNumberOfColumns(); ++i) {
-                            outputLine[c++] = String.valueOf(rowContent[i]);
-                        }
-
-                        outputWriter.writeNext(outputLine);
-
-
-                    }
-                    outputWriter.close();
+                    convertDatg2Txt(options);
 
                     break;
                 case DAT_2_DATG:
 
-                    //reading the whole dataset is a bit inefficient but this is only a legacy function convert old files
-
+                    //reading the whole dataset is a bit inefficient but this is only a legacy function to convert old files
+                {
                     DoubleMatrixDataset<String, String> data = DoubleMatrixDataset.loadDoubleBinaryData(options.getInputFile().getAbsolutePath());
                     LOGGER.info("Input .dat file contains " + data.columns() + " columns and " + data.rows());
                     data.saveBinary(options.getOutputFile().getAbsolutePath(), options.getDatasetName(), options.getRowContent(), options.getColContent());
+                }
+                break;
+                case INSPECT:
+
+                    inspect(options);
 
                     break;
                 case TEST:
@@ -175,18 +150,125 @@ public class DatgConverter {
 
     }
 
+    private static void inspect(Options options) throws IOException {
+        DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(options.getInputFile().getAbsolutePath());
+
+        LOGGER.info(String.format("The dataset is named: '%s'", datgData.getDatasetName()));
+        LOGGER.info(String.format("The dataset was created on: %s", DATE_TIME_FORMAT.format(new Date(datgData.getTimestampCreated() * 1000))));
+        LOGGER.info(String.format("Number of rows: %d content on rows: '%s'", datgData.getNumberOfRows(), datgData.getDataOnRows()));
+        LOGGER.info(String.format("Number of columns: %d content on columns: '%s'", datgData.getNumberOfColumns(), datgData.getDataOnCols()));
+
+        LOGGER.info("");
+        LOGGER.info("Top left corner:");
+        LOGGER.info("");
+
+        final int colsToShow = Math.min(datgData.getNumberOfColumns(), 4);
+        final int rowsToShow = Math.min(datgData.getNumberOfRows(), 10);
+        final int width = 17;
+
+        Iterator<String> columnsItt = datgData.getColumnIdentifiers().iterator();
+        Iterator<String> rowsItt = datgData.getRowIdentifiers().iterator();
+
+        StringBuilder printRow = new StringBuilder(String.format("%21s  ", ""));
+        for(int c = 0; c < colsToShow; c++) {
+
+            String colName = columnsItt.next();
+            if(colName.length() > 20){
+                colName = colName.substring(0, 8) + "..." + colName.substring(colName.length() - 8);
+            }
+
+            printRow.append(String.format("%21s │", colName));
+        }
+
+        LOGGER.info(printRow.toString());
+
+        final DecimalFormat normalFormatter = new DecimalFormat("0.####");
+        final DecimalFormat scientificFormatter = new DecimalFormat("0.####E0");
+
+        final String rowSepBlock = "══════════════════════";
+        printRow = new StringBuilder("                      ╔");
+        for(int c = 0; c < colsToShow; c++) {
+            printRow.append(rowSepBlock);
+            if(c == colsToShow - 1) {
+                printRow.append('╡');
+            } else {
+                printRow.append('╪');
+            }
+        }
+        LOGGER.info(printRow.toString());
+
+        for(int r = 0; r < rowsToShow; r++) {
+            String rowName = rowsItt.next();
+            if(rowName.length() > 20){
+                rowName = rowName.substring(0, 8) + "..." + rowName.substring(rowName.length() - 8);
+            }
+            printRow = new StringBuilder(String.format("%21s ║", rowName));
+            double[] rowData = datgData.loadSingleRow(r);
+            for(int c = 0; c < colsToShow; c++) {
+                double value = rowData[c];
+                double valueAbs = Math.abs(value);
+                String valueFormatted;
+                if(value == 0 || (valueAbs >= 0.001 && valueAbs < 10000)){
+                    valueFormatted = normalFormatter.format(value);
+                } else {
+                    valueFormatted = scientificFormatter.format(value);
+                }
+                printRow.append(String.format("%21s │", valueFormatted));
+            }
+            LOGGER.info(printRow.toString());
+        }
+
+        LOGGER.info("");
+        LOGGER.info("Note values are rounded and long names shortened with ... in the middle.");
+        LOGGER.info("");
+    }
+
+    private static void convertDatg2Txt(Options options) throws IOException {
+        DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(options.getInputFile().getAbsolutePath());
+
+        LOGGER.info("Input .datg file contains " + datgData.getNumberOfColumns() + " columns " + (datgData.getDataOnCols().isEmpty() ? "" : "(" + datgData.getDataOnCols() + ") ") + "and " + datgData.getNumberOfRows() + " rows" + (datgData.getDataOnRows().isEmpty() ? "" : " (" + datgData.getDataOnRows() + ")"));
+        LOGGER.info("The dataset is named: '" + datgData.getDatasetName() + "' and was created on: " + DATE_TIME_FORMAT.format(new Date(datgData.getTimestampCreated() * 1000)));
+
+        final CSVWriter outputWriter;
+        outputWriter = new CSVWriter(new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(options.getOutputFile())), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
+
+        final String[] outputLine = new String[datgData.getNumberOfColumns() + 1];
+        int c = 0;
+        outputLine[c++] = "";
+        for (String column : datgData.getColumnIdentifiers()) {
+            outputLine[c++] = column;
+        }
+
+        outputWriter.writeNext(outputLine);
+
+        for (DoubleMatrixDatasetRow rowData : datgData) {
+
+            c = 0;
+            outputLine[c++] = rowData.getRowName();
+            double[] rowContent = rowData.getData();
+            for (int i = 0; i < datgData.getNumberOfColumns(); ++i) {
+                outputLine[c++] = String.valueOf(rowContent[i]);
+            }
+
+            outputWriter.writeNext(outputLine);
+
+
+        }
+        outputWriter.close();
+    }
+
     private static void testFunction(Options options) throws IOException {
 
         Random random = new Random(42);
-        DoubleMatrixDataset<String, String> testData = new DoubleMatrixDataset<>(20000,50000);
-        for (int r = 0; r < testData.rows() ; ++r){
-            for(int c = 0; c < testData.columns() ; ++c){
-                testData.setElementQuick(r,c,random.nextDouble());
+        DoubleMatrixDataset<String, String> testData = new DoubleMatrixDataset<>(20000, 50000);
+        for (int r = 0; r < testData.rows(); ++r) {
+            for (int c = 0; c < testData.columns(); ++c) {
+                testData.setElementQuick(r, c, random.nextDouble());
             }
         }
 
         LOGGER.info("T1 " + DATE_TIME_FORMAT.format(new Date()));
-        
+
         DoubleMatrixDatasetRowCompressedWriter.saveDataset(options.getOutputFile().getPath(), testData);
 
         LOGGER.info("T2 " + DATE_TIME_FORMAT.format(new Date()));
@@ -246,7 +328,7 @@ public class DatgConverter {
         while ((nextLine = reader.readNext()) != null) {
 
             for (int i = 1; i < nextLine.length; i++) {
-                rowData[i-1] = Double.parseDouble(nextLine[i]);
+                rowData[i - 1] = Double.parseDouble(nextLine[i]);
             }
 
             datgWriter.addRow(nextLine[0], rowData);
@@ -260,9 +342,16 @@ public class DatgConverter {
         LoggerContext context = LoggerContext.getContext(false);
         Configuration config = context.getConfiguration();
 
-        PatternLayout loggingLayoutFull = PatternLayout.newBuilder()
-                .withPattern("[%level]\t%d{ABSOLUTE} - %msg%n")
-                .build();
+        // Make sure any existing loggers are removed
+        for (Appender appender : context.getRootLogger().getAppenders().values()) {
+            context.getRootLogger().removeAppender(appender);
+        }
+
+        // Add the appenders to the root logger
+        Logger rootLogger = context.getRootLogger();
+        LoggerConfig rootLoggerConfig = config.getRootLogger();
+        config.addLogger(rootLogger.getName(), rootLoggerConfig);
+        context.updateLoggers(config);
 
         PatternLayout loggingLayoutReduced = PatternLayout.newBuilder()
                 .withPattern("%msg %throwable{short.message}%n")
@@ -275,32 +364,27 @@ public class DatgConverter {
                 .build();
         stdOut.start();
 
-        // Log file appender
-        FileAppender file = FileAppender.newBuilder()
-                .setName("file")
-                .setLayout(loggingLayoutFull)
-                .withFileName(logFile.getCanonicalPath())
-                .build();
-        file.start();
+        if (logFile != null) {
+            PatternLayout loggingLayoutFull = PatternLayout.newBuilder()
+                    .withPattern("[%level]\t%d{ABSOLUTE} - %msg%n")
+                    .build();
 
-        // Make sure any existing loggers are removed
-        for (Appender appender : context.getRootLogger().getAppenders().values()) {
-            context.getRootLogger().removeAppender(appender);
+
+            // Log file appender
+            FileAppender file = FileAppender.newBuilder()
+                    .setName("file")
+                    .setLayout(loggingLayoutFull)
+                    .withFileName(logFile.getCanonicalPath())
+                    .build();
+            file.start();
+
+            rootLoggerConfig.addAppender(file, loggingLevel, null);
+
+            // Create a separator in the log, so separate runs are easier to spot
+            LOGGER.info("");
+            LOGGER.info("Datg converter " + VERSION);
+            LOGGER.info("Current date and time: " + startDateTime);
         }
-
-        // Add the appenders to the root logger
-        Logger rootLogger = context.getRootLogger();
-        LoggerConfig rootLoggerConfig = config.getRootLogger();
-
-        rootLoggerConfig.addAppender(file, loggingLevel, null);
-        config.addLogger(rootLogger.getName(), rootLoggerConfig);
-
-        context.updateLoggers(config);
-
-        // Create a seperator in the log, so seperate runs are easier to spot
-        LOGGER.info("");
-        LOGGER.info("Datg converter " + VERSION);
-        LOGGER.info("Current date and time: " + startDateTime);
 
         rootLoggerConfig.addAppender(stdOut, Level.INFO, null);
     }

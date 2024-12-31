@@ -21,9 +21,9 @@
 
 	<files>
 		<file>
-			<source>${project.build.directory}/Datg-${project.version}.jar</source>
+			<source>${project.build.directory}/Datg-tool-${project.version}.jar</source>
 			<outputDirectory>/</outputDirectory>
-			<destName>Datg.jar</destName>
+			<destName>Datg-tool.jar</destName>
 		</file>
 	</files>
 

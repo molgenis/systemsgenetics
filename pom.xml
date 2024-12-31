@@ -94,6 +94,6 @@
         <module>Downstreamer</module>
         <module>PatricksToolbox</module>
         <module>mbQTL</module>
-        <module>Datg</module>
+        <module>Datg-tool</module>
     </modules>
 </project>

@@ -1,15 +1,15 @@
 package nl.systemsgenetics.datg;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetRowCompressedReader;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Random;
 
 import static org.testng.Assert.*;
@@ -93,11 +93,11 @@ public class DatgConverterTest {
 
         DatgConverter.main(new String[]{
                 "-m", "DATG_2_TXT",
-                "-i", tmpOutputFolder.getPath() + fs + testName + "_step1",
+                "-i", tmpOutputFolder.getPath() + fs + testName + "_step1.datg",
                 "-o", tmpOutputFolder.getPath() + fs + testName + "_step2"
         });
 
-        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt.gz", '\t');
+        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
 
         compareTwoMatrices(txtData, testData, 0.000001);
 
@@ -122,7 +122,7 @@ public class DatgConverterTest {
         DatgConverter.main(new String[]{
                 "-m", "TXT_2_DATG",
                 "-i", tmpOutputFolder.getPath() + fs + testName + ".txt.gz",
-                "-o", tmpOutputFolder.getPath() + fs + testName + "_step1",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step1.datg",
                 "-dn", "So sad it had to come to this",
                 "-rc", "Mice",
                 "-cc", "Humans"
@@ -137,12 +137,12 @@ public class DatgConverterTest {
         compareTwoMatrices(datgData.loadFullDataset(), testData, 0.000001);
 
         DatgConverter.main(new String[]{
-                "-m", "DATG_2_TXT",
+                "-m", "DATG-2-txt",
                 "-i", tmpOutputFolder.getPath() + fs + testName + "_step1",
                 "-o", tmpOutputFolder.getPath() + fs + testName + "_step2"
         });
 
-        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt.gz", '\t');
+        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
 
         compareTwoMatrices(txtData, testData, 0.000001);
 
@@ -187,9 +187,85 @@ public class DatgConverterTest {
                 "-o", tmpOutputFolder.getPath() + fs + testName + "_step2"
         });
 
-        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt.gz", '\t');
+        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
 
         compareTwoMatrices(txtData, testData, 0.000001);
+
+    }
+
+    @org.testng.annotations.Test
+    public void testInsepect() throws InterruptedException, IOException {
+
+        //Only stdout so does not really do testing expect that it does not crash. This function was used for development
+
+        final String testName = "testInspect";
+
+        LinkedHashMap<String, Integer> hashRows = new LinkedHashMap<String, Integer>();
+        LinkedHashMap<String, Integer> hashCols = new LinkedHashMap<String, Integer>();
+
+        for(int r = 0 ; r < 10000 ; ++r){
+            if(r == 2){
+                hashRows.put("SampleWithVeryLongName", r);
+            } else {
+                hashRows.put(("R" + r), r);
+            }
+        }
+
+        for(int c = 0 ; c < 60 ; ++c){
+            if(c == 3){
+                hashCols.put("ENSG00000136824", c);
+            } else if(c == 2){
+                hashCols.put("ENSG00000136824.12", c);
+            } else if(c == 1){
+                hashCols.put("ENSG00000136824.12tooLong", c);
+            } else {
+                hashCols.put(("C" + c), c);
+            }
+
+        }
+
+
+        Random random = new Random(42);
+        testData = new DoubleMatrixDataset<>(hashRows, hashCols);
+        for (int r = 0; r < testData.rows() ; ++r){
+            for(int c = 0; c < testData.columns() ; ++c){
+                testData.setElementQuick(r,c,random.nextDouble());
+            }
+        }
+        testData.setElementQuick(1,2, 0);
+        testData.setElementQuick(1,3, 1);
+        testData.setElementQuick(3,1, 1000000000001d);
+        testData.setElementQuick(3,2, 0.0000002341241234d);
+        testData.setElementQuick(4,0, Double.NaN);
+        testData.setElementQuick(5,0, -2);
+        testData.setElementQuick(5,1, -1.45234234);
+        testData.setElementQuick(5,2, -0.0000044);
+        testData.setElementQuick(6,0, -9999);
+        testData.setElementQuick(6,1, -10000);
+        testData.setElementQuick(6,2, -0.001);
+        testData.setElementQuick(6,3, -0.0099);
+        testData.setElementQuick(7,0, -0.00101);
+        testData.setElementQuick(7,1, -10010);
+        testData.setElementQuick(7,2, -10001);
+        testData.setElementQuick(8,0, 8000);
+        testData.setElementQuick(8,1, 13400);
+        testData.setElementQuick(8,2, 0.00000123001);
+
+        testData.save(new File(tmpOutputFolder, testName + ".txt.gz"));
+
+        DatgConverter.main(new String[]{
+                "-m", "TXT_2_DATG",
+                "-i", tmpOutputFolder.getPath() + fs + testName + ".txt.gz",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step1.datg",
+                "-dn", "Inspector gadget",
+                "-rc", "Genes",
+                "-cc", "Samples"
+        });
+
+        DatgConverter.main(new String[]{
+                "-m", "INSPECT",
+                "-i", tmpOutputFolder.getPath() + fs + testName + "_step1"
+        });
 
     }
 
