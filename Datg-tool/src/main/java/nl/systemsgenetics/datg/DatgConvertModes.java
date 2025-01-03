@@ -6,6 +6,7 @@ public enum DatgConvertModes {
     DATG_2_TXT("Convert a datg file to a txt"),
     DAT_2_DATG("Special mode for our old inhouse .dat files, not recommend for public use."),
     INSPECT("Get meta data of DATG file and show some elements"),
+    ROW_CONCAT("Concatenate .txt matrices with identical columns into .datg. "),
     TEST("Internal testing");
 
     private final String description;

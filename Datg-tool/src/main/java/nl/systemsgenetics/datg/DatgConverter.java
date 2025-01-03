@@ -25,6 +25,8 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 public class DatgConverter {
@@ -133,6 +135,11 @@ public class DatgConverter {
 
                     testFunction(options);
 
+                    break;
+
+                case ROW_CONCAT:
+
+                    rowConcat(options);
 
             }
         } catch (Exception e) {
@@ -147,6 +154,114 @@ public class DatgConverter {
 
         currentDataTime = new Date();
         LOGGER.info("Conversion completed at: " + DATE_TIME_FORMAT.format(currentDataTime));
+
+    }
+
+    private static void rowConcat(Options options) throws IOException {
+
+        //Input is folder with files to parse
+        final File inputFolder = options.getInputFile();
+        final Pattern filePattern = Pattern.compile(options.getFilePattern());
+
+        if (!inputFolder.exists()) {
+            throw new IOException("Input folder not found at: " + inputFolder.getPath());
+        }
+
+        if(!inputFolder.isDirectory()) {
+            throw new IOException("Input folder is not a directory at: " + inputFolder.getPath());
+        }
+
+        final File[] files = inputFolder.listFiles();
+
+        if(files == null || files.length == 0) {
+            throw new IOException("Input folder is empty at: " + inputFolder.getPath());
+        }
+
+        final boolean addToRowNames;
+        if(filePattern.matcher("").groupCount() == 1){
+            LOGGER.info("Found capturing group in file pattern, will be added to row names.");
+            addToRowNames = true;
+        } else {
+            LOGGER.info("No capturing group in file pattern, rows will keep original names.");
+            addToRowNames = false;
+        }
+
+        final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
+
+        ArrayList<String> colnames = null;
+        final HashSet<String> rowNames = new HashSet<>();
+        DoubleMatrixDatasetRowCompressedWriter datgWriter = null;
+
+        int includedFilesCount = 0;
+        for(File inputFile : files){
+            final Matcher fileMatcher = filePattern.matcher(inputFile.getName());
+            if(!fileMatcher.matches()){
+                continue;
+            }
+            final String rowNameAppend = addToRowNames ? fileMatcher.group(1) : null;
+
+            LOGGER.info(String.format("Adding file %s", inputFile.getName()));
+
+            final CSVReader reader;
+            if (options.getInputFile().getName().endsWith(".gz")) {
+                reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(options.getInputFile()))))))).withCSVParser(parser).build();
+            } else {
+                reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new FileInputStream(options.getInputFile())))))).withCSVParser(parser).build();
+            }
+
+
+            //First nextLine contains the header
+            String[] nextLine = reader.readNext();
+
+            if(includedFilesCount == 0){
+                colnames = new ArrayList<>(nextLine.length - 1);
+                datgWriter = new DoubleMatrixDatasetRowCompressedWriter(
+                        options.getOutputFile().getAbsolutePath(),
+                        colnames,
+                        options.getDatasetName(),
+                        options.getRowContent(),
+                        options.getColContent()
+                );
+            }
+
+            for (int i = 1; i < nextLine.length; i++) {
+                if(includedFilesCount == 0){
+                    colnames.add(nextLine[i]);
+                } else {
+                    if(!colnames.get(i).equals(nextLine[i])){
+                        throw new IOException("All files need identical columns in same order.");
+                    }
+                }
+
+            }
+
+            if (colnames.isEmpty()) {
+                throw new IOException("No columns found in: " + options.getInputFile());
+            }
+
+            double[] rowData = new double[colnames.size()];
+            while ((nextLine = reader.readNext()) != null) {
+
+                String rowName = addToRowNames ? nextLine[0] + "-" + rowNameAppend : nextLine[0];
+
+                if(!rowNames.add(rowName)){
+                    throw new IOException("Duplicate row name: " + rowName);
+                }
+
+                for (int i = 1; i < nextLine.length; i++) {
+                    rowData[i - 1] = Double.parseDouble(nextLine[i]);
+                }
+
+                datgWriter.addRow(rowName, rowData);
+            }
+
+
+            includedFilesCount++;
+        }
+
+        if(datgWriter != null){
+            datgWriter.close();
+        }
 
     }
 

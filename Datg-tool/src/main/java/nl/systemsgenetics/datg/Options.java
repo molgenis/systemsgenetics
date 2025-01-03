@@ -53,6 +53,12 @@ public class Options {
         OptionBuilder.withLongOpt("datasetName");
         OPTIONS.addOption(OptionBuilder.create("dn"));
 
+        OptionBuilder.withArgName("string");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("The pattern used to select the files from the input folder. Use brackets to create a capture group that is added to the row names.");
+        OptionBuilder.withLongOpt("filePattern");
+        OPTIONS.addOption(OptionBuilder.create("fp"));
+
     }
 
     private final DatgConvertModes mode;
@@ -62,6 +68,7 @@ public class Options {
     private final String rowContent;
     private final String colContent;
     private final String datasetName;
+    private final String filePattern;
 
     public Options(String[] args) throws Exception {
 
@@ -88,6 +95,7 @@ public class Options {
                     inputArg = inputArg + ".dat";
                 }
                 //no break intended
+            case ROW_CONCAT:
             case TXT_2_DATG:
                 if(!outputArg.endsWith(".datg")){
                     outputArg = outputArg + ".datg";
@@ -118,6 +126,7 @@ public class Options {
         rowContent = commandLine.getOptionValue("rowContent","");
         colContent = commandLine.getOptionValue("colContent","");
         datasetName = commandLine.getOptionValue("datasetName","");
+        filePattern = commandLine.getOptionValue("filePattern",null);
 
     }
 
@@ -139,7 +148,9 @@ public class Options {
             LOGGER.info(" * Column content: " + colContent);
             LOGGER.info(" * Dataset name: " + datasetName);
         }
-
+        if(filePattern != null){
+            LOGGER.info(" * File pattern: " + filePattern);
+        }
 
     }
 
@@ -169,5 +180,9 @@ public class Options {
 
     public String getRowContent() {
         return rowContent;
+    }
+
+    public String getFilePattern() {
+        return filePattern;
     }
 }
