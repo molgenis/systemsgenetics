@@ -38,6 +38,7 @@ public class GadoOptions {
 	private final File inputCaseHpoFile;
 	private final File processedCaseHpoFile;
 	private final File annotationMatrixFile;
+	private final File phenotypesToGenesFile;
 
 	public boolean isDebugMode() {
 		return debugMode;
@@ -52,7 +53,8 @@ public class GadoOptions {
 		OptionBuilder.withDescription("One of the following modes:\n"
 				+ "* PROCESS - Process the HPO terms of cases. Suggests  parent terms if needed.\n"
 				+ "* PRIORITIZE - Uses output of PROCESS to prioritize genes\n"
-				+ "* EXPAND_PREDICTIONS - Spike-in known HPO-Gene annotation into the prediction matrix \n");
+				+ "* EXPAND_PREDICTIONS - Spike-in known HPO-Gene annotation into the prediction matrix. \n"
+				+ "* PREPARE_HPO_FOR_PREDICTIONS - Converts the HPO file \"phenotype_to_genes.txt\" to a matrix that can be used in gene network predictions");
 		OptionBuilder.withLongOpt("mode");
 		OptionBuilder.isRequired();
 		OPTIONS.addOption(OptionBuilder.create("m"));
@@ -90,16 +92,10 @@ public class GadoOptions {
 
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("HPO prediction matrix in binary format");
+		OptionBuilder.withDescription("HPO prediction matrix in binary format. In the case of mode CONVERT_TXT this is used to point to the .txt matrix file.");
 		OptionBuilder.withLongOpt("hpoPredictions");
 		OPTIONS.addOption(OptionBuilder.create("hp"));
-		
-		OptionBuilder.withArgName("path");
-		OptionBuilder.hasArgs();
-		OptionBuilder.withDescription("HPO prediction matrix in binary format");
-		OptionBuilder.withLongOpt("hpoPredictions");
-		OPTIONS.addOption(OptionBuilder.create("hp"));
-		
+
 		OptionBuilder.withArgName("path");
 		OptionBuilder.hasArgs();
 		OptionBuilder.withDescription("HPO annotion matrix in txt or txt.gz format. Only for mode EXPAND_PREDICTIONS Rows: genes, cols: hpo. Must be exact same row and col order as prediction matrix ");
@@ -111,6 +107,12 @@ public class GadoOptions {
 		OptionBuilder.withDescription("HPO predictions info");
 		OptionBuilder.withLongOpt("hpoPredictionsInfo");
 		OPTIONS.addOption(OptionBuilder.create("hpi"));
+
+		OptionBuilder.withArgName("path");
+		OptionBuilder.hasArgs();
+		OptionBuilder.withDescription("HPO predictions info");
+		OptionBuilder.withLongOpt("phenotypesToGenes");
+		OPTIONS.addOption(OptionBuilder.create("ptg"));
 
 //		OptionBuilder.withArgName("boolean");
 //		OptionBuilder.withDescription("Activate debug mode. This will result in a more verbose log file and will save many intermediate results to files. Not recommended for large analysis.");
@@ -163,29 +165,32 @@ public class GadoOptions {
 		if (commandLine.hasOption("g")) {
 			genesFile = new File(commandLine.getOptionValue("g"));
 		} else {
-			if (mode == GadoMode.PRIORITIZE) {
-				throw new ParseException("Option --genes is requered for mode PRIORITIZE");
+			if (mode == GadoMode.PRIORITIZE || mode == GadoMode.PREPARE_HPO_FOR_PREDICTIONS) {
+				throw new ParseException("Option --genes is requered for mode PRIORITIZE and PREPARE_HPO_FOR_PREDICTIONS");
 			}
 			genesFile = null;
 		}
 
 		if (commandLine.hasOption("hp")) {
 			String hp = commandLine.getOptionValue("hp");
-			if(hp.endsWith(".dat")){
-				hp = hp.substring(0, hp.length()-4);
+			if (hp.endsWith(".dat")) {
+				hp = hp.substring(0, hp.length() - 4);
 			}
 			predictionMatrixFile = new File(hp);
 		} else {
 			if (mode == GadoMode.PRIORITIZE) {
 				throw new ParseException("Option --hpoPredictions is requered for mode PRIORITIZE");
 			}
+			if (mode == GadoMode.CONVERT_TXT) {
+				throw new ParseException("Option --hpoPredictions is requered for mode CONVERT_TXT");
+			}
 			predictionMatrixFile = null;
 		}
-		
+
 		if (commandLine.hasOption("hpa")) {
 			String hp = commandLine.getOptionValue("hpa");
-			if(hp.endsWith(".dat")){
-				hp = hp.substring(0, hp.length()-4);
+			if (hp.endsWith(".dat")) {
+				hp = hp.substring(0, hp.length() - 4);
 			}
 			annotationMatrixFile = new File(hp);
 		} else {
@@ -202,6 +207,15 @@ public class GadoOptions {
 				throw new ParseException("Option --caseHpoProcessed is requered for mode PRIORITIZE");
 			}
 			processedCaseHpoFile = null;
+		}
+		
+		if (commandLine.hasOption("ptg")) {
+			phenotypesToGenesFile = new File(commandLine.getOptionValue("ptg"));
+		} else {
+			if (mode == GadoMode.PREPARE_HPO_FOR_PREDICTIONS) {
+				throw new ParseException("Option --phenotypesToGenes is requered for mode PREPARE_HPO_FOR_PREDICTIONS");
+			}
+			phenotypesToGenesFile = null;
 		}
 
 	}
@@ -231,6 +245,13 @@ public class GadoOptions {
 			case EXPAND_PREDICTIONS:
 				LOGGER.info(" * HPO prediction matrix: " + this.predictionMatrixFile.getAbsolutePath());
 				LOGGER.info(" * HPO annotation matrix: " + this.annotationMatrixFile.getAbsolutePath());
+				break;
+			case PREPARE_HPO_FOR_PREDICTIONS:
+				LOGGER.info(" * Phenotype to genes files: " + this.phenotypesToGenesFile.getAbsolutePath());
+				LOGGER.info(" * Genes info: " + this.genesFile.getAbsolutePath());
+				break;
+			case CONVERT_TXT:
+				LOGGER.info(" * HPO prediction matrix in txt format: " + this.predictionMatrixFile.getAbsolutePath());
 				break;
 		}
 
@@ -275,6 +296,10 @@ public class GadoOptions {
 
 	public File getAnnotationMatrixFile() {
 		return annotationMatrixFile;
+	}
+
+	public File getPhenotypeToGenes() {
+		return phenotypesToGenesFile;
 	}
 
 }

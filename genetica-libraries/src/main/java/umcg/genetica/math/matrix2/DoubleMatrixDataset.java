@@ -60,6 +60,15 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 	public DoubleMatrixDataset(int rows, int columns) {
 		hashRows = new LinkedHashMap<R, Integer>((int) Math.ceil(rows / 0.75));
 		hashCols = new LinkedHashMap<C, Integer>((int) Math.ceil(columns / 0.75));
+
+		for(int r = 0 ; r < rows ; ++r){
+			hashRows.put((R)("R" + r), r);
+		}
+
+		for(int c = 0 ; c < columns ; ++c){
+			hashCols.put((C)("C" + c), c);
+		}
+
 		if ((rows * (long) columns) < (Integer.MAX_VALUE - 2)) {
 			matrix = new DenseDoubleMatrix2D(rows, columns);
 		} else {
@@ -966,7 +975,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 
 	public void saveBinaryOldFormat(String path) throws IOException {
 
-		final File matrixFile = new File(path + ".dat.gz");
+		final File matrixFile = new File(path + ".dat");
 		final File rowFile = new File(path + ".rows.txt.gz");
 		final File colFile = new File(path + ".cols.txt.gz");
 
@@ -999,7 +1008,7 @@ public class DoubleMatrixDataset<R extends Comparable, C extends Comparable> {
 		final int rows = rows();
 		final int cols = columns();
 
-		final BufferedOutputStream matrixWriter = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(matrixFile)));
+		final BufferedOutputStream matrixWriter = new BufferedOutputStream(new FileOutputStream(matrixFile));
 		matrixWriter.write(intToByteArray(rows));
 		matrixWriter.write(intToByteArray(cols));
 		byte[] buffer = new byte[cols * 8];
