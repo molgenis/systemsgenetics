@@ -24,6 +24,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
@@ -70,6 +71,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
     private final File rowFile;
     private final File colFile;
     private final File md5File;
+    private final HashSet<String> rowNames = new HashSet<>();
 
     public DoubleMatrixDatasetRowCompressedWriter(String path, final List<String> columns) throws FileNotFoundException, IOException {
         this(path, columns, "", "", "");
@@ -128,10 +130,14 @@ public class DoubleMatrixDatasetRowCompressedWriter {
             }
         }
 
+        final HashSet<String> colNames = new HashSet<>();
         numberOfColumns = columns.size();
         final CSVWriter colNamesWriter = new CSVWriter(new OutputStreamWriter(new GZIPOutputStream(new DigestOutputStream(new FileOutputStream(colFile), colFileMd5Digest)), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
-        for (Object col : columns) {
-            outputLine[0] = col.toString();
+        for (String col : columns) {
+            if(!colNames.add(col)){
+                throw new IOException("Unable to add duplicate column name: " + col);
+            }
+            outputLine[0] = col;
             colNamesWriter.writeNext(outputLine);
         }
         colNamesWriter.close();
@@ -155,10 +161,47 @@ public class DoubleMatrixDatasetRowCompressedWriter {
      * @param rowData The row data in double[]
      */
     public final void addRow(final String rowName, final double[] rowData) throws IOException {
-        addRow(rowName, new DenseDoubleMatrix1D(rowData));
+        if(!rowNames.add(rowName)){
+            throw new IOException("Unable to add duplicate row name: " + rowName);
+        }
+
+        if (++numberOfRows >= MAX_ROWS) {
+            throw new IOException("Reached max number of rows: " + numberOfRows);
+        }
+
+        outputLine[0] = rowName;
+        rowNamesWriter.writeNext(outputLine);
+
+        if (rowsInCurrentBlock == -1) {
+            startBlock();
+        }
+
+        int b = 0;
+        for (int c = 0; c < numberOfColumns; ++c) {
+            long v = Double.doubleToLongBits(rowData[c]);
+            rowBuffer[b++] = (byte) (v >>> 56);
+            rowBuffer[b++] = (byte) (v >>> 48);
+            rowBuffer[b++] = (byte) (v >>> 40);
+            rowBuffer[b++] = (byte) (v >>> 32);
+            rowBuffer[b++] = (byte) (v >>> 24);
+            rowBuffer[b++] = (byte) (v >>> 16);
+            rowBuffer[b++] = (byte) (v >>> 8);
+            rowBuffer[b++] = (byte) (v);
+
+        }
+        blockCompressionWriter.write(rowBuffer, 0, bytesPerRow);
+
+        if (++rowsInCurrentBlock >= rowsPerBlock) {
+            closeBlock();
+            //don't start new block because unknown if more data will come
+        }
     }
 
     public synchronized final void addRow(final String rowName, final DoubleMatrix1D rowData) throws IOException {
+
+        if(!rowNames.add(rowName)){
+            throw new IOException("Unable to add duplicate row name: " + rowName);
+        }
 
         if (++numberOfRows >= MAX_ROWS) {
             throw new IOException("Reached max number of rows: " + numberOfRows);

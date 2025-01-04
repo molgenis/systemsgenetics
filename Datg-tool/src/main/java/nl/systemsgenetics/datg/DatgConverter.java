@@ -33,7 +33,6 @@ public class DatgConverter {
 
     public static final String VERSION = ResourceBundle.getBundle("verion").getString("application.version");
     public static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    public static final DateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
 
     //This is set to true by testng to throw error instead of catch it for nice user output.
     protected static boolean TESTNG_MODE = false;
@@ -77,7 +76,7 @@ public class DatgConverter {
             return;
         }
 
-        if(options.getOutputFile() != null) {
+        if (options.getOutputFile() != null) {
             // If the output folder does not exist, create it
             if (options.getLogFile().getParentFile() != null && !options.getLogFile().getParentFile().isDirectory()) {
                 if (!options.getLogFile().getParentFile().mkdirs()) {
@@ -167,18 +166,18 @@ public class DatgConverter {
             throw new IOException("Input folder not found at: " + inputFolder.getPath());
         }
 
-        if(!inputFolder.isDirectory()) {
+        if (!inputFolder.isDirectory()) {
             throw new IOException("Input folder is not a directory at: " + inputFolder.getPath());
         }
 
         final File[] files = inputFolder.listFiles();
 
-        if(files == null || files.length == 0) {
+        if (files == null || files.length == 0) {
             throw new IOException("Input folder is empty at: " + inputFolder.getPath());
         }
 
         final boolean addToRowNames;
-        if(filePattern.matcher("").groupCount() == 1){
+        if (filePattern.matcher("").groupCount() == 1) {
             LOGGER.info("Found capturing group in file pattern, will be added to row names.");
             addToRowNames = true;
         } else {
@@ -189,13 +188,12 @@ public class DatgConverter {
         final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
 
         ArrayList<String> colnames = null;
-        final HashSet<String> rowNames = new HashSet<>();
         DoubleMatrixDatasetRowCompressedWriter datgWriter = null;
 
         int includedFilesCount = 0;
-        for(File inputFile : files){
+        for (File inputFile : files) {
             final Matcher fileMatcher = filePattern.matcher(inputFile.getName());
-            if(!fileMatcher.matches()){
+            if (!fileMatcher.matches()) {
                 continue;
             }
             final String rowNameAppend = addToRowNames ? fileMatcher.group(1) : null;
@@ -209,11 +207,34 @@ public class DatgConverter {
                 reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new FileInputStream(options.getInputFile())))))).withCSVParser(parser).build();
             }
 
-
             //First nextLine contains the header
             String[] nextLine = reader.readNext();
 
-            if(includedFilesCount == 0){
+            if (nextLine == null) {
+                throw new IOException("File is empty");
+            }
+
+            if (includedFilesCount == 0) {
+                if (nextLine.length < 2) {
+                    throw new IOException("No columns found in: " + options.getInputFile());
+                }
+                colnames = new ArrayList<>(nextLine.length - 1);
+                for (int i = 1; i < nextLine.length; i++) {
+                    colnames.add(nextLine[i]);
+                }
+            } else {
+                if (nextLine.length != colnames.size()) {
+                    throw new IOException("Number of columns not identical to first file.");
+                }
+                for (int i = 1; i < nextLine.length; i++) {
+                    if (!colnames.get(i).equals(nextLine[i])) {
+                        throw new IOException("All files need identical columns in same order.");
+                    }
+                }
+            }
+
+            if (includedFilesCount == 0) {
+
                 colnames = new ArrayList<>(nextLine.length - 1);
                 datgWriter = new DoubleMatrixDatasetRowCompressedWriter(
                         options.getOutputFile().getAbsolutePath(),
@@ -224,29 +245,10 @@ public class DatgConverter {
                 );
             }
 
-            for (int i = 1; i < nextLine.length; i++) {
-                if(includedFilesCount == 0){
-                    colnames.add(nextLine[i]);
-                } else {
-                    if(!colnames.get(i).equals(nextLine[i])){
-                        throw new IOException("All files need identical columns in same order.");
-                    }
-                }
-
-            }
-
-            if (colnames.isEmpty()) {
-                throw new IOException("No columns found in: " + options.getInputFile());
-            }
-
             double[] rowData = new double[colnames.size()];
             while ((nextLine = reader.readNext()) != null) {
 
                 String rowName = addToRowNames ? nextLine[0] + "-" + rowNameAppend : nextLine[0];
-
-                if(!rowNames.add(rowName)){
-                    throw new IOException("Duplicate row name: " + rowName);
-                }
 
                 for (int i = 1; i < nextLine.length; i++) {
                     rowData[i - 1] = Double.parseDouble(nextLine[i]);
@@ -259,7 +261,9 @@ public class DatgConverter {
             includedFilesCount++;
         }
 
-        if(datgWriter != null){
+        LOGGER.info(String.format("Included %d files", includedFilesCount));
+
+        if (datgWriter != null) {
             datgWriter.close();
         }
 
@@ -279,16 +283,15 @@ public class DatgConverter {
 
         final int colsToShow = Math.min(datgData.getNumberOfColumns(), 4);
         final int rowsToShow = Math.min(datgData.getNumberOfRows(), 10);
-        final int width = 17;
 
         Iterator<String> columnsItt = datgData.getColumnIdentifiers().iterator();
         Iterator<String> rowsItt = datgData.getRowIdentifiers().iterator();
 
         StringBuilder printRow = new StringBuilder(String.format("%21s  ", ""));
-        for(int c = 0; c < colsToShow; c++) {
+        for (int c = 0; c < colsToShow; c++) {
 
             String colName = columnsItt.next();
-            if(colName.length() > 20){
+            if (colName.length() > 20) {
                 colName = colName.substring(0, 8) + "..." + colName.substring(colName.length() - 8);
             }
 
@@ -302,9 +305,9 @@ public class DatgConverter {
 
         final String rowSepBlock = "══════════════════════";
         printRow = new StringBuilder("                      ╔");
-        for(int c = 0; c < colsToShow; c++) {
+        for (int c = 0; c < colsToShow; c++) {
             printRow.append(rowSepBlock);
-            if(c == colsToShow - 1) {
+            if (c == colsToShow - 1) {
                 printRow.append('╡');
             } else {
                 printRow.append('╪');
@@ -312,18 +315,18 @@ public class DatgConverter {
         }
         LOGGER.info(printRow.toString());
 
-        for(int r = 0; r < rowsToShow; r++) {
+        for (int r = 0; r < rowsToShow; r++) {
             String rowName = rowsItt.next();
-            if(rowName.length() > 20){
+            if (rowName.length() > 20) {
                 rowName = rowName.substring(0, 8) + "..." + rowName.substring(rowName.length() - 8);
             }
             printRow = new StringBuilder(String.format("%21s ║", rowName));
             double[] rowData = datgData.loadSingleRow(r);
-            for(int c = 0; c < colsToShow; c++) {
+            for (int c = 0; c < colsToShow; c++) {
                 double value = rowData[c];
                 double valueAbs = Math.abs(value);
                 String valueFormatted;
-                if(value == 0 || (valueAbs >= 0.001 && valueAbs < 10000)){
+                if (value == 0 || (valueAbs >= 0.001 && valueAbs < 10000)) {
                     valueFormatted = normalFormatter.format(value);
                 } else {
                     valueFormatted = scientificFormatter.format(value);
