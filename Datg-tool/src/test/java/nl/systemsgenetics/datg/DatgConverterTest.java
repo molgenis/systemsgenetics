@@ -17,7 +17,6 @@ import static org.testng.Assert.*;
 public class DatgConverterTest {
 
     private File tmpOutputFolder;
-    private DoubleMatrixDataset<String, String> testData;
     private final String fs = FileSystems.getDefault().getSeparator();
 
     @org.testng.annotations.BeforeClass
@@ -36,7 +35,7 @@ public class DatgConverterTest {
                 System.out.println("Removing tmp dir and files");
                 for (File file : tmpOutputFolder.listFiles()) {
                     System.out.println(" - Deleting: " + file.getAbsolutePath());
-                    file.delete();
+                    //file.delete();
                 }
                 System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
                 tmpOutputFolder.delete();
@@ -46,8 +45,6 @@ public class DatgConverterTest {
         tmpOutputFolder.mkdir();
 
         System.out.println("Temp folder with output of this test: " + tmpOutputFolder.getAbsolutePath());
-
-
 
 
         DatgConverter.TESTNG_MODE = true;
@@ -63,16 +60,17 @@ public class DatgConverterTest {
 
         final String testName = "test1";
 
+        final DoubleMatrixDataset<String, String> testData1;
         Random random = new Random(42);
-        testData = new DoubleMatrixDataset<>(1000,600);
-        for (int r = 0; r < testData.rows() ; ++r){
-            for(int c = 0; c < testData.columns() ; ++c){
-                testData.setElementQuick(r,c,random.nextDouble());
+        testData1 = new DoubleMatrixDataset<>(1000, 600);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                testData1.setElementQuick(r, c, random.nextDouble());
             }
         }
 
 
-        testData.save(new File(tmpOutputFolder, testName + ".txt"));
+        testData1.save(new File(tmpOutputFolder, testName + ".txt"));
 
         DatgConverter.main(new String[]{
                 "-m", "TXT_2_DATG",
@@ -89,7 +87,7 @@ public class DatgConverterTest {
         assertEquals(datgData.getDataOnRows(), "Fish");
         assertEquals(datgData.getDataOnCols(), "Dolphins");
 
-        compareTwoMatrices(datgData.loadFullDataset(), testData, 0.000001);
+        compareTwoMatrices(datgData.loadFullDataset(), testData1, 0.000001);
 
         DatgConverter.main(new String[]{
                 "-m", "DATG_2_TXT",
@@ -99,7 +97,7 @@ public class DatgConverterTest {
 
         DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
 
-        compareTwoMatrices(txtData, testData, 0.000001);
+        compareTwoMatrices(txtData, testData1, 0.000001);
 
     }
 
@@ -108,16 +106,17 @@ public class DatgConverterTest {
 
         final String testName = "test2";
 
+        final DoubleMatrixDataset<String, String> testData1;
         Random random = new Random(42);
-        testData = new DoubleMatrixDataset<>(10000,1);
-        for (int r = 0; r < testData.rows() ; ++r){
-            for(int c = 0; c < testData.columns() ; ++c){
-                testData.setElementQuick(r,c,random.nextDouble());
+        testData1 = new DoubleMatrixDataset<>(10000, 1);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                testData1.setElementQuick(r, c, random.nextDouble());
             }
         }
 
 
-        testData.save(new File(tmpOutputFolder, testName + ".txt.gz"));
+        testData1.save(new File(tmpOutputFolder, testName + ".txt.gz"));
 
         DatgConverter.main(new String[]{
                 "-m", "TXT_2_DATG",
@@ -134,7 +133,7 @@ public class DatgConverterTest {
         assertEquals(datgData.getDataOnRows(), "Mice");
         assertEquals(datgData.getDataOnCols(), "Humans");
 
-        compareTwoMatrices(datgData.loadFullDataset(), testData, 0.000001);
+        compareTwoMatrices(datgData.loadFullDataset(), testData1, 0.000001);
 
         DatgConverter.main(new String[]{
                 "-m", "DATG-2-txt",
@@ -144,7 +143,7 @@ public class DatgConverterTest {
 
         DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
 
-        compareTwoMatrices(txtData, testData, 0.000001);
+        compareTwoMatrices(txtData, testData1, 0.000001);
 
     }
 
@@ -153,16 +152,17 @@ public class DatgConverterTest {
 
         final String testName = "test3";
 
+        final DoubleMatrixDataset<String, String> testData1;
         Random random = new Random(42);
-        testData = new DoubleMatrixDataset<>(10000,60);
-        for (int r = 0; r < testData.rows() ; ++r){
-            for(int c = 0; c < testData.columns() ; ++c){
-                testData.setElementQuick(r,c,random.nextDouble());
+        testData1 = new DoubleMatrixDataset<>(10000, 60);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                testData1.setElementQuick(r, c, random.nextDouble());
             }
         }
 
 
-        testData.saveBinaryOldFormat(new File(tmpOutputFolder, testName).getPath());
+        testData1.saveBinaryOldFormat(new File(tmpOutputFolder, testName).getPath());
 
         DatgConverter.main(new String[]{
                 "-m", "DAT_2_DATG",
@@ -179,7 +179,7 @@ public class DatgConverterTest {
         assertEquals(datgData.getDataOnRows(), "Please");
         assertEquals(datgData.getDataOnCols(), "Stop");
 
-        compareTwoMatrices(datgData.loadFullDataset(), testData, 0.000001);
+        compareTwoMatrices(datgData.loadFullDataset(), testData1, 0.000001);
 
         DatgConverter.main(new String[]{
                 "-m", "DATG_2_TXT",
@@ -189,7 +189,91 @@ public class DatgConverterTest {
 
         DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
 
-        compareTwoMatrices(txtData, testData, 0.000001);
+        compareTwoMatrices(txtData, testData1, 0.000001);
+
+    }
+
+    @org.testng.annotations.Test
+    public void testRowConcat() throws InterruptedException, IOException {
+
+        final String testName = "testRowConcat";
+
+        LinkedHashMap<String, Integer> hashRows = new LinkedHashMap<String, Integer>();
+        LinkedHashMap<String, Integer> hashCols = new LinkedHashMap<String, Integer>();
+
+        for (int r = 0; r < 100; ++r) {
+            hashRows.put(("R" + r), r);
+        }
+
+        for (int c = 0; c < 60; ++c) {
+            hashCols.put(("C" + c), c);
+        }
+
+        LinkedHashMap<String, Integer> hashRowsValidation = new LinkedHashMap<String, Integer>();
+
+        int validationR = 0;
+        for(String s : new String[]{"ENSG001", "ENSG002", "ENSG003"}){
+            for (int r = 0; r < 100; ++r) {
+                hashRowsValidation.put(("R" + r + "-" + s), validationR++);
+            }
+        }
+
+
+        for (int c = 0; c < 60; ++c) {
+            hashCols.put(("C" + c), c);
+        }
+
+        final DoubleMatrixDataset<String, String> validationData = new DoubleMatrixDataset<>(hashRowsValidation, hashCols);
+        validationR = 0;
+
+
+        Random random = new Random(42);
+        final DoubleMatrixDataset<String, String> testData1;
+        testData1 = new DoubleMatrixDataset<>(hashRows, hashCols);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                double d = random.nextDouble();
+                testData1.setElementQuick(r, c, d);
+                validationData.setElementQuick(validationR, c, d);
+            }
+            validationR++;
+        }
+        final DoubleMatrixDataset<String, String> testData2 = new DoubleMatrixDataset<>(hashRows, hashCols);
+        for (int r = 0; r < testData2.rows(); ++r) {
+            for (int c = 0; c < testData2.columns(); ++c) {
+                double d = random.nextDouble();
+                testData2.setElementQuick(r, c, d);
+                validationData.setElementQuick(validationR, c, d);
+            }
+            validationR++;
+        }
+        final DoubleMatrixDataset<String, String> testData3 = new DoubleMatrixDataset<>(hashRows, hashCols);
+        for (int r = 0; r < testData3.rows(); ++r) {
+            for (int c = 0; c < testData3.columns(); ++c) {
+                double d = random.nextDouble();
+                testData3.setElementQuick(r, c, d);
+                validationData.setElementQuick(validationR, c, d);
+            }
+            validationR++;
+        }
+
+        testData1.save(new File(tmpOutputFolder, testName + "zscores_ENSG001" + ".txt.gz"));
+        testData2.save(new File(tmpOutputFolder, testName + "zscores_ENSG002" + ".txt.gz"));
+        testData3.save(new File(tmpOutputFolder, testName + "zscores_ENSG003" + ".txt.gz"));
+
+        DatgConverter.main(new String[]{
+                "-m", "ROW_CONCAT",
+                "-i", tmpOutputFolder.getPath(),
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_concat1.datg",
+                "-fp", "zscores_(.*)\\.txt",
+                "-dn", "Row row row",
+                "-rc", "My boat",
+                "-cc", "Gently down te stream"
+        });
+
+        DoubleMatrixDataset<String, String> result = DoubleMatrixDataset.loadDoubleBinaryData(tmpOutputFolder.getPath() + fs + testName + "_concat1.datg");
+
+        compareTwoMatrices(result, validationData, 0.000001);
 
     }
 
@@ -203,20 +287,20 @@ public class DatgConverterTest {
         LinkedHashMap<String, Integer> hashRows = new LinkedHashMap<String, Integer>();
         LinkedHashMap<String, Integer> hashCols = new LinkedHashMap<String, Integer>();
 
-        for(int r = 0 ; r < 10000 ; ++r){
-            if(r == 2){
+        for (int r = 0; r < 10000; ++r) {
+            if (r == 2) {
                 hashRows.put("SampleWithVeryLongName", r);
             } else {
                 hashRows.put(("R" + r), r);
             }
         }
 
-        for(int c = 0 ; c < 60 ; ++c){
-            if(c == 3){
+        for (int c = 0; c < 60; ++c) {
+            if (c == 3) {
                 hashCols.put("ENSG00000136824", c);
-            } else if(c == 2){
+            } else if (c == 2) {
                 hashCols.put("ENSG00000136824.12", c);
-            } else if(c == 1){
+            } else if (c == 1) {
                 hashCols.put("ENSG00000136824.12tooLong", c);
             } else {
                 hashCols.put(("C" + c), c);
@@ -224,34 +308,34 @@ public class DatgConverterTest {
 
         }
 
-
+        final DoubleMatrixDataset<String, String> testData1;
         Random random = new Random(42);
-        testData = new DoubleMatrixDataset<>(hashRows, hashCols);
-        for (int r = 0; r < testData.rows() ; ++r){
-            for(int c = 0; c < testData.columns() ; ++c){
-                testData.setElementQuick(r,c,random.nextDouble());
+        testData1 = new DoubleMatrixDataset<>(hashRows, hashCols);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                testData1.setElementQuick(r, c, random.nextDouble());
             }
         }
-        testData.setElementQuick(1,2, 0);
-        testData.setElementQuick(1,3, 1);
-        testData.setElementQuick(3,1, 1000000000001d);
-        testData.setElementQuick(3,2, 0.0000002341241234d);
-        testData.setElementQuick(4,0, Double.NaN);
-        testData.setElementQuick(5,0, -2);
-        testData.setElementQuick(5,1, -1.45234234);
-        testData.setElementQuick(5,2, -0.0000044);
-        testData.setElementQuick(6,0, -9999);
-        testData.setElementQuick(6,1, -10000);
-        testData.setElementQuick(6,2, -0.001);
-        testData.setElementQuick(6,3, -0.0099);
-        testData.setElementQuick(7,0, -0.00101);
-        testData.setElementQuick(7,1, -10010);
-        testData.setElementQuick(7,2, -10001);
-        testData.setElementQuick(8,0, 8000);
-        testData.setElementQuick(8,1, 13400);
-        testData.setElementQuick(8,2, 0.00000123001);
+        testData1.setElementQuick(1, 2, 0);
+        testData1.setElementQuick(1, 3, 1);
+        testData1.setElementQuick(3, 1, 1000000000001d);
+        testData1.setElementQuick(3, 2, 0.0000002341241234d);
+        testData1.setElementQuick(4, 0, Double.NaN);
+        testData1.setElementQuick(5, 0, -2);
+        testData1.setElementQuick(5, 1, -1.45234234);
+        testData1.setElementQuick(5, 2, -0.0000044);
+        testData1.setElementQuick(6, 0, -9999);
+        testData1.setElementQuick(6, 1, -10000);
+        testData1.setElementQuick(6, 2, -0.001);
+        testData1.setElementQuick(6, 3, -0.0099);
+        testData1.setElementQuick(7, 0, -0.00101);
+        testData1.setElementQuick(7, 1, -10010);
+        testData1.setElementQuick(7, 2, -10001);
+        testData1.setElementQuick(8, 0, 8000);
+        testData1.setElementQuick(8, 1, 13400);
+        testData1.setElementQuick(8, 2, 0.00000123001);
 
-        testData.save(new File(tmpOutputFolder, testName + ".txt.gz"));
+        testData1.save(new File(tmpOutputFolder, testName + ".txt.gz"));
 
         DatgConverter.main(new String[]{
                 "-m", "TXT_2_DATG",

@@ -193,7 +193,7 @@ public class DatgConverter {
         int includedFilesCount = 0;
         for (File inputFile : files) {
             final Matcher fileMatcher = filePattern.matcher(inputFile.getName());
-            if (!fileMatcher.matches()) {
+            if (!fileMatcher.find()) {
                 continue;
             }
             final String rowNameAppend = addToRowNames ? fileMatcher.group(1) : null;
@@ -201,10 +201,10 @@ public class DatgConverter {
             LOGGER.info(String.format("Adding file %s", inputFile.getName()));
 
             final CSVReader reader;
-            if (options.getInputFile().getName().endsWith(".gz")) {
-                reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(options.getInputFile()))))))).withCSVParser(parser).build();
+            if (inputFile.getName().endsWith(".gz")) {
+                reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(inputFile))))))).withCSVParser(parser).build();
             } else {
-                reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new FileInputStream(options.getInputFile())))))).withCSVParser(parser).build();
+                reader = new CSVReaderBuilder((new BufferedReader(new InputStreamReader((new FileInputStream(inputFile)))))).withCSVParser(parser).build();
             }
 
             //First nextLine contains the header
@@ -216,18 +216,18 @@ public class DatgConverter {
 
             if (includedFilesCount == 0) {
                 if (nextLine.length < 2) {
-                    throw new IOException("No columns found in: " + options.getInputFile());
+                    throw new IOException("No columns found in: " + inputFile);
                 }
                 colnames = new ArrayList<>(nextLine.length - 1);
                 for (int i = 1; i < nextLine.length; i++) {
                     colnames.add(nextLine[i]);
                 }
             } else {
-                if (nextLine.length != colnames.size()) {
+                if (nextLine.length-1 != colnames.size()) {
                     throw new IOException("Number of columns not identical to first file.");
                 }
                 for (int i = 1; i < nextLine.length; i++) {
-                    if (!colnames.get(i).equals(nextLine[i])) {
+                    if (!colnames.get(i-1).equals(nextLine[i])) {
                         throw new IOException("All files need identical columns in same order.");
                     }
                 }
@@ -235,7 +235,6 @@ public class DatgConverter {
 
             if (includedFilesCount == 0) {
 
-                colnames = new ArrayList<>(nextLine.length - 1);
                 datgWriter = new DoubleMatrixDatasetRowCompressedWriter(
                         options.getOutputFile().getAbsolutePath(),
                         colnames,
