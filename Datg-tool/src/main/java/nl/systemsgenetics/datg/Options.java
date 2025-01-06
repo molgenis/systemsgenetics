@@ -59,6 +59,14 @@ public class Options {
         OptionBuilder.withLongOpt("filePattern");
         OPTIONS.addOption(OptionBuilder.create("fp"));
 
+        OptionBuilder.withArgName("path");
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription("File with strings per line to grep from row names. Rows with names containing grep string are return by DATG_2_TXT. Case insensitive.");
+        OptionBuilder.withLongOpt("rowGrep");
+        OPTIONS.addOption(OptionBuilder.create("rg"));
+
+
+
     }
 
     private final DatgConvertModes mode;
@@ -69,6 +77,7 @@ public class Options {
     private final String colContent;
     private final String datasetName;
     private final String filePattern;
+    private final File rowGrepFile;
 
     public Options(String[] args) throws Exception {
 
@@ -128,6 +137,17 @@ public class Options {
         datasetName = commandLine.getOptionValue("datasetName","");
         filePattern = commandLine.getOptionValue("filePattern",null);
 
+        if(commandLine.hasOption("rowGrep")){
+            rowGrepFile = new File(commandLine.getOptionValue("rowGrep"));
+            if(mode != DatgConvertModes.DATG_2_TXT){
+                LOGGER.warn("RowGrep is only supported for mode DATG_2_TXT, otherwise it is ignored.");
+            }
+        } else {
+            rowGrepFile = null;
+        }
+
+
+
     }
 
     public static void printHelp() {
@@ -147,6 +167,9 @@ public class Options {
             LOGGER.info(" * Row content: " + rowContent);
             LOGGER.info(" * Column content: " + colContent);
             LOGGER.info(" * Dataset name: " + datasetName);
+        }
+        if(mode != DatgConvertModes.DATG_2_TXT && rowGrepFile != null){
+            LOGGER.info(" * Row grep file: " + rowGrepFile.getPath());
         }
         if(filePattern != null){
             LOGGER.info(" * File pattern: " + filePattern);
@@ -184,5 +207,9 @@ public class Options {
 
     public String getFilePattern() {
         return filePattern;
+    }
+
+    public File getRowGrepFile() {
+        return rowGrepFile;
     }
 }

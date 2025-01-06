@@ -324,6 +324,10 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 		return dataOnCols;
 	}
 
+	public Map<String, Integer> getRowMap() {
+		return Collections.unmodifiableMap(rowMap);
+	}
+
 	private LinkedHashMap<String, Integer> loadIdentifiers(final File file) throws IOException {
 
 		final CSVParser identifierFileParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();

@@ -17,7 +17,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
-
+import org.ahocorasick.trie.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -358,20 +358,71 @@ public class DatgConverter {
 
         outputWriter.writeNext(outputLine);
 
-        for (DoubleMatrixDatasetRow rowData : datgData) {
+        
+        if(options.getRowGrepFile() != null){
 
-            c = 0;
-            outputLine[c++] = rowData.getRowName();
-            double[] rowContent = rowData.getData();
-            for (int i = 0; i < datgData.getNumberOfColumns(); ++i) {
-                outputLine[c++] = String.valueOf(rowContent[i]);
+            if(!options.getRowGrepFile().exists()){
+                throw new IOException("Row grep file does not exist");
             }
 
-            outputWriter.writeNext(outputLine);
 
+            final BufferedReader reader;
+            if (options.getRowGrepFile().getName().endsWith(".gz")) {
+                reader = (new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(options.getRowGrepFile()))))));
+            } else {
+                reader = (new BufferedReader(new InputStreamReader((new FileInputStream(options.getRowGrepFile())))));
+            }
+
+            final Trie.TrieBuilder grepTrieBuilder = Trie.builder().ignoreCase();
+
+            int numberOfGrepTerms = 0;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                grepTrieBuilder.addKeyword(line);
+                numberOfGrepTerms++;
+            }
+            LOGGER.info("Number of grep terms: " + numberOfGrepTerms);
+
+            final Trie grepTrie = grepTrieBuilder.build();
+
+            int countRowMatched = 0;
+            for (Map.Entry<String, Integer> rowEntry : datgData.getRowMap().entrySet()){
+                String rowName = rowEntry.getKey();
+                if(grepTrie.containsMatch(rowName)){
+                    ++countRowMatched;
+
+                    double[] rowContent = datgData.loadSingleRow(rowEntry.getValue());
+
+                    c = 0;
+                    outputLine[c++] = rowName;
+                    for (int i = 0; i < datgData.getNumberOfColumns(); ++i) {
+                        outputLine[c++] = String.valueOf(rowContent[i]);
+                    }
+
+                    outputWriter.writeNext(outputLine);
+
+                }
+            }
+            LOGGER.info("Number of rows matching to grep: " + countRowMatched);
+
+        } else {
+            for (DoubleMatrixDatasetRow rowData : datgData) {
+
+                c = 0;
+                outputLine[c++] = rowData.getRowName();
+                double[] rowContent = rowData.getData();
+                for (int i = 0; i < datgData.getNumberOfColumns(); ++i) {
+                    outputLine[c++] = String.valueOf(rowContent[i]);
+                }
+
+                outputWriter.writeNext(outputLine);
+
+            }
 
         }
+
         outputWriter.close();
+
     }
 
     private static void testFunction(Options options) throws IOException {

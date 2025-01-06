@@ -3,7 +3,9 @@ package nl.systemsgenetics.datg;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetRowCompressedReader;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.text.DateFormat;
@@ -35,7 +37,7 @@ public class DatgConverterTest {
                 System.out.println("Removing tmp dir and files");
                 for (File file : tmpOutputFolder.listFiles()) {
                     System.out.println(" - Deleting: " + file.getAbsolutePath());
-                    //file.delete();
+                    file.delete();
                 }
                 System.out.println(" - Deleting: " + tmpOutputFolder.getAbsolutePath());
                 tmpOutputFolder.delete();
@@ -218,11 +220,6 @@ public class DatgConverterTest {
             }
         }
 
-
-        for (int c = 0; c < 60; ++c) {
-            hashCols.put(("C" + c), c);
-        }
-
         final DoubleMatrixDataset<String, String> validationData = new DoubleMatrixDataset<>(hashRowsValidation, hashCols);
         validationR = 0;
 
@@ -266,6 +263,96 @@ public class DatgConverterTest {
                 "-i", tmpOutputFolder.getPath(),
                 "-o", tmpOutputFolder.getPath() + fs + testName + "_concat1.datg",
                 "-fp", "zscores_(.*)\\.txt",
+                "-dn", "Row row row",
+                "-rc", "My boat",
+                "-cc", "Gently down te stream"
+        });
+
+        DoubleMatrixDataset<String, String> result = DoubleMatrixDataset.loadDoubleBinaryData(tmpOutputFolder.getPath() + fs + testName + "_concat1.datg");
+
+        compareTwoMatrices(result, validationData, 0.000001);
+
+    }
+
+    @org.testng.annotations.Test
+    public void testRowConcat2() throws InterruptedException, IOException {
+
+        final String testName = "testRowConcat2";
+
+        LinkedHashMap<String, Integer> hashRowsValidation = new LinkedHashMap<String, Integer>();
+
+
+
+        LinkedHashMap<String, Integer> hashRows1 = new LinkedHashMap<String, Integer>();
+        LinkedHashMap<String, Integer> hashCols = new LinkedHashMap<String, Integer>();
+
+        int validationR = 0;
+        for (int r = 0; r < 100; ++r) {
+            hashRows1.put(("R" + r), r);
+            hashRowsValidation.put(("R" + r), validationR++);
+        }
+
+        LinkedHashMap<String, Integer> hashRows2 = new LinkedHashMap<String, Integer>();
+
+        for (int r = 0; r < 100; ++r) {
+            hashRows2.put(("Arrr" + r), r);
+            hashRowsValidation.put(("Arrr" + r), validationR++);
+        }
+
+        LinkedHashMap<String, Integer> hashRows3 = new LinkedHashMap<String, Integer>();
+
+        for (int r = 0; r < 100; ++r) {
+            hashRows3.put(("Brrr" + r), r);
+            hashRowsValidation.put(("Brrr" + r), validationR++);
+        }
+
+        for (int c = 0; c < 60; ++c) {
+            hashCols.put(("C" + c), c);
+        }
+
+        final DoubleMatrixDataset<String, String> validationData = new DoubleMatrixDataset<>(hashRowsValidation, hashCols);
+        validationR = 0;
+
+
+        Random random = new Random(42);
+        final DoubleMatrixDataset<String, String> testData1;
+        testData1 = new DoubleMatrixDataset<>(hashRows1, hashCols);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                double d = random.nextDouble();
+                testData1.setElementQuick(r, c, d);
+                validationData.setElementQuick(validationR, c, d);
+            }
+            validationR++;
+        }
+        final DoubleMatrixDataset<String, String> testData2 = new DoubleMatrixDataset<>(hashRows2, hashCols);
+        for (int r = 0; r < testData2.rows(); ++r) {
+            for (int c = 0; c < testData2.columns(); ++c) {
+                double d = random.nextDouble();
+                testData2.setElementQuick(r, c, d);
+                validationData.setElementQuick(validationR, c, d);
+            }
+            validationR++;
+        }
+        final DoubleMatrixDataset<String, String> testData3 = new DoubleMatrixDataset<>(hashRows3, hashCols);
+        for (int r = 0; r < testData3.rows(); ++r) {
+            for (int c = 0; c < testData3.columns(); ++c) {
+                double d = random.nextDouble();
+                testData3.setElementQuick(r, c, d);
+                validationData.setElementQuick(validationR, c, d);
+            }
+            validationR++;
+        }
+
+        testData1.save(new File(tmpOutputFolder, testName + "xscores_ENSG001" + ".txt.gz"));
+        testData2.save(new File(tmpOutputFolder, testName + "xscores_ENSG002" + ".txt.gz"));
+        testData3.save(new File(tmpOutputFolder, testName + "xscores_ENSG003" + ".txt.gz"));
+
+        DatgConverter.main(new String[]{
+                "-m", "ROW_CONCAT",
+                "-i", tmpOutputFolder.getPath(),
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_concat1.datg",
+                "-fp", "xscores_.*\\.txt",
                 "-dn", "Row row row",
                 "-rc", "My boat",
                 "-cc", "Gently down te stream"
@@ -350,6 +437,170 @@ public class DatgConverterTest {
                 "-m", "INSPECT",
                 "-i", tmpOutputFolder.getPath() + fs + testName + "_step1"
         });
+
+    }
+
+    @org.testng.annotations.Test
+    public void testGrep() throws Exception {
+
+        final String testName = "testGrep1";
+
+        final DoubleMatrixDataset<String, String> testData1;
+        Random random = new Random(42);
+        testData1 = new DoubleMatrixDataset<>(1000, 600);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                testData1.setElementQuick(r, c, random.nextDouble());
+            }
+        }
+
+        testData1.save(new File(tmpOutputFolder, testName + ".txt.gz"));
+
+        DatgConverter.main(new String[]{
+                "-m", "TXT_2_DATG",
+                "-i", tmpOutputFolder.getPath() + fs + testName + ".txt.gz",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step1",
+                "-dn", "So long and thanks for all the fish",
+                "-rc", "Fish",
+                "-cc", "Dolphins"
+        });
+
+        DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(tmpOutputFolder.getPath() + fs + testName + "_step1");
+
+        assertEquals(datgData.getDatasetName(), "So long and thanks for all the fish");
+        assertEquals(datgData.getDataOnRows(), "Fish");
+        assertEquals(datgData.getDataOnCols(), "Dolphins");
+
+        compareTwoMatrices(datgData.loadFullDataset(), testData1, 0.000001);
+
+
+        BufferedWriter grepWriter = new BufferedWriter(new FileWriter(new File(tmpOutputFolder, testName + "grep1.txt")));
+        grepWriter.write("R");
+        grepWriter.newLine();
+        grepWriter.close();
+
+        DatgConverter.main(new String[]{
+                "-m", "DATG_2_TXT",
+                "-i", tmpOutputFolder.getPath() + fs + testName + "_step1.datg",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step2",
+                "-rg", tmpOutputFolder.getPath() + fs + testName + "grep1.txt"
+        });
+
+        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
+
+        compareTwoMatrices(txtData, testData1, 0.000001);
+
+    }
+
+    @org.testng.annotations.Test
+    public void testGrep2() throws Exception {
+
+        final String testName = "testGrep2";
+
+        final DoubleMatrixDataset<String, String> testData1;
+        Random random = new Random(42);
+        testData1 = new DoubleMatrixDataset<>(1000, 600);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                testData1.setElementQuick(r, c, random.nextDouble());
+            }
+        }
+
+        testData1.save(new File(tmpOutputFolder, testName + ".txt.gz"));
+
+        DatgConverter.main(new String[]{
+                "-m", "TXT_2_DATG",
+                "-i", tmpOutputFolder.getPath() + fs + testName + ".txt.gz",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step1",
+                "-dn", "So long and thanks for all the fish",
+                "-rc", "Fish",
+                "-cc", "Dolphins"
+        });
+
+        DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(tmpOutputFolder.getPath() + fs + testName + "_step1");
+
+        assertEquals(datgData.getDatasetName(), "So long and thanks for all the fish");
+        assertEquals(datgData.getDataOnRows(), "Fish");
+        assertEquals(datgData.getDataOnCols(), "Dolphins");
+
+        compareTwoMatrices(datgData.loadFullDataset(), testData1, 0.000001);
+
+
+        BufferedWriter grepWriter = new BufferedWriter(new FileWriter(new File(tmpOutputFolder, testName + "grep1.txt")));
+        grepWriter.write("X");
+        grepWriter.newLine();
+        grepWriter.close();
+
+        DatgConverter.main(new String[]{
+                "-m", "DATG_2_TXT",
+                "-i", tmpOutputFolder.getPath() + fs + testName + "_step1.datg",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step2",
+                "-rg", tmpOutputFolder.getPath() + fs + testName + "grep1.txt"
+        });
+
+        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
+
+        assertEquals(txtData.rows(), 0);
+
+    }
+
+    @org.testng.annotations.Test
+    public void testGrep3() throws Exception {
+
+        final String testName = "testGrep3";
+
+        final DoubleMatrixDataset<String, String> testData1;
+        Random random = new Random(42);
+        testData1 = new DoubleMatrixDataset<>(500, 600);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                testData1.setElementQuick(r, c, random.nextDouble());
+            }
+        }
+
+        testData1.save(new File(tmpOutputFolder, testName + ".txt.gz"));
+
+        DatgConverter.main(new String[]{
+                "-m", "TXT_2_DATG",
+                "-i", tmpOutputFolder.getPath() + fs + testName + ".txt.gz",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step1",
+                "-dn", "So long and thanks for all the fish",
+                "-rc", "Fish",
+                "-cc", "Dolphins"
+        });
+
+        DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(tmpOutputFolder.getPath() + fs + testName + "_step1");
+
+        assertEquals(datgData.getDatasetName(), "So long and thanks for all the fish");
+        assertEquals(datgData.getDataOnRows(), "Fish");
+        assertEquals(datgData.getDataOnCols(), "Dolphins");
+
+        compareTwoMatrices(datgData.loadFullDataset(), testData1, 0.000001);
+
+
+        BufferedWriter grepWriter = new BufferedWriter(new FileWriter(new File(tmpOutputFolder, testName + "grep1.txt")));
+        grepWriter.write("R45");
+        grepWriter.newLine();
+        grepWriter.write("X");
+        grepWriter.newLine();
+        grepWriter.write("R101");
+        grepWriter.newLine();
+        grepWriter.close();
+
+        DatgConverter.main(new String[]{
+                "-m", "DATG_2_TXT",
+                "-i", tmpOutputFolder.getPath() + fs + testName + "_step1.datg",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step2",
+                "-rg", tmpOutputFolder.getPath() + fs + testName + "grep1.txt"
+        });
+
+        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
+
+        DoubleMatrixDataset<String, String> testData1b = testData1.viewRowSelection(new String[]{"R45", "R101", "R450", "R451", "R452", "R453", "R454", "R455", "R456", "R457", "R458", "R459"});
+
+        compareTwoMatrices(txtData, testData1b, 0.000001);
+
+
 
     }
 
