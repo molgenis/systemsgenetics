@@ -39,11 +39,11 @@ public class DatgConverter {
 
     private static final Logger LOGGER = LogManager.getLogger(DatgConverter.class);
     private static final String HEADER
-            = "  /---------------------------------------\\\n"
-            + "  |            Datg Converter             |\n"
-            + "  |                                       |\n"
-            + "  |  University Medical Center Groningen  |\n"
-            + "  \\---------------------------------------/";
+            = "  /----------------------------------------\\\n"
+            + "  |             Datg Converter             |\n"
+            + "  |                                        |\n"
+            + "  | University Medical Center Groningen \uD83D\uDC38 |\n"
+            + "  \\----------------------------------------/";
 
 
     public static void main(String[] args) throws InterruptedException {
@@ -250,7 +250,18 @@ public class DatgConverter {
                 String rowName = addToRowNames ? nextLine[0] + "-" + rowNameAppend : nextLine[0];
 
                 for (int i = 1; i < nextLine.length; i++) {
-                    rowData[i - 1] = Double.parseDouble(nextLine[i]);
+
+                    //Some manual extra to parse double to be compatible with other tools
+                    if(nextLine[i].isEmpty()){
+                        rowData[i - 1] = Double.NaN;
+                    } else if (nextLine[i].equals("inf")){
+                        rowData[i - 1] = Double.POSITIVE_INFINITY;
+                    } else if (nextLine[i].equals("-inf")){
+                        rowData[i - 1] = Double.NEGATIVE_INFINITY;
+                    } else {
+                        rowData[i - 1] = Double.parseDouble(nextLine[i]);
+                    }
+
                 }
 
                 datgWriter.addRow(rowName, rowData);
@@ -496,7 +507,18 @@ public class DatgConverter {
         while ((nextLine = reader.readNext()) != null) {
 
             for (int i = 1; i < nextLine.length; i++) {
-                rowData[i - 1] = Double.parseDouble(nextLine[i]);
+
+                //Some manual extra to parse double to be compatible with other tools
+                if(nextLine[i].isEmpty()){
+                    rowData[i - 1] = Double.NaN;
+                } else if (nextLine[i].equals("inf")){
+                    rowData[i - 1] = Double.POSITIVE_INFINITY;
+                } else if (nextLine[i].equals("-inf")){
+                    rowData[i - 1] = Double.NEGATIVE_INFINITY;
+                } else {
+                    rowData[i - 1] = Double.parseDouble(nextLine[i]);
+                }
+
             }
 
             datgWriter.addRow(nextLine[0], rowData);
