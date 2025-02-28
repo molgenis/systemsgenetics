@@ -192,7 +192,6 @@ public class DatgConverter {
         Files.move(originalRow.toPath(), originalRowTmp.toPath());
         Files.move(originalCol.toPath(), originalColTmp.toPath());
 
-
         DoubleMatrixDatasetRowCompressedReader originalReader = new DoubleMatrixDatasetRowCompressedReader(originalDatTmp.getAbsolutePath());
 
         DoubleMatrixDatasetRowCompressedWriter upgradedWriter = new DoubleMatrixDatasetRowCompressedWriter(inputMatrix, originalReader.getColumnIdentifiers(), originalReader.getDatasetName(), originalReader.getDataOnRows(), originalReader.getDataOnCols());

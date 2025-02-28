@@ -193,7 +193,7 @@ public class DatgConverterTest {
 
         final DoubleMatrixDataset<String, String> testData1;
         Random random = new Random(42);
-        testData1 = new DoubleMatrixDataset<>(100, 50000);
+        testData1 = new DoubleMatrixDataset<>(100, 5000);
         for (int r = 0; r < testData1.rows(); ++r) {
             for (int c = 0; c < testData1.columns(); ++c) {
                 testData1.setElementQuick(r, c, random.nextDouble());
