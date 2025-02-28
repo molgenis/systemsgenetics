@@ -1,7 +1,9 @@
 package nl.systemsgenetics.datg;
 
 import com.opencsv.*;
+import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.collections.CollectionUtils;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetRow;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetRowCompressedReader;
@@ -21,6 +23,7 @@ import org.ahocorasick.trie.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -121,24 +124,29 @@ public class DatgConverter {
                     //reading the whole dataset is a bit inefficient but this is only a legacy function to convert old files
                 {
                     DoubleMatrixDataset<String, String> data = DoubleMatrixDataset.loadDoubleBinaryData(options.getInputFile().getAbsolutePath());
-                    LOGGER.info("Input .dat file contains " + data.columns() + " columns and " + data.rows());
+                    LOGGER.info("Input .dat file contains " + data.columns() + " columns and " + data.rows() + " rows");
                     data.saveBinary(options.getOutputFile().getAbsolutePath(), options.getDatasetName(), options.getRowContent(), options.getColContent());
                 }
                 break;
                 case INSPECT:
 
                     inspect(options);
-
                     break;
+
                 case TEST:
 
                     testFunction(options);
-
                     break;
 
                 case ROW_CONCAT:
 
                     rowConcat(options);
+                    break;
+
+                case UPGRADE:
+
+                    upgrade(options);
+                    break;
 
             }
         } catch (Exception e) {
@@ -153,6 +161,108 @@ public class DatgConverter {
 
         currentDataTime = new Date();
         LOGGER.info("Conversion completed at: " + DATE_TIME_FORMAT.format(currentDataTime));
+
+    }
+
+    private static void upgrade(Options options) throws IOException {
+
+        String inputMatrix = options.getInputFile().getAbsolutePath();
+
+        if (inputMatrix.endsWith(".datg")) {
+            inputMatrix = inputMatrix.substring(0, inputMatrix.length() - 5);
+        }
+
+        File originalDatg = new File(inputMatrix + ".datg");
+        File originalRow = new File(inputMatrix + ".rows.txt.gz");
+        File originalCol = new File(inputMatrix + ".cols.txt.gz");
+
+        File workdir = originalDatg.getParentFile();
+        File tmpDir = new File(workdir, "tmpdir_" + String.valueOf(Math.abs(new Random().nextInt())));
+        if (!tmpDir.mkdirs()) {
+            throw new IOException("Failed to create tmp dir: " + tmpDir);
+        }
+
+        LOGGER.info("Tmp dir: " + tmpDir.getAbsolutePath());
+
+        File originalDatTmp = new File(tmpDir, originalDatg.getName());
+        File originalRowTmp = new File(tmpDir, originalRow.getName());
+        File originalColTmp = new File(tmpDir, originalCol.getName());
+
+        Files.move(originalDatg.toPath(), originalDatTmp.toPath());
+        Files.move(originalRow.toPath(), originalRowTmp.toPath());
+        Files.move(originalCol.toPath(), originalColTmp.toPath());
+
+
+        DoubleMatrixDatasetRowCompressedReader originalReader = new DoubleMatrixDatasetRowCompressedReader(originalDatTmp.getAbsolutePath());
+
+        DoubleMatrixDatasetRowCompressedWriter upgradedWriter = new DoubleMatrixDatasetRowCompressedWriter(inputMatrix, originalReader.getColumnIdentifiers(), originalReader.getDatasetName(), originalReader.getDataOnRows(), originalReader.getDataOnCols());
+
+        for (DoubleMatrixDatasetRow row : originalReader) {
+            upgradedWriter.addRow(row.getRowName(), row.getData());
+        }
+
+        upgradedWriter.close();
+
+
+        DoubleMatrixDatasetRowCompressedReader updatedReader = new DoubleMatrixDatasetRowCompressedReader(inputMatrix);
+
+
+        try {
+           validate(originalReader, updatedReader);
+        } catch (Exception ex) {
+            LOGGER.error("Error upgrading the matrix: {}", ex.getMessage());
+            new File(inputMatrix).delete();
+            LOGGER.error("Please use backup of original data: {}", originalDatTmp.getAbsolutePath());
+            return;
+        }
+
+        //Here we only get if the comparison is succesfull
+        LOGGER.info("New file is identical to original, removing tmp files");
+
+        originalDatTmp.delete();
+        originalRowTmp.delete();
+        originalColTmp.delete();
+
+        if (tmpDir.listFiles().length == 0) {
+            tmpDir.delete();
+        }
+
+    }
+
+    private static void validate(DoubleMatrixDatasetRowCompressedReader originalReader, DoubleMatrixDatasetRowCompressedReader updatedReader) throws Exception {
+
+        if (updatedReader.getNumberOfRows() != originalReader.getNumberOfRows()) {
+            throw new Exception("Number rows not equal");
+        }
+
+        if (updatedReader.getNumberOfColumns() != originalReader.getNumberOfColumns()) {
+            throw new Exception("Number columns not equal");
+        }
+
+        if (!originalReader.getDatasetName().equals(updatedReader.getDatasetName()) ||
+                !originalReader.getDataOnRows().equals(updatedReader.getDataOnRows()) ||
+                !originalReader.getDataOnCols().equals(updatedReader.getDataOnCols())) {
+            throw new Exception("Meta data not equal");
+        }
+
+        Iterator<String> originalColumniterator = originalReader.getColumnIdentifiers().iterator();
+        Iterator<String> updatedColumniterator = updatedReader.getColumnIdentifiers().iterator();
+
+        while (originalColumniterator.hasNext()) {
+            if(!originalColumniterator.next().equals(updatedColumniterator.next())) {
+                throw new Exception("Different column names");
+            }
+        }
+
+        for (DoubleMatrixDatasetRow row : originalReader) {
+            double[] oldData = row.getData();
+            double[] newData = updatedReader.loadSingleRow(row.getRowName());
+            for(int i = 0 ; i < oldData.length ; i++) {
+                if(oldData[i] != newData[i]) {
+                    throw new Exception("Data difference");
+                }
+            }
+        }
 
     }
 
@@ -223,11 +333,11 @@ public class DatgConverter {
                     colnames.add(nextLine[i]);
                 }
             } else {
-                if (nextLine.length-1 != colnames.size()) {
+                if (nextLine.length - 1 != colnames.size()) {
                     throw new IOException("Number of columns not identical to first file.");
                 }
                 for (int i = 1; i < nextLine.length; i++) {
-                    if (!colnames.get(i-1).equals(nextLine[i])) {
+                    if (!colnames.get(i - 1).equals(nextLine[i])) {
                         throw new IOException("All files need identical columns in same order.");
                     }
                 }
@@ -252,11 +362,11 @@ public class DatgConverter {
                 for (int i = 1; i < nextLine.length; i++) {
 
                     //Some manual extra to parse double to be compatible with other tools
-                    if(nextLine[i].isEmpty()){
+                    if (nextLine[i].isEmpty()) {
                         rowData[i - 1] = Double.NaN;
-                    } else if (nextLine[i].equals("inf")){
+                    } else if (nextLine[i].equals("inf")) {
                         rowData[i - 1] = Double.POSITIVE_INFINITY;
-                    } else if (nextLine[i].equals("-inf")){
+                    } else if (nextLine[i].equals("-inf")) {
                         rowData[i - 1] = Double.NEGATIVE_INFINITY;
                     } else {
                         rowData[i - 1] = Double.parseDouble(nextLine[i]);
@@ -286,6 +396,7 @@ public class DatgConverter {
         LOGGER.info(String.format("The dataset was created on: %s", DATE_TIME_FORMAT.format(new Date(datgData.getTimestampCreated() * 1000))));
         LOGGER.info(String.format("Number of rows: %d content on rows: '%s'", datgData.getNumberOfRows(), datgData.getDataOnRows()));
         LOGGER.info(String.format("Number of columns: %d content on columns: '%s'", datgData.getNumberOfColumns(), datgData.getDataOnCols()));
+        LOGGER.info(String.format("Compression algorithm: '%s'", datgData.isLz4FrameCompression() ? "LZ4 frames" : "jpountz.lz4 block variant"));
 
         LOGGER.info("");
         LOGGER.info("Top left corner:");
@@ -369,37 +480,49 @@ public class DatgConverter {
 
         outputWriter.writeNext(outputLine);
 
-        
-        if(options.getRowGrepFile() != null){
 
-            if(!options.getRowGrepFile().exists()){
-                throw new IOException("Row grep file does not exist");
-            }
-
-
-            final BufferedReader reader;
-            if (options.getRowGrepFile().getName().endsWith(".gz")) {
-                reader = (new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(options.getRowGrepFile()))))));
-            } else {
-                reader = (new BufferedReader(new InputStreamReader((new FileInputStream(options.getRowGrepFile())))));
-            }
+        if (options.getRowGrepFile() != null || options.getRowGrepString() != null) {
 
             final Trie.TrieBuilder grepTrieBuilder = Trie.builder().ignoreCase();
-
             int numberOfGrepTerms = 0;
-            String line;
-            while ((line = reader.readLine()) != null) {
-                grepTrieBuilder.addKeyword(line);
-                numberOfGrepTerms++;
-            }
-            LOGGER.info("Number of grep terms: " + numberOfGrepTerms);
 
+            if (options.getRowGrepFile() != null) {
+
+                if (!options.getRowGrepFile().exists()) {
+                    throw new IOException("Row grep file does not exist");
+                }
+
+                final BufferedReader reader;
+                if (options.getRowGrepFile().getName().endsWith(".gz")) {
+                    reader = (new BufferedReader(new InputStreamReader((new GZIPInputStream(new FileInputStream(options.getRowGrepFile()))))));
+                } else {
+                    reader = (new BufferedReader(new InputStreamReader((new FileInputStream(options.getRowGrepFile())))));
+                }
+
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    grepTrieBuilder.addKeyword(line);
+                    numberOfGrepTerms++;
+                }
+
+
+            } else {
+
+                //Using tree for simply query is a bit overkill.
+                grepTrieBuilder.addKeyword(options.getRowGrepString());
+                numberOfGrepTerms++;
+
+            }
+
+
+            LOGGER.info("Number of grep terms: " + numberOfGrepTerms);
             final Trie grepTrie = grepTrieBuilder.build();
 
             int countRowMatched = 0;
-            for (Map.Entry<String, Integer> rowEntry : datgData.getRowMap().entrySet()){
+            for (Map.Entry<String, Integer> rowEntry : datgData.getRowMap().entrySet()) {
                 String rowName = rowEntry.getKey();
-                if(grepTrie.containsMatch(rowName)){
+                if (grepTrie.containsMatch(rowName)) {
                     ++countRowMatched;
 
                     double[] rowContent = datgData.loadSingleRow(rowEntry.getValue());
@@ -509,11 +632,11 @@ public class DatgConverter {
             for (int i = 1; i < nextLine.length; i++) {
 
                 //Some manual extra to parse double to be compatible with other tools
-                if(nextLine[i].isEmpty()){
+                if (nextLine[i].isEmpty()) {
                     rowData[i - 1] = Double.NaN;
-                } else if (nextLine[i].equals("inf")){
+                } else if (nextLine[i].equals("inf")) {
                     rowData[i - 1] = Double.POSITIVE_INFINITY;
-                } else if (nextLine[i].equals("-inf")){
+                } else if (nextLine[i].equals("-inf")) {
                     rowData[i - 1] = Double.NEGATIVE_INFINITY;
                 } else {
                     rowData[i - 1] = Double.parseDouble(nextLine[i]);

@@ -3,21 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package umcg.genetica.math.matrix2;
+package nl.systemsgenetics.datg;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import com.opencsv.CSVWriter;
 import gnu.trove.list.array.TLongArrayList;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import org.apache.commons.io.output.CountingOutputStream;
+import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
@@ -26,18 +21,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.SequencedCollection;
 import java.util.zip.GZIPOutputStream;
-
-
-import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorOutputStream;
-import org.apache.commons.io.output.CountingOutputStream;
 
 /**
  * @author patri
  */
 @SuppressWarnings("unused")
-public class DoubleMatrixDatasetRowCompressedWriter {
+public class DoubleMatrixDatasetRowCompressedWriterOldCompressionMethod {
 
     protected static final byte[] MAGIC_BYTES = {85, 77, 67, 71};
     protected static final long APPENDIX_BYTE_LENGTH
@@ -49,8 +39,6 @@ public class DoubleMatrixDatasetRowCompressedWriter {
             + 4 //rows per block
             + 4 //reserve
             + 4; //magic bytes
-    private static final int MAX_BLOCK_SIZE = 2_000_000_000;
-    private static final int MAX_COLUMNS = 250_000_000;
 
     private final CSVWriter rowNamesWriter;
     private final TLongArrayList blockIndices;
@@ -59,13 +47,14 @@ public class DoubleMatrixDatasetRowCompressedWriter {
     private final int numberOfColumns;
     private final int rowsPerBlock;
     private int rowsInCurrentBlock = -1;// -1 indicates a new block is needed should more rows be added
-    private FramedLZ4CompressorOutputStream blockCompressionWriter;
+    private LZ4BlockOutputStream blockCompressionWriter;
     private final byte[] rowBuffer;
     private final int bytesPerRow;
     private final String datasetName;
     private final String dataOnRows;//For instance genes
     private final String dataOnCols;//For instance pathways
     private int numberOfRows = 0;
+    private final int blockSize;
     private final static int MAX_ROWS = Integer.MAX_VALUE - 8;
     private final MessageDigest matrixFileMd5Digest;
     private final MessageDigest rowFileMd5Digest;
@@ -76,28 +65,28 @@ public class DoubleMatrixDatasetRowCompressedWriter {
     private final File md5File;
     private final HashSet<String> rowNames = new HashSet<>();
 
-    public DoubleMatrixDatasetRowCompressedWriter(String path, final SequencedCollection<String> columns) throws FileNotFoundException, IOException {
+    public DoubleMatrixDatasetRowCompressedWriterOldCompressionMethod(String path, final List<String> columns) throws FileNotFoundException, IOException {
         this(path, columns, "", "", "");
     }
 
-    public DoubleMatrixDatasetRowCompressedWriter(String path, final SequencedCollection<String> columns, int rowsPerBlock) throws FileNotFoundException, IOException {
+    public DoubleMatrixDatasetRowCompressedWriterOldCompressionMethod(String path, final List<String> columns, int rowsPerBlock) throws FileNotFoundException, IOException {
         this(path, columns, rowsPerBlock, "", "", "");
     }
 
-    public DoubleMatrixDatasetRowCompressedWriter(String path, final SequencedCollection<String> columns, String datasetName, String dataOnRows, String dataOnCols) throws FileNotFoundException, IOException {
+    public DoubleMatrixDatasetRowCompressedWriterOldCompressionMethod(String path, final List<String> columns, String datasetName, String dataOnRows, String dataOnCols) throws FileNotFoundException, IOException {
         this(path, columns, columns.size() < 100 ? (99 + columns.size()) / columns.size() : 1, datasetName, dataOnRows, dataOnCols);
         //(x + y - 1) / y; = ceiling int division. -1 is hard coded in 99
     }
 
-    public DoubleMatrixDatasetRowCompressedWriter(String path, final SequencedCollection<String> columns, int rowsPerBlock, String datasetName, String dataOnRows, String dataOnCols) throws FileNotFoundException, IOException {
+    public DoubleMatrixDatasetRowCompressedWriterOldCompressionMethod(String path, final List<String> columns, int rowsPerBlock, String datasetName, String dataOnRows, String dataOnCols) throws FileNotFoundException, IOException {
 
-        if (columns.size() > MAX_COLUMNS) {
+        if ((columns.size() * 8L) > 33554432) {
             //this limit is the max block size of lz4 blocks. Can be solved by using multiple block per row but that is not implemented
-            throw new IOException("Too many columns to write " + columns.size() + " max is: " + MAX_COLUMNS);
+            throw new IOException("Too many columns to write " + columns.size() + " max is: " + 33554432 / 8);
         }
 
-        if ((columns.size() * 8L * rowsPerBlock) > MAX_BLOCK_SIZE) {
-            throw new IOException("Too many rows per block");
+        if ((columns.size() * 8L * rowsPerBlock) > 33554432) {
+            throw new IOException("Too many rows block");
         }
 
         try {
@@ -152,6 +141,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 
         matrixFileWriter = new CountingOutputStream(new DigestOutputStream(new BufferedOutputStream(new FileOutputStream(matrixFile), 262144), matrixFileMd5Digest));
 
+        blockSize = bytesPerRow * rowsPerBlock;
 
     }
 
@@ -229,7 +219,6 @@ public class DoubleMatrixDatasetRowCompressedWriter {
             rowBuffer[b++] = (byte) (v);
 
         }
-        //System.out.println("rows: " + rowName + " buffer size" + rowBuffer.length + " bytes per row " + bytesPerRow);
         blockCompressionWriter.write(rowBuffer, 0, bytesPerRow);
 
         if (++rowsInCurrentBlock >= rowsPerBlock) {
@@ -239,10 +228,11 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 
     }
 
-    private void startBlock() throws IOException {
+    private void startBlock() {
         //System.out.println("Block start: " + matrixFileWriter.getByteCount());
         blockIndices.add(matrixFileWriter.getByteCount());//Set the start byte for this block
-        blockCompressionWriter = new FramedLZ4CompressorOutputStream(matrixFileWriter);
+        //System.out.println("Block size: " + blockSize);
+        blockCompressionWriter = new LZ4BlockOutputStream(matrixFileWriter, blockSize);
         rowsInCurrentBlock = 0;
     }
 
@@ -252,9 +242,9 @@ public class DoubleMatrixDatasetRowCompressedWriter {
     }
 
     public synchronized final void close() throws IOException {
-        //here write row indices to end of file
+        //here write row indicies to end of file
         //Then number of row and columns
-        //Finally start of row indices end block
+        //Finaly start of row indices end block
 
         if (rowsInCurrentBlock > 0) {//>0 is correct this is count not index
             closeBlock();
@@ -269,7 +259,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 
         //System.out.println("Number of block: " + numberOfBlocks);
 
-        final FramedLZ4CompressorOutputStream rowIndicesCompression = new FramedLZ4CompressorOutputStream(matrixFileWriter);
+        final LZ4BlockOutputStream rowIndicesCompression = new LZ4BlockOutputStream(matrixFileWriter,  Math.max(8 * numberOfBlocks,64));//64 is min block size
         final DataOutputStream rowIndicesWriter = new DataOutputStream(rowIndicesCompression);
 
 
@@ -295,10 +285,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
         //System.out.println("Meta block start: " + rowsPerBlock);
 
         metaDataBlockWriter.writeInt(rowsPerBlock);
-        metaDataBlockWriter.write(0);//reserve
-        metaDataBlockWriter.write(0);//reserve
-        metaDataBlockWriter.write(0);//reserve
-        metaDataBlockWriter.write(0b00000001);//set last bit to 1 to indicate usage lz4 frames for compression
+        metaDataBlockWriter.writeInt(0);//reserve
         metaDataBlockWriter.write(MAGIC_BYTES);
 
         //Also closes matrixFileWriter
@@ -340,7 +327,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
             colNames.add(c.toString());
         }
 
-        final DoubleMatrixDatasetRowCompressedWriter writer = new DoubleMatrixDatasetRowCompressedWriter(path, colNames, datasetName, dataOnRows, dataOnCols);
+        final DoubleMatrixDatasetRowCompressedWriterOldCompressionMethod writer = new DoubleMatrixDatasetRowCompressedWriterOldCompressionMethod(path, colNames, datasetName, dataOnRows, dataOnCols);
 
         final ArrayList<? extends Comparable> rowNames = dataset.getRowObjects();
 

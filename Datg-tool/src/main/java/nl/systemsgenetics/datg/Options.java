@@ -61,7 +61,7 @@ public class Options {
 
         OptionBuilder.withArgName("path");
         OptionBuilder.hasArg();
-        OptionBuilder.withDescription("File with strings per line to grep from row names. Rows with names containing grep string are return by DATG_2_TXT. Case insensitive.");
+        OptionBuilder.withDescription("File with strings per line to grep from row names or single string. Rows with names containing grep string are return by DATG_2_TXT. Case insensitive.");
         OptionBuilder.withLongOpt("rowGrep");
         OPTIONS.addOption(OptionBuilder.create("rg"));
 
@@ -78,6 +78,7 @@ public class Options {
     private final String datasetName;
     private final String filePattern;
     private final File rowGrepFile;
+    private final String rowGrepString;
 
     public Options(String[] args) throws Exception {
 
@@ -94,7 +95,7 @@ public class Options {
         String inputArg = commandLine.getOptionValue('i');
 
         String outputArg = null;
-        if(mode != DatgConvertModes.INSPECT){
+        if(mode != DatgConvertModes.INSPECT && mode != DatgConvertModes.UPGRADE){
             outputArg = commandLine.getOptionValue('o');
         }
 
@@ -111,14 +112,17 @@ public class Options {
                 }
                 break;
             case DATG_2_TXT:
-                if (!inputArg.endsWith(".datg")) {
-                    inputArg = inputArg + ".datg";
-                }
                 if(outputArg.endsWith(".gz")){
                     throw new Exception("Writing as gz file is not supported, it is much faster to just use gzip afterwards");
                 }
                 if(!outputArg.endsWith(".txt")){
                     outputArg = outputArg + ".txt";
+                }
+                //no break intended
+            case INSPECT:
+            case UPGRADE:
+                if (!inputArg.endsWith(".datg")) {
+                    inputArg = inputArg + ".datg";
                 }
                 break;
         }
@@ -138,12 +142,20 @@ public class Options {
         filePattern = commandLine.getOptionValue("filePattern",null);
 
         if(commandLine.hasOption("rowGrep")){
-            rowGrepFile = new File(commandLine.getOptionValue("rowGrep"));
+            File file = new File(commandLine.getOptionValue("rowGrep"));
             if(mode != DatgConvertModes.DATG_2_TXT){
                 LOGGER.warn("RowGrep is only supported for mode DATG_2_TXT, otherwise it is ignored.");
             }
+            if(file.exists()){
+                rowGrepFile = file;
+                rowGrepString = null;
+            } else {
+                rowGrepFile = null;
+                rowGrepString = commandLine.getOptionValue("rowGrep");
+            }
         } else {
             rowGrepFile = null;
+            rowGrepString = null;
         }
 
 
@@ -163,13 +175,16 @@ public class Options {
         if(outputFile != null) {
             LOGGER.info(" * Output path: " + outputFile.getAbsolutePath());
         }
-        if(mode != DatgConvertModes.DATG_2_TXT && mode != DatgConvertModes.INSPECT){
+        if(mode != DatgConvertModes.DATG_2_TXT && mode != DatgConvertModes.INSPECT && mode != DatgConvertModes.UPGRADE){
             LOGGER.info(" * Row content: " + rowContent);
             LOGGER.info(" * Column content: " + colContent);
             LOGGER.info(" * Dataset name: " + datasetName);
         }
         if(mode != DatgConvertModes.DATG_2_TXT && rowGrepFile != null){
             LOGGER.info(" * Row grep file: " + rowGrepFile.getPath());
+        }
+        if(mode != DatgConvertModes.DATG_2_TXT && rowGrepString != null){
+            LOGGER.info(" * Row grep string: " + rowGrepString);
         }
         if(filePattern != null){
             LOGGER.info(" * File pattern: " + filePattern);
@@ -211,5 +226,9 @@ public class Options {
 
     public File getRowGrepFile() {
         return rowGrepFile;
+    }
+
+    public String getRowGrepString() {
+        return rowGrepString;
     }
 }

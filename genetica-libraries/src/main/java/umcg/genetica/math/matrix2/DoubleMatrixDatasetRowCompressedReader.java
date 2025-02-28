@@ -10,13 +10,8 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.RandomAccessFile;
+
+import java.io.*;
 import java.util.*;
 import java.util.zip.Checksum;
 import java.util.zip.GZIPInputStream;
@@ -24,13 +19,14 @@ import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import net.jpountz.xxhash.XXHashFactory;
+import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream;
 import org.apache.commons.io.input.RandomAccessFileInputStream;
 
 /**
  *
  * @author patri
  */
-public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMatrixDatasetRow> {
+public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMatrixDatasetRow>, Closeable {
 
 	private final LinkedHashMap<String, Integer> rowMap;
 	private final LinkedHashMap<String, Integer> colMap;
@@ -38,8 +34,7 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 	private final int numberOfColumns;
 	private final int bytesPerRow;
 	private final RandomAccessFile matrixFileReader;
-	private final RandomAccessFileInputStream inputStream;
-	private final long[] blockIndices;
+    private final long[] blockIndices;
 	private final File matrixFile;
 	private final long startOfEndBlock;
 	private final int blockSize;
@@ -53,6 +48,7 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 	private int currentBlock = -1;
 	private final LZ4FastDecompressor decompressor = LZ4Factory.fastestInstance().fastDecompressor();
 	private final Checksum hasher = XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(); //0x9747b28c is the default seed used by default constructor
+	private final boolean lz4FrameCompression; //true for lz4 data frames using lz4 standard false for jpountz.lz4 block variants
 
 	public DoubleMatrixDatasetRowCompressedReader(String path) throws IOException {
 
@@ -76,11 +72,21 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 			throw new IOException("File with col identifiers not found at: " + colFile.getAbsolutePath());
 		}
 
+
+		matrixFileReader = new RandomAccessFile(matrixFile, "r");
+        RandomAccessFileInputStream inputStream = new RandomAccessFileInputStream(matrixFileReader, false);//this is later used by block reader
+
+		matrixFileReader.seek(matrixFileReader.length() - 4);
+		if (matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[0]
+				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[1]
+				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[2]
+				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[3]) {
+			throw new IOException("Error parsing datg file, incorrect magic bytes");
+		}
+
 		rowMap = loadIdentifiers(rowFile);
 		colMap = loadIdentifiers(colFile);
 
-		matrixFileReader = new RandomAccessFile(matrixFile, "r");
-		inputStream = new RandomAccessFileInputStream(matrixFileReader, false);//this is later used by block reader
 
 		matrixFileReader.seek(matrixFileReader.length() - DoubleMatrixDatasetRowCompressedWriter.APPENDIX_BYTE_LENGTH);
 
@@ -102,16 +108,25 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 
 		this.rowsPerBlock = matrixFileReader.readInt();
 
-		if (matrixFileReader.readInt() != 0) {
+		byte[] extraData = new byte[4];
+		matrixFileReader.read(extraData);
+
+		if (extraData[0] != 0) {
 			throw new RuntimeException("Incompatible version of datg file");
 		}
-
-		if (matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[0]
-				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[1]
-				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[2]
-				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[3]) {
-			throw new IOException("Error parsing datg file.");
+		if (extraData[1] != 0) {
+			throw new RuntimeException("Incompatible version of datg file");
 		}
+		if (extraData[2] != 0) {
+			throw new RuntimeException("Incompatible version of datg file");
+		}
+		if (extraData[3] > 1) {
+			throw new RuntimeException("Incompatible version of datg file");
+		}
+		lz4FrameCompression = (extraData[3] & 0b00000001) > 0; // else would be jpountz.lz4 block compression
+
+
+
 
 		matrixFileReader.seek(startOfMetaDataBlock);
 		this.datasetName = matrixFileReader.readUTF();
@@ -125,7 +140,13 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 		numberOfBlocks = (numberOfRows + rowsPerBlock - 1) / rowsPerBlock; // (x + y - 1) / y; = ceiling divide
 
 		matrixFileReader.seek(startOfEndBlock);
-		final DataInputStream blockIndicesReader = new DataInputStream(new LZ4BlockInputStream(new RandomAccessFileInputStream(matrixFileReader, false)));
+		final DataInputStream blockIndicesReader;
+		if(lz4FrameCompression){
+			blockIndicesReader =  new DataInputStream(new FramedLZ4CompressorInputStream(new RandomAccessFileInputStream(matrixFileReader, false)));
+		} else {
+			blockIndicesReader = new DataInputStream(new LZ4BlockInputStream(new RandomAccessFileInputStream(matrixFileReader, false)));
+		}
+
 		blockIndices = new long[numberOfBlocks];
 		for (int block = 0; block < numberOfBlocks; ++block) {
 			blockIndices[block] = blockIndicesReader.readLong();
@@ -166,6 +187,10 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 
 		return loadSubsetOfRows(rowsToViewHash);
 
+	}
+
+	public synchronized double[] loadSingleRow(final String rowName) throws IOException {
+		return loadSingleRow(rowMap.get(rowName));
 	}
 
 	public synchronized double[] loadSingleRow(final int r) throws IOException {
@@ -281,9 +306,15 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 
 	private void loadBlockData(final int block) throws IOException {
 		matrixFileReader.seek(blockIndices[block]);
-		final LZ4BlockInputStream reader = new LZ4BlockInputStream(inputStream, decompressor, hasher);
 
-		reader.read(blockData, 0, blockSize);
+		final InputStream reader;
+		if(lz4FrameCompression){
+			reader = new FramedLZ4CompressorInputStream(new RandomAccessFileInputStream(matrixFileReader, false));
+		} else {
+			reader = new LZ4BlockInputStream(new RandomAccessFileInputStream(matrixFileReader, false));
+		}
+
+		reader.readNBytes(blockData, 0, blockSize);
 
 		currentBlock = block;
 	}
@@ -300,12 +331,12 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 		return matrixFile;
 	}
 
-	public Set<String> getRowIdentifiers() {
-		return Collections.unmodifiableSet(rowMap.keySet());
+	public SequencedSet<String> getRowIdentifiers() {
+		return Collections.unmodifiableSequencedSet(rowMap.sequencedKeySet());
 	}
 
-	public Set<String> getColumnIdentifiers() {
-		return Collections.unmodifiableSet(colMap.keySet());
+	public SequencedSet<String> getColumnIdentifiers() {
+		return Collections.unmodifiableSequencedSet(colMap.sequencedKeySet());
 	}
 
 	public long getTimestampCreated() {
@@ -322,6 +353,10 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 
 	public String getDataOnCols() {
 		return dataOnCols;
+	}
+
+	public boolean isLz4FrameCompression() {
+		return lz4FrameCompression;
 	}
 
 	public Map<String, Integer> getRowMap() {
@@ -347,6 +382,11 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 	@Override
 	public Iterator<DoubleMatrixDatasetRow> iterator() {
 		return new DoubleMatrixDatasetRowIteratorDatg(this);
+	}
+
+	@Override
+	public synchronized void close() throws IOException {
+		matrixFileReader.close();
 	}
 
 	private class DoubleMatrixDatasetRowIteratorDatg implements Iterator<DoubleMatrixDatasetRow> {
@@ -378,5 +418,7 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 			}
 
 		}
+
+
 	}
 }

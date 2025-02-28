@@ -7,6 +7,7 @@ public enum DatgConvertModes {
     DAT_2_DATG("Special mode for our old inhouse .dat files, not recommend for public use."),
     INSPECT("Get meta data of DATG file and show some elements"),
     ROW_CONCAT("Concatenate .txt matrices with identical columns into .datg. "),
+    UPGRADE("This modes upgrades a .datg file to latest version."),
     TEST("Internal testing");
 
     private final String description;

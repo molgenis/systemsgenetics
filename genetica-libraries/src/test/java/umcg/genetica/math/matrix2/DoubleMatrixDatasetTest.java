@@ -406,6 +406,42 @@ public class DoubleMatrixDatasetTest {
     }
 
     @Test
+    public void createSomeTestData() throws IOException, Exception {
+        System.out.println("testSaveLoadBinaryMatrix");
+        ArrayList<String> rows = new ArrayList<>();
+        ArrayList<String> cols = new ArrayList<>();
+
+        rows.add("row1");
+        rows.add("row2");
+        rows.add("row3");
+        rows.add("row4");
+
+        cols.add("col1");
+        cols.add("col2");
+        cols.add("col3");
+        cols.add("col4");
+        cols.add("col5");
+
+        DoubleMatrixDataset dataset = new DoubleMatrixDataset(rows, cols);
+
+        dataset.setElementQuick(0, 0, 1);
+        dataset.setElementQuick(0, 1, 2);
+        dataset.setElementQuick(0, 2, 3);
+        dataset.setElementQuick(0, 3, 4);
+        dataset.setElementQuick(0, 4, 5);
+
+        dataset.setElementQuick(1, 3, 5.55);
+        dataset.setElementQuick(2, 2, 6.66);
+        dataset.setElementQuick(2, 3, -12.2);
+
+        dataset.saveBinary("D:\\test.datg", "Title", "Rows", "Cols");
+        dataset.save("D:\\test.txt");
+
+
+
+    }
+
+    @Test
     public void testSaveLoadTextMatrix() throws IOException, Exception {
         System.out.println("testSaveLoadTextMatrix");
         ArrayList<String> rows = new ArrayList<>();
@@ -545,6 +581,7 @@ public class DoubleMatrixDatasetTest {
         assertEquals(dataset8.getElementQuick(2, 1), -12.2d);
 
     }
+
 
     @Test
     public void viewSubset() throws IOException, Exception {

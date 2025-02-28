@@ -97,7 +97,7 @@ sink <- lapply(traits, function(trait){
   pascalxZscores[pxg,trait] <<- -qnorm(pascalxRes[pxg,"pvalue"]/2)
   
   
-  res <- read.depict2(paste0("depict2_bundle/output/ds2_B_25k/", trait,"/",trait,"_keygenes3_noCovCor_enrichtments.xlsx"))
+  res <- read.depict2(paste0("depict2_bundle/output/ds2_B_25k/", trait,"/",trait,"_keygenes3_enrichtments.xlsx"))
   
   
   tissues <- names(res)[names(res) != "Recount3"]
@@ -174,6 +174,18 @@ clusterExport(clust, "pascalxZscores")
 clusterExport(clust, "hpoMatrix")
 clusterExport(clust, "hpoAnnotations")
 
+
+
+
+metaZ <- metaZscores[, trait] 
+metaZ <- metaZ[!is.na(metaZ)]
+length(metaZ)
+sigThreshold <- -qnorm(0.05/length(metaZ)/2)
+sig <- metaZ >= sigThreshold
+sum(sig)
+names(sig)[sig]
+
+cat(geneInfo$V7[match(names(sig[sig]), geneInfo$V1)])
 
 
 hpoEnrichmentList <- parLapply(clust, traits, function(trait){

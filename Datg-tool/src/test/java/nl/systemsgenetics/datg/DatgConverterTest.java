@@ -44,7 +44,8 @@ public class DatgConverterTest {
             }
         });
 
-        tmpOutputFolder.mkdir();
+        tmpOutputFolder.mkdirs();
+
 
         System.out.println("Temp folder with output of this test: " + tmpOutputFolder.getAbsolutePath());
 
@@ -150,6 +151,78 @@ public class DatgConverterTest {
     }
 
     @org.testng.annotations.Test
+    public void testOldCompressionMethod() throws Exception {
+
+        final String testName = "testOldCompressionMethod";
+
+        final DoubleMatrixDataset<String, String> testData1;
+        Random random = new Random(42);
+        testData1 = new DoubleMatrixDataset<>(10000, 1);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                testData1.setElementQuick(r, c, random.nextDouble());
+            }
+        }
+
+        DoubleMatrixDatasetRowCompressedWriterOldCompressionMethod.saveDataset(new File(tmpOutputFolder, testName + "_step1").getPath(), testData1, "So sad it had to come to this", "Mice", "Humans");
+
+        DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(tmpOutputFolder.getPath() + fs + testName + "_step1");
+
+        assertEquals(datgData.getDatasetName(), "So sad it had to come to this");
+        assertEquals(datgData.getDataOnRows(), "Mice");
+        assertEquals(datgData.getDataOnCols(), "Humans");
+
+        compareTwoMatrices(datgData.loadFullDataset(), testData1, 0.000001);
+
+        DatgConverter.main(new String[]{
+                "-m", "DATG-2-txt",
+                "-i", tmpOutputFolder.getPath() + fs + testName + "_step1",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step2"
+        });
+
+        DoubleMatrixDataset<String, String> txtData = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2.txt", '\t');
+
+        compareTwoMatrices(txtData, testData1, 0.000001);
+
+    }
+
+    @org.testng.annotations.Test
+    public void testUpgrade() throws Exception {
+
+        final String testName = "testUpgrade";
+
+        final DoubleMatrixDataset<String, String> testData1;
+        Random random = new Random(42);
+        testData1 = new DoubleMatrixDataset<>(100, 50000);
+        for (int r = 0; r < testData1.rows(); ++r) {
+            for (int c = 0; c < testData1.columns(); ++c) {
+                testData1.setElementQuick(r, c, random.nextDouble());
+            }
+        }
+
+        DoubleMatrixDatasetRowCompressedWriterOldCompressionMethod.saveDataset(new File(tmpOutputFolder, testName).getPath(), testData1, "So sad it had to come to this", "Mice", "Humans");
+
+//        DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(tmpOutputFolder.getPath() + fs + testName);
+//        assertFalse(datgData.isLz4FrameCompression());
+//        datgData.close();
+
+        DatgConverter.main(new String[]{
+                "-m", "UPGRADE",
+                "-i", tmpOutputFolder.getPath() + fs + testName
+        });
+
+        DoubleMatrixDatasetRowCompressedReader datgData = new DoubleMatrixDatasetRowCompressedReader(tmpOutputFolder.getPath() + fs + testName);
+
+        assertTrue(datgData.isLz4FrameCompression());
+        assertEquals(datgData.getDatasetName(), "So sad it had to come to this");
+        assertEquals(datgData.getDataOnRows(), "Mice");
+        assertEquals(datgData.getDataOnCols(), "Humans");
+
+        compareTwoMatrices(datgData.loadFullDataset(), testData1, 0.000001);
+
+    }
+
+    @org.testng.annotations.Test
     public void test3() throws Exception {
 
         final String testName = "test3";
@@ -214,7 +287,7 @@ public class DatgConverterTest {
         LinkedHashMap<String, Integer> hashRowsValidation = new LinkedHashMap<String, Integer>();
 
         int validationR = 0;
-        for(String s : new String[]{"ENSG001", "ENSG002", "ENSG003"}){
+        for (String s : new String[]{"ENSG001", "ENSG002", "ENSG003"}) {
             for (int r = 0; r < 100; ++r) {
                 hashRowsValidation.put(("R" + r + "-" + s), validationR++);
             }
@@ -280,7 +353,6 @@ public class DatgConverterTest {
         final String testName = "testRowConcat2";
 
         LinkedHashMap<String, Integer> hashRowsValidation = new LinkedHashMap<String, Integer>();
-
 
 
         LinkedHashMap<String, Integer> hashRows1 = new LinkedHashMap<String, Integer>();
@@ -542,6 +614,19 @@ public class DatgConverterTest {
 
         assertEquals(txtData.rows(), 0);
 
+
+        DatgConverter.main(new String[]{
+                "-m", "DATG_2_TXT",
+                "-i", tmpOutputFolder.getPath() + fs + testName + "_step1.datg",
+                "-o", tmpOutputFolder.getPath() + fs + testName + "_step2b",
+                "-rg", "X"
+        });
+
+        DoubleMatrixDataset<String, String> txtData2 = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getPath() + fs + testName + "_step2b.txt", '\t');
+
+        assertEquals(txtData2.rows(), 0);
+
+
     }
 
     @org.testng.annotations.Test
@@ -599,7 +684,6 @@ public class DatgConverterTest {
         DoubleMatrixDataset<String, String> testData1b = testData1.viewRowSelection(new String[]{"R45", "R101", "R450", "R451", "R452", "R453", "R454", "R455", "R456", "R457", "R458", "R459"});
 
         compareTwoMatrices(txtData, testData1b, 0.000001);
-
 
 
     }
