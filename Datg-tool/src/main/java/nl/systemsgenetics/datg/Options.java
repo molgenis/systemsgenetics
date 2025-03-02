@@ -129,7 +129,11 @@ public class Options {
 
         if(outputArg == null){
             outputFile = null;
-            logFile = null;
+            if(mode == DatgConvertModes.UPGRADE){
+                logFile = new File((inputArg.endsWith(".datg") ? inputArg.substring(0, inputArg.length() - 5) : inputArg) + ".log");
+            } else {
+                logFile = null;
+            }
         } else {
             outputFile = new File(outputArg);
             logFile = new File((outputArg.endsWith(".datg") ? outputArg.substring(0, outputArg.length() - 5) : outputArg) + ".log");
