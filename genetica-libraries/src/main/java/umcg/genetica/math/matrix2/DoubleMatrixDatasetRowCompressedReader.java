@@ -363,6 +363,19 @@ public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMa
 		return Collections.unmodifiableMap(rowMap);
 	}
 
+	public Map<String, Integer> getColumnMap() {
+		return Collections.unmodifiableMap(colMap);
+	}
+
+
+	public boolean hasRow(String rowQuery){
+		return rowMap.containsKey(rowQuery);
+	}
+
+	public boolean hasColumn(String columnQuery){
+		return colMap.containsKey(columnQuery);
+	}
+
 	private LinkedHashMap<String, Integer> loadIdentifiers(final File file) throws IOException {
 
 		final CSVParser identifierFileParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
