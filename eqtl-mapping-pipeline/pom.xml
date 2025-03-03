@@ -99,8 +99,13 @@
 			<artifactId>Rserve</artifactId>
 			<version>1.8.2-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>me.tongfei</groupId>
+			<artifactId>progressbar</artifactId>
+			<version>0.7.2</version>
+		</dependency>
 
-	</dependencies>
+    </dependencies>
 	<build>
 		<resources>
 			<resource>

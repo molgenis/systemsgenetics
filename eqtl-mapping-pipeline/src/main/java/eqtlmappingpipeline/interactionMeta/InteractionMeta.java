@@ -4,6 +4,8 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import me.tongfei.progressbar.ProgressBarStyle;
+import me.tongfei.progressbar.ProgressBar;
 import umcg.genetica.math.matrix2.DoubleMatrixDataset;
 import umcg.genetica.math.matrix2.DoubleMatrixDatasetRowCompressedReader;
 
@@ -77,6 +79,7 @@ public class InteractionMeta {
 
         DoubleMatrixDataset<String, String> intermediates = new DoubleMatrixDataset<>(Arrays.asList("sumWZ", "sumW2"),foundCovariates);
 
+        ProgressBar pb = new ProgressBar("Meta analysis", testedEqtlsNames.size(), ProgressBarStyle.COLORFUL_UNICODE_BLOCK);
 
         int cohortWithAnyData;
         for(Eqtl eqtl : testedEqtls) {
@@ -134,7 +137,7 @@ public class InteractionMeta {
 
             //Here we have looped through all cohorts
 
-            System.out.println(eqtl.getSnpGene() + "\t" + cohortWithAnyData);
+            //System.out.println(eqtl.getSnpGene() + "\t" + cohortWithAnyData);
 
             int eqtlI = metaZscores.getRowIndex(eqtl.getSnpGene());
             for(int covariateI = 0; covariateI < foundCovariates.size(); covariateI++){
@@ -149,9 +152,11 @@ public class InteractionMeta {
 
             }
 
-
+            pb.step();
 
         }
+
+        pb.close();
 
         metaZscores.save(metaZFile);
         totalSamples.save(metaSampleCountFile);
