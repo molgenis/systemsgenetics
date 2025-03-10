@@ -17,7 +17,7 @@ public class InteractionMeta {
 
     public static void runMeta() throws IOException {
 
-        File resultFolder = new File("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/biosInteractions");
+        File resultFolder = new File("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/biosInteractionsPcCor50");
         String[] cohorts = new String[]{"LL", "LLS_660Q", "LLS_OmniExpr", "NTR_Affy6", "NTR_GoNL", "RS"};
         ArrayList<File> cohortFolders = new ArrayList<File>();
 
@@ -39,16 +39,21 @@ public class InteractionMeta {
 
         List<Eqtl> testedEqtls = loadTestedEqtls(allTestEffectsFile);
 
-        ArrayList<String> snpGeneEqtls = new ArrayList<>(testedEqtls.size());
+        ArrayList<String> testedEqtlsNames = new ArrayList<>(testedEqtls.size());
+        HashSet<String> eqtlGenes = new LinkedHashSet<>();
         for(Eqtl eqtl : testedEqtls) {
-            snpGeneEqtls.add(eqtl.getSnpGene());
+            testedEqtlsNames.add(eqtl.getSnpGene());
+            eqtlGenes.add(eqtl.getGene());
         }
+        System.out.println("Total eqtls: " + testedEqtlsNames.size());
+        System.out.println("Unique eqtl genes: " + eqtlGenes.size());
+
 
         HashMap<String, DoubleMatrixDatasetRowCompressedReader> cohortZscoresMap = new HashMap<>(cohortResultFolders.size());
         HashMap<String, Map<String, Integer>> cohortColumnMaps = new HashMap<>(cohortResultFolders.size());
 
 
-        HashSet<String> foundCovariates = new HashSet<>();
+        HashSet<String> foundCovariates = new LinkedHashSet<>();
 
         for (File cohortResultFolder : cohortResultFolders) {
 
@@ -60,19 +65,15 @@ public class InteractionMeta {
 
         }
 
-        DoubleMatrixDataset<String, String> covariateNonMissingCount = new DoubleMatrixDataset<>(foundCovariates, cohortZscoresMap.keySet());
+        DoubleMatrixDataset<String, String> eqtlgeneNonMissingCount = new DoubleMatrixDataset<>(eqtlGenes, cohortZscoresMap.keySet());
 
         for (File cohortResultFolder : cohortResultFolders) {
             System.out.println(cohortResultFolder.getName());
-            loadCohortCovariateCounts(new File(cohortResultFolder.getPath(), "/feature_metadata.txt.gz"), cohortResultFolder.getName(), covariateNonMissingCount);
+            loadCohortEqtlgeneCounts(new File(cohortResultFolder.getPath(), "/feature_metadata.txt.gz"), cohortResultFolder.getName(), eqtlgeneNonMissingCount);
 
         }
 
-        ArrayList<String> testedEqtlsNames = new ArrayList<>(testedEqtls.size());
-        for(Eqtl eqtl : testedEqtls) {
-            testedEqtlsNames.add(eqtl.getSnpGene());
-        }
-        System.out.println("Total eqtls: " + testedEqtlsNames.size());
+
 
         DoubleMatrixDataset<String, String> metaZscores = new DoubleMatrixDataset<>(testedEqtlsNames,foundCovariates);
         DoubleMatrixDataset<String, String> totalSamples = new DoubleMatrixDataset<>(testedEqtlsNames,foundCovariates);
@@ -81,10 +82,10 @@ public class InteractionMeta {
 
         ProgressBar pb = new ProgressBar("Meta analysis", testedEqtlsNames.size(), ProgressBarStyle.COLORFUL_UNICODE_BLOCK);
 
-        int cohortWithAnyData;
+       // int cohortWithAnyData;
         for(Eqtl eqtl : testedEqtls) {
 
-            cohortWithAnyData = 0;
+            //cohortWithAnyData = 0;
 
             //reset intermediates
             intermediates.getMatrix().assign(0);
@@ -93,7 +94,7 @@ public class InteractionMeta {
 
                 DoubleMatrixDatasetRowCompressedReader cohortZscores = cohortZscoresEntry.getValue();
 
-                boolean anyHasZ = false;
+//                boolean anyHasZ = false;
 
                 if(cohortZscores.hasRow(eqtl.getSnpGene())) {
 
@@ -102,6 +103,7 @@ public class InteractionMeta {
 
                     double[] cohortZscoresArray = cohortZscores.loadSingleRow(eqtl.getSnpGene());
 
+                    double sampleSize = eqtlgeneNonMissingCount.getElement(eqtl.getGene(), cohort);
 
                     for(String covariate : foundCovariates){
 
@@ -109,15 +111,16 @@ public class InteractionMeta {
 
                             double zScore = cohortZscoresArray[cohortColumnMap.get(covariate)];
 
+
                             if(!Double.isNaN(zScore)){
 
-                                if(!anyHasZ){
-                                    cohortWithAnyData++;
-                                    anyHasZ=true;
-                                }
+//                                if(!anyHasZ){
+//                                    //cohortWithAnyData++;
+//                                    anyHasZ=true;
+//                                }
 
 
-                                double sampleSize = covariateNonMissingCount.getElement(covariate, cohort);
+
 
                                 int intermediateColumn = intermediates.getColIndex(covariate);
 
@@ -138,6 +141,10 @@ public class InteractionMeta {
             //Here we have looped through all cohorts
 
             //System.out.println(eqtl.getSnpGene() + "\t" + cohortWithAnyData);
+
+            intermediates.viewDice().save("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/biosInteractions/intermediates.txt");
+
+
 
             int eqtlI = metaZscores.getRowIndex(eqtl.getSnpGene());
             for(int covariateI = 0; covariateI < foundCovariates.size(); covariateI++){
@@ -186,7 +193,7 @@ public class InteractionMeta {
 
     }
 
-    private static void loadCohortCovariateCounts(File featureMetadataFile, String cohort, DoubleMatrixDataset<String, String> covariateNonMissingCount) throws IOException {
+    private static void loadCohortEqtlgeneCounts(File featureMetadataFile, String cohort, DoubleMatrixDataset<String, String> covariateNonMissingCount) throws IOException {
 
         final CSVParser parser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
         final CSVReader reader;
