@@ -514,14 +514,13 @@ public class DatgConverter {
 
             }
 
-
-            LOGGER.info("Number of grep terms: " + numberOfGrepTerms);
-            final Trie grepTrie = grepTrieBuilder.build();
+            LOGGER.info("Number of row grep terms: " + numberOfGrepTerms);
+            final Trie rowGrepTrie = grepTrieBuilder.build();
 
             int countRowMatched = 0;
             for (Map.Entry<String, Integer> rowEntry : datgData.getRowMap().entrySet()) {
                 String rowName = rowEntry.getKey();
-                if (grepTrie.containsMatch(rowName)) {
+                if (rowGrepTrie.containsMatch(rowName)) {
                     ++countRowMatched;
 
                     double[] rowContent = datgData.loadSingleRow(rowEntry.getValue());

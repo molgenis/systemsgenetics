@@ -79,6 +79,8 @@ public class Options {
     private final String filePattern;
     private final File rowGrepFile;
     private final String rowGrepString;
+//    private final File colGrepFile;
+//    private final String colGrepString;
 
     public Options(String[] args) throws Exception {
 
@@ -162,6 +164,24 @@ public class Options {
             rowGrepString = null;
         }
 
+//        if(commandLine.hasOption("colGrep")){
+//            File file = new File(commandLine.getOptionValue("colGrep"));
+//            if(mode != DatgConvertModes.DATG_2_TXT){
+//                LOGGER.warn("colGrep is only supported for mode DATG_2_TXT, otherwise it is ignored.");
+//            }
+//            if(file.exists()){
+//                colGrepFile = file;
+//                colGrepString = null;
+//            } else {
+//                colGrepFile = null;
+//                colGrepString = commandLine.getOptionValue("rowGrep");
+//            }
+//        } else {
+//            colGrepFile = null;
+//            colGrepString = null;
+//        }
+
+
 
 
     }
@@ -190,6 +210,12 @@ public class Options {
         if(mode != DatgConvertModes.DATG_2_TXT && rowGrepString != null){
             LOGGER.info(" * Row grep string: " + rowGrepString);
         }
+//        if(mode != DatgConvertModes.DATG_2_TXT && colGrepFile != null){
+//            LOGGER.info(" * Column grep file: " + colGrepFile.getPath());
+//        }
+//        if(mode != DatgConvertModes.DATG_2_TXT && colGrepString != null){
+//            LOGGER.info(" * Column grep string: " + colGrepString);
+//        }
         if(filePattern != null){
             LOGGER.info(" * File pattern: " + filePattern);
         }
@@ -235,4 +261,12 @@ public class Options {
     public String getRowGrepString() {
         return rowGrepString;
     }
+
+//    public File getColGrepFile() {
+//        return colGrepFile;
+//    }
+//
+//    public String getColGrepString() {
+//        return colGrepString;
+//    }
 }

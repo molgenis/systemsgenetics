@@ -11,37 +11,52 @@ import umcg.genetica.math.matrix2.DoubleMatrixDatasetRowCompressedReader;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 
 public class InteractionMeta {
 
     public static void runMeta() throws IOException {
 
-        File resultFolder = new File("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/biosInteractionsPcCor50");
-        String[] cohorts = new String[]{"LL", "LLS_660Q", "LLS_OmniExpr", "NTR_Affy6", "NTR_GoNL", "RS"};
+        File resultFolder = new File("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/replicationMarcJan5");
+        String[] cohorts = new String[]{"LL", "LLS_660Q", "LLS_OmniExpr", "NTR_Affy6", "NTR_GoNL", "RS"};//
         ArrayList<File> cohortFolders = new ArrayList<File>();
 
         for (String cohort : cohorts) {
             cohortFolders.add(new File(resultFolder, cohort));
         }
 
-        File allTestEffectsFile = new File("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/eQtlgenLeadVariants.txt.gz");
+        File allTestEffectsFile = new File("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/replicationMarcJan3/co_eQTL_significantTests_inc_all_sceQTLGen_eGenes2.txt.gz");
+        //File allTestEffectsFile = new File("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/biosInteractionsPcCor50/nod2Qtls.txt.gz");
 
-        File metaZFile = new File(resultFolder, "metaZ.txt");
-        File metaSampleCountFile = new File(resultFolder, "metaSampleCount.txt");
+        File metaZFile = new File(resultFolder, "metaZTest.txt");
+        File metaSampleCountFile = new File(resultFolder, "metaSampleCountTest.txt");
 
-        runMeta(cohortFolders, allTestEffectsFile, metaZFile, metaSampleCountFile);
+        runMeta(cohortFolders, allTestEffectsFile, metaZFile, metaSampleCountFile, "/interactionZscoreTest.datg");
+
+        metaZFile = new File(resultFolder, "metaZPermutation.txt");
+        metaSampleCountFile = new File(resultFolder, "metaSampleCountPermutation.txt");
+
+        //this does not work yet. In permutation row names contain round number
+//        runMeta(cohortFolders, allTestEffectsFile, metaZFile, metaSampleCountFile, "/interactionZscorePermutation.datg");
 
     }
 
 
-    private static void runMeta(List<File> cohortResultFolders, File allTestEffectsFile, File metaZFile, File metaSampleCountFile) throws IOException {
+    private static void runMeta(List<File> cohortResultFolders, File allTestEffectsFile, File metaZFile, File metaSampleCountFile, String zscoreFile) throws IOException {
+
+
+        int cores = Runtime.getRuntime().availableProcessors();
+        System.out.println("Number of available cores: " + cores);
+
+        //make sure there are other treads that can run if one is waiting for IO
+        System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", String.valueOf(cores * 4));
 
         List<Eqtl> testedEqtls = loadTestedEqtls(allTestEffectsFile);
 
         ArrayList<String> testedEqtlsNames = new ArrayList<>(testedEqtls.size());
         HashSet<String> eqtlGenes = new LinkedHashSet<>();
-        for(Eqtl eqtl : testedEqtls) {
+        for (Eqtl eqtl : testedEqtls) {
             testedEqtlsNames.add(eqtl.getSnpGene());
             eqtlGenes.add(eqtl.getGene());
         }
@@ -49,119 +64,192 @@ public class InteractionMeta {
         System.out.println("Unique eqtl genes: " + eqtlGenes.size());
 
 
-        HashMap<String, DoubleMatrixDatasetRowCompressedReader> cohortZscoresMap = new HashMap<>(cohortResultFolders.size());
-        HashMap<String, Map<String, Integer>> cohortColumnMaps = new HashMap<>(cohortResultFolders.size());
-
+        DoubleMatrixDatasetRowCompressedReader[] cohortsZscores = new DoubleMatrixDatasetRowCompressedReader[cohortResultFolders.size()];
+        int[][] cohortsColumnIndices = new int[cohortResultFolders.size()][];
+        String[] cohortNames = new String[cohortResultFolders.size()];
 
         HashSet<String> foundCovariates = new LinkedHashSet<>();
+        for (int cohortI = 0; cohortI < cohortResultFolders.size(); cohortI++) {
 
-        for (File cohortResultFolder : cohortResultFolders) {
-
-            DoubleMatrixDatasetRowCompressedReader cohortZscores = new DoubleMatrixDatasetRowCompressedReader(cohortResultFolder.getPath() + "/interactionZscoreTest.datg");
-            cohortZscoresMap.put(cohortResultFolder.getName(), cohortZscores);
-            cohortColumnMaps.put(cohortResultFolder.getName(), cohortZscores.getColumnMap());
+            DoubleMatrixDatasetRowCompressedReader cohortZscores = new DoubleMatrixDatasetRowCompressedReader(cohortResultFolders.get(cohortI).getPath() + zscoreFile);
+            cohortsZscores[cohortI] = cohortZscores;
+            cohortNames[cohortI] = cohortResultFolders.get(cohortI).getName();
 
             foundCovariates.addAll(cohortZscores.getColumnIdentifiers());
 
         }
 
-        DoubleMatrixDataset<String, String> eqtlgeneNonMissingCount = new DoubleMatrixDataset<>(eqtlGenes, cohortZscoresMap.keySet());
+//        System.out.println("DEBUG MODE!!!!!!!!!!!!!!!");
+//
+//        foundCovariates.clear();
+//        foundCovariates.add("ENSG00000166900");
 
-        for (File cohortResultFolder : cohortResultFolders) {
-            System.out.println(cohortResultFolder.getName());
-            loadCohortEqtlgeneCounts(new File(cohortResultFolder.getPath(), "/feature_metadata.txt.gz"), cohortResultFolder.getName(), eqtlgeneNonMissingCount);
+        final String[] covariates = foundCovariates.toArray(new String[0]);
+
+        System.out.println("Covariates: " + covariates.length);
+
+        DoubleMatrixDataset<String, String> eqtlgeneNonMissingCount = new DoubleMatrixDataset<>(eqtlGenes, Arrays.asList(cohortNames));
+
+        for (int cohortI = 0; cohortI < cohortResultFolders.size(); cohortI++) {
+            System.out.println(cohortResultFolders.get(cohortI).getName());
+
+            loadCohortEqtlgeneCounts(new File(cohortResultFolders.get(cohortI).getPath(), "/feature_metadata.txt.gz"), cohortResultFolders.get(cohortI).getName(), eqtlgeneNonMissingCount);
+
+            int[] cohortColumnIndices = new int[covariates.length];
+
+            DoubleMatrixDatasetRowCompressedReader cohortZscores = cohortsZscores[cohortI];
+
+            Map<String, Integer> cohortColumnMap = cohortZscores.getColumnMap();
+
+            for (int covariateI = 0; covariateI < covariates.length; covariateI++) {
+
+                Integer colIndex = cohortColumnMap.get(covariates[covariateI]);
+
+                if (colIndex == null) {
+                    cohortColumnIndices[covariateI] = -1;
+                } else {
+                    cohortColumnIndices[covariateI] = colIndex;
+                }
+
+            }
+
+            cohortsColumnIndices[cohortI] = cohortColumnIndices;
 
         }
 
 
-
-        DoubleMatrixDataset<String, String> metaZscores = new DoubleMatrixDataset<>(testedEqtlsNames,foundCovariates);
-        DoubleMatrixDataset<String, String> totalSamples = new DoubleMatrixDataset<>(testedEqtlsNames,foundCovariates);
-
-        DoubleMatrixDataset<String, String> intermediates = new DoubleMatrixDataset<>(Arrays.asList("sumWZ", "sumW2"),foundCovariates);
+        DoubleMatrixDataset<String, String> metaZscores = new DoubleMatrixDataset<>(testedEqtlsNames, foundCovariates);
+        DoubleMatrixDataset<String, String> totalSamples = new DoubleMatrixDataset<>(testedEqtlsNames, foundCovariates);
 
         ProgressBar pb = new ProgressBar("Meta analysis", testedEqtlsNames.size(), ProgressBarStyle.COLORFUL_UNICODE_BLOCK);
 
-       // int cohortWithAnyData;
-        for(Eqtl eqtl : testedEqtls) {
 
-            //cohortWithAnyData = 0;
+        // int cohortWithAnyData;
+        IntStream.range(0, testedEqtls.size()).parallel().forEach(eqtlI -> {
 
-            //reset intermediates
-            intermediates.getMatrix().assign(0);
 
-            for(Map.Entry<String, DoubleMatrixDatasetRowCompressedReader> cohortZscoresEntry : cohortZscoresMap.entrySet()){
+            DoubleMatrixDataset<String, String> intermediates = new DoubleMatrixDataset<>(Arrays.asList("sumWZ", "sumW2"), foundCovariates);
 
-                DoubleMatrixDatasetRowCompressedReader cohortZscores = cohortZscoresEntry.getValue();
+            final Eqtl eqtl = testedEqtls.get(eqtlI);
+
+ //           try {
+
+//                BufferedWriter writer = new BufferedWriter(new FileWriter(new File(metaZFile.getParent(), "debug_" + eqtl.snp + "-" + eqtl.gene)));
+//
+//
+//                writer.write(eqtl.getSnpGene());
+//                writer.newLine();
+
+                //cohortWithAnyData = 0;
+
+                //reset intermediates
+                intermediates.getMatrix().assign(0);
+
+                for (int cohortI = 0; cohortI < cohortResultFolders.size(); cohortI++) {
+
+//                    writer.write(cohortNames[cohortI]);
+//                    writer.newLine();
+
+                    final DoubleMatrixDatasetRowCompressedReader cohortZscores = cohortsZscores[cohortI];
 
 //                boolean anyHasZ = false;
 
-                if(cohortZscores.hasRow(eqtl.getSnpGene())) {
+                    //System.out.println(eqtl.getSnpGene());
 
-                    String cohort = cohortZscoresEntry.getKey();
-                    Map<String, Integer> cohortColumnMap = cohortColumnMaps.get(cohort);
-
-                    double[] cohortZscoresArray = cohortZscores.loadSingleRow(eqtl.getSnpGene());
-
-                    double sampleSize = eqtlgeneNonMissingCount.getElement(eqtl.getGene(), cohort);
-
-                    for(String covariate : foundCovariates){
-
-                        if(cohortColumnMap.containsKey(covariate)){
-
-                            double zScore = cohortZscoresArray[cohortColumnMap.get(covariate)];
+                    if (cohortZscores.hasRow(eqtl.getSnpGene())) {
 
 
-                            if(!Double.isNaN(zScore)){
-
-//                                if(!anyHasZ){
-//                                    //cohortWithAnyData++;
-//                                    anyHasZ=true;
-//                                }
+                        final String cohort = cohortNames[cohortI];
 
 
+                        final double[] cohortZscoresArray;
+                        try {
+                            cohortZscoresArray = cohortZscores.loadSingleRow(eqtl.getSnpGene());
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+
+//                    final double[] cohortZscoresArray = new double[cohortZscores.getNumberOfColumns()];
 
 
-                                int intermediateColumn = intermediates.getColIndex(covariate);
+                        final double sampleSize = eqtlgeneNonMissingCount.getElement(eqtl.getGene(), cohort);
+                        final double sqrtSampleSize = Math.sqrt(sampleSize);
 
-                                intermediates.setElementQuick(0, intermediateColumn, intermediates.getElementQuick(0, intermediateColumn) + (sampleSize * zScore));
-                                intermediates.setElementQuick(1, intermediateColumn, intermediates.getElementQuick(1, intermediateColumn) + (sampleSize * sampleSize));
+                        for (int covariateI = 0; covariateI < covariates.length; covariateI++) {
 
-                                totalSamples.setElement(eqtl.getSnpGene(), covariate, totalSamples.getElement(eqtl.getSnpGene(), covariate) + sampleSize);
+
+                            // System.out.println(covariate);
+
+                            final int covariantIndexInCohort = cohortsColumnIndices[cohortI][covariateI];
+                            if (covariantIndexInCohort >= 0) {
+
+                                final double zScore = cohortZscoresArray[covariantIndexInCohort];
+//
+//                                writer.write("Zscore: " + zScore);
+//                                writer.newLine();
+//
+//                                writer.write("Sample size: " + sampleSize);
+//                                writer.newLine();
+
+
+////                            System.out.println(zScore);
+//
+                                if (!Double.isNaN(zScore)) {
+
+                                    intermediates.setElementQuick(0, covariateI, intermediates.getElementQuick(0, covariateI) + (sqrtSampleSize * zScore));
+                                    intermediates.setElementQuick(1, covariateI, intermediates.getElementQuick(1, covariateI) + (sampleSize));
+                                    totalSamples.setElementQuick(eqtlI, covariateI, totalSamples.getElementQuick(eqtlI, covariateI) + sampleSize);
+
+//
+                                }
+
                             }
 
                         }
 
                     }
+//                    else {
+//                        writer.write("No data");
+//                    }
 
                 }
 
-            }
+                //Here we have looped through all cohorts
 
-            //Here we have looped through all cohorts
+                //System.out.println(eqtl.getSnpGene() + "\t" + cohortWithAnyData);
 
-            //System.out.println(eqtl.getSnpGene() + "\t" + cohortWithAnyData);
-
-            intermediates.viewDice().save("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/biosInteractions/intermediates.txt");
+                //intermediates.viewDice().save("/groups/umcg-fg/tmp04/projects/eqtlgen-phase2/interactions/biosInteractions/intermediates.txt");
 
 
+                for (int covariateI = 0; covariateI < foundCovariates.size(); covariateI++) {
+                    double sumWZ = intermediates.getElementQuick(0, covariateI);
+                    double sumW2 = intermediates.getElementQuick(1, covariateI);
 
-            int eqtlI = metaZscores.getRowIndex(eqtl.getSnpGene());
-            for(int covariateI = 0; covariateI < foundCovariates.size(); covariateI++){
-                double sumWZ = intermediates.getElementQuick(0,covariateI);
-                double sumW2 = intermediates.getElementQuick(1,covariateI);
+//                    writer.write("SumWZ: " + sumWZ);
+//                    writer.newLine();
+//                    writer.write("SumW2: " + sumW2);
+//                    writer.newLine();
+//                    writer.write("Z: " + sumWZ / Math.sqrt(sumW2));
+//                    writer.newLine();
 
-                if(sumW2 > 0){
+                    if (sumW2 > 0) {
 
-                    metaZscores.setElementQuick(eqtlI, covariateI, sumWZ / Math.sqrt(sumW2));
+                        metaZscores.setElementQuick(eqtlI, covariateI, sumWZ / Math.sqrt(sumW2));
+
+                    }
 
                 }
 
-            }
+//                writer.close();
+
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
 
             pb.step();
 
-        }
+        });
+
 
         pb.close();
 
@@ -208,8 +296,9 @@ public class InteractionMeta {
 
         while ((nextLine = reader.readNext()) != null) {
 
-            covariateNonMissingCount.setElement(nextLine[0], cohort, Double.parseDouble(nextLine[6]));
-
+            if (covariateNonMissingCount.containsRow(nextLine[0])) {
+                covariateNonMissingCount.setElement(nextLine[0], cohort, Double.parseDouble(nextLine[6]));
+            }
 
         }
 
