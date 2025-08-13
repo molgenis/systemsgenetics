@@ -6,7 +6,6 @@
 package umcg.genetica.math.matrix2;
 
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
-import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
 import com.opencsv.CSVWriter;
 import gnu.trove.list.array.TLongArrayList;
 
@@ -25,7 +24,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.SequencedCollection;
 import java.util.zip.GZIPOutputStream;
 
@@ -67,13 +65,13 @@ public class DoubleMatrixDatasetRowCompressedWriter {
     private final String dataOnCols;//For instance pathways
     private int numberOfRows = 0;
     private final static int MAX_ROWS = Integer.MAX_VALUE - 8;
-    private final MessageDigest matrixFileMd5Digest;
-    private final MessageDigest rowFileMd5Digest;
-    private final MessageDigest colFileMd5Digest;
+    private final MessageDigest matrixFileDigest;
+    private final MessageDigest rowFileDigest;
+    private final MessageDigest colFileDigest;
     private final File matrixFile;
     private final File rowFile;
     private final File colFile;
-    private final File md5File;
+    private final File checksumFile;
     private final HashSet<String> rowNames = new HashSet<>();
 
     public DoubleMatrixDatasetRowCompressedWriter(String path, final SequencedCollection<String> columns) throws FileNotFoundException, IOException {
@@ -101,9 +99,9 @@ public class DoubleMatrixDatasetRowCompressedWriter {
         }
 
         try {
-            matrixFileMd5Digest = MessageDigest.getInstance("MD5");
-            rowFileMd5Digest = MessageDigest.getInstance("MD5");
-            colFileMd5Digest = MessageDigest.getInstance("MD5");
+            matrixFileDigest = MessageDigest.getInstance("SHA-256");
+            rowFileDigest = MessageDigest.getInstance("SHA-256");
+            colFileDigest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -125,7 +123,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
         matrixFile = new File(path + ".datg");
         rowFile = new File(path + ".rows.txt.gz");
         colFile = new File(path + ".cols.txt.gz");
-        md5File = new File(path + ".md5");
+        checksumFile = new File(path + ".sha256");
 
         if (matrixFile.getParentFile() != null && !matrixFile.getParentFile().exists()) {
             if (!matrixFile.getParentFile().mkdirs()) {
@@ -135,7 +133,7 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 
         final HashSet<String> colNames = new HashSet<>();
         numberOfColumns = columns.size();
-        final CSVWriter colNamesWriter = new CSVWriter(new OutputStreamWriter(new GZIPOutputStream(new DigestOutputStream(new FileOutputStream(colFile), colFileMd5Digest)), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
+        final CSVWriter colNamesWriter = new CSVWriter(new OutputStreamWriter(new GZIPOutputStream(new DigestOutputStream(new FileOutputStream(colFile), colFileDigest)), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
         for (String col : columns) {
             if(!colNames.add(col)){
                 throw new IOException("Unable to add duplicate column name: " + col);
@@ -145,12 +143,12 @@ public class DoubleMatrixDatasetRowCompressedWriter {
         }
         colNamesWriter.close();
 
-        rowNamesWriter = new CSVWriter(new OutputStreamWriter(new GZIPOutputStream(new DigestOutputStream(new FileOutputStream(rowFile), rowFileMd5Digest)), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
+        rowNamesWriter = new CSVWriter(new OutputStreamWriter(new GZIPOutputStream(new DigestOutputStream(new FileOutputStream(rowFile), rowFileDigest)), StandardCharsets.UTF_8), '\t', '\0', '\0', "\n");
 
         blockIndices = new TLongArrayList(1000);
 
 
-        matrixFileWriter = new CountingOutputStream(new DigestOutputStream(new BufferedOutputStream(new FileOutputStream(matrixFile), 262144), matrixFileMd5Digest));
+        matrixFileWriter = new CountingOutputStream(new DigestOutputStream(new BufferedOutputStream(new FileOutputStream(matrixFile), 262144), matrixFileDigest));
 
 
     }
@@ -306,25 +304,25 @@ public class DoubleMatrixDatasetRowCompressedWriter {
 
         rowNamesWriter.close();
 
-        final BufferedWriter md5FileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(md5File), StandardCharsets.UTF_8));
+        final BufferedWriter checksumFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(checksumFile), StandardCharsets.UTF_8));
 
-        addMd5ToFile(matrixFileMd5Digest.digest(), matrixFile.getName(), md5FileWriter);
-        addMd5ToFile(rowFileMd5Digest.digest(), rowFile.getName(), md5FileWriter);
-        addMd5ToFile(colFileMd5Digest.digest(), colFile.getName(), md5FileWriter);
+        addChecksumToFile(matrixFileDigest.digest(), matrixFile.getName(), checksumFileWriter);
+        addChecksumToFile(rowFileDigest.digest(), rowFile.getName(), checksumFileWriter);
+        addChecksumToFile(colFileDigest.digest(), colFile.getName(), checksumFileWriter);
 
-        md5FileWriter.close();
+        checksumFileWriter.close();
 
     }
 
-    private void addMd5ToFile(final byte[] md5Hash, final String filename, BufferedWriter md5FileWriter) throws IOException {
+    private void addChecksumToFile(final byte[] hash, final String filename, BufferedWriter checksumFileWriter) throws IOException {
 
-        for (byte b : md5Hash) {
-            md5FileWriter.write(String.format("%02x", b));
+        for (byte b : hash) {
+            checksumFileWriter.write(String.format("%02x", b));
         }
-        md5FileWriter.append(' ');
-        md5FileWriter.append(' ');
-        md5FileWriter.write(filename);
-        md5FileWriter.append('\n');
+        checksumFileWriter.append(' ');
+        checksumFileWriter.append(' ');
+        checksumFileWriter.write(filename);
+        checksumFileWriter.append('\n');
 
     }
 

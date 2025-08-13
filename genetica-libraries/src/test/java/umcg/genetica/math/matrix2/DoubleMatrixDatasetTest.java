@@ -291,7 +291,7 @@ public class DoubleMatrixDatasetTest {
 
         //test md5sum
 
-        BufferedReader md5reader = Files.newBufferedReader(new File(tmpOutputFolder.getAbsolutePath() + fs + "test.md5").toPath());
+        BufferedReader md5reader = Files.newBufferedReader(new File(tmpOutputFolder.getAbsolutePath() + fs + "test.sha256").toPath());
         HashMap<String, String> fileToChecksumMap = new HashMap<String, String>();
 
         String line;
@@ -302,9 +302,9 @@ public class DoubleMatrixDatasetTest {
 
         assertEquals(fileToChecksumMap.size(), 3);
 
-        final MessageDigest matrixFileMd5Digest = MessageDigest.getInstance("MD5");
-        final MessageDigest rowFileMd5Digest = MessageDigest.getInstance("MD5");
-        final MessageDigest colFileMd5Digest = MessageDigest.getInstance("MD5");
+        final MessageDigest matrixFileMd5Digest = MessageDigest.getInstance("SHA-256");
+        final MessageDigest rowFileMd5Digest = MessageDigest.getInstance("SHA-256");
+        final MessageDigest colFileMd5Digest = MessageDigest.getInstance("SHA-256");
 
         DigestInputStream digestInputStream = new DigestInputStream(Files.newInputStream(new File(tmpOutputFolder.getAbsolutePath() + fs + "test.datg").toPath()), matrixFileMd5Digest);
         digestInputStream.readAllBytes();
