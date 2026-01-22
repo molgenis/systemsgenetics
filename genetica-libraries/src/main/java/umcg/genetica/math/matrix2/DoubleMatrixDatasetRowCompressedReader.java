@@ -10,34 +10,23 @@ import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.RandomAccessFile;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+
+import java.io.*;
+import java.util.*;
 import java.util.zip.Checksum;
 import java.util.zip.GZIPInputStream;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import net.jpountz.xxhash.XXHashFactory;
+import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream;
 import org.apache.commons.io.input.RandomAccessFileInputStream;
 
 /**
  *
  * @author patri
  */
-public class DoubleMatrixDatasetRowCompressedReader {
+public class DoubleMatrixDatasetRowCompressedReader implements Iterable<DoubleMatrixDatasetRow>, Closeable {
 
 	private final LinkedHashMap<String, Integer> rowMap;
 	private final LinkedHashMap<String, Integer> colMap;
@@ -45,8 +34,7 @@ public class DoubleMatrixDatasetRowCompressedReader {
 	private final int numberOfColumns;
 	private final int bytesPerRow;
 	private final RandomAccessFile matrixFileReader;
-	private final RandomAccessFileInputStream inputStream;
-	private final long[] blockIndices;
+    private final long[] blockIndices;
 	private final File matrixFile;
 	private final long startOfEndBlock;
 	private final int blockSize;
@@ -54,12 +42,13 @@ public class DoubleMatrixDatasetRowCompressedReader {
 	private final int rowsPerBlock;
 	private final long timestampCreated;
 	private final String datasetName;
-	private final String dataOnRows;//For instnace genes
+	private final String dataOnRows;//For instance genes
 	private final String dataOnCols;//For instance pathays
 	private final byte[] blockData;
 	private int currentBlock = -1;
 	private final LZ4FastDecompressor decompressor = LZ4Factory.fastestInstance().fastDecompressor();
 	private final Checksum hasher = XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(); //0x9747b28c is the default seed used by default constructor
+	private final boolean lz4FrameCompression; //true for lz4 data frames using lz4 standard false for jpountz.lz4 block variants
 
 	public DoubleMatrixDatasetRowCompressedReader(String path) throws IOException {
 
@@ -83,11 +72,21 @@ public class DoubleMatrixDatasetRowCompressedReader {
 			throw new IOException("File with col identifiers not found at: " + colFile.getAbsolutePath());
 		}
 
+
+		matrixFileReader = new RandomAccessFile(matrixFile, "r");
+        RandomAccessFileInputStream inputStream = new RandomAccessFileInputStream(matrixFileReader, false);//this is later used by block reader
+
+		matrixFileReader.seek(matrixFileReader.length() - 4);
+		if (matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[0]
+				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[1]
+				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[2]
+				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[3]) {
+			throw new IOException("Error parsing datg file, incorrect magic bytes");
+		}
+
 		rowMap = loadIdentifiers(rowFile);
 		colMap = loadIdentifiers(colFile);
 
-		matrixFileReader = new RandomAccessFile(matrixFile, "r");
-		inputStream = new RandomAccessFileInputStream(matrixFileReader, false);//this is later used by block reader
 
 		matrixFileReader.seek(matrixFileReader.length() - DoubleMatrixDatasetRowCompressedWriter.APPENDIX_BYTE_LENGTH);
 
@@ -109,16 +108,25 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 		this.rowsPerBlock = matrixFileReader.readInt();
 
-		if (matrixFileReader.readInt() != 0) {
+		byte[] extraData = new byte[4];
+		matrixFileReader.read(extraData);
+
+		if (extraData[0] != 0) {
 			throw new RuntimeException("Incompatible version of datg file");
 		}
-
-		if (matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[0]
-				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[1]
-				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[2]
-				|| matrixFileReader.readByte() != DoubleMatrixDatasetRowCompressedWriter.MAGIC_BYTES[3]) {
-			throw new IOException("Error parsing datg file.");
+		if (extraData[1] != 0) {
+			throw new RuntimeException("Incompatible version of datg file");
 		}
+		if (extraData[2] != 0) {
+			throw new RuntimeException("Incompatible version of datg file");
+		}
+		if (extraData[3] > 1) {
+			throw new RuntimeException("Incompatible version of datg file");
+		}
+		lz4FrameCompression = (extraData[3] & 0b00000001) > 0; // else would be jpountz.lz4 block compression
+
+
+
 
 		matrixFileReader.seek(startOfMetaDataBlock);
 		this.datasetName = matrixFileReader.readUTF();
@@ -132,7 +140,13 @@ public class DoubleMatrixDatasetRowCompressedReader {
 		numberOfBlocks = (numberOfRows + rowsPerBlock - 1) / rowsPerBlock; // (x + y - 1) / y; = ceiling divide
 
 		matrixFileReader.seek(startOfEndBlock);
-		final DataInputStream blockIndicesReader = new DataInputStream(new LZ4BlockInputStream(new RandomAccessFileInputStream(matrixFileReader, false)));
+		final DataInputStream blockIndicesReader;
+		if(lz4FrameCompression){
+			blockIndicesReader =  new DataInputStream(new FramedLZ4CompressorInputStream(new RandomAccessFileInputStream(matrixFileReader, false)));
+		} else {
+			blockIndicesReader = new DataInputStream(new LZ4BlockInputStream(new RandomAccessFileInputStream(matrixFileReader, false)));
+		}
+
 		blockIndices = new long[numberOfBlocks];
 		for (int block = 0; block < numberOfBlocks; ++block) {
 			blockIndices[block] = blockIndicesReader.readLong();
@@ -173,6 +187,10 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 		return loadSubsetOfRows(rowsToViewHash);
 
+	}
+
+	public synchronized double[] loadSingleRow(final String rowName) throws IOException {
+		return loadSingleRow(rowMap.get(rowName));
 	}
 
 	public synchronized double[] loadSingleRow(final int r) throws IOException {
@@ -288,9 +306,15 @@ public class DoubleMatrixDatasetRowCompressedReader {
 
 	private void loadBlockData(final int block) throws IOException {
 		matrixFileReader.seek(blockIndices[block]);
-		final LZ4BlockInputStream reader = new LZ4BlockInputStream(inputStream, decompressor, hasher);
 
-		reader.read(blockData, 0, blockSize);
+		final InputStream reader;
+		if(lz4FrameCompression){
+			reader = new FramedLZ4CompressorInputStream(new RandomAccessFileInputStream(matrixFileReader, false));
+		} else {
+			reader = new LZ4BlockInputStream(new RandomAccessFileInputStream(matrixFileReader, false));
+		}
+
+		reader.readNBytes(blockData, 0, blockSize);
 
 		currentBlock = block;
 	}
@@ -307,12 +331,12 @@ public class DoubleMatrixDatasetRowCompressedReader {
 		return matrixFile;
 	}
 
-	public Set<String> getRowIdentifiers() {
-		return Collections.unmodifiableSet(rowMap.keySet());
+	public SequencedSet<String> getRowIdentifiers() {
+		return Collections.unmodifiableSequencedSet(rowMap.sequencedKeySet());
 	}
 
-	public Set<String> getColumnIdentifiers() {
-		return Collections.unmodifiableSet(colMap.keySet());
+	public SequencedSet<String> getColumnIdentifiers() {
+		return Collections.unmodifiableSequencedSet(colMap.sequencedKeySet());
 	}
 
 	public long getTimestampCreated() {
@@ -331,6 +355,27 @@ public class DoubleMatrixDatasetRowCompressedReader {
 		return dataOnCols;
 	}
 
+	public boolean isLz4FrameCompression() {
+		return lz4FrameCompression;
+	}
+
+	public Map<String, Integer> getRowMap() {
+		return Collections.unmodifiableMap(rowMap);
+	}
+
+	public Map<String, Integer> getColumnMap() {
+		return Collections.unmodifiableMap(colMap);
+	}
+
+
+	public boolean hasRow(String rowQuery){
+		return rowMap.containsKey(rowQuery);
+	}
+
+	public boolean hasColumn(String columnQuery){
+		return colMap.containsKey(columnQuery);
+	}
+
 	private LinkedHashMap<String, Integer> loadIdentifiers(final File file) throws IOException {
 
 		final CSVParser identifierFileParser = new CSVParserBuilder().withSeparator('\t').withIgnoreQuotations(true).build();
@@ -344,6 +389,49 @@ public class DoubleMatrixDatasetRowCompressedReader {
 		}
 
 		return (map);
+
+	}
+
+	@Override
+	public Iterator<DoubleMatrixDatasetRow> iterator() {
+		return new DoubleMatrixDatasetRowIteratorDatg(this);
+	}
+
+	@Override
+	public synchronized void close() throws IOException {
+		matrixFileReader.close();
+	}
+
+	private class DoubleMatrixDatasetRowIteratorDatg implements Iterator<DoubleMatrixDatasetRow> {
+
+		private int nextRow;
+		private final DoubleMatrixDatasetRowCompressedReader matrixReader;
+		private final int nrRows;
+		Iterator<String> rowNameIterator;
+
+		public DoubleMatrixDatasetRowIteratorDatg(DoubleMatrixDatasetRowCompressedReader matrixReader) {
+			this.matrixReader = matrixReader;
+			nextRow = 0;
+			nrRows = matrixReader.getNumberOfRows();
+			rowNameIterator = matrixReader.getRowIdentifiers().iterator();
+		}
+
+		@Override
+		public boolean hasNext() {
+			return nextRow < nrRows;
+		}
+
+		@Override
+		public DoubleMatrixDatasetRow next() {
+
+			try {
+				return new DoubleMatrixDatasetRow(matrixReader.loadSingleRow(nextRow++), rowNameIterator.next());
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+
+		}
+
 
 	}
 }

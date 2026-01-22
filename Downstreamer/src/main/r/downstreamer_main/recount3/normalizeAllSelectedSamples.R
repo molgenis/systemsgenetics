@@ -1,10 +1,10 @@
-#srun --cpus-per-task=20 --mem=200gb --nodes=1 --qos=priority --time=168:00:00 --pty bash -i
+#srun --cpus-per-task=5 --mem=100gb --nodes=1 --qos=priority --time=48:00:00 --pty bash -i
 #remoter::server(verbose = T, port = 55556, sync = T)
 
 
 
 
-remoter::client("localhost", port = 55556)#55501  55556
+remoter::client("localhost", port = 55502)#55501  55556
 
 library("havok")
 library(parallel)
@@ -17,6 +17,9 @@ load("tissuePredictions/samplesWithPrediction_16_09_22_noOutliers.RData", verbos
 
 load(file = "Metadata/combinedMeta_2022_09_15.RData", verbose = T)
 combinedMeta <- combinedMeta[rownames(samplesWithPredictionNoOutliers),]
+
+
+write.table(combinedMeta, file =  gzfile("/groups/umcg-fg/tmp01/projects/genenetwork/recount3/Metadata/combinedMeta_2022_09_15_selected.txt.gz"), quote = F, col.names = NA, sep = "\t")
 
 dim(combinedMeta)
 dim(samplesWithPredictionNoOutliers)
@@ -143,7 +146,7 @@ eigenValues <- expEigen$values
 names(eigenValues) <- paste0("Comp_",1:length(eigenValues))
 
 #Here calculate sample principle components. Number needed is arbritary (no more than eigen vectors)
-expPcs <- t(expScale) %*% expEigen$vectors[,1:50]
+expPcs <- t(expScale) %*% expEigen$vectors[,1:848]
 colnames(expPcs) <- paste0("Comp_",1:ncol(expPcs))
 
 #nrSamples <- ncol(expScale)

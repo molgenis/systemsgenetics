@@ -31,6 +31,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.mahout.math.Arrays;
 
 /**
  *
@@ -52,6 +53,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 	private final boolean skipPvalueToZscore;
 	private final String geneGeneCorrelationPrefix;
 	private final boolean unitTestMode;//only set true for unit testing
+	private final double fdrThresholdEigenvectors;
 
 	static {
 
@@ -132,6 +134,12 @@ public class OptionsModeEnrichment extends OptionsBase {
 		OptionBuilder.withLongOpt("noPvalueToZscore");
 		OPTIONS.addOption(OptionBuilder.create("nptz"));
 
+		OptionBuilder.withArgName("double");
+		OptionBuilder.withDescription("FDR threshold to determine which eigenvectors should be used for key-gene scores");
+		OptionBuilder.withLongOpt("eigenFdr");
+		OptionBuilder.hasArg();
+		OPTIONS.addOption(OptionBuilder.create("efdr"));
+
 	}
 
 	/**
@@ -156,7 +164,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 	 * @param jblas
 	 * @param unitTestMode
 	 */
-	public OptionsModeEnrichment(File covariates, List<PathwayDatabase> pathwayDatabases, boolean forceNormalGenePvalues, boolean forceNormalPathwayPvalues, boolean regressGeneLengths, File geneInfoFile, File singleGwasFile, String gwasPvalueMatrixPath, boolean excludeHla, boolean skipPvalueToZscore, String geneGeneCorrelationPrefix, int numberOfThreadsToUse, File outputBasePath, File logFile, DownstreamerMode mode, boolean debugMode, boolean jblas, boolean unitTestMode) {
+	public OptionsModeEnrichment(File covariates, List<PathwayDatabase> pathwayDatabases, boolean forceNormalGenePvalues, boolean forceNormalPathwayPvalues, boolean regressGeneLengths, File geneInfoFile, File singleGwasFile, String gwasPvalueMatrixPath, boolean excludeHla, boolean skipPvalueToZscore, String geneGeneCorrelationPrefix, int numberOfThreadsToUse, File outputBasePath, File logFile, DownstreamerMode mode, boolean debugMode, boolean jblas, boolean unitTestMode, double fdrThresholdEigenvectors) {
 		super(numberOfThreadsToUse, outputBasePath, logFile, mode, debugMode, jblas);
 		this.covariates = covariates;
 		this.pathwayDatabases = pathwayDatabases;
@@ -170,11 +178,12 @@ public class OptionsModeEnrichment extends OptionsBase {
 		this.skipPvalueToZscore = skipPvalueToZscore;
 		this.geneGeneCorrelationPrefix = geneGeneCorrelationPrefix;
 		this.unitTestMode = unitTestMode;
+		this.fdrThresholdEigenvectors = fdrThresholdEigenvectors;
 	}
 
 	public OptionsModeEnrichment(String[] args) throws ParseException, IOException {
 		super(args);
-		
+
 		unitTestMode = false;
 
 		// Parse arguments
@@ -208,6 +217,12 @@ public class OptionsModeEnrichment extends OptionsBase {
 		}
 
 		excludeHla = commandLine.hasOption("eh");
+		
+		if(commandLine.hasOption("eigenFdr")){
+			fdrThresholdEigenvectors = Double.parseDouble(commandLine.getOptionValue("eigenFdr"));
+		} else {
+			fdrThresholdEigenvectors = 0.05;
+		}
 
 		printOptions();
 
@@ -277,6 +292,10 @@ public class OptionsModeEnrichment extends OptionsBase {
 				if (!duplicateChecker.add(nextLine[0])) {
 					throw new ParseException("Error parsing --pathwayEigenFile. Duplicate database name found, note must also be unique with --pathwayDatabase --ExpressionEigenVectors ");
 				}
+				
+				if(nextLine.length != 3){
+					throw new ParseException("Error parsing --pathwayEigenFile. Each row should contain 3 columns but found: " + nextLine.length + " at line: " + Arrays.toString(nextLine));
+				}
 
 				pathwayDatabases.add(new PathwayDatabase(nextLine[0], nextLine[1], Boolean.parseBoolean(nextLine[2])));
 
@@ -327,6 +346,7 @@ public class OptionsModeEnrichment extends OptionsBase {
 		LOGGER.info(" * Skip gene p-values to Z-score (should only be disabled if already z-score per gene): " + skipPvalueToZscore);
 		LOGGER.info(" * Correct gene p-values for gene length: " + regressGeneLengths);
 		LOGGER.info(" * Exclude HLA during enrichment analysis: " + (excludeHla ? "on" : "off"));
+		LOGGER.info(" * FDR threshold for eigenvectors to use: " + fdrThresholdEigenvectors);
 
 	}
 
@@ -376,6 +396,10 @@ public class OptionsModeEnrichment extends OptionsBase {
 
 	public boolean isUnitTestMode() {
 		return unitTestMode;
+	}
+
+	public double getFdrThresholdEigenvectors() {
+		return fdrThresholdEigenvectors;
 	}
 
 }

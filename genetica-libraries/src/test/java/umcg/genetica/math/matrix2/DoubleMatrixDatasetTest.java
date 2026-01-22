@@ -5,17 +5,23 @@
  */
 package umcg.genetica.math.matrix2;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import static org.testng.Assert.*;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -28,7 +34,15 @@ public class DoubleMatrixDatasetTest {
     private File tmpOutputFolder;
     private File testMatrixFile;
 
+    private static final Logger LOGGER = LogManager.getLogger(DoubleMatrixDatasetTest.class);
+    private final String fs = FileSystems.getDefault().getSeparator();
+
     public DoubleMatrixDatasetTest() {
+        System.setProperty("log4j2.simplelogLevel", "INFO");
+        System.setProperty("log4j2.simplelogShowLogname", "true");
+        System.setProperty("log4j2.simplelogShowShortLogname", "false");
+        System.setProperty("log4j2.simplelogShowDatetime", "true");
+        System.setProperty("log4j2.simplelogDateTimeFormat", "yyyy/MM/dd HH:mm:ss:SSS zzz");
     }
 
     @BeforeClass
@@ -36,7 +50,7 @@ public class DoubleMatrixDatasetTest {
 
     }
 
-    @BeforeMethod
+    @BeforeClass
     public void setUpMethod() throws Exception {
 
         testMatrixFile = new File(this.getClass().getResource("/testMatrix.txt").toURI());
@@ -270,9 +284,71 @@ public class DoubleMatrixDatasetTest {
         dataset.setElementQuick(2, 2, 6.66);
         dataset.setElementQuick(2, 3, -12.2);
 
-        dataset.saveBinary(tmpOutputFolder.getAbsolutePath() + ".testBin");
+        System.out.println("Seperator: " + fs);
+        System.out.println("test " + tmpOutputFolder.getAbsolutePath() + fs + "test.datg");
 
-        DoubleMatrixDataset<String, String> dataset2 = DoubleMatrixDataset.loadDoubleBinaryData(tmpOutputFolder.getAbsolutePath() + ".testBin");
+        dataset.saveBinary(tmpOutputFolder.getAbsolutePath() + fs + "test.datg");
+
+        //test md5sum
+
+        BufferedReader md5reader = Files.newBufferedReader(new File(tmpOutputFolder.getAbsolutePath() + fs + "test.sha256").toPath());
+        HashMap<String, String> fileToChecksumMap = new HashMap<String, String>();
+
+        String line;
+        while ((line = md5reader.readLine()) != null) {
+            String[] split = line.split("  ");
+            fileToChecksumMap.put(split[1], split[0]);
+        }
+
+        assertEquals(fileToChecksumMap.size(), 3);
+
+        final MessageDigest matrixFileMd5Digest = MessageDigest.getInstance("SHA-256");
+        final MessageDigest rowFileMd5Digest = MessageDigest.getInstance("SHA-256");
+        final MessageDigest colFileMd5Digest = MessageDigest.getInstance("SHA-256");
+
+        DigestInputStream digestInputStream = new DigestInputStream(Files.newInputStream(new File(tmpOutputFolder.getAbsolutePath() + fs + "test.datg").toPath()), matrixFileMd5Digest);
+        digestInputStream.readAllBytes();
+        digestInputStream.close();
+
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : matrixFileMd5Digest.digest()) {
+            hexString.append(String.format("%02x", b));
+        }
+        if(!fileToChecksumMap.containsKey("test.datg")){
+            throw new Exception("test.datg md5 not found");
+        }
+        assertEquals(fileToChecksumMap.get("test.datg"), hexString.toString());
+
+        digestInputStream = new DigestInputStream(Files.newInputStream(new File(tmpOutputFolder.getAbsolutePath() + fs + "test.rows.txt.gz").toPath()), rowFileMd5Digest);
+        digestInputStream.readAllBytes();
+        digestInputStream.close();
+
+        hexString = new StringBuilder();
+        for (byte b : rowFileMd5Digest.digest()) {
+            hexString.append(String.format("%02x", b));
+        }
+        if(!fileToChecksumMap.containsKey("test.rows.txt.gz")){
+            throw new Exception("test.rows.txt.gz md5 not found");
+        }
+        assertEquals(fileToChecksumMap.get("test.rows.txt.gz"), hexString.toString());
+
+        digestInputStream = new DigestInputStream(Files.newInputStream(new File(tmpOutputFolder.getAbsolutePath() + fs + "test.cols.txt.gz").toPath()), colFileMd5Digest);
+        digestInputStream.readAllBytes();
+        digestInputStream.close();
+
+        hexString = new StringBuilder();
+        for (byte b : colFileMd5Digest.digest()) {
+            hexString.append(String.format("%02x", b));
+        }
+        if(!fileToChecksumMap.containsKey("test.cols.txt.gz")){
+            throw new Exception("test.cols.txt.gz md5 not found");
+        }
+        assertEquals(fileToChecksumMap.get("test.cols.txt.gz"), hexString.toString());
+
+
+
+        DoubleMatrixDataset<String, String> dataset2 = DoubleMatrixDataset.loadDoubleBinaryData(tmpOutputFolder.getAbsolutePath() + fs + "test.datg");
+
 
         assertEquals(dataset2.rows(), 4);
         assertEquals(dataset2.columns(), 5);
@@ -284,7 +360,7 @@ public class DoubleMatrixDatasetTest {
         assertEquals(dataset2.getElementQuick(0, 1), 2d);
         assertEquals(dataset2.getElementQuick(2, 2), 6.66d);
 
-        DoubleMatrixDataset<String, String> dataset3 = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(tmpOutputFolder.getAbsolutePath() + ".testBin", new String[]{"row3", "row2"});
+        DoubleMatrixDataset<String, String> dataset3 = DoubleMatrixDataset.loadSubsetOfRowsBinaryDoubleData(tmpOutputFolder.getAbsolutePath() + fs + "test.datg", new String[]{"row3", "row2"});
 
         assertEquals(dataset3.rows(), 2);
         assertEquals(dataset3.columns(), 5);
@@ -312,7 +388,7 @@ public class DoubleMatrixDatasetTest {
         assertEquals(dataset4.getElementQuick(1, 3), 5.55d);
         assertEquals(dataset4.getElementQuick(1, 2), 0d);
 
-        DoubleMatrixDatasetFastSubsetLoader subsetLoader = new DoubleMatrixDatasetFastSubsetLoader(tmpOutputFolder.getAbsolutePath() + ".testBin");
+        DoubleMatrixDatasetFastSubsetLoader subsetLoader = new DoubleMatrixDatasetFastSubsetLoader(tmpOutputFolder.getAbsolutePath() + fs + "test.datg");
         DoubleMatrixDataset<String, String> dataset5 = subsetLoader.loadSubsetOfRowsBinaryDoubleData(new String[]{"row3", "row2"});
 
         assertEquals(dataset5.rows(), 2);
@@ -326,6 +402,42 @@ public class DoubleMatrixDatasetTest {
         assertEquals(dataset5.getElementQuick(0, 3), -12.2d);
         assertEquals(dataset5.getElementQuick(1, 3), 5.55d);
         assertEquals(dataset5.getElementQuick(1, 2), 0d);
+
+    }
+
+    @Test
+    public void createSomeTestData() throws IOException, Exception {
+        System.out.println("testSaveLoadBinaryMatrix");
+        ArrayList<String> rows = new ArrayList<>();
+        ArrayList<String> cols = new ArrayList<>();
+
+        rows.add("row1");
+        rows.add("row2");
+        rows.add("row3");
+        rows.add("row4");
+
+        cols.add("col1");
+        cols.add("col2");
+        cols.add("col3");
+        cols.add("col4");
+        cols.add("col5");
+
+        DoubleMatrixDataset dataset = new DoubleMatrixDataset(rows, cols);
+
+        dataset.setElementQuick(0, 0, 1);
+        dataset.setElementQuick(0, 1, 2);
+        dataset.setElementQuick(0, 2, 3);
+        dataset.setElementQuick(0, 3, 4);
+        dataset.setElementQuick(0, 4, 5);
+
+        dataset.setElementQuick(1, 3, 5.55);
+        dataset.setElementQuick(2, 2, 6.66);
+        dataset.setElementQuick(2, 3, -12.2);
+
+        dataset.saveBinary("D:\\test.datg", "Title", "Rows", "Cols");
+        dataset.save("D:\\test.txt");
+
+
 
     }
 
@@ -358,9 +470,9 @@ public class DoubleMatrixDatasetTest {
         dataset.setElementQuick(2, 2, 6.66);
         dataset.setElementQuick(2, 3, -12.2);
 
-        dataset.save(tmpOutputFolder.getAbsolutePath() + ".testText.txt");
+        dataset.save(tmpOutputFolder.getAbsolutePath() + fs + "test2.testText.txt");
 
-        DoubleMatrixDataset<String, String> dataset2 = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getAbsolutePath() + ".testText.txt", '\t');
+        DoubleMatrixDataset<String, String> dataset2 = DoubleMatrixDataset.loadDoubleTextData(tmpOutputFolder.getAbsolutePath() + fs + "test2.testText.txt", '\t');
 
         assertEquals(dataset2.rows(), 4);
         assertEquals(dataset2.columns(), 5);
@@ -376,7 +488,7 @@ public class DoubleMatrixDatasetTest {
         rowsToLoad.add("row3");
         rowsToLoad.add("row2");
 
-        DoubleMatrixDataset<String, String> dataset3 = DoubleMatrixDataset.loadSubsetOfTextDoubleData(tmpOutputFolder.getAbsolutePath() + ".testText.txt", '\t', rowsToLoad, null);
+        DoubleMatrixDataset<String, String> dataset3 = DoubleMatrixDataset.loadSubsetOfTextDoubleData(tmpOutputFolder.getAbsolutePath() + fs + "test2.testText.txt", '\t', rowsToLoad, null);
 
         assertEquals(dataset3.rows(), 2);
         assertEquals(dataset3.columns(), 5);
@@ -408,7 +520,7 @@ public class DoubleMatrixDatasetTest {
         colsToLoad.add("col2");
         colsToLoad.add("col4");
 
-        DoubleMatrixDataset<String, String> dataset5 = DoubleMatrixDataset.loadSubsetOfTextDoubleData(tmpOutputFolder.getAbsolutePath() + ".testText.txt", '\t', rowsToLoad, colsToLoad);
+        DoubleMatrixDataset<String, String> dataset5 = DoubleMatrixDataset.loadSubsetOfTextDoubleData(tmpOutputFolder.getAbsolutePath() + fs + "test2.testText.txt", '\t', rowsToLoad, colsToLoad);
 
         assertEquals(dataset5.rows(), 2);
         assertEquals(dataset5.columns(), 2);
@@ -453,7 +565,7 @@ public class DoubleMatrixDatasetTest {
         assertEquals(dataset7.getElementQuick(1, 1), 0d);
         assertEquals(dataset7.getElementQuick(1, 0), -12.2d);
 
-        DoubleMatrixDataset<String, String> dataset8 = DoubleMatrixDataset.loadSubsetOfTextDoubleData(tmpOutputFolder.getAbsolutePath() + ".testText.txt", '\t', null, colsToLoad);
+        DoubleMatrixDataset<String, String> dataset8 = DoubleMatrixDataset.loadSubsetOfTextDoubleData(tmpOutputFolder.getAbsolutePath() + fs + "test2.testText.txt", '\t', null, colsToLoad);
 
         assertEquals(dataset8.rows(), 4);
         assertEquals(dataset8.columns(), 2);
@@ -469,6 +581,7 @@ public class DoubleMatrixDatasetTest {
         assertEquals(dataset8.getElementQuick(2, 1), -12.2d);
 
     }
+
 
     @Test
     public void viewSubset() throws IOException, Exception {

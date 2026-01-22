@@ -663,7 +663,7 @@ public class GenotypeHarmonizerTest {
         System.out.println("Alignement complete now going to check using the real forward data");
 
         RandomAccessGenotypeData forwardHapmap3Data = new BedBimFamGenotypeData(testFilesFolder + fileSep + "hapmap3CeuChr20B37Mb6");
-        RandomAccessGenotypeData alignedBgenGenotypeData = new BgenGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test11");
+        BgenGenotypeData alignedBgenGenotypeData = new BgenGenotypeData(tmpOutputFolder.getAbsolutePath() + fileSep + "test11");
 
         BufferedReader keepFileReader = new BufferedReader(new InputStreamReader(new FileInputStream(new File(testFilesFolder, "IncludedByKeep.txt")), FILE_ENCODING));
 
@@ -707,6 +707,7 @@ public class GenotypeHarmonizerTest {
         }
 
         assertEquals(variantCounter, 4088);
+        assertEquals(alignedBgenGenotypeData.getVariantCount(), 4088);
 
         //Check if ID is updated based on 1000G
         assertEquals(alignedBgenGenotypeData.getSnpVariantByPos("20", 809930).getPrimaryVariantId(), "rs78472400");

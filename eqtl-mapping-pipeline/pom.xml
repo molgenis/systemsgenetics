@@ -99,8 +99,13 @@
 			<artifactId>Rserve</artifactId>
 			<version>1.8.2-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>me.tongfei</groupId>
+			<artifactId>progressbar</artifactId>
+			<version>0.7.2</version>
+		</dependency>
 
-	</dependencies>
+    </dependencies>
 	<build>
 		<resources>
 			<resource>
@@ -164,11 +169,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
-				<configuration>
-					<encoding>UTF-8</encoding>
-					<source>1.8</source>
-					<target>1.8</target>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

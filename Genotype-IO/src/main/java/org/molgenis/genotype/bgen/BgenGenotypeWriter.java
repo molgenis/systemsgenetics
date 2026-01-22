@@ -97,7 +97,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 
 		// Get the number of samples and the number of variants.
 		int sampleCount = genotypeData.getSamples().size();
-		int variantCount = Iterators.size(genotypeData.iterator());
+		int variantCount = 0; //this will be set later
 
 		// Calculate the offset, relative to the fifth byte of the file,
 		// of the first byte of the first variant data block
@@ -112,7 +112,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		// Write the header block.
 		// 4 bytes with length of the header block.
 		headerBytesBuffer.putInt(headerBlockLength);
-		// 4 bytes with the number of variant data blocks stored in the file.
+		// 4 bytes with the number of variant data blocks stored in the file. First we write 0 and later we overwrite this.
 		headerBytesBuffer.putInt(variantCount);
 		// 4 bytes indicating the number of samples represented in the variant data blocks in the file.
 		headerBytesBuffer.putInt(sampleCount);
@@ -212,7 +212,7 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 
 		long variantStartPositionInFile = offset + firstFourBytesBuffer.limit();
 
-		LOGGER.info(String.format("Writing %d variants to BGEN file...", variantCount));
+
 		// Loop through variants
 		for (GeneticVariant variant : genotypeData) {
 			// Write variant data block
@@ -279,9 +279,23 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 					primaryVariantId);
 
 			variantStartPositionInFile += variantDataSizeInBytes;
+
+			++variantCount;
 		}
 
 		bgenOutputStream.close();
+
+		RandomAccessFile bgenRandomAccess = new RandomAccessFile(bgenFile, "rw");
+		bgenRandomAccess.seek(8);
+
+		ByteBuffer variantCountBuffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+		variantCountBuffer.putInt((int) variantCount);
+		variantCountBuffer.flip();
+		byte[] data = new byte[4];
+		variantCountBuffer.get(data);
+		bgenRandomAccess.write(data);
+
+		bgenRandomAccess.close();
 
 		// Finalize bgenix file
 		addMetaData(bgenFile, bgenixWriter);
@@ -292,6 +306,9 @@ public class BgenGenotypeWriter implements GenotypeWriter {
 		for (int i = 0; i < sampleMissingCount.length; ++i) {
 			sampleMissingness.put(genotypeData.getSamples().get(i), sampleMissingCount[i] / (float) variantCount);
 		}
+
+		LOGGER.info(String.format("Finished writing %d variants to BGEN file...", variantCount));
+
 		return sampleMissingness;
 	}
 
